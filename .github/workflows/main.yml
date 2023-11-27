@@ -1,0 +1,59 @@
+on:
+  workflow_dispatch:
+    inputs:
+      OS:
+        description: 'Operating system'
+        required: true
+        default: 'linux'
+        type: choice
+        options:
+          - linux
+          - windows
+          - macos
+  pull_request:
+    branches:    
+      - main
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    if:  ${{ inputs.print_tags }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Test coverage
+        run: |
+          ./run-tests.sh
+      - name: Archive code coverage results 
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: htmlcov
+  package-linux:
+    runs-on: ubuntu-latest
+    if:  ${{ inputs.OS == 'linux' }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+      - name: Archive the build 
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-standalone
+          path: |
+            dist/desktop
