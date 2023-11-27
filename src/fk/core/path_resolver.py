@@ -23,7 +23,7 @@ def resolve_path(filename: str) -> str:
     global ROOT_DIR
     if ROOT_DIR is None:
         ROOT_DIR = path.dirname(__file__)
-        if ('tmp' in ROOT_DIR and '_MEI' in ROOT_DIR) or '/var/folders' in ROOT_DIR:
+        if '_MEI' in ROOT_DIR:
             ROOT_DIR = path.abspath(path.join(path.join(path.dirname(__file__), ".."), ".."))
             print(f'Running bundled, root dir is {ROOT_DIR}')
         else:
