@@ -1,0 +1,91 @@
+name: Build binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      OS:
+        description: 'Operating system'
+        required: true
+        default: 'linux'
+        type: choice
+        options:
+          - linux
+          - windows
+          - macOS
+jobs:
+  package-linux:
+    runs-on: ubuntu-latest
+    if:  ${{ inputs.OS == 'linux' }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+      - name: Archive the build 
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-standalone
+          path: |
+            dist/desktop
+
+  package-windows:
+    runs-on: windows-latest
+    if:  ${{ inputs.OS == 'windows' }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+      - name: Archive the build 
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows-standalone
+          path: |
+            dist/desktop.exe
+
+  package-macOS:
+    runs-on: macOS-latest
+    if:  ${{ inputs.OS == 'macOS' }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+      - name: Archive the build 
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-macOS-standalone
+          path: |
+            dist
