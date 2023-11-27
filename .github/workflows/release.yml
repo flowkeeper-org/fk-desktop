@@ -1,0 +1,111 @@
+name: Release new version
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Test coverage
+        run: |
+          PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
+          python -m coverage html
+      - name: Archive code coverage results 
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: htmlcov
+
+  package-linux:
+    runs-on: ubuntu-latest
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+          mv dist/desktop dist/flowkeeper-linux
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/flowkeeper-linux
+          
+  package-windows:
+    runs-on: windows-latest
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+          move dist\desktop.exe dist\flowkeeper-windows.exe
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/flowkeeper-windows.exe
+
+  package-macOS:
+    runs-on: macOS-latest
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Package the build
+        run: |
+          pyinstaller desktop.spec
+          cd dist
+          zip -r flowkeeper-macos.zip .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/flowkeeper-macos.zip
