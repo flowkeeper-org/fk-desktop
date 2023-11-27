@@ -2,18 +2,49 @@
 
 This README is work in progress.
 
-## Data structue and ownership
+## Building
 
+Flowkeeper has a single dependency -- Qt 6.6, which in turn requires Python 3.11. If you want to
+build it with Ubuntu 20.04 or Debian 11, both of which come with older versions of Python, you
+would have to [compile Python 3.11 first](https://fostips.com/install-python-3-10-debian-11/).
+
+Install dependencies:
+
+```shell
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+From here you can start coding. To run Flowkeeper:
+
+```shell
+PYTHONPATH=src python -m fk.desktop.desktop
+```
+
+To run unit tests w/test coverage:
+
+```shell
+PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
+python -m coverage html
+```
+
+To build an installer for your platform (the standalone binary is placed in `dist/desktop`):
+
+```shell
+pyinstaller desktop.spec
+```
+
+## Technical details
+
+### Data structue and ownership
+
+- User
 - Backlog
 - Workitem
 - Pomodoro
 
-## Backlogs
-
-- Global: one per Owner
-- Named: date + name
-
-## Commands
+### Commands
 
 You may find those as _Strategies_ in the code. They correspond to the end-user actions /
 data mutations. Each command takes two or three parameters.
@@ -33,7 +64,7 @@ Apart from "business data", each command has a few metadata field, associated wi
 - Timestamp
 - Username (who executed it)
 
-## Design considerations
+### Design considerations
 
 The core is designed with the following assumptions:
 

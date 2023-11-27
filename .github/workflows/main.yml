@@ -20,6 +20,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
       - name: Create Virtual Environment
         run: |
           python3 -m venv venv
@@ -29,7 +33,8 @@ jobs:
           pip install -r requirements.txt
       - name: Test coverage
         run: |
-          ./run-tests.sh
+          PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
+          python -m coverage html
       - name: Archive code coverage results 
         uses: actions/upload-artifact@v3
         with:
