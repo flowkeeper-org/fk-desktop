@@ -1,0 +1,7 @@
+.venv
+venv
+__pycache__
+build
+dist
+.coverage
+.DS_Store

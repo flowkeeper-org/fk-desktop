@@ -1,0 +1,859 @@
+#  Flowkeeper - Pomodoro timer for power users and teams
+#  Copyright (c) 2023 Constantine Kulak
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import datetime
+import sys
+from typing import Iterable
+
+from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
+
+from fk.core import events
+from fk.core.abstract_data_item import generate_uid
+from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import AbstractSettings
+from fk.core.backlog import Backlog
+from fk.core.backlog_strategies import DeleteBacklogStrategy, CreateBacklogStrategy
+from fk.core.events import SourceMessagesProcessed
+from fk.core.file_event_source import FileEventSource
+from fk.core.path_resolver import resolve_path
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, CompletePomodoroStrategy, \
+    StartWorkStrategy
+from fk.core.timer import PomodoroTimer
+from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.desktop.settings import SettingsDialog
+from fk.qt.backlog_model import BacklogModel
+from fk.qt.file_event_source_settings_ui import FileEventSourceSettingsUi
+from fk.qt.pomodoro_delegate import PomodoroDelegate
+from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
+from fk.qt.qt_settings import QtSettings
+from fk.qt.qt_timer import QtTimer
+from fk.qt.search_completer import SearchBar
+from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
+from fk.qt.user_model import UserModel
+from fk.qt.websocket_event_source import WebsocketEventSource
+from fk.qt.workitem_model import WorkitemModel
+
+
+#from fk.qt.websocket_event_source import WebsocketEventSource
+
+
+def get_selected_backlog() -> Backlog:
+    model: QtCore.QItemSelectionModel = backlogs_table.selectionModel()
+    if model is not None:
+        index = model.currentIndex()
+        if index is not None:
+            return index.data(500)
+
+
+def get_selected_workitem() -> Workitem:
+    model: QtCore.QItemSelectionModel = workitems_table.selectionModel()
+    if model is not None:
+        index = model.currentIndex()
+        if index is not None:
+            return index.data(500)
+
+
+def enable_workitem_actions(enable: bool) -> None:
+    action_delete_workitem.setEnabled(enable)
+    action_complete_workitem.setEnabled(enable)
+    action_rename_workitem.setEnabled(enable)
+    action_start.setEnabled(enable)
+    action_add_pomodoro.setEnabled(enable)
+    action_remove_pomodoro.setEnabled(enable)
+
+
+def update_progress(backlog: Backlog) -> None:
+    total: int = 0
+    done: int = 0
+    for wi in backlog.values():
+        for p in wi.values():
+            total += 1
+            if p.is_finished() or p.is_canceled():
+                done += 1
+
+    backlog_progress.setVisible(total > 0)
+    backlog_progress.setMaximum(total)
+    backlog_progress.setValue(done)
+    backlog_progress_txt.setVisible(total > 0)
+    backlog_progress_txt.setText(f'{done} of {total} done')
+
+
+def backlog_changed() -> None:
+    backlog: Backlog = get_selected_backlog()
+
+    # It can be None if we don't have any backlogs left. BacklogModel supports None.
+    enabled = backlog is not None
+    action_delete_backlog.setEnabled(enabled)
+    action_rename_backlog.setEnabled(enabled)
+
+    # None of the workitems is selected now
+    action_new_workitem.setEnabled(enabled)
+    enable_workitem_actions(False)
+    workitem_model.load(backlog)
+    update_progress(backlog)
+
+    # This only works if we have some data there
+    workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+    workitems_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+    workitems_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+
+
+def load_backlogs() -> None:
+    backlog_model.load()
+    backlogs_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+
+
+def load_users() -> None:
+    user_model.load()
+    users_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+
+
+def workitem_changed(selected: QtCore.QModelIndex) -> None:
+    if selected.data():
+        workitem = selected.data().topLeft().data(500)
+        enable_workitem_actions(not workitem.is_sealed())
+    else:
+        enable_workitem_actions(False)
+
+
+def show_hide() -> None:
+    if window.isHidden():
+        window.show()
+    else:
+        window.hide()
+
+
+def delete_backlog() -> None:
+    selected: Backlog = get_selected_backlog()
+    if selected is not None:
+        m = QtWidgets.QMessageBox()
+        if m.warning(window,
+                     "Confirmation",
+                     f"Are you sure you want to delete backlog '{selected.get_name()}'?",
+                     QtWidgets.QMessageBox.StandardButton.Ok,
+                     QtWidgets.QMessageBox.StandardButton.Cancel
+                     ) == QtWidgets.QMessageBox.StandardButton.Ok:
+            source.execute(DeleteBacklogStrategy, [selected.get_uid()])
+            enable_workitem_actions(False)
+
+
+def delete_workitem() -> None:
+    selected: Workitem = get_selected_workitem()
+    if selected is not None:
+        m = QtWidgets.QMessageBox()
+        if m.warning(window,
+                     "Confirmation",
+                     f"Are you sure you want to delete workitem '{selected.get_name()}'?",
+                     QtWidgets.QMessageBox.StandardButton.Ok,
+                     QtWidgets.QMessageBox.StandardButton.Cancel
+                     ) == QtWidgets.QMessageBox.StandardButton.Ok:
+            source.execute(DeleteWorkitemStrategy, [selected.get_uid()])
+            enable_workitem_actions(False)  # Just in case
+
+
+def add_pomodoro() -> None:
+    selected: Workitem = get_selected_workitem()
+    if selected is not None:
+        source.execute(AddPomodoroStrategy, [selected.get_uid(), "1"])
+
+
+def remove_pomodoro() -> None:
+    selected: Workitem = get_selected_workitem()
+    if selected is not None:
+        source.execute(RemovePomodoroStrategy, [selected.get_uid(), "1"])
+
+
+def generate_unique_name(prefix: str, parent: Iterable) -> str:
+    check = prefix
+    n = 1
+    while check in parent:
+        check = f"{prefix} {n}"
+        n += 1
+    return check
+
+
+def create_backlog() -> None:
+    prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
+    new_name = generate_unique_name(prefix, source.backlogs())
+    source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
+
+    # Start editing it. The new item will always be at the top of the list.
+    index: QtCore.QModelIndex = backlog_model.index(0, 0)
+    backlogs_table.setCurrentIndex(index)
+    backlogs_table.edit(index)
+
+
+def create_workitem() -> None:
+    backlog: Backlog = get_selected_backlog()
+    if backlog is not None:
+        new_name = generate_unique_name("Do something", backlog)
+        source.execute(CreateWorkitemStrategy, [generate_uid(), backlog.get_uid(), new_name])
+
+        # Start editing it. The new item will always be at the end of the list.
+        index: QtCore.QModelIndex = workitem_model.index(workitem_model.rowCount() - 1, 1)
+        workitems_table.setCurrentIndex(index)
+        workitems_table.edit(index)
+
+
+def rename_backlog() -> None:
+    index: QtCore.QModelIndex = backlogs_table.selectionModel().currentIndex()
+    backlogs_table.edit(index)
+
+
+def rename_workitem() -> None:
+    index: QtCore.QModelIndex = workitems_table.selectionModel().currentIndex()
+    workitems_table.edit(index)
+
+
+def load_connection_ui(ui: QtWidgets.QWidget) -> None:
+    # TODO: Create new source based on connection_selector selection?..
+    # connection_ui.clear()
+    for child in ui.children():
+        child.setParent(None)   # TODO: There must be a better way to clear it
+    FileEventSourceSettingsUi(settings).render_config_ui(ui)
+
+
+def start_work() -> None:
+    workitem: Workitem = get_selected_workitem()
+    # TODO: This is where we can adjust work duration
+    # TODO: Move this to Timer and adjust rest, too
+    source.execute(StartWorkStrategy, [workitem.get_uid(), str(get_work_duration())])
+
+
+def complete_work() -> None:
+    workitem: Workitem = get_selected_workitem()
+    source.execute(CompleteWorkitemStrategy, [workitem.get_uid(), "finished"])
+
+
+def get_work_duration() -> int:
+    return int(settings.get('Pomodoro.default_work_duration'))
+
+
+# Unlike work duration, we only use it for the settings window here.
+# TODO - move this logic into the settings module
+def get_rest_duration() -> int:
+    return int(settings.get('Pomodoro.default_rest_duration'))
+
+
+def paint_timer_in_tray() -> None:
+    tray_width = 48
+    tray_height = 48
+    pixmap = QtGui.QPixmap(tray_width, tray_height)
+    pixmap.fill(QtGui.Qt.GlobalColor.transparent)
+    painter = QtGui.QPainter(pixmap)
+    timer_tray.repaint(painter,
+                       QtCore.QRect(0, 0, tray_width, tray_height))
+    tray.setIcon(pixmap)
+
+
+def show_notification(timer: PomodoroTimer, event: str = None) -> None:
+    # Tray notification
+    if event == 'TimerWorkComplete':
+        print('Before showing notification')
+        tray.showMessage("Work is done", "Have some rest", default_icon)
+        print('After showing notification')
+    elif event == 'TimerRestComplete':
+        tray.showMessage("Ready", "Start a new pomodoro", default_icon)
+
+    # Alarm bell
+    print('Before alarm bell')
+    play_alarm_sound = (settings.get('Application.play_alarm_sound') == 'True')
+    play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
+    if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
+        print(' - Stop')
+        audio_player.stop()     # In case it was ticking or playing rest music
+        alarm_file = settings.get('Application.alarm_sound_file')
+        print(' - Reset audio')
+        reset_audio()
+        print(' - Set source')
+        audio_player.setSource(QtCore.QUrl.fromLocalFile(alarm_file))
+        print(' - Set loops')
+        audio_player.setLoops(1)
+        print(' - Play')
+        audio_player.play()
+    print('After alarm bell')
+
+    # Rest music
+    print('Before rest music')
+    if event == 'TimerWorkComplete':
+        start_rest_sound()
+    print('After rest music')
+
+
+def start_ticking(timer: PomodoroTimer = None, event: str = None) -> None:
+    play_tick_sound = (settings.get('Application.play_tick_sound') == 'True')
+    if play_tick_sound:
+        print(' - Stop')
+        audio_player.stop()     # Just in case
+        tick_file = settings.get('Application.tick_sound_file')
+        print(' - Reset audio')
+        reset_audio()
+        print(' - Set source')
+        audio_player.setSource(QtCore.QUrl.fromLocalFile(tick_file))
+        print(' - Set loops')
+        audio_player.setLoops(QtMultimedia.QMediaPlayer.Loops.Infinite)
+        print(' - Play')
+        audio_player.play()
+
+
+def start_rest_sound() -> None:
+    play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
+    if play_rest_sound:
+        print(' - Stop')
+        audio_player.stop()     # In case it was ticking
+        rest_file = settings.get('Application.rest_sound_file')
+        print(' - Reset audio')
+        reset_audio()
+        print(' - Set source')
+        audio_player.setSource(QtCore.QUrl.fromLocalFile(rest_file))
+        print(' - Set loops')
+        audio_player.setLoops(1)
+        print(' - Play')
+        audio_player.play()     # This will substitute the bell sound
+
+
+def get_timer_ui_mode() -> str:
+    # Options: keep (don't do anything), focus (collapse main layout), minimize (window to tray)
+    return settings.get('Application.timer_ui_mode')
+
+
+def show_timer() -> None:
+    global last_height
+    last_height = window.size().height()
+    main_layout.hide()
+    header_layout.show()
+    window.setMaximumHeight(header_layout.size().height())
+    window.setMinimumHeight(header_layout.size().height())
+    tool_show_timer_only.hide()
+    tool_show_all.show()
+
+
+def show_timer_automatically() -> None:
+    mode = get_timer_ui_mode()
+    if mode == 'focus':
+        show_timer()
+    elif mode == 'minimize':
+        window.hide()
+
+
+def hide_timer() -> None:
+    global last_height
+    main_layout.show()
+    header_layout.show()
+    window.setMaximumHeight(last_height)
+    window.setMinimumHeight(last_height)
+    window.setMaximumHeight(16777215)
+    window.setMinimumHeight(0)
+    tool_show_timer_only.show()
+    tool_show_all.hide()
+
+
+def hide_timer_automatically() -> None:
+    global last_height
+    mode = get_timer_ui_mode()
+    if mode == 'focus':
+        hide_timer()
+    elif mode == 'minimize':
+        window.show()
+
+
+def update_header(timer: PomodoroTimer, event: str = None) -> None:
+    running_workitem: Workitem = timer.get_running_workitem()
+    if timer.is_idling():
+        header_text.setText('Idle')
+        header_subtext.setText("It's time for the next Pomodoro.")
+        tool_void.hide()
+        timer_display.set_values(0, None, "")
+        timer_display.hide()
+        reset_tray_icon()
+    elif timer.is_working() or timer.is_resting():
+        remaining_duration = timer.get_remaining_duration()     # This is always >= 0
+        remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
+        remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
+        state = 'Busy' if timer.is_working() else 'Rest'
+        txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
+        header_text.setText(f'{txt} left')
+        header_subtext.setText(running_workitem.get_name())
+        tool_void.show()
+        timer_display.set_values(
+            remaining_duration / timer.get_planned_duration(),
+            None,
+            ""  # f'{remaining_minutes}:{remaining_seconds}'
+        )
+        timer_tray.set_values(
+            remaining_duration / timer.get_planned_duration(),
+        )
+        paint_timer_in_tray()
+        timer_display.show()
+    else:
+        raise Exception("The timer is in an unexpected state")
+    timer_display.repaint()
+
+
+def resize(ref_font) -> (int, int):
+    # Resize the window based on the font size -- seems to work well to make it
+    # portable across Mac, Windows and Linux
+    txt = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    metrics = QtGui.QFontMetrics(ref_font)
+    w: int = metrics.horizontalAdvance(txt)
+    h: int = metrics.height()
+    window.resize(QtCore.QSize(w * 2, h * 35))
+    return w, h
+
+
+def note_pomodoro() -> None:
+    global notes
+    (new_notes, ok) = QtWidgets.QInputDialog.getMultiLineText(window,
+                                                              "Interruption",
+                                                              "Take your notes here:",
+                                                              notes)
+    if ok:
+        notes = new_notes
+
+
+def void_pomodoro() -> None:
+    for backlog in source.backlogs():
+        workitem, _ = backlog.get_running_workitem()
+        if workitem is not None:
+            m = QtWidgets.QMessageBox()
+            if m.warning(window,
+                         "Confirmation",
+                         f"Are you sure you want to void current pomodoro?",
+                         QtWidgets.QMessageBox.StandardButton.Ok,
+                         QtWidgets.QMessageBox.StandardButton.Cancel
+                         ) == QtWidgets.QMessageBox.StandardButton.Ok:
+                source.execute(CompletePomodoroStrategy, [workitem.get_uid(), "canceled"])
+
+
+def reset_tray_icon() -> None:
+    tray.setIcon(default_icon)
+
+
+def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QFont, QtGui.QFont):
+    fh: QtGui.QFont | None = None
+    fm: QtGui.QFont | None = None
+
+    fh_default = QtGui.QFont()
+    fh_default.setPointSize(24)
+    fm_default = QtGui.QFont()
+
+    use_custom_fonts = (s.get('Application.use_custom_fonts') == 'True')
+    if use_custom_fonts:
+        font_file_header = resolve_path("res/font/OpenSans-Light.ttf")
+        font_index_header: int = QtGui.QFontDatabase.addApplicationFont(font_file_header)
+        if font_index_header >= 0:
+            font_family_header = "Open Sans Light"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_header)[0]
+            fh = QtGui.QFont(font_family_header, 24)
+            print(f"Loaded custom header font: {font_family_header}")
+        else:
+            print(f"Warning - Cannot load custom font {font_file_header}. Falling back to default system font.")
+
+        font_file_main = resolve_path("res/font/OpenSans-Variable.ttf")
+        font_index_main: int = QtGui.QFontDatabase.addApplicationFont(font_file_main)
+        if font_index_main >= 0:
+            font_family_main = "Open Sans"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_main)[0]
+            fm = QtGui.QFont(font_family_main, 11)
+            print(f"Loaded custom main font: {font_family_main}")
+        else:
+            print(f"Warning - Cannot load custom font {font_file_main}. Falling back to default system font.")
+
+    if fh is None:
+        fh = fh_default
+
+    if fm is None:
+        fm = fm_default
+
+    print(f'Header font: {fh.family()}')
+    print(f'Main font: {fm.family()}')
+
+    return fm, fh, fm_default, fh_default
+
+
+def toggle_backlogs(visible) -> None:
+    backlogs_table.setVisible(visible)
+    left_table_layout.setVisible(visible or users_table.isVisible())
+
+
+def toggle_users(visible) -> None:
+    users_table.setVisible(visible)
+    left_table_layout.setVisible(backlogs_table.isVisible() or visible)
+
+
+def on_messages(event: str = None) -> None:
+    global replay_completed
+    global timer_tray
+    global timer_display
+    global pomodoro_timer
+
+    if replay_completed:
+        return
+    replay_completed = True
+
+    print('Replay completed')
+
+    load_backlogs()
+    load_users()
+
+    # Timer
+    # noinspection PyTypeChecker
+    timer_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "timer")
+    timer_display = render_for_widget(
+        timer_widget,
+        font_main,
+        0.33
+    )
+    timer_tray = render_for_pixmap()
+
+    pomodoro_timer = PomodoroTimer(source, QtTimer(), QtTimer())
+    pomodoro_timer.connect("Timer*", update_header)
+    pomodoro_timer.connect("Timer*Complete", show_notification)
+    pomodoro_timer.connect("TimerWorkStart", start_ticking)
+    pomodoro_timer.connect("TimerRestComplete", lambda timer, event: hide_timer_automatically())
+    pomodoro_timer.connect("TimerWorkStart", lambda timer, event: show_timer_automatically())
+    update_header(pomodoro_timer)
+
+    # It's important to do it after window.show() above
+    if pomodoro_timer.is_working():
+        start_ticking()
+        show_timer_automatically()
+    elif pomodoro_timer.is_resting():
+        start_rest_sound()
+        show_timer_automatically()
+
+
+def reset_audio():
+    global audio_output
+    global audio_player
+    audio_output = QtMultimedia.QAudioOutput()
+    audio_player = QtMultimedia.QMediaPlayer(app)
+    audio_player.setAudioOutput(audio_output)
+
+
+def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
+    global font_main
+    global font_header
+
+    print(f'Setting {name} changed from {old_value} to {new_value}')
+    status.showMessage('Settings changed')
+    if name == 'Source.type':
+        m = QtWidgets.QMessageBox()
+        m.warning(window,
+                  "Restart required",
+                  f"Please restart Flowkeeper to change the source type",
+                  QtWidgets.QMessageBox.StandardButton.Ok)
+    elif name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
+        # TODO: This really doesn't work well
+        hide_timer_automatically()
+        show_timer_automatically()
+    elif name == 'Application.quit_on_close':
+        app.setQuitOnLastWindowClosed(new_value == 'True')
+    elif name == 'Application.use_custom_fonts':
+        if new_value == 'False':
+            font_main = default_font_main
+            font_header = default_font_header
+        else:
+            font_main, font_header, _, _ = initialize_fonts(settings)
+        app.setFont(font_main)
+        backlogs_table.setFont(font_main)
+        users_table.setFont(font_main)
+        workitems_table.setFont(font_main)
+        header_text.setFont(font_header)
+    elif name == 'Application.show_main_menu':
+        main_menu.setVisible(new_value == 'True')
+    elif name == 'Application.show_status_bar':
+        status.setVisible(new_value == 'True')
+    elif name == 'Application.show_toolbar':
+        toolbar.setVisible(new_value == 'True')
+    elif name == 'Application.show_left_toolbar':
+        left_toolbar.setVisible(new_value == 'True')
+    elif name == 'Application.show_tray_icon':
+        tray.setVisible(new_value == 'True')
+    # TODO: Subscribe to sound settings
+    # TODO: Subscribe the sources to the settings they use
+    # TODO: Reload the app when the source changes
+
+
+# The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
+# Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
+# Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
+# data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
+# From that moment we can respond to user actions and events from the backend, which the Source + Strategies
+# will pass through to Qt data models via Qt-like connect / emit mechanism.
+app = QtWidgets.QApplication([])
+notes = ""
+
+replay_completed = False
+timer_tray: TimerWidget | None = None
+timer_display: TimerWidget | None = None
+
+default_icon = QtGui.QIcon(resolve_path("res/img/red2.png"))
+
+#print(QtWidgets.QStyleFactory.keys())
+#app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
+
+settings = QtSettings()
+settings.connect(events.AfterSettingChanged, on_setting_changed)
+
+font_main, font_header, default_font_main, default_font_header = initialize_fonts(settings)
+app.setFont(font_main)
+
+audio_output = QtMultimedia.QAudioOutput()
+audio_player = QtMultimedia.QMediaPlayer(app)
+audio_player.setAudioOutput(audio_output)
+
+source: AbstractEventSource
+source_type = settings.get('Source.type')
+if source_type == 'local':
+    source = FileEventSource(settings, QtFilesystemWatcher())
+elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
+    source = WebsocketEventSource(settings)
+else:
+    raise Exception(f"Source type {source_type} not supported")
+
+data = source.get_data()
+source.connect(SourceMessagesProcessed, on_messages)
+
+loader = QtUiTools.QUiLoader()
+
+# Load main window
+file = QtCore.QFile(resolve_path("src/fk/desktop/main.ui"))
+file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+# noinspection PyTypeChecker
+window: QtWidgets.QMainWindow = loader.load(file, None)
+file.close()
+
+# Context menus
+# noinspection PyTypeChecker
+menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
+# noinspection PyTypeChecker
+menu_backlog: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuBacklog")
+# noinspection PyTypeChecker
+menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
+
+# Backlogs table
+# noinspection PyTypeChecker
+backlogs_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "backlogs_table")
+backlogs_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
+backlogs_table.customContextMenuRequested.connect(lambda p: menu_backlog.exec(backlogs_table.mapToGlobal(p)))
+backlogs_table.setFont(font_main)   # Even though we set it on the App level, Windows just ignores it
+backlog_model = BacklogModel(app, source, settings.get_username())
+backlogs_table.setModel(backlog_model)
+backlogs_table.selectionModel().selectionChanged.connect(backlog_changed)
+
+# Users table
+# noinspection PyTypeChecker
+users_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "users_table")
+users_table.setFont(font_main)
+user_model = UserModel(app, source)
+users_table.setModel(user_model)
+users_table.setVisible(False)
+
+# Workitems table
+# noinspection PyTypeChecker
+workitems_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "workitems_table")
+workitems_table.setFont(font_main)
+workitems_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
+workitems_table.customContextMenuRequested.connect(lambda p: menu_workitem.exec(workitems_table.mapToGlobal(p)))
+workitems_table.setItemDelegateForColumn(2, PomodoroDelegate())
+workitem_model = WorkitemModel(workitems_table, source)
+workitems_table.setModel(workitem_model)
+workitems_table.selectionModel().selectionChanged.connect(workitem_changed)
+
+# Progress bar
+# noinspection PyTypeChecker
+backlog_progress: QtWidgets.QProgressBar = window.findChild(QtWidgets.QProgressBar, "footerProgress")
+backlog_progress.hide()
+# noinspection PyTypeChecker
+backlog_progress_txt: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "footerLabel")
+backlog_progress_txt.hide()
+# noinspection PyTypeChecker
+search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
+search = SearchBar(window, source)
+search_bar.addWidget(search)
+
+# TODO: Subscribe update_progress(backlog) to events.AfterWorkitem* and +/- pomodoro
+# Can't do it now, because all those events supply workitem, but not a backlog
+# Have to wait till we have a better data model
+
+# Layouts
+# noinspection PyTypeChecker
+main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
+# noinspection PyTypeChecker
+header_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "headerLayout")
+# noinspection PyTypeChecker
+left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
+
+# Settings
+# noinspection PyTypeChecker
+settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
+settings_action.triggered.connect(lambda: SettingsDialog(settings).show())
+
+# Connect menu actions to the toolbar
+# noinspection PyTypeChecker
+quit_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionQuit")
+quit_action.triggered.connect(app.quit)
+
+# noinspection PyTypeChecker
+action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
+action_backlogs.toggled.connect(toggle_backlogs)
+
+# noinspection PyTypeChecker
+action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
+action_teams.toggled.connect(toggle_users)
+
+# noinspection PyTypeChecker
+action_new_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionNewBacklog")
+action_new_backlog.triggered.connect(create_backlog)
+
+# noinspection PyTypeChecker
+action_delete_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionDeleteBacklog")
+action_delete_backlog.triggered.connect(delete_backlog)
+
+# noinspection PyTypeChecker
+action_rename_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionRenameBacklog")
+action_rename_backlog.triggered.connect(rename_backlog)
+
+# noinspection PyTypeChecker
+action_new_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionNewWorkitem")
+action_new_workitem.triggered.connect(create_workitem)
+
+# noinspection PyTypeChecker
+action_delete_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionDeleteWorkitem")
+action_delete_workitem.triggered.connect(delete_workitem)
+
+# noinspection PyTypeChecker
+action_rename_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionRenameWorkitem")
+action_rename_workitem.triggered.connect(rename_workitem)
+
+# noinspection PyTypeChecker
+action_complete_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionCompleteWorkitem")
+action_complete_workitem.triggered.connect(complete_work)
+
+# noinspection PyTypeChecker
+action_start: QtGui.QAction = window.findChild(QtGui.QAction, "actionStart")
+action_start.triggered.connect(start_work)
+
+# noinspection PyTypeChecker
+action_add_pomodoro: QtGui.QAction = window.findChild(QtGui.QAction, "actionAddPomodoro")
+action_add_pomodoro.triggered.connect(add_pomodoro)
+
+# noinspection PyTypeChecker
+action_remove_pomodoro: QtGui.QAction = window.findChild(QtGui.QAction, "actionRemovePomodoro")
+action_remove_pomodoro.triggered.connect(remove_pomodoro)
+
+# noinspection PyTypeChecker
+action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
+action_search.triggered.connect(lambda: search.show())
+
+# Main menu
+# noinspection PyTypeChecker
+main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
+if main_menu is not None:
+    show_main_menu = (settings.get('Application.show_main_menu') == 'True')
+    main_menu.setVisible(show_main_menu)
+
+# Status bar
+# noinspection PyTypeChecker
+status: QtWidgets.QStatusBar = window.findChild(QtWidgets.QStatusBar, "statusBar")
+if status is not None:
+    show_status_bar = (settings.get('Application.show_status_bar') == 'True')
+    status.showMessage('Ready')
+    status.setVisible(show_status_bar)
+
+# Toolbar
+# noinspection PyTypeChecker
+toolbar: QtWidgets.QToolBar = window.findChild(QtWidgets.QToolBar, "toolBar")
+if toolbar is not None:
+    show_toolbar = (settings.get('Application.show_toolbar') == 'True')
+    toolbar.setVisible(show_toolbar)
+
+# Tray icon
+show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
+tray = QtWidgets.QSystemTrayIcon()
+tray.activated.connect(lambda reason: (show_hide() if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger else None))
+menu = QtWidgets.QMenu()
+menu.addAction(settings_action)
+menu.addAction(quit_action)
+tray.setContextMenu(menu)
+reset_tray_icon()
+tray.setVisible(show_tray_icon)
+
+# Quit app on close
+quit_on_close = (settings.get('Application.quit_on_close') == 'True')
+app.setQuitOnLastWindowClosed(quit_on_close)
+
+# Left toolbar
+# noinspection PyTypeChecker
+left_toolbar: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left_toolbar")
+show_left_toolbar = (settings.get('Application.show_left_toolbar') == 'True')
+left_toolbar.setVisible(show_left_toolbar)
+
+# noinspection PyTypeChecker
+tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
+tool_backlogs.setDefaultAction(action_backlogs)
+
+# noinspection PyTypeChecker
+tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
+tool_teams.setDefaultAction(action_teams)
+
+# noinspection PyTypeChecker
+tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
+tool_settings.clicked.connect(lambda: menu_file.exec(
+    tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
+))
+
+# Apply CSS
+with open(resolve_path("res/style/desktop.qss"), "r") as f:
+    app.setStyleSheet(f.read())
+
+# Splitter
+# noinspection PyTypeChecker
+splitter: QtWidgets.QSplitter = window.findChild(QtWidgets.QSplitter, "splitter")
+splitter.setSizes([200, 500])
+
+# Header
+# noinspection PyTypeChecker
+tool_void: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolVoid")
+tool_void.clicked.connect(lambda: void_pomodoro())
+
+# noinspection PyTypeChecker
+tool_note: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNote")
+tool_note.clicked.connect(lambda: note_pomodoro())
+
+# noinspection PyTypeChecker
+tool_show_all: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolShowAll")
+tool_show_all.clicked.connect(hide_timer)
+tool_show_all.hide()
+
+# noinspection PyTypeChecker
+tool_show_timer_only: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolShowTimerOnly")
+tool_show_timer_only.clicked.connect(show_timer)
+
+# noinspection PyTypeChecker
+header_text: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerText")
+header_text.setFont(font_header)
+# noinspection PyTypeChecker
+header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSubtext")
+
+_, last_height = resize(font_main)
+window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
+
+window.show()
+
+source.start()
+
+sys.exit(app.exec())

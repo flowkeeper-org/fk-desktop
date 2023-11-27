@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+pyinstaller \
+    --onefile \
+    --debug all \
+    --windowed \
+    --noconfirm \
+    --add-data res:res \
+    --add-data src/fk/desktop:src/fk/desktop \
+    --paths src \
+    --collect-all fk \
+    --icon res/flowkeeper.icns \
+    src/fk/desktop/desktop.py
