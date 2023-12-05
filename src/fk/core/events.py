@@ -59,3 +59,14 @@ SourceModeReadWrite = "SourceModeReadWrite"  # TODO: Implement
 
 BeforeSettingChanged = "BeforeSettingChanged"
 AfterSettingChanged = "AfterSettingChanged"
+
+BeforeMessageProcessed = "BeforeMessageProcessed"
+AfterMessageProcessed = "AfterMessageProcessed"
+
+BeforeExport = "BeforeExport"
+AfterExport = "AfterExport"
+ProgressExport = "ProgressExport"
+
+BeforeImport = "BeforeImport"
+AfterImport = "AfterImport"
+ProgressImport = "ProgressImport"

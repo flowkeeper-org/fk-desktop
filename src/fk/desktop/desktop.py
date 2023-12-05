@@ -587,6 +587,13 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # TODO: Reload the app when the source changes
 
 
+def export():
+    print("Will export")
+    source.connect(events.AfterExport, lambda event, filename, count: print(f'Export completed', filename, count))
+    source.connect(events.ProgressExport, lambda event, value, total: print(f'Export in progress', value, total))
+    source.export('/home/w/fk-export.txt')
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
@@ -708,6 +715,10 @@ quit_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionQuit")
 quit_action.triggered.connect(app.quit)
 
 # noinspection PyTypeChecker
+export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
+export_action.triggered.connect(export)
+
+# noinspection PyTypeChecker
 action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
 action_backlogs.toggled.connect(toggle_backlogs)
 
@@ -788,6 +799,7 @@ tray.activated.connect(lambda reason: (show_hide() if reason == QtWidgets.QSyste
 menu = QtWidgets.QMenu()
 menu.addAction(settings_action)
 menu.addAction(quit_action)
+menu.addAction(export_action)
 tray.setContextMenu(menu)
 reset_tray_icon()
 tray.setVisible(show_tray_icon)

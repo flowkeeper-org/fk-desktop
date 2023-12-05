@@ -33,6 +33,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
 
     _settings: AbstractSettings
     _last_seq: int
+    _exported_count: int
+    _estimated_count: int
 
     def __init__(self, settings: AbstractSettings):
         AbstractEventEmitter.__init__(self, [
@@ -72,11 +74,21 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
             events.SourceMessagesProcessed,
             events.SourceModeReadOnly,
             events.SourceModeReadWrite,
+            events.BeforeMessageProcessed,
+            events.AfterMessageProcessed,
+            events.BeforeExport,
+            events.ProgressExport,
+            events.AfterExport,
+            events.BeforeImport,
+            events.ProgressImport,
+            events.AfterImport,
         ])
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
         self._settings = settings
         self._last_seq = 0
+        self._exported_count = 0
+        self._estimated_count = 0
 
     # Override
     @abstractmethod
@@ -106,18 +118,24 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
     def start(self) -> None:
         pass
 
-    def _generate_next_sequence(self) -> int:
-        self._last_seq += 1
-        return self._last_seq
-
     def _execute_prepared_strategy(self, strategy: AbstractStrategy) -> None:
+        params = {'strategy': strategy}
+        if self._emit(events.BeforeMessageProcessed, params):
+            # This is normal in replaying for export
+            return
         res = strategy.execute()
+        self._emit(events.AfterMessageProcessed, params)
         if res is not None and res[0] == 'auto-seal':
             # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
             self.auto_seal()
+            params = {'strategy': strategy}
+            if self._emit(events.BeforeMessageProcessed, params):
+                return
             res = strategy.execute()
+            self._emit(events.AfterMessageProcessed, params)
             if res is not None and res[0] == 'auto-seal':
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
+        self._estimated_count += 1
 
     def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True):
         # This method is called when the user does something in the UI on THIS instance
@@ -136,6 +154,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         self._execute_prepared_strategy(s)
 
         self._last_seq = new_sequence   # Only save it if all went well
+        self._estimated_count += 1
         if persist:
             self._append([s])
 
@@ -157,3 +176,36 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         for workitem in self.workitems():
             for pomodoro in workitem.values():
                 yield pomodoro
+
+    def _after_export(self, export_file, filename: str) -> None:
+        export_file.close()
+        self._estimated_count = self._exported_count
+        self._emit(events.AfterExport, {
+            'filename': filename,
+            'count': self._exported_count,
+        })
+
+    def _export_one(self, export_file, strategy: AbstractStrategy, report_after: int) -> bool:
+        print('Export one', report_after, self._exported_count, self._exported_count % report_after)
+        export_file.write(f'{strategy}\n')
+        self._exported_count += 1
+        if report_after > 0:
+            if self._exported_count % report_after == 0:
+                print('Tick')
+                self._emit(events.ProgressExport, {
+                    'value': self._exported_count,
+                    'total': self._estimated_count,
+                })
+        return True
+
+    def export(self, filename: str) -> None:
+        export_file = open(filename, 'w', encoding='UTF-8')
+        self._exported_count = 0
+        self.connect(events.BeforeMessageProcessed,
+                     lambda strategy, event: self._export_one(
+                         export_file,
+                         strategy,
+                         int(self._estimated_count / 100)))
+        self.connect(events.SourceMessagesProcessed,
+                     lambda event: self._after_export(export_file, filename))
+        self.start()

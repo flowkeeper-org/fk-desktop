@@ -35,7 +35,7 @@ class CreateWorkitemStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -91,7 +91,7 @@ class DeleteWorkitemStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -132,7 +132,7 @@ class RenameWorkitemStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -180,7 +180,7 @@ class CompleteWorkitemStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)

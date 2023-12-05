@@ -34,7 +34,7 @@ class StartWorkStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -98,7 +98,7 @@ class StartRestStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -151,7 +151,7 @@ class AddPomodoroStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -204,7 +204,7 @@ class CompletePomodoroStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -255,7 +255,7 @@ class RemovePomodoroStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any]], any],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
