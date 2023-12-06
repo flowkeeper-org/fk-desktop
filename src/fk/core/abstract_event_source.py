@@ -16,7 +16,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import Iterable, Self, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -107,15 +107,15 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
 
     # This will initiate connection, which will trigger replay
     @abstractmethod
-    def start(self) -> None:
+    def start(self, mute_events=True) -> None:
         pass
 
     def _generate_next_sequence(self) -> int:
         self._last_seq += 1
         return self._last_seq
 
-    def _execute_prepared_strategy(self, strategy: AbstractStrategy) -> None:
-        params = {'strategy': strategy}
+    def _execute_prepared_strategy(self, strategy: AbstractStrategy, auto: bool = False) -> None:
+        params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
         res = strategy.execute()
         self._emit(events.AfterMessageProcessed, params)
@@ -127,7 +127,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
 
-    def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True):
+    def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True, auto=False):
         # This method is called when the user does something in the UI on THIS instance
         # TODO: Get username from the login provider instead
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -141,7 +141,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
             self.get_data(),
             self._settings
         )
-        self._execute_prepared_strategy(s)
+        self._execute_prepared_strategy(s, auto)
 
         self._last_seq = new_sequence   # Only save it if all went well
         if persist:
@@ -149,7 +149,12 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
 
     def auto_seal(self) -> None:
         delta = int(self._settings.get('Pomodoro.auto_seal_after'))
-        auto_seal(self.workitems(), delta, self.execute)
+        auto_seal(self.workitems(),
+                  delta,
+                  lambda strategy_class, params, persist: self.execute(strategy_class,
+                                                                       params,
+                                                                       persist,
+                                                                       auto=True))
 
     def backlogs(self) -> Iterable[Backlog]:
         for user in self.get_data().values():
@@ -165,3 +170,45 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         for workitem in self.workitems():
             for pomodoro in workitem.values():
                 yield pomodoro
+
+    @abstractmethod
+    def clone(self) -> Self:
+        pass
+
+    def _export_message_processed(self,
+                                  another: Self,
+                                  export_file,
+                                  progress_callback: Callable[[int, int], None],
+                                  every: int,
+                                  strategy: AbstractStrategy) -> None:
+        export_file.write(f'{strategy}\n')
+        if another._estimated_count % every == 0:
+            progress_callback(another._estimated_count, self._estimated_count)
+
+    @staticmethod
+    def _export_completed(another: Self,
+                          export_file,
+                          completion_callback: Callable[[int], None]) -> None:
+        export_file.close()
+        completion_callback(another._estimated_count)
+
+    def export(self,
+               filename: str,
+               start_callback: Callable[[int], None],
+               progress_callback: Callable[[int, int], None],
+               completion_callback: Callable[[int], None]) -> None:
+        another = self.clone()
+        every = max(int(self._estimated_count / 100), 1)
+        export_file = open(filename, 'w', encoding='UTF-8')
+        another.connect(events.AfterMessageProcessed,
+                        lambda event, strategy, auto: self._export_message_processed(another,
+                                                                                     export_file,
+                                                                                     progress_callback,
+                                                                                     every,
+                                                                                     strategy) if not auto else None)
+        another.connect(events.SourceMessagesProcessed,
+                        lambda event: AbstractEventSource._export_completed(another,
+                                                                            export_file,
+                                                                            completion_callback))
+        start_callback(self._estimated_count)
+        another.start(mute_events=False)

@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+from typing import Self
 
 from PySide6 import QtWebSockets, QtCore
 
@@ -30,6 +31,7 @@ class WebsocketEventSource(AbstractEventSource):
     _users: dict[str, User]
     _ws: QtWebSockets.QWebSocket
     _replayed: bool
+    _mute_requested: bool
 
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
@@ -41,6 +43,7 @@ class WebsocketEventSource(AbstractEventSource):
             True
         )
         self._replayed = False      # Will replay on connect
+        self._mute_requested = True
         self._ws = QtWebSockets.QWebSocket()
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: print('WS Client disconnected'))
@@ -52,9 +55,10 @@ class WebsocketEventSource(AbstractEventSource):
         self._ws.handshakeInterruptedOnError.connect(lambda e: print(f'HandshakeInterruptedOnError: {e}'))
         self._ws.peerVerifyError.connect(lambda e: print(f'PeerVerifyError: {e}'))
 
-    def start(self) -> None:
+    def start(self, mute_events=True) -> None:
         url = self.get_config_parameter('WebsocketEventSource.url')
         self._last_seq = 0
+        self._mute_requested = mute_events
         print(f'Connecting to {url}')
         self._ws.open(QtCore.QUrl(url))
 
@@ -63,7 +67,8 @@ class WebsocketEventSource(AbstractEventSource):
         print(f'Received: {len(lines)}')
         for line in lines:
             if line == 'ReplayCompleted()':
-                self.unmute()
+                if self._mute_requested:
+                    self.unmute()
                 self._emit(events.SourceMessagesProcessed, dict())
                 break
             s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
@@ -87,7 +92,8 @@ class WebsocketEventSource(AbstractEventSource):
             print('Requesting replay for the first time')
             self._ws.sendTextMessage('Replay("")')
             self._emit(events.SourceMessagesRequested, dict())
-            self.mute()
+            if self._mute_requested:
+                self.mute()
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
@@ -98,3 +104,6 @@ class WebsocketEventSource(AbstractEventSource):
 
     def get_data(self) -> dict[str, User]:
         return self._users
+
+    def clone(self) -> Self:
+        return WebsocketEventSource(self._settings)

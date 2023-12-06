@@ -84,7 +84,7 @@ class AbstractStrategy(ABC):
                        self._emit,
                        self._users,
                        self._settings)
-        params = {'strategy': strategy}
+        params = {'strategy': strategy, 'auto': True}
         self._emit(events.BeforeMessageProcessed, params)
         res = strategy.execute()
         self._emit(events.AfterMessageProcessed, params)

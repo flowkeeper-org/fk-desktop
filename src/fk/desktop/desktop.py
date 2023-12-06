@@ -589,10 +589,10 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
 
 def export():
     print("Will export")
-    # TODO: Implement
-    #source.connect(events.AfterExport, lambda event, filename, count: print(f'Export completed', filename, count))
-    #source.connect(events.ProgressExport, lambda event, value, total: print(f'Export in progress', value, total))
-    #source.export('/home/w/fk-export.txt')
+    source.export('/home/w/fk-export.txt',
+                  lambda total: print(f' - Export starts for {total}'),
+                  lambda value, total: print(f' - Progress: {value} out of {total} ({round(100 * value / total)}%)'),
+                  lambda total: print(' - Export completed'))
 
 
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
