@@ -34,6 +34,7 @@ from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrat
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.backlog_model import BacklogModel
 from fk.qt.file_event_source_settings_ui import FileEventSourceSettingsUi
@@ -588,11 +589,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
 
 
 def export():
-    print("Will export")
-    source.export('/home/w/fk-export.txt',
-                  lambda total: print(f' - Export starts for {total}'),
-                  lambda value, total: print(f' - Progress: {value} out of {total} ({round(100 * value / total)}%)'),
-                  lambda total: print(' - Export completed'))
+    wizard = ExportWizard(source, window)
+    wizard.show()
 
 
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.

@@ -16,6 +16,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
+from time import sleep
 from typing import Iterable, Self, Callable
 
 from fk.core import events
@@ -110,10 +111,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
     def start(self, mute_events=True) -> None:
         pass
 
-    def _generate_next_sequence(self) -> int:
-        self._last_seq += 1
-        return self._last_seq
-
     def _execute_prepared_strategy(self, strategy: AbstractStrategy, auto: bool = False) -> None:
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
@@ -143,8 +140,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         )
         self._execute_prepared_strategy(s, auto)
 
-        self._last_seq = new_sequence   # Only save it if all went well
         if persist:
+            self._last_seq = new_sequence   # Only save it if all went well
             self._append([s])
 
     def auto_seal(self) -> None:
@@ -184,6 +181,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         export_file.write(f'{strategy}\n')
         if another._estimated_count % every == 0:
             progress_callback(another._estimated_count, self._estimated_count)
+            # print(f' - {another._estimated_count} out of {self._estimated_count}')
 
     @staticmethod
     def _export_completed(another: Self,
