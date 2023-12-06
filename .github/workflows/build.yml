@@ -80,12 +80,28 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          brew install create-dmg
       - name: Package the build
         run: |
           pyinstaller desktop.spec
+      - name: Create DMG installer
+        run: |
+          rm dist/desktop
+          mv dist/desktop.app dist/Flowkeeper.app
+          create-dmg \
+            --volname "Flowkeeper Installer" \
+            --volicon "res/flowkeeper.icns" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Flowkeeper.app" 200 190 \
+            --hide-extension "Flowkeeper.app" \
+            --app-drop-link 600 185 \
+            "Flowkeeper.dmg" \
+            "dist/"
       - name: Archive the build 
         uses: actions/upload-artifact@v3
         with:
-          name: dist-macOS-standalone
+          name: dist-macOS-dmg
           path: |
-            dist
+            Flowkeeper.dmg
