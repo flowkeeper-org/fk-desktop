@@ -87,7 +87,7 @@ jobs:
 
   package-macOS:
     runs-on: macOS-latest
-    needs: run-tests
+    if:  ${{ inputs.OS == 'macOS' }} 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -102,13 +102,27 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          brew install create-dmg
       - name: Package the build
         run: |
           pyinstaller desktop.spec
-          cd dist
-          zip -r flowkeeper-macos.zip .
+      - name: Create DMG installer
+        run: |
+          rm dist/desktop
+          mv dist/desktop.app dist/Flowkeeper.app
+          create-dmg \
+            --volname "Flowkeeper Installer" \
+            --volicon "res/flowkeeper.icns" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Flowkeeper.app" 200 190 \
+            --hide-extension "Flowkeeper.app" \
+            --app-drop-link 600 185 \
+            "Flowkeeper.dmg" \
+            "dist/"
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/flowkeeper-macos.zip
+            Flowkeeper.dmg
