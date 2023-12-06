@@ -16,6 +16,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
+from os import path
 from time import sleep
 from typing import Iterable, Self, Callable
 
@@ -26,7 +27,9 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.strategy_factory import strategy_from_string
 from fk.core.user import User
+from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
 
 
@@ -210,3 +213,35 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
                                                                             completion_callback))
         start_callback(self._estimated_count)
         another.start(mute_events=False)
+
+    def import_(self,
+                filename: str,
+                start_callback: Callable[[int], None],
+                progress_callback: Callable[[int, int], None],
+                completion_callback: Callable[[int], None]) -> None:
+        # Note that this method ignores sequences and will import even "broken" files
+        if not path.isfile(filename):
+            raise Exception(f'File {filename} not found')
+
+        with open(filename, 'rb') as f:
+            total = sum(1 for _ in f)
+            every = max(int(total / 100), 1)
+
+        start_callback(total)
+        self.mute()
+
+        i = 0
+        with open(filename, encoding='UTF-8') as f:
+            for line in f:
+                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                i += 1
+                if type(strategy) is str:
+                    continue
+                if type(strategy) is CreateUserStrategy:
+                    continue
+                self.execute(type(strategy), strategy.get_params())
+                if i % every == 0:
+                    progress_callback(i, total)
+
+        self.unmute()
+        completion_callback(total)

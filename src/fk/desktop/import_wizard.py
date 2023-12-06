@@ -27,81 +27,77 @@ from fk.desktop.settings import SettingsDialog
 from fk.qt.qt_settings import QtSettings
 
 
-class PageExportIntro(QWizardPage):
+class PageImportIntro(QWizardPage):
     label: QLabel
     layout_v: QVBoxLayout
 
     def __init__(self):
         super().__init__()
-        #self.setTitle("Data export")
+        #self.setTitle("Data import")
         self.layout_v = QVBoxLayout()
-        self.label = QLabel("This wizard will help you export Flowkeeper data to file.")
+        self.label = QLabel("This wizard will help you import Flowkeeper data from file.")
         self.label.setWordWrap(True)
         self.layout_v.addWidget(self.label)
         self.setLayout(self.layout_v)
 
 
-class PageExportSettings(QWizardPage):
+class PageImportSettings(QWizardPage):
     label: QLabel
     label2: QLabel
     layout_v: QVBoxLayout
     layout_h: QHBoxLayout
-    export_location: QLineEdit
-    export_location_browse: QPushButton
-    export_compress: QCheckBox
-    export_encrypt: QCheckBox
+    import_location: QLineEdit
+    import_location_browse: QPushButton
+    import_ignore_errors: QCheckBox
 
     def isComplete(self):
-        return len(self.export_location.text().strip()) > 0
+        return len(self.import_location.text().strip()) > 0
 
     def __init__(self):
         super().__init__()
-        #self.setTitle("Export settings")
+        #self.setTitle("Import settings")
         self.layout_v = QVBoxLayout()
-        self.label = QLabel("Select destination file")
+        self.label = QLabel("Select source file")
         self.label.setWordWrap(True)
         self.layout_v.addWidget(self.label)
         self.layout_h = QHBoxLayout()
-        self.export_location = QLineEdit()
-        self.export_location.textChanged.connect(lambda s: self.completeChanged.emit())
+        self.import_location = QLineEdit()
+        self.import_location.textChanged.connect(lambda s: self.completeChanged.emit())
         # noinspection PyUnresolvedReferences
-        self.export_location.textChanged.connect(lambda s: self.wizard().set_filename(s))
-        self.export_location.setPlaceholderText('Export filename')
-        self.layout_h.addWidget(self.export_location)
-        self.export_location_browse = QPushButton("Browse...")
-        self.export_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.export_location))
-        self.layout_h.addWidget(self.export_location_browse)
+        self.import_location.textChanged.connect(lambda s: self.wizard().set_filename(s))
+        self.import_location.setPlaceholderText('Import filename')
+        self.layout_h.addWidget(self.import_location)
+        self.import_location_browse = QPushButton("Browse...")
+        self.import_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.import_location))
+        self.layout_h.addWidget(self.import_location_browse)
         self.layout_v.addLayout(self.layout_h)
-        self.export_compress = QCheckBox('Compress data')
-        self.export_compress.setDisabled(True)
-        self.layout_v.addWidget(self.export_compress)
-        self.export_encrypt = QCheckBox('Encrypt')
-        self.export_encrypt.setDisabled(True)
-        self.layout_v.addWidget(self.export_encrypt)
+        self.import_ignore_errors = QCheckBox('Ignore errors and continue')
+        self.import_ignore_errors.setDisabled(True)
+        self.layout_v.addWidget(self.import_ignore_errors)
         self.setLayout(self.layout_v)
         self.setCommitPage(True)
         self.setButtonText(QWizard.WizardButton.CommitButton, 'Start')
 
 
-class PageExportProgress(QWizardPage):
+class PageImportProgress(QWizardPage):
     label: QLabel
     layout_v: QVBoxLayout
     progress: QProgressBar
     _source: AbstractEventSource
-    _export_complete: bool
+    _import_complete: bool
     _filename: str | None
 
     def isComplete(self):
-        return self._export_complete
+        return self._import_complete
 
     def __init__(self, source: AbstractEventSource):
         super().__init__()
-        self._export_complete = False
+        self._import_complete = False
         self._source = source
         self._filename = None
-        #self.setTitle("Exporting...")
+        #self.setTitle("Importing...")
         self.layout_v = QVBoxLayout()
-        self.label = QLabel("Data export is in progress. Please do not close this window until it completes.")
+        self.label = QLabel("Data import is in progress. Please do not close this window until it completes.")
         self.label.setWordWrap(True)
         self.layout_v.addWidget(self.label)
         self.progress = QProgressBar()
@@ -115,48 +111,37 @@ class PageExportProgress(QWizardPage):
 
     def finish(self):
         self.progress.setValue(self.progress.maximum())
-        self._export_complete = True
+        self._import_complete = True
         self.label.setText('Done. You can now close this window.')
-        layout_h = QHBoxLayout()
-        open_file = QPushButton("Open exported file")
-        open_file.clicked.connect(lambda: QDesktopServices.openUrl(
-            pathlib.Path(path.abspath(self._filename)).as_uri()))
-        layout_h.addWidget(open_file)
-        layout_h.addStretch()
-        self.layout_v.addLayout(layout_h)
         self.completeChanged.emit()
 
     def start(self):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
-        self._source.export(self._filename,
-                            lambda total: self.progress.setMaximum(total),
-                            lambda value, total: self.progress.setValue(value),
-                            lambda total: self.finish())
+        self._source.import_(self._filename,
+                             lambda total: self.progress.setMaximum(total),
+                             lambda value, total: self.progress.setValue(value),
+                             lambda total: self.finish())
 
 
-class ExportWizard(QWizard):
-    page_intro: PageExportIntro
-    page_settings: PageExportSettings
-    page_progress: PageExportProgress
+class ImportWizard(QWizard):
+    page_intro: PageImportIntro
+    page_settings: PageImportSettings
+    page_progress: PageImportProgress
     option_filename: str | None
-    option_compressed: bool
-    option_encrypted: bool
     _source: AbstractEventSource
 
     def __init__(self, source: AbstractEventSource, parent: QWidget | None):
         super().__init__(parent)
         self._source = source
-        self.setWindowTitle("Export")
-        self.page_intro = PageExportIntro()
-        self.page_settings = PageExportSettings()
-        self.page_progress = PageExportProgress(source)
+        self.setWindowTitle("Import")
+        self.page_intro = PageImportIntro()
+        self.page_settings = PageImportSettings()
+        self.page_progress = PageImportProgress(source)
         self.addPage(self.page_intro)
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)
         self.option_filename = None
-        self.option_compressed = False
-        self.option_encrypted = False
 
     def set_filename(self, filename):
         self.option_filename = filename
@@ -166,6 +151,6 @@ if __name__ == '__main__':
     app = QApplication([])
     src = FileEventSource(QtSettings())
     src.start()
-    wizard = ExportWizard(src, None)
+    wizard = ImportWizard(src, None)
     wizard.show()
     sys.exit(app.exec())

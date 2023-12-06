@@ -35,6 +35,7 @@ from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
 from fk.desktop.export_wizard import ExportWizard
+from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.backlog_model import BacklogModel
 from fk.qt.file_event_source_settings_ui import FileEventSourceSettingsUi
@@ -593,6 +594,11 @@ def export():
     wizard.show()
 
 
+def import_():
+    wizard = ImportWizard(source, window)
+    wizard.show()
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
@@ -712,6 +718,10 @@ settings_action.triggered.connect(lambda: SettingsDialog(settings).show())
 # noinspection PyTypeChecker
 quit_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionQuit")
 quit_action.triggered.connect(app.quit)
+
+# noinspection PyTypeChecker
+import_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionImport")
+import_action.triggered.connect(import_)
 
 # noinspection PyTypeChecker
 export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")

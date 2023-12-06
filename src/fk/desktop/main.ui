@@ -520,6 +520,7 @@
      <string>File</string>
     </property>
     <addaction name="actionSettings"/>
+    <addaction name="actionImport"/>
     <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -580,6 +581,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionConnect"/>
+   <addaction name="actionImport"/>
    <addaction name="actionExport"/>
    <addaction name="actionBacklogs"/>
    <addaction name="actionTeams"/>
@@ -629,6 +631,21 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionImport">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Import</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
    </property>
   </action>
   <action name="actionExport">
@@ -878,6 +895,7 @@
   <addaction name="menuHelp"/>
   <addaction name="actionConnect"/>
   <addaction name="actionBacklogs"/>
+  <addaction name="actionImport"/>
   <addaction name="actionExport"/>
   <addaction name="actionTeams"/>
   <addaction name="actionNewBacklog"/>

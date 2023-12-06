@@ -76,6 +76,9 @@ class AbstractStrategy(ABC):
     def execute(self) -> (str, any):
         pass
 
+    def get_params(self):
+        return self._params
+
     def execute_another(self, cls: Type[Self], params: list[str]) -> (str, any):
         strategy = cls(self._seq,
                        self._when,
