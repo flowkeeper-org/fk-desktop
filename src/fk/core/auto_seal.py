@@ -23,8 +23,7 @@ from fk.core.workitem import Workitem
 
 def auto_seal(workitems: Iterable[Workitem],
               delta: int,
-              executor: Callable[[Type[AbstractStrategy], list[str]], None]
-              ) -> None:
+              executor: Callable[[Type[AbstractStrategy], list[str]], None]) -> None:
     # If there are pomodoros which should have been completed X seconds ago, but are not,
     # then void them automatically.
     for workitem in workitems:

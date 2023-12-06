@@ -92,7 +92,7 @@ class SettingsDialog(QDialog):
         self._set_buttons_state(False)
 
     @staticmethod
-    def _do_browse(edit: QLineEdit) -> None:
+    def do_browse(edit: QLineEdit) -> None:
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.FileMode.AnyFile)
         dlg.selectFile(edit.text())
@@ -130,7 +130,7 @@ class SettingsDialog(QDialog):
             layout.addWidget(ed3)
             btn = QPushButton(parent)
             btn.setText('Browse...')
-            btn.clicked.connect(lambda: SettingsDialog._do_browse(ed3))
+            btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
             layout.addWidget(btn)
             return [widget]
         elif option_type == 'int':

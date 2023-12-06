@@ -34,7 +34,7 @@ class CreateBacklogStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -71,7 +71,7 @@ class DeleteBacklogStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -114,7 +114,7 @@ class RenameBacklogStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)

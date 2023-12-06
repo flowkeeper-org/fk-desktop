@@ -45,14 +45,11 @@ class AbstractEventEmitter(ABC):
             if regex.match(event):
                 self._connections[event].clear()
 
-    def _emit(self, event: str, params: dict[str, any]) -> any:
-        if not self._is_muted() or 'MessageProcessed' in event:
+    def _emit(self, event: str, params: dict[str, any]) -> None:
+        if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event
-                res = callback(**params)
-                if res:
-                    # Abort if we received something non-None
-                    return res
+                callback(**params)
 
     def _is_muted(self) -> bool:
         return self._muted

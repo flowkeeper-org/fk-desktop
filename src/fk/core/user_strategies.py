@@ -34,7 +34,7 @@ class CreateUserStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -71,7 +71,7 @@ class DeleteUserStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)
@@ -115,7 +115,7 @@ class RenameUserStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
                  settings: AbstractSettings):
         super().__init__(seq, when, username, params, emit, users, settings)

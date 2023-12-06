@@ -16,6 +16,7 @@
 
 import datetime
 from os import path
+from typing import Self
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -71,10 +72,11 @@ class FileEventSource(AbstractEventSource):
     def _is_watch_changes(self) -> bool:
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
-    def start(self) -> None:
+    def start(self, mute_events=True) -> None:
         # This method is called when we read the history
         self._emit(events.SourceMessagesRequested, dict())
-        self.mute()
+        if mute_events:
+            self.mute()
 
         filename = self._get_filename()
         if not path.isfile(filename):
@@ -109,7 +111,8 @@ class FileEventSource(AbstractEventSource):
                 self._execute_prepared_strategy(strategy)
         self.auto_seal()
 
-        self.unmute()
+        if mute_events:
+            self.unmute()
         self._emit(events.SourceMessagesProcessed, dict())
 
     def repair(self) -> None:
@@ -160,3 +163,6 @@ class FileEventSource(AbstractEventSource):
         # 3. Timestamps will correspond to the latest modification dates.
         # TODO: Implement
         pass
+
+    def clone(self) -> Self:
+        return FileEventSource(self._settings, self._watcher)
