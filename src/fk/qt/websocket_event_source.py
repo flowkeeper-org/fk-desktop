@@ -78,7 +78,7 @@ class WebsocketEventSource(AbstractEventSource):
                 if s.get_sequence() != self._last_seq + 1:
                     raise Exception("Strategies must go in sequence")
                 self._last_seq = s.get_sequence()
-                print(f" - {s}")
+                # print(f" - {s}")
                 self._execute_prepared_strategy(s)
         self.auto_seal()
 

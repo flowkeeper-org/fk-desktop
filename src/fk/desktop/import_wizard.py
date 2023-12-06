@@ -13,11 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import pathlib
 import sys
-from os import path
 
-from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QWizard, QCheckBox, QLineEdit, \
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 

@@ -62,7 +62,7 @@ class FileEventSource(AbstractEventSource):
                     if seq != self._last_seq + 1:
                         raise Exception("Strategies must go in sequence")
                     self._last_seq = seq
-                    print(f" - {strategy}")
+                    # print(f" - {strategy}")
                     self._execute_prepared_strategy(strategy)
         self.auto_seal()
 

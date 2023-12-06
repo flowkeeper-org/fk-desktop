@@ -17,7 +17,6 @@
 import datetime
 from abc import ABC, abstractmethod
 from os import path
-from time import sleep
 from typing import Iterable, Self, Callable
 
 from fk.core import events

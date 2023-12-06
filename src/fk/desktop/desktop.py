@@ -38,7 +38,6 @@ from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.backlog_model import BacklogModel
-from fk.qt.file_event_source_settings_ui import FileEventSourceSettingsUi
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_settings import QtSettings
@@ -219,14 +218,6 @@ def rename_backlog() -> None:
 def rename_workitem() -> None:
     index: QtCore.QModelIndex = workitems_table.selectionModel().currentIndex()
     workitems_table.edit(index)
-
-
-def load_connection_ui(ui: QtWidgets.QWidget) -> None:
-    # TODO: Create new source based on connection_selector selection?..
-    # connection_ui.clear()
-    for child in ui.children():
-        child.setParent(None)   # TODO: There must be a better way to clear it
-    FileEventSourceSettingsUi(settings).render_config_ui(ui)
 
 
 def start_work() -> None:
@@ -640,6 +631,8 @@ data = source.get_data()
 source.connect(SourceMessagesProcessed, on_messages)
 
 loader = QtUiTools.QUiLoader()
+resource_root: str = resolve_path('.')
+loader.setWorkingDirectory(QtCore.QDir(resource_root))
 
 # Load main window
 file = QtCore.QFile(resolve_path("src/fk/desktop/main.ui"))
