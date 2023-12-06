@@ -54,6 +54,8 @@ class WebsocketEventSource(AbstractEventSource):
 
     def start(self) -> None:
         url = self.get_config_parameter('WebsocketEventSource.url')
+        self._last_seq = 0
+        print(f'Connecting to {url}')
         self._ws.open(QtCore.QUrl(url))
 
     def _on_message(self, message: str) -> None:

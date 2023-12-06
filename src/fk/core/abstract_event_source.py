@@ -33,6 +33,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
 
     _settings: AbstractSettings
     _last_seq: int
+    _estimated_count: int
 
     def __init__(self, settings: AbstractSettings):
         AbstractEventEmitter.__init__(self, [
@@ -72,11 +73,14 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
             events.SourceMessagesProcessed,
             events.SourceModeReadOnly,
             events.SourceModeReadWrite,
+            events.BeforeMessageProcessed,
+            events.AfterMessageProcessed,
         ])
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
         self._settings = settings
         self._last_seq = 0
+        self._estimated_count = 0
 
     # Override
     @abstractmethod
@@ -111,13 +115,17 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         return self._last_seq
 
     def _execute_prepared_strategy(self, strategy: AbstractStrategy) -> None:
+        params = {'strategy': strategy}
+        self._emit(events.BeforeMessageProcessed, params)
         res = strategy.execute()
+        self._emit(events.AfterMessageProcessed, params)
         if res is not None and res[0] == 'auto-seal':
             # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
             self.auto_seal()
             res = strategy.execute()
             if res is not None and res[0] == 'auto-seal':
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
+        self._estimated_count += 1
 
     def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True):
         # This method is called when the user does something in the UI on THIS instance

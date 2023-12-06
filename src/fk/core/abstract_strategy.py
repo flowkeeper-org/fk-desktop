@@ -18,6 +18,7 @@ import datetime
 from abc import ABC, abstractmethod
 from typing import Callable, Type, Self
 
+from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
 
@@ -76,5 +77,15 @@ class AbstractStrategy(ABC):
         pass
 
     def execute_another(self, cls: Type[Self], params: list[str]) -> (str, any):
-        s = cls(self._seq, self._when, self._who.get_identity(), params, self._emit, self._users, self._settings)
-        return s.execute()
+        strategy = cls(self._seq,
+                       self._when,
+                       self._who.get_identity(),
+                       params,
+                       self._emit,
+                       self._users,
+                       self._settings)
+        params = {'strategy': strategy}
+        self._emit(events.BeforeMessageProcessed, params)
+        res = strategy.execute()
+        self._emit(events.AfterMessageProcessed, params)
+        return res
