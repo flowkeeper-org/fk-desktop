@@ -39,20 +39,11 @@ class AbstractEventEmitter(ABC):
                 if callback not in self._connections[event]:
                     self._connections[event].append(callback)
 
-    def disconnect_all(self, event_pattern: str) -> None:
-        regex = re.compile(event_pattern.replace('*', '.*'))
-        for event in self._connections:
-            if regex.match(event):
-                self._connections[event].clear()
-
-    def _emit(self, event: str, params: dict[str, any]) -> any:
-        if not self._is_muted() or 'MessageProcessed' in event:
+    def _emit(self, event: str, params: dict[str, any]) -> None:
+        if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event
-                res = callback(**params)
-                if res:
-                    # Abort if we received something non-None
-                    return res
+                callback(**params)
 
     def _is_muted(self) -> bool:
         return self._muted

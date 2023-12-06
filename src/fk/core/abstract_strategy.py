@@ -18,7 +18,6 @@ import datetime
 from abc import ABC, abstractmethod
 from typing import Callable, Type, Self
 
-from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
 
@@ -27,7 +26,7 @@ class AbstractStrategy(ABC):
     _seq: int
     _when: datetime.datetime
     _params: list[str]
-    _emit: Callable[[str, dict[str, any]], any]
+    _emit: Callable[[str, dict[str, any]], None]
     _users: dict[str, User]
     _settings: AbstractSettings
     _who: User
@@ -41,7 +40,7 @@ class AbstractStrategy(ABC):
                  when: datetime.datetime,
                  username: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], any],
+                 emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, User],
                  settings: AbstractSettings):
         self._seq = seq
@@ -77,11 +76,5 @@ class AbstractStrategy(ABC):
         pass
 
     def execute_another(self, cls: Type[Self], params: list[str]) -> (str, any):
-        strategy = cls(self._seq, self._when, self._who.get_identity(), params, self._emit, self._users, self._settings)
-        params = {'strategy': strategy}
-        if self._emit(events.BeforeMessageProcessed, params):
-            # This is normal in replaying for export
-            return
-        res = strategy.execute()
-        self._emit(events.AfterMessageProcessed, params)
-        return res
+        s = cls(self._seq, self._when, self._who.get_identity(), params, self._emit, self._users, self._settings)
+        return s.execute()

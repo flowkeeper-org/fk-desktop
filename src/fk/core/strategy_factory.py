@@ -47,7 +47,7 @@ REGEX = re.compile(r'([1-9][0-9]*)\s*,\s*'
 
 
 def strategy_from_string(s: str,
-                         emit: Callable[[str, dict[str, any]], any],
+                         emit: Callable[[str, dict[str, any]], None],
                          data: dict[str, User],
                          settings: AbstractSettings) -> AbstractStrategy | str:
     # Empty strings and comments are special cases
