@@ -1,6 +1,6 @@
 [Setup]
 AppName=Flowkeeper
-AppVerName=Flowkeeper 0.1.1
+AppVersion=0.1.0
 AppPublisher=Vilia SARL
 AppPublisherURL=https://flowkeeper.org
 AppSupportURL=https://flowkeeper.org
@@ -9,7 +9,6 @@ DefaultDirName={userpf}\Flowkeeper
 DefaultGroupName=Flowkeeper
 SetupIconFile=res\flowkeeper.ico
 PrivilegesRequired=lowest
-;WizardSmallImageFile=res\flowkeeper.bmp
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"
