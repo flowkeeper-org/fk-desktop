@@ -9,8 +9,13 @@ jobs:
       - name: Download innosetup installer
         run: |
           Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-      - name: Run the installer
+      - name: Install innosetup
         shell: cmd
         run: |
           dir
           start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+      - name: Create FK installer
+        shell: cmd
+        run: |
+          dir "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\"
+          start /wait "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
