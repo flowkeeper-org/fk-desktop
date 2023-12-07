@@ -73,7 +73,7 @@ jobs:
       - name: Create FK installer
         shell: cmd
         run: |
-          start /wait "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
+          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
           move Output\mysetup.exe dist\setup.exe
       - name: Archive installer
         uses: actions/upload-artifact@v3
