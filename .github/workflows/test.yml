@@ -10,5 +10,7 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
       - name: Run the installer
+        shell: cmd
         run: |
-          Start-Process -FilePath "innosetup.exe" -ArgumentList "/VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS" -Wait
+          dir
+          start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
