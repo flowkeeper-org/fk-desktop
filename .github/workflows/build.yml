@@ -56,12 +56,26 @@ jobs:
       - name: Package the build
         run: |
           pyinstaller desktop.spec
+          move dist\desktop.exe dist\Flowkeeper.exe
       - name: Archive the build 
         uses: actions/upload-artifact@v3
         with:
           name: dist-windows-standalone
           path: |
-            dist/desktop.exe
+            dist/Flowkeeper.exe
+      - name: Create installer
+        run: |
+          curl https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe --output innosetup.exe
+          start /wait innosetup /VERYSILENT /CURRENTUSER
+          "%userprofile%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
+          move Output\mysetup.exe dist\setup.exe
+      - name: Archive installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows-setup
+          path: |
+            dist\setup.exe
+        
 
   package-macOS:
     runs-on: macOS-latest
