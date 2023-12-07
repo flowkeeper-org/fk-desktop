@@ -66,8 +66,6 @@ jobs:
       - name: Create installer
         run: |
           Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-          Start-Process -FilePath "innosetup.exe" -ArgumentList "/VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS" -Wait
-          Start-Process -FilePath "$env:USERPROFILE\AppData\Local\Programs\Inno Setup 6\ISCC.exe" -ArgumentList "desktop.iss" -Wait
       - name: Archive installer
         uses: actions/upload-artifact@v3
         with:
