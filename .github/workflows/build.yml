@@ -66,8 +66,8 @@ jobs:
       - name: Create installer
         run: |
           curl https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe --output innosetup.exe
-          start /wait innosetup /VERYSILENT /CURRENTUSER
-          start "$env:USERPROFILE\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
+          Start-Process -FilePath "innosetup.exe" -ArgumentList "/VERYSILENT /CURRENTUSER" -Wait
+          Start-Process -FilePath "$env:USERPROFILE\AppData\Local\Programs\Inno Setup 6\ISCC.exe" -ArgumentList "desktop.iss" -Wait
           move Output\mysetup.exe dist\setup.exe
       - name: Archive installer
         uses: actions/upload-artifact@v3
@@ -76,7 +76,6 @@ jobs:
           path: |
             dist\setup.exe
         
-
   package-macOS:
     runs-on: macOS-latest
     if:  ${{ inputs.OS == 'macOS' }} 
