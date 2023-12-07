@@ -69,12 +69,10 @@ jobs:
       - name: Install innosetup
         shell: cmd
         run: |
-          dir
           start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
       - name: Create FK installer
         shell: cmd
         run: |
-          dir "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\"
           start /wait "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
           move Output\mysetup.exe dist\setup.exe
       - name: Archive installer
