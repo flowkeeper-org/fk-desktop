@@ -21,10 +21,13 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import CompletePomodoroStrategy
+from fk.core.strategy_factory import strategy
+from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
+@strategy
 class CreateWorkitemStrategy(AbstractStrategy):
     _workitem_uid: str
     _backlog_uid: str
@@ -37,14 +40,12 @@ class CreateWorkitemStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
-
-    def get_name(self) -> str:
-        return 'CreateWorkitem'
 
     def execute(self) -> (str, any):
         if self._backlog_uid not in self._who:
@@ -83,6 +84,7 @@ def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> Non
 
 
 # DeleteWorkitem("123-456-789")
+@strategy
 class DeleteWorkitemStrategy(AbstractStrategy):
     _workitem_uid: str
 
@@ -93,12 +95,10 @@ class DeleteWorkitemStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
-
-    def get_name(self) -> str:
-        return 'DeleteWorkitem'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -123,6 +123,7 @@ class DeleteWorkitemStrategy(AbstractStrategy):
 
 
 # RenameWorkitem("123-456-789", "Wake up")
+@strategy
 class RenameWorkitemStrategy(AbstractStrategy):
     _workitem_uid: str
     _new_workitem_name: str
@@ -134,13 +135,11 @@ class RenameWorkitemStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
-
-    def get_name(self) -> str:
-        return 'RenameWorkitem'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -171,6 +170,7 @@ class RenameWorkitemStrategy(AbstractStrategy):
 
 
 # CompleteWorkitem("Wake up", "canceled")
+@strategy
 class CompleteWorkitemStrategy(AbstractStrategy):
     _workitem_uid: str
     _target_state: str
@@ -182,13 +182,11 @@ class CompleteWorkitemStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._target_state = params[1]
-
-    def get_name(self) -> str:
-        return 'CompleteWorkitem'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None

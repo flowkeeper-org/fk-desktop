@@ -232,7 +232,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         i = 0
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                strategy = strategy_from_string(line,
+                                                self._emit,
+                                                self.get_data(),
+                                                self._settings,
+                                                list(self.get_data().values())[0])
                 i += 1
                 if type(strategy) is str:
                     continue

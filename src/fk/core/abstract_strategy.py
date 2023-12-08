@@ -43,21 +43,29 @@ class AbstractStrategy(ABC):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, User],
-                 settings: AbstractSettings):
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
         self._seq = seq
         self._when = when
         self._params = params
         self._emit = emit
         self._users = users
         self._settings = settings
-        if username in users:
-            self._who = users[username]
+        if replacement_user is None:
+            if username in users:
+                self._who = users[username]
+            else:
+                raise Exception(f'Unexpected user {username}')
         else:
-            raise Exception(f'Unexpected user {username}')
+            self._who = replacement_user
+
+    @staticmethod
+    def escape_parameter(value):
+        return value.replace('\\', '\\\\').replace('"', '\\"')
 
     def __str__(self):
         # Escape params
-        escaped = [p.replace('\\', '\\\\').replace('"', '\\"') for p in self._params]
+        escaped = [AbstractStrategy.escape_parameter(p) for p in self._params]
         if len(escaped) < 2:
             escaped.append("")
         if len(escaped) < 2:
@@ -65,9 +73,9 @@ class AbstractStrategy(ABC):
         params = '"' + '", "'.join(escaped) + '"'
         return f'{self._seq}, {self._when}, {self._who.get_identity()}: {self.get_name()}({params})'
 
-    @abstractmethod
     def get_name(self) -> str:
-        pass
+        name = self.__class__.__name__
+        return name[0:len(name) - 8]
 
     def get_sequence(self) -> int:
         return self._seq

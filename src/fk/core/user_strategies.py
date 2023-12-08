@@ -21,10 +21,12 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import DeleteBacklogStrategy
+from fk.core.strategy_factory import strategy
 from fk.core.user import User
 
 
 # CreateUser("alice@example.com", "Alice Cooper")
+@strategy
 class CreateUserStrategy(AbstractStrategy):
     _user_identity: str
     _user_name: str
@@ -36,13 +38,11 @@ class CreateUserStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._user_identity = params[0]
         self._user_name = params[1]
-
-    def get_name(self) -> str:
-        return 'CreateUser'
 
     def execute(self) -> (str, any):
         if not self._who.is_system_user():
@@ -63,6 +63,7 @@ class CreateUserStrategy(AbstractStrategy):
 
 
 # DeleteUser("alice@example.com", "")
+@strategy
 class DeleteUserStrategy(AbstractStrategy):
     _user_identity: str
 
@@ -73,12 +74,10 @@ class DeleteUserStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._user_identity = params[0]
-
-    def get_name(self) -> str:
-        return 'DeleteUser'
 
     def execute(self) -> (str, any):
         if self._user_identity not in self._users:
@@ -106,6 +105,7 @@ class DeleteUserStrategy(AbstractStrategy):
 
 
 # RenameUser("alice@example.com", "Alice Cooper")
+@strategy
 class RenameUserStrategy(AbstractStrategy):
     _user_identity: str
     _new_user_name: str
@@ -117,13 +117,11 @@ class RenameUserStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._user_identity = params[0]
         self._new_user_name = params[1]
-
-    def get_name(self) -> str:
-        return 'RenameUser'
 
     def execute(self) -> (str, any):
         if self._user_identity not in self._users:

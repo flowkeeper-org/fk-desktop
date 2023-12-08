@@ -21,10 +21,13 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro
+from fk.core.strategy_factory import strategy
+from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
 # StartWork("123-456-789", "1500")
+@strategy
 class StartWorkStrategy(AbstractStrategy):
     _workitem_uid: str
     _work_duration: int
@@ -36,13 +39,11 @@ class StartWorkStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._work_duration = int(params[1])
-
-    def get_name(self) -> str:
-        return 'StartWork'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -89,6 +90,7 @@ class StartWorkStrategy(AbstractStrategy):
 
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
+@strategy
 class StartRestStrategy(AbstractStrategy):
     _workitem_uid: str
     _rest_duration: int
@@ -100,13 +102,11 @@ class StartRestStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._rest_duration = int(params[1])
-
-    def get_name(self) -> str:
-        return 'StartRest'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -142,6 +142,7 @@ class StartRestStrategy(AbstractStrategy):
 
 
 # AddPomodoro("123-456-789", "1")
+@strategy
 class AddPomodoroStrategy(AbstractStrategy):
     _workitem_uid: str
     _num_pomodoros: int
@@ -153,15 +154,13 @@ class AddPomodoroStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = int(settings.get('Pomodoro.default_work_duration'))
         self._default_rest_duration = int(settings.get('Pomodoro.default_rest_duration'))
-
-    def get_name(self) -> str:
-        return 'AddPomodoro'
 
     def execute(self) -> (str, any):
         if self._num_pomodoros < 1:
@@ -195,6 +194,7 @@ class AddPomodoroStrategy(AbstractStrategy):
 
 
 # CompletePomodoro("123-456-789", "finished")
+@strategy
 class CompletePomodoroStrategy(AbstractStrategy):
     _workitem_uid: str
     _target_state: str
@@ -206,13 +206,11 @@ class CompletePomodoroStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._target_state = params[1]
-
-    def get_name(self) -> str:
-        return 'CompletePomodoro'
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -246,6 +244,7 @@ class CompletePomodoroStrategy(AbstractStrategy):
 
 
 # RemovePomodoro("123-456-789", "1")
+@strategy
 class RemovePomodoroStrategy(AbstractStrategy):
     _workitem_uid: str
     _num_pomodoros: int
@@ -257,13 +256,11 @@ class RemovePomodoroStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
-
-    def get_name(self) -> str:
-        return 'RemovePomodoro'
 
     def execute(self) -> (str, any):
         if self._num_pomodoros < 1:

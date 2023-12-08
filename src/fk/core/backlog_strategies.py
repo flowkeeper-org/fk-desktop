@@ -21,10 +21,13 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
+from fk.core.strategy_factory import strategy
+from fk.core.user import User
 from fk.core.workitem_strategies import DeleteWorkitemStrategy
 
 
 # CreateBacklog("123-456-789", "The first backlog")
+@strategy
 class CreateBacklogStrategy(AbstractStrategy):
     _backlog_uid: str
     _backlog_name: str
@@ -36,13 +39,11 @@ class CreateBacklogStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._backlog_uid = params[0]
         self._backlog_name = params[1]
-
-    def get_name(self) -> str:
-        return 'CreateBacklog'
 
     def execute(self) -> (str, any):
         if self._backlog_uid in self._who:
@@ -63,6 +64,7 @@ class CreateBacklogStrategy(AbstractStrategy):
 
 
 # DeleteBacklog("123-456-789", "")
+@strategy
 class DeleteBacklogStrategy(AbstractStrategy):
     _backlog_uid: str
 
@@ -73,12 +75,10 @@ class DeleteBacklogStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._backlog_uid = params[0]
-
-    def get_name(self) -> str:
-        return 'DeleteBacklog'
 
     def execute(self) -> (str, any):
         if self._backlog_uid not in self._who:
@@ -105,6 +105,7 @@ class DeleteBacklogStrategy(AbstractStrategy):
 
 
 # RenameBacklog("123-456-789", "New name")
+@strategy
 class RenameBacklogStrategy(AbstractStrategy):
     _backlog_uid: str
     _backlog_new_name: str
@@ -116,13 +117,11 @@ class RenameBacklogStrategy(AbstractStrategy):
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  users: dict[str, 'User'],
-                 settings: AbstractSettings):
-        super().__init__(seq, when, username, params, emit, users, settings)
+                 settings: AbstractSettings,
+                 replacement_user: User | None = None):
+        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
         self._backlog_uid = params[0]
         self._backlog_new_name = params[1]
-
-    def get_name(self) -> str:
-        return 'RenameBacklog'
 
     def execute(self) -> (str, any):
         if self._backlog_uid not in self._who:

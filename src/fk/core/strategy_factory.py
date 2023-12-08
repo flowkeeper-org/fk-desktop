@@ -16,26 +16,11 @@
 
 import datetime
 import re
-from typing import Callable
+from typing import Callable, Type
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.backlog_strategies import (CreateBacklogStrategy,
-                                        RenameBacklogStrategy,
-                                        DeleteBacklogStrategy)
-from fk.core.pomodoro_strategies import (AddPomodoroStrategy,
-                                         RemovePomodoroStrategy,
-                                         StartWorkStrategy,
-                                         StartRestStrategy,
-                                         CompletePomodoroStrategy)
 from fk.core.user import User
-from fk.core.user_strategies import (CreateUserStrategy,
-                                     RenameUserStrategy,
-                                     DeleteUserStrategy)
-from fk.core.workitem_strategies import (CreateWorkitemStrategy,
-                                         RenameWorkitemStrategy,
-                                         CompleteWorkitemStrategy,
-                                         DeleteWorkitemStrategy)
 
 REGEX = re.compile(r'([1-9][0-9]*)\s*,\s*'
                    r'([0-9: .\-+]+)\s*,\s*'
@@ -45,61 +30,45 @@ REGEX = re.compile(r'([1-9][0-9]*)\s*,\s*'
                    r'"((?:[^"\\]|\\"|\\\\)*)")?\s*(?:,\s*'
                    r'"((?:[^"\\]|\\"|\\\\)*)"\s*)*\)')
 
+STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
+
+STRATEGIES = dict()
+
+
+def strategy(cls: Type[AbstractStrategy]):
+    m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
+    if m is not None:
+        name = m.group(1)
+        print(f'Registering strategy {name} -> {cls.__name__}')
+        STRATEGIES[name] = cls
+        return cls
+    else:
+        raise Exception(f"Invalid strategy class name: {cls.__name__}")
+
 
 def strategy_from_string(s: str,
                          emit: Callable[[str, dict[str, any]], None],
                          data: dict[str, User],
-                         settings: AbstractSettings) -> AbstractStrategy | str:
+                         settings: AbstractSettings,
+                         replacement_user: User | None = None) -> AbstractStrategy | str:
     # Empty strings and comments are special cases
     if s.strip() == '' or s.startswith('#'):
         return s
 
     m = REGEX.search(s)
     if m is not None:
+        name = m.group(4)
+        if name not in STRATEGIES:
+            raise Exception(f"Unknown strategy: {name}")
+
         seq = int(m.group(1))
         when = datetime.datetime.fromisoformat(m.group(2))
         who = m.group(3)
-        name = m.group(4)
         params = list(filter(lambda p: p is not None, m.groups()[4:]))
         params = [p.replace('\\"', '"').replace('\\\\', '\\') for p in params]
 
         # TODO: Enable trace
-        # TODO: We are not handling 0 or 1 parameters correctly
         # print (f"Initializing: '{seq}' / '{when}' / '{who}' / '{name}' / {params}")
-
-        if name == 'CreateUser':
-            class_name = CreateUserStrategy
-        elif name == 'DeleteUser':
-            class_name = DeleteUserStrategy
-        elif name == 'RenameUser':
-            class_name = RenameUserStrategy
-        elif name == 'CreateBacklog':
-            class_name = CreateBacklogStrategy
-        elif name == 'CreateWorkitem':
-            class_name = CreateWorkitemStrategy
-        elif name == 'RenameBacklog':
-            class_name = RenameBacklogStrategy
-        elif name == 'CompleteWorkitem':
-            class_name = CompleteWorkitemStrategy
-        elif name == 'AddPomodoro':
-            class_name = AddPomodoroStrategy
-        elif name == 'RemovePomodoro':
-            class_name = RemovePomodoroStrategy
-        elif name == 'CompletePomodoro':
-            class_name = CompletePomodoroStrategy
-        elif name == 'StartWork':
-            class_name = StartWorkStrategy
-        elif name == 'StartRest':
-            class_name = StartRestStrategy
-        elif name == 'DeleteBacklog':
-            class_name = DeleteBacklogStrategy
-        elif name == 'DeleteWorkitem':
-            class_name = DeleteWorkitemStrategy
-        elif name == 'RenameWorkitem':
-            class_name = RenameWorkitemStrategy
-        else:
-            raise Exception(f"Unknown strategy: {name}")
-
-        return class_name(seq, when, who, params, emit, data, settings)
+        return STRATEGIES[name](seq, when, who, params, emit, data, settings, replacement_user)
     else:
         raise Exception(f"Bad syntax: {s}")

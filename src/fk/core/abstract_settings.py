@@ -46,7 +46,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "websocket:Self-hosted server",
                 ]),
                 ('Source.fullname', 'str', 'User full name', 'Local User', []),
-                ('Source.username', 'email', 'User email', 'alice@example.com', []),
+                ('Source.username', 'email', 'User email', 'user@local.host', []),
                 ('Source.admin', 'email', 'Admin username', 'admin@local.host', []),
                 ('', 'separator', '', '', []),
                 ('FileEventSource.filename', 'file', 'Data file', '~/flowkeeper-data.txt', ['*.txt']),

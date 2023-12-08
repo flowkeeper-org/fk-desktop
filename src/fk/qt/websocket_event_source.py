@@ -25,6 +25,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user import User
+from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy
 
 
 class WebsocketEventSource(AbstractEventSource):
@@ -87,10 +88,30 @@ class WebsocketEventSource(AbstractEventSource):
             print('Reconnect, already replayed')
         else:
             self._replayed = True
+
             print('Authenticating')
-            self._ws.sendTextMessage('Authenticate("", "")')
+            username = self.get_config_parameter('Source.username')
+            token = self.get_config_parameter('WebsocketEventSource.password')
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
+            auth = AuthenticateStrategy(1,
+                                        now,
+                                        self._settings.get_admin(),
+                                        [username, token],
+                                        None,
+                                        self._users,
+                                        None)
+            self._ws.sendTextMessage(str(auth))
+
             print('Requesting replay for the first time')
-            self._ws.sendTextMessage('Replay("")')
+            replay = ReplayStrategy(2,
+                                    now,
+                                    self._settings.get_admin(),
+                                    ["0"],
+                                    None,
+                                    self._users,
+                                    None)
+            self._ws.sendTextMessage(str(replay))
+
             self._emit(events.SourceMessagesRequested, dict())
             if self._mute_requested:
                 self.mute()

@@ -35,7 +35,7 @@ class MockSettings(AbstractSettings):
     def set(self, name: str, value: str) -> str:
         params = {
             'name': name,
-            'old_value': self.get(name),
+            'old_value': self.get(name) if name in self._settings else None,
             'new_value': value,
         }
         self._emit(events.BeforeSettingChanged, params)
