@@ -46,6 +46,16 @@ def strategy(cls: Type[AbstractStrategy]):
         raise Exception(f"Invalid strategy class name: {cls.__name__}")
 
 
+def strategy_seq_from_string(s: str) -> int | None:
+    # Empty strings and comments are special cases
+    if s.strip() == '' or s.startswith('#'):
+        return None
+
+    m = REGEX.search(s)
+    if m is not None:
+        return int(m.group(1))
+
+
 def strategy_from_string(s: str,
                          emit: Callable[[str, dict[str, any]], None],
                          data: dict[str, User],

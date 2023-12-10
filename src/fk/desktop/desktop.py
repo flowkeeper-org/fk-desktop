@@ -678,6 +678,14 @@ workitem_model = WorkitemModel(workitems_table, source)
 workitems_table.setModel(workitem_model)
 workitems_table.selectionModel().selectionChanged.connect(workitem_changed)
 
+# Drag-and-drop doesn't work for some reason
+# workitems_table.setDragEnabled(True)
+# workitems_table.setAcceptDrops(True)
+# workitems_table.setDropIndicatorShown(True)
+# workitems_table.setDragDropMode(QtWidgets.QTableView.DragDropMode.DragDrop)
+# workitems_table.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
+# workitems_table.setDragDropOverwriteMode(False)
+
 # Progress bar
 # noinspection PyTypeChecker
 backlog_progress: QtWidgets.QProgressBar = window.findChild(QtWidgets.QProgressBar, "footerProgress")

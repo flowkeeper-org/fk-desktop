@@ -23,16 +23,19 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user import User
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy
+from fk.qt.qt_timer import QtTimer
 
 
 class WebsocketEventSource(AbstractEventSource):
     _users: dict[str, User]
     _ws: QtWebSockets.QWebSocket
-    _replayed: bool
     _mute_requested: bool
+    _connection_attempt: int
+    _reconnect_timer: AbstractTimer
 
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
@@ -43,11 +46,12 @@ class WebsocketEventSource(AbstractEventSource):
             datetime.datetime.now(),
             True
         )
-        self._replayed = False      # Will replay on connect
         self._mute_requested = True
+        self._connection_attempt = 0
+        self._reconnect_timer = QtTimer()
         self._ws = QtWebSockets.QWebSocket()
         self._ws.connected.connect(lambda: self.replay())
-        self._ws.disconnected.connect(lambda: print('WS Client disconnected'))
+        self._ws.disconnected.connect(lambda: self._connection_lost())
         self._ws.textMessageReceived.connect(lambda msg: self._on_message(msg))
 
         # Log errors
@@ -56,12 +60,21 @@ class WebsocketEventSource(AbstractEventSource):
         self._ws.handshakeInterruptedOnError.connect(lambda e: print(f'HandshakeInterruptedOnError: {e}'))
         self._ws.peerVerifyError.connect(lambda e: print(f'PeerVerifyError: {e}'))
 
-    def start(self, mute_events=True) -> None:
+    def _connection_lost(self):
+        next_reconnect = min(max(500, int(pow(1.5, self._connection_attempt))), 30000)
+        print(f'WS Client disconnected. Will reconnect in {next_reconnect}ms')
+        self._reconnect_timer.schedule(next_reconnect, self._connect, None, True)
+
+    def _connect(self, params: dict | None = None) -> None:
+        self._connection_attempt += 1
         url = self.get_config_parameter('WebsocketEventSource.url')
+        print(f'Connecting to {url}, attempt {self._connection_attempt}')
+        self._ws.open(QtCore.QUrl(url))
+
+    def start(self, mute_events=True) -> None:
         self._last_seq = 0
         self._mute_requested = mute_events
-        print(f'Connecting to {url}')
-        self._ws.open(QtCore.QUrl(url))
+        self._connect()
 
     def _on_message(self, message: str) -> None:
         lines = message.split('\n')
@@ -84,37 +97,33 @@ class WebsocketEventSource(AbstractEventSource):
         self.auto_seal()
 
     def replay(self) -> None:
-        if self._replayed:
-            print('Reconnect, already replayed')
-        else:
-            self._replayed = True
-
-            print('Authenticating')
-            username = self.get_config_parameter('Source.username')
-            token = self.get_config_parameter('WebsocketEventSource.password')
-            now = datetime.datetime.now(tz=datetime.timezone.utc)
-            auth = AuthenticateStrategy(1,
-                                        now,
-                                        self._settings.get_admin(),
-                                        [username, token],
-                                        None,
-                                        self._users,
-                                        None)
-            self._ws.sendTextMessage(str(auth))
-
-            print('Requesting replay for the first time')
-            replay = ReplayStrategy(2,
+        self._connection_attempt = 0    # This will allow us to reconnect quickly
+        print('Connected. Authenticating')
+        username = self.get_config_parameter('Source.username')
+        token = self.get_config_parameter('WebsocketEventSource.password')
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        auth = AuthenticateStrategy(1,
                                     now,
                                     self._settings.get_admin(),
-                                    ["0"],
+                                    [username, token],
                                     None,
                                     self._users,
                                     None)
-            self._ws.sendTextMessage(str(replay))
+        self._ws.sendTextMessage(str(auth))
 
-            self._emit(events.SourceMessagesRequested, dict())
-            if self._mute_requested:
-                self.mute()
+        print(f'Requesting replay starting from #{self._last_seq}')
+        replay = ReplayStrategy(2,
+                                now,
+                                self._settings.get_admin(),
+                                [str(self._last_seq)],
+                                None,
+                                self._users,
+                                None)
+        self._ws.sendTextMessage(str(replay))
+
+        self._emit(events.SourceMessagesRequested, dict())
+        if self._mute_requested:
+            self.mute()
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:

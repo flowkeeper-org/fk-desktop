@@ -580,7 +580,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionConnect"/>
    <addaction name="actionImport"/>
    <addaction name="actionExport"/>
    <addaction name="actionBacklogs"/>
@@ -603,11 +602,6 @@
    </property>
    <property name="text">
     <string>Settings...</string>
-   </property>
-  </action>
-  <action name="actionConnect">
-   <property name="text">
-    <string>Connect...</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -893,7 +887,6 @@
   <addaction name="menuEdit"/>
   <addaction name="menuView"/>
   <addaction name="menuHelp"/>
-  <addaction name="actionConnect"/>
   <addaction name="actionBacklogs"/>
   <addaction name="actionImport"/>
   <addaction name="actionExport"/>
