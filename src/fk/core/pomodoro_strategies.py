@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 import datetime
 from typing import Callable
 
@@ -28,27 +29,26 @@ from fk.core.workitem import Workitem
 
 # StartWork("123-456-789", "1500")
 @strategy
-class StartWorkStrategy(AbstractStrategy):
+class StartWorkStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _work_duration: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._work_duration = int(params[1])
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
         running: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 running, _ = backlog.get_running_workitem()
@@ -91,26 +91,25 @@ class StartWorkStrategy(AbstractStrategy):
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 @strategy
-class StartRestStrategy(AbstractStrategy):
+class StartRestStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _rest_duration: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._rest_duration = int(params[1])
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -143,20 +142,19 @@ class StartRestStrategy(AbstractStrategy):
 
 # AddPomodoro("123-456-789", "1")
 @strategy
-class AddPomodoroStrategy(AbstractStrategy):
+class AddPomodoroStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _num_pomodoros: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = int(settings.get('Pomodoro.default_work_duration'))
@@ -167,7 +165,7 @@ class AddPomodoroStrategy(AbstractStrategy):
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -195,26 +193,25 @@ class AddPomodoroStrategy(AbstractStrategy):
 
 # CompletePomodoro("123-456-789", "finished")
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy):
+class CompletePomodoroStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _target_state: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -245,20 +242,19 @@ class CompletePomodoroStrategy(AbstractStrategy):
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
-class RemovePomodoroStrategy(AbstractStrategy):
+class RemovePomodoroStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _num_pomodoros: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
 
@@ -267,7 +263,7 @@ class RemovePomodoroStrategy(AbstractStrategy):
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break

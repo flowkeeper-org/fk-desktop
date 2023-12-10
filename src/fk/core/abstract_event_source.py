@@ -17,7 +17,7 @@
 import datetime
 from abc import ABC, abstractmethod
 from os import path
-from typing import Iterable, Self, Callable
+from typing import Iterable, Self, Callable, TypeVar, Generic
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -32,7 +32,10 @@ from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
 
 
-class AbstractEventSource(AbstractEventEmitter, ABC):
+TRoot = TypeVar('TRoot')
+
+
+class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     _settings: AbstractSettings
     _last_seq: int
@@ -87,7 +90,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
 
     # Override
     @abstractmethod
-    def get_data(self) -> dict[str, User]:
+    def get_data(self) -> TRoot:
         pass
 
     # Override
@@ -134,7 +137,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
         s = strategy_class(
             new_sequence,
             now,
-            self._settings.get_username(),
+            self.get_data().get_user(self._settings.get_username()),
             params,
             self._emit,
             self.get_data(),
@@ -171,7 +174,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC):
                 yield pomodoro
 
     @abstractmethod
-    def clone(self) -> Self:
+    def clone(self, new_root: TRoot) -> Self:
         pass
 
     def _export_message_processed(self,

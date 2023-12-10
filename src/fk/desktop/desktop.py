@@ -24,6 +24,7 @@ from fk.core import events
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.app import App
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import DeleteBacklogStrategy, CreateBacklogStrategy
 from fk.core.events import SourceMessagesProcessed
@@ -620,10 +621,11 @@ audio_player.setAudioOutput(audio_output)
 
 source: AbstractEventSource
 source_type = settings.get('Source.type')
+root = App(settings)
 if source_type == 'local':
-    source = FileEventSource(settings, QtFilesystemWatcher())
+    source = FileEventSource(settings, root, QtFilesystemWatcher())
 elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings)
+    source = WebsocketEventSource(settings, root)
 else:
     raise Exception(f"Source type {source_type} not supported")
 
@@ -655,7 +657,7 @@ backlogs_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "b
 backlogs_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
 backlogs_table.customContextMenuRequested.connect(lambda p: menu_backlog.exec(backlogs_table.mapToGlobal(p)))
 backlogs_table.setFont(font_main)   # Even though we set it on the App level, Windows just ignores it
-backlog_model = BacklogModel(app, source, settings.get_username())
+backlog_model = BacklogModel(app, source)
 backlogs_table.setModel(backlog_model)
 backlogs_table.selectionModel().selectionChanged.connect(backlog_changed)
 

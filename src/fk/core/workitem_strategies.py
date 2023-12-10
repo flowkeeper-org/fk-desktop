@@ -28,7 +28,7 @@ from fk.core.workitem import Workitem
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
 @strategy
-class CreateWorkitemStrategy(AbstractStrategy):
+class CreateWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
@@ -36,21 +36,20 @@ class CreateWorkitemStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._who:
+        if self._backlog_uid not in self._user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._who[self._backlog_uid]
+        backlog = self._user[self._backlog_uid]
 
         if self._workitem_uid in backlog:
             raise Exception(f'Workitem "{self._workitem_uid}" already exists')
@@ -85,24 +84,23 @@ def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> Non
 
 # DeleteWorkitem("123-456-789")
 @strategy
-class DeleteWorkitemStrategy(AbstractStrategy):
+class DeleteWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -124,26 +122,25 @@ class DeleteWorkitemStrategy(AbstractStrategy):
 
 # RenameWorkitem("123-456-789", "Wake up")
 @strategy
-class RenameWorkitemStrategy(AbstractStrategy):
+class RenameWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _new_workitem_name: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -171,26 +168,25 @@ class RenameWorkitemStrategy(AbstractStrategy):
 
 # CompleteWorkitem("Wake up", "canceled")
 @strategy
-class CompleteWorkitemStrategy(AbstractStrategy):
+class CompleteWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _target_state: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._who.values():
+        for backlog in self._user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break

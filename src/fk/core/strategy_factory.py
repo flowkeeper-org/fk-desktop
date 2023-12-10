@@ -16,7 +16,7 @@
 
 import datetime
 import re
-from typing import Callable, Type
+from typing import Callable, Type, TypeVar
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -34,8 +34,10 @@ STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
 
 STRATEGIES = dict()
 
+TRoot = TypeVar('TRoot')
 
-def strategy(cls: Type[AbstractStrategy]):
+
+def strategy(cls: Type[AbstractStrategy[TRoot]]):
     m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
     if m is not None:
         name = m.group(1)
@@ -58,9 +60,9 @@ def strategy_seq_from_string(s: str) -> int | None:
 
 def strategy_from_string(s: str,
                          emit: Callable[[str, dict[str, any]], None],
-                         data: dict[str, User],
+                         data: TRoot,
                          settings: AbstractSettings,
-                         replacement_user: User | None = None) -> AbstractStrategy | str:
+                         replacement_user: User | None = None) -> AbstractStrategy[TRoot] | str:
     # Empty strings and comments are special cases
     if s.strip() == '' or s.startswith('#'):
         return s
@@ -74,11 +76,12 @@ def strategy_from_string(s: str,
         seq = int(m.group(1))
         when = datetime.datetime.fromisoformat(m.group(2))
         who = m.group(3)
+        user = replacement_user if replacement_user is not None else data.get_user(who)
         params = list(filter(lambda p: p is not None, m.groups()[4:]))
         params = [p.replace('\\"', '"').replace('\\\\', '\\') for p in params]
 
         # TODO: Enable trace
-        # print (f"Initializing: '{seq}' / '{when}' / '{who}' / '{name}' / {params}")
-        return STRATEGIES[name](seq, when, who, params, emit, data, settings, replacement_user)
+        # print (f"Initializing: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
+        return STRATEGIES[name](seq, when, user, params, emit, data, settings)
     else:
         raise Exception(f"Bad syntax: {s}")

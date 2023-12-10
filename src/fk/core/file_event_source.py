@@ -14,34 +14,31 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
 from os import path
-from typing import Self
+from typing import Self, TypeVar
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.path_resolver import resolve_path
 from fk.core.strategy_factory import strategy_from_string
-from fk.core.user import User
-from fk.core.user_strategies import CreateUserStrategy
+
+TRoot = TypeVar('TRoot')
 
 
-class FileEventSource(AbstractEventSource):
-    _users: dict[str, User]
+class FileEventSource(AbstractEventSource[TRoot]):
+    _data: TRoot
     _watcher: AbstractFilesystemWatcher | None
 
-    def __init__(self, settings, filesystem_watcher: AbstractFilesystemWatcher = None):
+    def __init__(self,
+                 settings: AbstractSettings,
+                 root: TRoot,
+                 filesystem_watcher: AbstractFilesystemWatcher = None):
         super().__init__(settings)
-        self._users = dict()
+        self._data = root
         self._watcher = None
-        self._users[settings.get_admin()] = User(
-            settings.get_admin(),
-            'System',
-            datetime.datetime.now(),
-            True
-        )
         if self._is_watch_changes() and filesystem_watcher is not None:
             self._watcher = filesystem_watcher
             self._watcher.watch(self._get_filename(), lambda f: self._on_file_change(f))
@@ -81,15 +78,7 @@ class FileEventSource(AbstractEventSource):
         filename = self._get_filename()
         if not path.isfile(filename):
             with open(filename, 'w', encoding='UTF-8') as f:
-                s = CreateUserStrategy(
-                    1,
-                    datetime.datetime.utcnow(),
-                    self._settings.get_admin(),
-                    [self._settings.get_username(), self._settings.get_fullname()],
-                    self._emit,
-                    self.get_data(),
-                    self._settings
-                )
+                s = self.get_data().get_init_strategy(self._emit)
                 f.write(f'{s}\n')
                 print(f'Created empty data file {filename}')
 
@@ -152,8 +141,8 @@ class FileEventSource(AbstractEventSource):
     def get_name(self) -> str:
         return "File"
 
-    def get_data(self) -> dict[str, User]:
-        return self._users
+    def get_data(self) -> TRoot:
+        return self._data
 
     def compress(self) -> None:
         # 1. Creates a full log copy in <base>-complete.<ext>, if it doesn't exist yet.
@@ -164,5 +153,5 @@ class FileEventSource(AbstractEventSource):
         # TODO: Implement
         pass
 
-    def clone(self) -> Self:
-        return FileEventSource(self._settings, self._watcher)
+    def clone(self, new_root: TRoot) -> Self:
+        return FileEventSource(self._settings, new_root, self._watcher)

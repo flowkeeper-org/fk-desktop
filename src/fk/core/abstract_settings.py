@@ -47,7 +47,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ]),
                 ('Source.fullname', 'str', 'User full name', 'Local User', []),
                 ('Source.username', 'email', 'User email', 'user@local.host', []),
-                ('Source.admin', 'email', 'Admin username', 'admin@local.host', []),
                 ('', 'separator', '', '', []),
                 ('FileEventSource.filename', 'file', 'Data file', '~/flowkeeper-data.txt', ['*.txt']),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3']),
@@ -103,9 +102,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
-
-    def get_admin(self) -> str:
-        return self.get('Source.admin')
 
     def get_work_duration(self) -> int:
         return int(self.get('Pomodoro.default_work_duration'))

@@ -28,34 +28,33 @@ from fk.core.workitem_strategies import DeleteWorkitemStrategy
 
 # CreateBacklog("123-456-789", "The first backlog")
 @strategy
-class CreateBacklogStrategy(AbstractStrategy):
+class CreateBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
     _backlog_name: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._backlog_uid = params[0]
         self._backlog_name = params[1]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid in self._who:
+        if self._backlog_uid in self._user:
             raise Exception(f'Backlog "{self._backlog_uid}" already exists')
 
         self._emit(events.BeforeBacklogCreate, {
             'backlog_name': self._backlog_name,
-            'backlog_owner': self._who,
+            'backlog_owner': self._user,
             'backlog_uid': self._backlog_uid,
         })
-        backlog = Backlog(self._backlog_name, self._who, self._backlog_uid, self._when)
-        self._who[self._backlog_uid] = backlog
+        backlog = Backlog(self._backlog_name, self._user, self._backlog_uid, self._when)
+        self._user[self._backlog_uid] = backlog
         backlog.item_updated(self._when)    # This will update the User
         self._emit(events.AfterBacklogCreate, {
             'backlog': backlog
@@ -65,25 +64,24 @@ class CreateBacklogStrategy(AbstractStrategy):
 
 # DeleteBacklog("123-456-789", "")
 @strategy
-class DeleteBacklogStrategy(AbstractStrategy):
+class DeleteBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._backlog_uid = params[0]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._who:
+        if self._backlog_uid not in self._user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._who[self._backlog_uid]
+        backlog = self._user[self._backlog_uid]
 
         params = {
             'backlog': backlog
@@ -98,7 +96,7 @@ class DeleteBacklogStrategy(AbstractStrategy):
         backlog.item_updated(self._when)    # This will update the User
 
         # Now we can delete the backlog itself
-        del self._who[self._backlog_uid]
+        del self._user[self._backlog_uid]
 
         self._emit(events.AfterBacklogDelete, params)
         return None, None
@@ -106,27 +104,26 @@ class DeleteBacklogStrategy(AbstractStrategy):
 
 # RenameBacklog("123-456-789", "New name")
 @strategy
-class RenameBacklogStrategy(AbstractStrategy):
+class RenameBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
     _backlog_new_name: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._backlog_uid = params[0]
         self._backlog_new_name = params[1]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._who:
+        if self._backlog_uid not in self._user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._who[self._backlog_uid]
+        backlog = self._user[self._backlog_uid]
 
         params = {
             'backlog': backlog,

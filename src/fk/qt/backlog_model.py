@@ -23,6 +23,7 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy
+from fk.core.user import User
 
 font_new = QtGui.QFont()
 font_today = QtGui.QFont()
@@ -54,12 +55,12 @@ class BacklogItem(QtGui.QStandardItem):
 
 class BacklogModel(QtGui.QStandardItemModel):
     _source: AbstractEventSource
-    _username: str
 
-    def __init__(self, parent: QtCore.QObject, source: AbstractEventSource, username: str):
+    def __init__(self,
+                 parent: QtCore.QObject,
+                 source: AbstractEventSource):
         super().__init__(0, 1, parent)
         self._source = source
-        self._username = username
         source.connect(events.AfterBacklogCreate, self._backlog_added)
         source.connect(events.AfterBacklogDelete, self._backlog_removed)
         source.connect(events.AfterBacklogRename, self._backlog_renamed)
@@ -102,7 +103,7 @@ class BacklogModel(QtGui.QStandardItemModel):
 
     def load(self) -> None:
         self.clear()
-        for backlog in self._source.get_data().get(self._username).values():
+        for backlog in self._source.get_data().get_current_user().values():
             self.appendRow(BacklogItem(backlog))
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
         self.on_update()

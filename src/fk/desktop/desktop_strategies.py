@@ -28,20 +28,19 @@ EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 # Authenticate("alice@example.com", "secret")
 @strategy
-class AuthenticateStrategy(AbstractStrategy):
+class AuthenticateStrategy(AbstractStrategy['App']):
     _username: str
     _token: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._username = params[0]
         self._token = params[1]
 
@@ -57,13 +56,12 @@ class ReplayStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, 'User'],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
-        super().__init__(seq, when, username, params, emit, users, settings, replacement_user)
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
         self._since_seq = int(params[0])
 
     def execute(self) -> (str, any):

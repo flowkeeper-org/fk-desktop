@@ -16,21 +16,23 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import Callable, Type, Self
+from typing import Callable, Type, Self, Generic, TypeVar
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
 
+TRoot = TypeVar('TRoot')
 
-class AbstractStrategy(ABC):
+
+class AbstractStrategy(ABC, Generic[TRoot]):
     _seq: int
     _when: datetime.datetime
     _params: list[str]
     _emit: Callable[[str, dict[str, any]], None]
-    _users: dict[str, User]
+    _data: TRoot
     _settings: AbstractSettings
-    _who: User
+    _user: User
 
     # TODO -- Add strategy source, i.e. where it originates from
     # This will allow us have master / slave clients and maintain
@@ -39,25 +41,18 @@ class AbstractStrategy(ABC):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 username: str,
+                 user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
-                 users: dict[str, User],
-                 settings: AbstractSettings,
-                 replacement_user: User | None = None):
+                 data: TRoot,
+                 settings: AbstractSettings):
         self._seq = seq
         self._when = when
+        self._user = user
         self._params = params
         self._emit = emit
-        self._users = users
+        self._data = data
         self._settings = settings
-        if replacement_user is None:
-            if username in users:
-                self._who = users[username]
-            else:
-                raise Exception(f'Unexpected user {username}')
-        else:
-            self._who = replacement_user
 
     @staticmethod
     def escape_parameter(value):
@@ -71,7 +66,7 @@ class AbstractStrategy(ABC):
         if len(escaped) < 2:
             escaped.append("")
         params = '"' + '", "'.join(escaped) + '"'
-        return f'{self._seq}, {self._when}, {self._who.get_identity()}: {self.get_name()}({params})'
+        return f'{self._seq}, {self._when}, {self._user.get_identity()}: {self.get_name()}({params})'
 
     def get_name(self) -> str:
         name = self.__class__.__name__
@@ -90,10 +85,10 @@ class AbstractStrategy(ABC):
     def execute_another(self, cls: Type[Self], params: list[str]) -> (str, any):
         strategy = cls(self._seq,
                        self._when,
-                       self._who.get_identity(),
+                       self._user,
                        params,
                        self._emit,
-                       self._users,
+                       self._data,
                        self._settings)
         params = {'strategy': strategy, 'auto': True}
         self._emit(events.BeforeMessageProcessed, params)

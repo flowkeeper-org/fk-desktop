@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
-from typing import Self
+from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
 
@@ -25,27 +25,24 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
-from fk.core.user import User
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy
 from fk.qt.qt_timer import QtTimer
 
+TRoot = TypeVar('TRoot')
+
 
 class WebsocketEventSource(AbstractEventSource):
-    _users: dict[str, User]
+    _data: TRoot
     _ws: QtWebSockets.QWebSocket
     _mute_requested: bool
     _connection_attempt: int
     _reconnect_timer: AbstractTimer
 
-    def __init__(self, settings: AbstractSettings):
+    def __init__(self,
+                 settings: AbstractSettings,
+                 root: TRoot):
         super().__init__(settings)
-        self._users = dict()
-        self._users[settings.get_admin()] = User(
-            settings.get_admin(),
-            'System',
-            datetime.datetime.now(),
-            True
-        )
+        self._data = root
         self._mute_requested = True
         self._connection_attempt = 0
         self._reconnect_timer = QtTimer()
@@ -104,21 +101,21 @@ class WebsocketEventSource(AbstractEventSource):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         auth = AuthenticateStrategy(1,
                                     now,
-                                    self._settings.get_admin(),
+                                    self._data.get_admin_user(),
                                     [username, token],
-                                    None,
-                                    self._users,
-                                    None)
+                                    self._emit,
+                                    self._data,
+                                    self._settings)
         self._ws.sendTextMessage(str(auth))
 
         print(f'Requesting replay starting from #{self._last_seq}')
         replay = ReplayStrategy(2,
                                 now,
-                                self._settings.get_admin(),
+                                self._data.get_admin_user(),
                                 [str(self._last_seq)],
-                                None,
-                                self._users,
-                                None)
+                                self._emit,
+                                self._data,
+                                self._settings)
         self._ws.sendTextMessage(str(replay))
 
         self._emit(events.SourceMessagesRequested, dict())
@@ -132,8 +129,8 @@ class WebsocketEventSource(AbstractEventSource):
     def get_name(self) -> str:
         return "Websocket"
 
-    def get_data(self) -> dict[str, User]:
-        return self._users
+    def get_data(self) -> TRoot:
+        return self._data
 
-    def clone(self) -> Self:
-        return WebsocketEventSource(self._settings)
+    def clone(self, new_root: TRoot) -> Self:
+        return WebsocketEventSource(self._settings, new_root)
