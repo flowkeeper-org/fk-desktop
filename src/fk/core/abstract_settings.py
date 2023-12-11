@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Iterable
 
 from fk.core import events
@@ -48,7 +49,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Source.fullname', 'str', 'User full name', 'Local User', []),
                 ('Source.username', 'email', 'User email', 'user@local.host', []),
                 ('', 'separator', '', '', []),
-                ('FileEventSource.filename', 'file', 'Data file', '~/flowkeeper-data.txt', ['*.txt']),
+                ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt']),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3']),
                 ('', 'separator', '', '', []),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://app.flowkeeper.org', []),
