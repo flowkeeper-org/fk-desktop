@@ -197,10 +197,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def export(self,
                filename: str,
+               new_root: Self,
                start_callback: Callable[[int], None],
                progress_callback: Callable[[int, int], None],
                completion_callback: Callable[[int], None]) -> None:
-        another = self.clone()
+        another = self.clone(new_root)
         every = max(int(self._estimated_count / 100), 1)
         export_file = open(filename, 'w', encoding='UTF-8')
         another.connect(events.AfterMessageProcessed,
