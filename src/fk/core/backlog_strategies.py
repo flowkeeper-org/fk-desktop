@@ -45,16 +45,17 @@ class CreateBacklogStrategy(AbstractStrategy['App']):
         self._backlog_name = params[1]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid in self._user:
+        user = self._data[self._user.get_identity()]
+        if self._backlog_uid in user:
             raise Exception(f'Backlog "{self._backlog_uid}" already exists')
 
         self._emit(events.BeforeBacklogCreate, {
             'backlog_name': self._backlog_name,
-            'backlog_owner': self._user,
+            'backlog_owner': user,
             'backlog_uid': self._backlog_uid,
         })
-        backlog = Backlog(self._backlog_name, self._user, self._backlog_uid, self._when)
-        self._user[self._backlog_uid] = backlog
+        backlog = Backlog(self._backlog_name, user, self._backlog_uid, self._when)
+        user[self._backlog_uid] = backlog
         backlog.item_updated(self._when)    # This will update the User
         self._emit(events.AfterBacklogCreate, {
             'backlog': backlog
@@ -79,9 +80,10 @@ class DeleteBacklogStrategy(AbstractStrategy['App']):
         self._backlog_uid = params[0]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._user:
+        user = self._data[self._user.get_identity()]
+        if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._user[self._backlog_uid]
+        backlog = user[self._backlog_uid]
 
         params = {
             'backlog': backlog
@@ -96,7 +98,7 @@ class DeleteBacklogStrategy(AbstractStrategy['App']):
         backlog.item_updated(self._when)    # This will update the User
 
         # Now we can delete the backlog itself
-        del self._user[self._backlog_uid]
+        del user[self._backlog_uid]
 
         self._emit(events.AfterBacklogDelete, params)
         return None, None
@@ -121,9 +123,10 @@ class RenameBacklogStrategy(AbstractStrategy['App']):
         self._backlog_new_name = params[1]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._user:
+        user = self._data[self._user.get_identity()]
+        if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._user[self._backlog_uid]
+        backlog = user[self._backlog_uid]
 
         params = {
             'backlog': backlog,

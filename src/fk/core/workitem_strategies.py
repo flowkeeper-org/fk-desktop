@@ -47,9 +47,10 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
         self._workitem_name = params[2]
 
     def execute(self) -> (str, any):
-        if self._backlog_uid not in self._user:
+        user = self._data[self._user.get_identity()]
+        if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
-        backlog = self._user[self._backlog_uid]
+        backlog = user[self._backlog_uid]
 
         if self._workitem_uid in backlog:
             raise Exception(f'Workitem "{self._workitem_uid}" already exists')
@@ -100,7 +101,8 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -140,7 +142,8 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -186,7 +189,8 @@ class CompleteWorkitemStrategy(AbstractStrategy['App']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break

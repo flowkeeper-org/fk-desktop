@@ -19,10 +19,11 @@ from abc import ABC, abstractmethod
 from typing import Callable, Type, Self, Generic, TypeVar
 
 from fk.core import events
+from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
 
-TRoot = TypeVar('TRoot')
+TRoot = TypeVar('TRoot', bound=AbstractDataItem)
 
 
 class AbstractStrategy(ABC, Generic[TRoot]):

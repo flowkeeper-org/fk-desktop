@@ -16,20 +16,21 @@
 
 from unittest import TestCase
 
+from fk.core.app import App
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.user import User
 from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
-                                 test_users, TEST_USERNAMES, predefined_uid, check_timestamp)
+                                 test_users, TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
 
 
 class TestBacklogStrategies(TestCase):
     @staticmethod
-    def _create_sample_backlog(existing: dict[str, User] | None = None) -> dict[str, User]:
-        data = test_users() if existing is None else existing
+    def _create_sample_backlog(existing: App | None = None) -> App:
+        data = test_data() if existing is None else existing
         s = CreateBacklogStrategy(
             1,
             predefined_datetime(0),
-            TEST_USERNAMES[0],
+            test_users()[TEST_USERNAMES[0]],
             [predefined_uid(0), 'Basic Test'],
             noop_emit,
             data,
@@ -39,15 +40,15 @@ class TestBacklogStrategies(TestCase):
 
     def test_create_backlog_strategy_basic(self):
         data = TestBacklogStrategies._create_sample_backlog()
-        self.assertEqual(len(data.keys()), 3)
+        self.assertEqual(4, len(data.keys()))   # It also includes admin user
         user = data[TEST_USERNAMES[0]]
-        self.assertEqual(len(user), 1)
+        self.assertEqual(1, len(user))
         self.assertIn(predefined_uid(0), user)
         backlog = user[predefined_uid(0)]
-        self.assertEqual(backlog.get_name(), 'Basic Test')
-        self.assertEqual(backlog.get_uid(), predefined_uid(0))
-        self.assertEqual(backlog.get_parent(), user)
-        self.assertEqual(backlog.get_owner(), user)
+        self.assertEqual('Basic Test', backlog.get_name())
+        self.assertEqual(predefined_uid(0), backlog.get_uid())
+        self.assertEqual(user, backlog.get_parent())
+        self.assertEqual(user, backlog.get_owner())
         self.assertTrue(check_timestamp(backlog.get_create_date(), 0))
         self.assertIsNone(backlog.get_running_workitem()[0])
         self.assertIsNone(backlog.get_running_workitem()[1])
@@ -63,7 +64,7 @@ class TestBacklogStrategies(TestCase):
         s = CreateBacklogStrategy(
             2,
             predefined_datetime(1),
-            TEST_USERNAMES[0],
+            test_users()[TEST_USERNAMES[0]],
             [predefined_uid(1), 'Basic Test'],
             noop_emit,
             data,
@@ -79,7 +80,7 @@ class TestBacklogStrategies(TestCase):
         s = CreateBacklogStrategy(
             2,
             predefined_datetime(1),
-            TEST_USERNAMES[1],
+            test_users()[TEST_USERNAMES[1]],
             [predefined_uid(0), 'Second Backlog'],
             noop_emit,
             data,

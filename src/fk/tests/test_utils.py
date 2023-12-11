@@ -17,6 +17,7 @@
 import datetime
 
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.app import App
 from fk.core.mock_settings import MockSettings
 from fk.core.user import User
 
@@ -60,3 +61,11 @@ def test_users() -> dict[str, User]:
 
 def test_settings(n: int) -> AbstractSettings:
     return MockSettings(username=TEST_USERNAMES[n])
+
+
+def test_data() -> App:
+    app = App(test_settings(0))
+    users = test_users()
+    for u in users:
+        app[u] = users[u]
+    return app

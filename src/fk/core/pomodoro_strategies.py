@@ -48,7 +48,8 @@ class StartWorkStrategy(AbstractStrategy['App']):
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
         running: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 running, _ = backlog.get_running_workitem()
@@ -109,7 +110,8 @@ class StartRestStrategy(AbstractStrategy['App']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -165,7 +167,8 @@ class AddPomodoroStrategy(AbstractStrategy['App']):
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -211,7 +214,8 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
@@ -263,7 +267,8 @@ class RemovePomodoroStrategy(AbstractStrategy['App']):
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        for backlog in self._user.values():
+        user = self._data[self._user.get_identity()]
+        for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
                 break
