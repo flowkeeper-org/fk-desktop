@@ -100,7 +100,7 @@ jobs:
 
   package-macOS:
     runs-on: macOS-latest
-    if:  ${{ inputs.OS == 'macOS' }} 
+    needs: run-tests
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
