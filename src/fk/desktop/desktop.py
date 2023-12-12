@@ -712,6 +712,10 @@ header_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "headerLa
 # noinspection PyTypeChecker
 left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
 
+# Eye candy
+#bg_image = '/home/w/Downloads/p11.jpg'
+#window.setStyleSheet(f"#headerLayout {{ background: url('{bg_image}') center fit; }}")
+
 # Settings
 # noinspection PyTypeChecker
 settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
