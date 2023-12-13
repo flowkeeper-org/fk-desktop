@@ -235,6 +235,10 @@ def start_work() -> None:
 def complete_work() -> None:
     workitem: Workitem = get_selected_workitem()
     source.execute(CompleteWorkitemStrategy, [workitem.get_uid(), "finished"])
+    hide_timer()
+    tool_next.hide()
+    tool_complete.hide()
+    update_header(pomodoro_timer)
 
 
 def get_work_duration() -> int:
@@ -350,11 +354,13 @@ def hide_timer_automatically(workitem) -> None:
         continue_workitem = workitem
         # TODO Show "Complete" button here, too
         tool_next.show()
+        tool_complete.show()
         next_in_tray_icon()
         return
 
     continue_workitem = None
     tool_next.hide()
+    tool_complete.hide()
     reset_tray_icon()
 
     mode = get_timer_ui_mode()
@@ -387,6 +393,7 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
         header_subtext.setText(running_workitem.get_name())
         tool_void.show()
         tool_next.hide()
+        tool_complete.hide()
         timer_display.set_values(
             remaining_duration / timer.get_planned_duration(),
             None,
@@ -881,8 +888,13 @@ tool_void.clicked.connect(lambda: void_pomodoro())
 
 # noinspection PyTypeChecker
 tool_next: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNext")
-tool_next.clicked.connect(lambda: start_work()) # TODO Start next, not current
+tool_next.clicked.connect(lambda: start_work())     # TODO Start next, not current
 tool_next.hide()
+
+# noinspection PyTypeChecker
+tool_complete: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolComplete")
+tool_complete.clicked.connect(lambda: complete_work())  # TODO Complete next, not current
+tool_complete.hide()
 
 # noinspection PyTypeChecker
 tool_note: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNote")

@@ -207,6 +207,23 @@
         </widget>
        </item>
        <item>
+        <widget class="QToolButton" name="toolComplete">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>res/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</normaloff>res/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QToolButton" name="toolNote">
          <property name="text">
           <string/>
