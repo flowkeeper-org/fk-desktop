@@ -108,6 +108,12 @@ class Workitem(AbstractDataItem):
         # TODO: Calculate it based on the parent's state
         return True
 
+    def is_startable(self) -> bool:
+        for p in self._pomodoros:
+            if p.is_startable():
+                return True
+        return False
+
     def get_name(self) -> str:
         return self._name
 

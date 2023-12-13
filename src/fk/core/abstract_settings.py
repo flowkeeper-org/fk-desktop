@@ -68,6 +68,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', []),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', []),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', []),
+                ('Application.header_background', 'file', 'Header background', '', ['*.png;*.jpg']),
             ],
             'Audio': [
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', []),

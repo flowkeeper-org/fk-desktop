@@ -223,13 +223,17 @@ class PomodoroTimer(AbstractEventEmitter):
             print("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")
         if workitem != self._workitem:
             print(f"PomodoroTimer: Warning - Timer detected completion of an unexpected workitem ({workitem} != {self._workitem})")
+        last_pomodoro = self._pomodoro
         self._pomodoro = None
+        last_workitem = self._workitem
         self._workitem = None
         self._state = 'idle'
         self._planned_duration = 0
         self._remaining_duration = 0
         self._emit(PomodoroTimer.TimerRestComplete, {
             'timer': self,
+            'pomodoro': last_pomodoro,
+            'workitem': last_workitem,
         })
         # It might look better to just check for the terminal conditions directly in the handlers instead
         # of canceling timers here. We are going the latter path to account for scenarios when stuff gets

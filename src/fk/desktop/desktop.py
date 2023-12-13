@@ -132,11 +132,15 @@ def workitem_changed(selected: QtCore.QModelIndex) -> None:
         enable_workitem_actions(False)
 
 
-def show_hide() -> None:
-    if window.isHidden():
-        window.show()
+def tray_clicked() -> None:
+    if continue_workitem is not None:
+        # TODO Start THAT workitem
+        start_work()
     else:
-        window.hide()
+        if window.isHidden():
+            window.show()
+        else:
+            window.hide()
 
 
 def delete_backlog() -> None:
@@ -249,74 +253,56 @@ def paint_timer_in_tray() -> None:
     pixmap = QtGui.QPixmap(tray_width, tray_height)
     pixmap.fill(QtGui.Qt.GlobalColor.transparent)
     painter = QtGui.QPainter(pixmap)
-    timer_tray.repaint(painter,
-                       QtCore.QRect(0, 0, tray_width, tray_height))
+    timer_tray.repaint(painter, QtCore.QRect(0, 0, tray_width, tray_height))
     tray.setIcon(pixmap)
 
 
-def show_notification(timer: PomodoroTimer, event: str = None) -> None:
+def show_notification(event: str = None, **kwargs) -> None:
     # Tray notification
     if event == 'TimerWorkComplete':
-        print('Before showing notification')
         tray.showMessage("Work is done", "Have some rest", default_icon)
-        print('After showing notification')
     elif event == 'TimerRestComplete':
-        tray.showMessage("Ready", "Start a new pomodoro", default_icon)
+        icon = default_icon
+        w = kwargs.get('workitem')
+        if w is not None and w.is_startable():
+            icon = next_icon
+        tray.showMessage("Ready", "Start a new pomodoro", icon)
 
     # Alarm bell
-    print('Before alarm bell')
     play_alarm_sound = (settings.get('Application.play_alarm_sound') == 'True')
     play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
     if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
-        print(' - Stop')
         audio_player.stop()     # In case it was ticking or playing rest music
         alarm_file = settings.get('Application.alarm_sound_file')
-        print(' - Reset audio')
         reset_audio()
-        print(' - Set source')
         audio_player.setSource(QtCore.QUrl.fromLocalFile(alarm_file))
-        print(' - Set loops')
         audio_player.setLoops(1)
-        print(' - Play')
         audio_player.play()
-    print('After alarm bell')
 
     # Rest music
-    print('Before rest music')
     if event == 'TimerWorkComplete':
         start_rest_sound()
-    print('After rest music')
 
 
 def start_ticking(timer: PomodoroTimer = None, event: str = None) -> None:
     play_tick_sound = (settings.get('Application.play_tick_sound') == 'True')
     if play_tick_sound:
-        print(' - Stop')
         audio_player.stop()     # Just in case
         tick_file = settings.get('Application.tick_sound_file')
-        print(' - Reset audio')
         reset_audio()
-        print(' - Set source')
         audio_player.setSource(QtCore.QUrl.fromLocalFile(tick_file))
-        print(' - Set loops')
         audio_player.setLoops(QtMultimedia.QMediaPlayer.Loops.Infinite)
-        print(' - Play')
         audio_player.play()
 
 
 def start_rest_sound() -> None:
     play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
     if play_rest_sound:
-        print(' - Stop')
         audio_player.stop()     # In case it was ticking
         rest_file = settings.get('Application.rest_sound_file')
-        print(' - Reset audio')
         reset_audio()
-        print(' - Set source')
         audio_player.setSource(QtCore.QUrl.fromLocalFile(rest_file))
-        print(' - Set loops')
         audio_player.setLoops(1)
-        print(' - Play')
         audio_player.play()     # This will substitute the bell sound
 
 
@@ -356,8 +342,21 @@ def hide_timer() -> None:
     tool_show_all.hide()
 
 
-def hide_timer_automatically() -> None:
-    global last_height
+def hide_timer_automatically(workitem) -> None:
+    global continue_workitem
+
+    # Show "Next" icon if there's pomodoros remaining
+    if workitem.is_startable():
+        continue_workitem = workitem
+        # TODO Show "Complete" button here, too
+        tool_next.show()
+        next_in_tray_icon()
+        return
+
+    continue_workitem = None
+    tool_next.hide()
+    reset_tray_icon()
+
     mode = get_timer_ui_mode()
     if mode == 'focus':
         hide_timer()
@@ -365,15 +364,19 @@ def hide_timer_automatically() -> None:
         window.show()
 
 
-def update_header(timer: PomodoroTimer, event: str = None) -> None:
+def update_header(timer: PomodoroTimer, **kwargs) -> None:
     running_workitem: Workitem = timer.get_running_workitem()
     if timer.is_idling():
-        header_text.setText('Idle')
-        header_subtext.setText("It's time for the next Pomodoro.")
+        w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
+        if w is not None and w.is_startable():
+            header_text.setText('Start another Pomodoro?')
+            header_subtext.setText(f"{w.get_name()}")
+        else:
+            header_text.setText('Idle')
+            header_subtext.setText("It's time for the next Pomodoro.")
         tool_void.hide()
         timer_display.set_values(0, None, "")
         timer_display.hide()
-        reset_tray_icon()
     elif timer.is_working() or timer.is_resting():
         remaining_duration = timer.get_remaining_duration()     # This is always >= 0
         remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
@@ -383,6 +386,7 @@ def update_header(timer: PomodoroTimer, event: str = None) -> None:
         header_text.setText(f'{txt} left')
         header_subtext.setText(running_workitem.get_name())
         tool_void.show()
+        tool_next.hide()
         timer_display.set_values(
             remaining_duration / timer.get_planned_duration(),
             None,
@@ -435,6 +439,10 @@ def void_pomodoro() -> None:
 
 def reset_tray_icon() -> None:
     tray.setIcon(default_icon)
+
+
+def next_in_tray_icon() -> None:
+    tray.setIcon(next_icon)
 
 
 def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QFont, QtGui.QFont):
@@ -516,7 +524,7 @@ def on_messages(event: str = None) -> None:
     pomodoro_timer.connect("Timer*", update_header)
     pomodoro_timer.connect("Timer*Complete", show_notification)
     pomodoro_timer.connect("TimerWorkStart", start_ticking)
-    pomodoro_timer.connect("TimerRestComplete", lambda timer, event: hide_timer_automatically())
+    pomodoro_timer.connect("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
     pomodoro_timer.connect("TimerWorkStart", lambda timer, event: show_timer_automatically())
     update_header(pomodoro_timer)
 
@@ -535,6 +543,14 @@ def reset_audio():
     audio_output = QtMultimedia.QAudioOutput()
     audio_player = QtMultimedia.QMediaPlayer(app)
     audio_player.setAudioOutput(audio_output)
+
+
+def eye_candy():
+    header_bg = settings.get('Application.header_background')
+    if header_bg:
+        window.setStyleSheet(f"#headerLayout {{ background: url('{header_bg}') center fit; }}")
+    else:
+        window.setStyleSheet(f"#headerLayout {{ background: none; }}")
 
 
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
@@ -576,6 +592,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         left_toolbar.setVisible(new_value == 'True')
     elif name == 'Application.show_tray_icon':
         tray.setVisible(new_value == 'True')
+    elif name == 'Application.header_background':
+        eye_candy()
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
@@ -605,6 +623,7 @@ timer_tray: TimerWidget | None = None
 timer_display: TimerWidget | None = None
 
 default_icon = QtGui.QIcon(resolve_path("res/img/red2.png"))
+next_icon = QtGui.QIcon(resolve_path("res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg"))
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
@@ -712,9 +731,7 @@ header_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "headerLa
 # noinspection PyTypeChecker
 left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
 
-# Eye candy
-#bg_image = '/home/w/Downloads/p11.jpg'
-#window.setStyleSheet(f"#headerLayout {{ background: url('{bg_image}') center fit; }}")
+eye_candy()
 
 # Settings
 # noinspection PyTypeChecker
@@ -811,7 +828,7 @@ if toolbar is not None:
 # Tray icon
 show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
 tray = QtWidgets.QSystemTrayIcon()
-tray.activated.connect(lambda reason: (show_hide() if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger else None))
+tray.activated.connect(lambda reason: (tray_clicked() if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger else None))
 menu = QtWidgets.QMenu()
 menu.addAction(settings_action)
 menu.addAction(export_action)
@@ -819,6 +836,10 @@ menu.addAction(quit_action)
 tray.setContextMenu(menu)
 reset_tray_icon()
 tray.setVisible(show_tray_icon)
+
+# Some global variables to support "Next pomodoro" mode
+# TODO Empty it if it gets deleted or completed
+continue_workitem: Workitem | None = None
 
 # Quit app on close
 quit_on_close = (settings.get('Application.quit_on_close') == 'True')
@@ -857,6 +878,11 @@ splitter.setSizes([200, 500])
 # noinspection PyTypeChecker
 tool_void: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolVoid")
 tool_void.clicked.connect(lambda: void_pomodoro())
+
+# noinspection PyTypeChecker
+tool_next: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNext")
+tool_next.clicked.connect(lambda: start_work()) # TODO Start next, not current
+tool_next.hide()
 
 # noinspection PyTypeChecker
 tool_note: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNote")
