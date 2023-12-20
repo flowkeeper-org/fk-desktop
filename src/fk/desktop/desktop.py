@@ -54,20 +54,28 @@ from fk.qt.workitem_model import WorkitemModel
 #from fk.qt.websocket_event_source import WebsocketEventSource
 
 
-def get_selected_backlog() -> Backlog:
-    model: QtCore.QItemSelectionModel = backlogs_table.selectionModel()
+def _get_selected(table: QtWidgets.QTableView) -> Backlog | Workitem:
+    index = _get_selected_index(table)
+    if index is not None:
+        return index.data(500)
+
+
+def _get_selected_index(table: QtWidgets.QTableView) -> QtCore.QModelIndex:
+    model: QtCore.QItemSelectionModel = table.selectionModel()
     if model is not None:
-        index = model.currentIndex()
-        if index is not None:
-            return index.data(500)
+        indexes = model.selectedIndexes()
+        if len(indexes) == 1:
+            return indexes[0]   # Backlogs case
+        elif len(indexes) == 3:
+            return indexes[1]   # Workitems case
+
+
+def get_selected_backlog() -> Backlog:
+    return _get_selected(backlogs_table)
 
 
 def get_selected_workitem() -> Workitem:
-    model: QtCore.QItemSelectionModel = workitems_table.selectionModel()
-    if model is not None:
-        index = model.currentIndex()
-        if index is not None:
-            return index.data(500)
+    return _get_selected(workitems_table)
 
 
 def enable_workitem_actions(enable: bool) -> None:
@@ -218,13 +226,15 @@ def create_workitem() -> None:
 
 
 def rename_backlog() -> None:
-    index: QtCore.QModelIndex = backlogs_table.selectionModel().currentIndex()
-    backlogs_table.edit(index)
+    index: QtCore.QModelIndex = _get_selected_index(backlogs_table)
+    if index is not None:
+        backlogs_table.edit(index)
 
 
 def rename_workitem() -> None:
-    index: QtCore.QModelIndex = workitems_table.selectionModel().currentIndex()
-    workitems_table.edit(index)
+    index: QtCore.QModelIndex = _get_selected_index(workitems_table)
+    if index is not None:
+        workitems_table.edit(index)
 
 
 def start_work() -> None:
