@@ -15,42 +15,80 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import QModelIndex, QItemSelectionModel
+from PySide6.QtGui import QStandardItemModel, QStandardItem
+from PySide6.QtWidgets import QTableView
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.backlog import Backlog
+from fk.core.workitem import Workitem
 
 
 class SearchBar(QtWidgets.QLineEdit):
     _source: AbstractEventSource
+    _backlogs_table: QTableView
+    _workitems_table: QTableView
 
-    def __init__(self, parent: QtWidgets.QWidget, source: AbstractEventSource):
+    def __init__(self,
+                 parent: QtWidgets.QWidget,
+                 source: AbstractEventSource,
+                 backlogs_table: QTableView,
+                 workitems_table: QTableView):
         super().__init__(parent)
         self.setObjectName("search")
         self._source = source
+        self._backlogs_table = backlogs_table
+        self._workitems_table = workitems_table
         self.hide()
         self.setPlaceholderText('Search')
-        self.returnPressed.connect(lambda: self.search())
         self.installEventFilter(self)
 
+    def _select(self, index: QModelIndex):
+        workitem: Workitem = index.data(500)
+        backlog: Backlog = workitem.get_parent()
+
+        b_table = self._backlogs_table
+        w_table = self._workitems_table
+        b_model = b_table.model()
+        w_model = w_table.model()
+        for i in range(b_model.rowCount()):
+            b_index = b_model.index(i, 0)
+            if b_model.data(b_index, 500) == backlog:
+                b_table.selectionModel().select(b_index,
+                                                QItemSelectionModel.SelectionFlag.SelectCurrent |
+                                                QItemSelectionModel.SelectionFlag.Rows)
+                b_table.scrollTo(b_index)
+                # We are lucky -- Qt emits signals synchronously, so we can already select the right workitem
+                for j in range(w_model.rowCount()):
+                    w_index = w_model.index(j, 1)
+                    if w_model.data(w_index, 500) == workitem:
+                        w_table.selectionModel().select(w_index,
+                                                        QItemSelectionModel.SelectionFlag.SelectCurrent |
+                                                        QItemSelectionModel.SelectionFlag.Rows)
+                        w_table.scrollTo(w_index)
+                        break
+                break
+        self.hide()
+
     def show(self) -> None:
-        completer = QtWidgets.QCompleter([wi.get_name() for wi in self._source.workitems()])
+        completer = QtWidgets.QCompleter()
+        completer.activated[QModelIndex].connect(lambda index: self._select(index))
         completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
         completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
+
+        model = QStandardItemModel()
+        for wi in self._source.workitems():
+            item = QStandardItem()
+            item.setText(wi.get_name())
+            item.setData(wi, 500)
+            model.appendRow(item)
+        completer.setModel(model)
+
         self.setCompleter(completer)
         self.setFocus()
         if not self.isVisible():
             self.setText("")
         super().show()
-
-    def search(self) -> None:
-        text: str = self.text().lower()
-        if len(text) > 0:
-            for wi in self._source.workitems():
-                if wi.get_name().lower() == text:
-                    # TODO: Implement this selection
-                    print(f'Will select workitem {wi}')
-                    self.hide()
-        else:
-            self.hide()
 
     def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if widget == self and event.type() == QtCore.QEvent.Type.KeyPress and isinstance(event, QtGui.QKeyEvent):

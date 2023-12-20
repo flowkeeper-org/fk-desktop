@@ -19,6 +19,7 @@ import sys
 from typing import Iterable
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
+from PySide6.QtCore import QItemSelection
 
 from fk.core import events
 from fk.core.abstract_data_item import generate_uid
@@ -94,8 +95,11 @@ def update_progress(backlog: Backlog) -> None:
     backlog_progress_txt.setText(f'{done} of {total} done')
 
 
-def backlog_changed() -> None:
-    backlog: Backlog = get_selected_backlog()
+def backlog_changed(selected: QItemSelection) -> None:
+    if selected.data():
+        backlog: Backlog = selected.data().topLeft().data(500)
+        workitem_model.load(backlog)
+        update_progress(backlog)
 
     # It can be None if we don't have any backlogs left. BacklogModel supports None.
     enabled = backlog is not None
@@ -105,8 +109,6 @@ def backlog_changed() -> None:
     # None of the workitems is selected now
     action_new_workitem.setEnabled(enabled)
     enable_workitem_actions(False)
-    workitem_model.load(backlog)
-    update_progress(backlog)
 
     # This only works if we have some data there
     workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
@@ -723,7 +725,7 @@ backlog_progress_txt: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "foo
 backlog_progress_txt.hide()
 # noinspection PyTypeChecker
 search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-search = SearchBar(window, source)
+search = SearchBar(window, source, backlogs_table, workitems_table)
 search_bar.addWidget(search)
 
 # TODO: Subscribe update_progress(backlog) to events.AfterWorkitem* and +/- pomodoro
