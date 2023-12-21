@@ -104,8 +104,9 @@ def update_progress(backlog: Backlog) -> None:
 
 
 def backlog_changed(selected: QItemSelection) -> None:
+    backlog: Backlog | None = None
     if selected.data():
-        backlog: Backlog = selected.data().topLeft().data(500)
+        backlog = selected.data().topLeft().data(500)
         workitem_model.load(backlog)
         update_progress(backlog)
 
