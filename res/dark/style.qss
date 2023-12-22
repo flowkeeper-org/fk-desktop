@@ -1,5 +1,5 @@
 QMainWindow {
-    background-color: #27282e;
+    background-color: #2b2d30;
 }
 
 #headerText {
