@@ -61,6 +61,13 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ]),
+                ('Application.theme', 'choice', 'Theme', 'light', [
+                    "auto:Detect automatically",
+                    "light:Light",
+                    "dark:Dark",
+                    "mixed:Mixed",
+                    "colorful:Colorful",
+                ]),
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', []),
                 ('Application.use_custom_fonts', 'bool', 'Use custom fonts', 'True', []),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', []),

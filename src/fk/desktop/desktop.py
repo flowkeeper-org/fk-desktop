@@ -618,6 +618,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         tray.setVisible(new_value == 'True')
     elif name == 'Application.header_background':
         eye_candy()
+    elif name == 'Application.theme':
+        app.set_theme(new_value)
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
@@ -643,7 +645,6 @@ settings = QtSettings()
 settings.connect(events.AfterSettingChanged, on_setting_changed)
 
 app = Application(sys.argv, settings)
-app.set_theme("dark")
 
 notes = ""
 

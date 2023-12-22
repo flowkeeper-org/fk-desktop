@@ -19,6 +19,9 @@ class Application(QApplication):
         quit_on_close = (settings.get('Application.quit_on_close') == 'True')
         self.setQuitOnLastWindowClosed(quit_on_close)
 
+        self.set_theme(settings.get('Application.theme'))
+
+
     def on_settings_change(self):
         pass
 
@@ -73,6 +76,7 @@ class Application(QApplication):
         elif theme == 'dark':
             import fk.desktop.theme_dark
 
+        # TODO: Can't change this on the fly
         f = QFile(":/style.qss")
         f.open(QFile.OpenModeFlag.ReadOnly)
         self.setStyleSheet(f.readAll().toStdString())
