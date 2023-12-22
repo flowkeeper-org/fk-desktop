@@ -3,21 +3,21 @@ QMainWindow {
 }
 
 #headerText {
-    color: #FFFFFF;
+    color: #ced0d6;
 }
 
 #headerSubtext {
-    color: #FFFFFF;
+    color: #ced0d6;
 }
 
 #statusBar {
-    color: #FFFFFF;
+    color: #ced0d6;
     background-color: #27282e;
 }
 
 #footerLabel {
-    color: #000000;
-    background-color: #FFFFFF;
+    color: #ced0d6;
+    background-color: #1e1f22;
     padding-left: 5px;
     padding-right: 5px;
 }
@@ -28,49 +28,53 @@ QMainWindow {
 }
 
 #left_toolbar {
-    color: #FFFFFF;
+    color: #ced0d6;
     background-color: #44484C;
     border: none;
+    border-right: 1px solid #000000;
+    border-top: 1px solid #000000;
 }
 
 QTableView {
-    selection-color: #000000;
-    selection-background-color: #cfdefc;
-    color: #000000;
+    selection-color: #ced0d6;
+    selection-background-color: #43454a;
+    color: #ced0d6;
     border: none;
-    border-right: 1px solid #d7d8da;
-    border-top: 1px solid #d7d8da;
+    border-right: 1px solid #000000;
+    border-top: 1px solid #000000;
     padding: 10px;
 }
 
 #backlogs_table, #users_table {
-    background-color: #f7f8fa;
+    background-color: #2b2d30;
 }
 
 #workitems_table {
-    background-color: #FFFFFF;
+    background-color: #1e1f22;
     padding: 10px 10px 10px 8px;
 }
 
 QToolButton {
     background: none;
-    border: none;
-    height: 24px;
-    width: 24px;
-    margin: 6px;
-    padding: 5px;
+    border-radius: 5px;
 }
 
 QToolButton:checked {
     background: #64686C;
-    border-radius: 5px;
-}
-
-#toolNote, #toolVoid, #toolTimerMode {
-    margin: 0px;
+    color: #ced0d6;
 }
 
 QScrollBar {
     height: 0px;
     width: 0px;
+}
+
+QProgressBar {
+    background: #2b2d30;
+    color: #ced0d6;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background: #64686C;
 }
