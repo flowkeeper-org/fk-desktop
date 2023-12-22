@@ -105,8 +105,9 @@ def update_progress(backlog: Backlog) -> None:
 
 
 def backlog_changed(selected: QItemSelection) -> None:
+    backlog: Backlog | None = None
     if selected.data():
-        backlog: Backlog = selected.data().topLeft().data(500)
+        backlog = selected.data().topLeft().data(500)
         workitem_model.load(backlog)
         update_progress(backlog)
 
@@ -430,6 +431,9 @@ def resize(ref_font) -> (int, int):
     w: int = metrics.horizontalAdvance(txt)
     h: int = metrics.height()
     window.resize(QtCore.QSize(w * 2, h * 35))
+    users_table.verticalHeader().setDefaultSectionSize(h + 8)
+    backlogs_table.verticalHeader().setDefaultSectionSize(h + 8)
+    workitems_table.verticalHeader().setDefaultSectionSize(h + 8)
     return w, h
 
 
