@@ -51,7 +51,7 @@ class Pomodoro(AbstractDataItem):
             char = '[ ]' if self._is_planned else '( )'
         elif self.is_running():
             # Here we don't distinguish between work and rest
-            char = '[*]' if self._is_planned else '(*)'
+            char = '[#]' if self._is_planned else '(#)'
         elif self.is_finished():
             char = '[v]' if self._is_planned else '(v)'
         elif self.is_canceled():

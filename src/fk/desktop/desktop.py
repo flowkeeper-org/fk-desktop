@@ -643,7 +643,7 @@ settings = QtSettings()
 settings.connect(events.AfterSettingChanged, on_setting_changed)
 
 app = Application(sys.argv, settings)
-app.set_theme("dark")
+app.set_theme("light")
 
 notes = ""
 

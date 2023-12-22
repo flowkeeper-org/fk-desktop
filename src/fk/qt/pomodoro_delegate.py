@@ -24,19 +24,19 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
 
     @staticmethod
     def _get_renderer(name):
-        return QtSvg.QSvgRenderer(':/icons/' + name)
+        return QtSvg.QSvgRenderer(f':/icons/pomodoro-{name}.svg')
 
     def __init__(self, parent: QtCore.QObject = None):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._svg_renderer = {
-            '[x]': PomodoroDelegate._get_renderer("disabled_by_default_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[ ]': PomodoroDelegate._get_renderer("check_box_outline_blank_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[v]': PomodoroDelegate._get_renderer("check_box_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[*]': PomodoroDelegate._get_renderer("dialogs_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(x)': PomodoroDelegate._get_renderer("cancel_FILL0_wght200_GRAD0_opsz48_black.svg"),
-            '( )': PomodoroDelegate._get_renderer("radio_button_unchecked_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(v)': PomodoroDelegate._get_renderer("check_circle_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(*)': PomodoroDelegate._get_renderer("radio_button_checked_FILL0_wght200_GRAD0_opsz48.svg"),
+            '[x]': PomodoroDelegate._get_renderer('[x]'),
+            '[ ]': PomodoroDelegate._get_renderer("[ ]"),
+            '[v]': PomodoroDelegate._get_renderer("[v]"),
+            '[#]': PomodoroDelegate._get_renderer("[#]"),
+            '(x)': PomodoroDelegate._get_renderer("(x)"),
+            '( )': PomodoroDelegate._get_renderer("( )"),
+            '(v)': PomodoroDelegate._get_renderer("(v)"),
+            '(#)': PomodoroDelegate._get_renderer("(#)"),
         }
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:

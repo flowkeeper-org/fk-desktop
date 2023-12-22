@@ -1,0 +1,8 @@
+- Pomodoro icons for the delegate
+- Toolbar / action icons (all in the .ui file)
+- Tray icons (desktop.py)
+- Start + end sounds, music
+- Application icon
+- QSS stylesheet
+- UI file (common)
+- Fonts
