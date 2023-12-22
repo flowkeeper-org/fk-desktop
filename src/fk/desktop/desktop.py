@@ -643,7 +643,7 @@ settings = QtSettings()
 settings.connect(events.AfterSettingChanged, on_setting_changed)
 
 app = Application(sys.argv, settings)
-app.set_theme("light")
+app.set_theme("dark")
 
 notes = ""
 
@@ -651,8 +651,8 @@ replay_completed = False
 timer_tray: TimerWidget | None = None
 timer_display: TimerWidget | None = None
 
-default_icon = QtGui.QIcon(":/img/icon.png")
-next_icon = QtGui.QIcon(":/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg")
+default_icon = QtGui.QIcon(":/icons/logo.png")
+next_icon = QtGui.QIcon(":/icons/tool-next.svg")
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))

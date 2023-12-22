@@ -30,17 +30,3 @@ def resolve_path(filename: str) -> str:
             ROOT_DIR = path.abspath(path.join(path.join(path.join(path.dirname(__file__), ".."), ".."), ".."))
             print(f'Running unbundled, root dir is {ROOT_DIR}')
     return path.abspath(path.join(ROOT_DIR, filename))
-
-
-def resolve_res_path(filename: str) -> str:
-    global ROOT_DIR
-    if ROOT_DIR is None:
-        ROOT_DIR = path.dirname(__file__)
-        if '_MEI' in ROOT_DIR:
-            ROOT_DIR = path.abspath(path.join(path.join(path.dirname(__file__), ".."), ".."))
-            print(f'Running bundled, root dir is {ROOT_DIR}')
-        else:
-            ROOT_DIR = path.abspath(path.join(path.join(path.join(path.dirname(__file__), ".."), ".."), ".."))
-            print(f'Running unbundled, root dir is {ROOT_DIR}')
-    return path.abspath(path.join(ROOT_DIR, filename))
-

@@ -54,20 +54,12 @@ QTableView {
 
 QToolButton {
     background: none;
-    border: none;
-    height: 24px;
-    width: 24px;
-    margin: 6px;
-    padding: 5px;
+    border-radius: 5px;
 }
 
 QToolButton:checked {
     background: #64686C;
-    border-radius: 5px;
-}
-
-#toolNote, #toolVoid, #toolTimerMode {
-    margin: 0px;
+    color: #FFFFFF;
 }
 
 QScrollBar {
