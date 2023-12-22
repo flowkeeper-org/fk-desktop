@@ -24,7 +24,7 @@ QMainWindow {
 
 #search {
     padding-left: 20px;
-    background: no-repeat left url(res/icons/search_FILL0_wght200_GRAD0_opsz20.svg);
+    background: no-repeat left url(:/icons/search_FILL0_wght200_GRAD0_opsz20.svg);
 }
 
 #left_toolbar {

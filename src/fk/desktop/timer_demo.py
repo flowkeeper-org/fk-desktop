@@ -54,13 +54,13 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     loader = QtUiTools.QUiLoader()
-    file = QtCore.QFile(resolve_path("src/fk/desktop/timer.ui"))
+    file = QtCore.QFile(":/timer.ui")
     file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
     w = loader.load(file, None)
     file.close()
 
     # Create tray icon
-    tray_icon = QtGui.QIcon(resolve_path("res/common/img/icon.png"))
+    tray_icon = QtGui.QIcon(":/img/icon.png")
     tray = QtWidgets.QSystemTrayIcon()
     tray.setIcon(tray_icon)
     tray.setVisible(True)

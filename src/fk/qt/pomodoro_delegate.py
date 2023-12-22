@@ -24,7 +24,7 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
 
     @staticmethod
     def _get_renderer(name):
-        return QtSvg.QSvgRenderer(resolve_path('res/icons/' + name))
+        return QtSvg.QSvgRenderer(':/icons/' + name)
 
     def __init__(self, parent: QtCore.QObject = None):
         QtWidgets.QItemDelegate.__init__(self, parent)

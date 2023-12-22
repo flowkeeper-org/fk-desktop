@@ -33,7 +33,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>res/common/img/icon.png</normaloff>res/common/img/icon.png</iconset>
+    <normaloff>:/img/icon.png</normaloff>:/img/icon.png</iconset>
   </property>
   <widget class="QWidget" name="rootLayout">
    <layout class="QVBoxLayout" name="rootLayoutInternal">
@@ -176,7 +176,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>res/icons/cancel_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/cancel_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+              <normaloff>:/icons/cancel_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/cancel_FILL0_wght200_GRAD0_opsz48.svg</iconset>
             </property>
             <property name="iconSize">
              <size>
@@ -196,7 +196,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+           <normaloff>:/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -213,7 +213,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>res/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</normaloff>res/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</iconset>
+           <normaloff>:/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</normaloff>:/icons/check_circle_FILL0_wght200_GRAD0_opsz48_green.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -230,7 +230,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>res/icons/edit_note_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/edit_note_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+           <normaloff>:/icons/edit_note_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/edit_note_FILL0_wght200_GRAD0_opsz48.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -247,7 +247,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>res/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+           <normaloff>:/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -264,7 +264,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>res/icons/pip_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/pip_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+           <normaloff>:/icons/pip_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/pip_FILL0_wght200_GRAD0_opsz48.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -307,7 +307,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+                <normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -324,7 +324,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>res/icons/group_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/group_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+                <normaloff>:/icons/group_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/group_FILL0_wght200_GRAD0_opsz48.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -354,7 +354,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>res/icons/settings_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/settings_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+                <normaloff>:/icons/settings_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/settings_FILL0_wght200_GRAD0_opsz48.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -632,7 +632,7 @@
   <action name="actionSettings">
    <property name="icon">
     <iconset>
-     <normaloff>res/img/disk.svg</normaloff>res/img/disk.svg</iconset>
+     <normaloff>:/img/disk.svg</normaloff>:/img/disk.svg</iconset>
    </property>
    <property name="text">
     <string>Settings...</string>
@@ -652,7 +652,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+     <normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
    </property>
    <property name="text">
     <string>Backlogs</string>
@@ -667,7 +667,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+     <normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
    </property>
    <property name="text">
     <string>Import</string>
@@ -682,7 +682,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+     <normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/home_FILL0_wght200_GRAD0_opsz48.svg</iconset>
    </property>
    <property name="text">
     <string>Export</string>
@@ -697,7 +697,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/icons/group_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/group_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+     <normaloff>:/icons/group_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/group_FILL0_wght200_GRAD0_opsz48.svg</iconset>
    </property>
    <property name="text">
     <string>Teams</string>
@@ -714,7 +714,7 @@
   <action name="actionNewBacklog">
    <property name="icon">
     <iconset>
-     <normaloff>res/img/plus.svg</normaloff>res/img/plus.svg</iconset>
+     <normaloff>:/img/plus.svg</normaloff>:/img/plus.svg</iconset>
    </property>
    <property name="text">
     <string>New Backlog</string>
@@ -729,7 +729,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/trash.svg</normaloff>res/img/trash.svg</iconset>
+     <normaloff>:/img/trash.svg</normaloff>:/img/trash.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Item</string>
@@ -744,7 +744,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/add.svg</normaloff>res/img/add.svg</iconset>
+     <normaloff>:/img/add.svg</normaloff>:/img/add.svg</iconset>
    </property>
    <property name="text">
     <string>New Item</string>
@@ -759,7 +759,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/play-circle.svg</normaloff>res/img/play-circle.svg</iconset>
+     <normaloff>:/img/play-circle.svg</normaloff>:/img/play-circle.svg</iconset>
    </property>
    <property name="text">
     <string>Start Work</string>
@@ -774,7 +774,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/red.svg</normaloff>res/img/red.svg</iconset>
+     <normaloff>:/img/red.svg</normaloff>:/img/red.svg</iconset>
    </property>
    <property name="text">
     <string>Add Pomodoro</string>
@@ -789,7 +789,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/red.svg</normaloff>res/img/red.svg</iconset>
+     <normaloff>:/img/red.svg</normaloff>:/img/red.svg</iconset>
    </property>
    <property name="text">
     <string>Remove Pomodoro</string>
@@ -804,7 +804,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/check.svg</normaloff>res/img/check.svg</iconset>
+     <normaloff>:/img/check.svg</normaloff>:/img/check.svg</iconset>
    </property>
    <property name="text">
     <string>Complete Item</string>
@@ -819,7 +819,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/disk.svg</normaloff>res/img/disk.svg</iconset>
+     <normaloff>:/img/disk.svg</normaloff>:/img/disk.svg</iconset>
    </property>
    <property name="text">
     <string>Rename Backlog</string>
@@ -834,7 +834,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/trash.svg</normaloff>res/img/trash.svg</iconset>
+     <normaloff>:/img/trash.svg</normaloff>:/img/trash.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Backlog</string>
@@ -849,7 +849,7 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>res/img/disk.svg</normaloff>res/img/disk.svg</iconset>
+     <normaloff>:/img/disk.svg</normaloff>:/img/disk.svg</iconset>
    </property>
    <property name="text">
     <string>Rename Item</string>
@@ -883,7 +883,7 @@
   <action name="actionTimerMode">
    <property name="icon">
     <iconset>
-     <normaloff>res/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</normaloff>res/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</iconset>
+     <normaloff>:/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</normaloff>:/icons/back_to_tab_FILL0_wght200_GRAD0_opsz48.svg</iconset>
    </property>
    <property name="text">
     <string>Timer mode</string>

@@ -479,7 +479,7 @@ def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QF
 
     use_custom_fonts = (s.get('Application.use_custom_fonts') == 'True')
     if use_custom_fonts:
-        font_file_header = resolve_path("res/font/OpenSans-Light.ttf")
+        font_file_header = resolve_path(":/font/OpenSans-Light.ttf")
         font_index_header: int = QtGui.QFontDatabase.addApplicationFont(font_file_header)
         if font_index_header >= 0:
             font_family_header = "Open Sans Light"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_header)[0]
@@ -488,7 +488,7 @@ def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QF
         else:
             print(f"Warning - Cannot load custom font {font_file_header}. Falling back to default system font.")
 
-        font_file_main = resolve_path("res/font/OpenSans-Variable.ttf")
+        font_file_main = resolve_path(":/font/OpenSans-Variable.ttf")
         font_index_main: int = QtGui.QFontDatabase.addApplicationFont(font_file_main)
         if font_index_main >= 0:
             font_family_main = "Open Sans"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_main)[0]
@@ -651,8 +651,8 @@ replay_completed = False
 timer_tray: TimerWidget | None = None
 timer_display: TimerWidget | None = None
 
-default_icon = QtGui.QIcon(resolve_path("res/common/img/icon.png"))
-next_icon = QtGui.QIcon(resolve_path("res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg"))
+default_icon = QtGui.QIcon(":/img/icon.png")
+next_icon = QtGui.QIcon(":/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg")
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
@@ -678,11 +678,9 @@ data = source.get_data()
 source.connect(SourceMessagesProcessed, on_messages)
 
 loader = QtUiTools.QUiLoader()
-resource_root: str = resolve_path('.')
-loader.setWorkingDirectory(QtCore.QDir(resource_root))
 
 # Load main window
-file = QtCore.QFile(resolve_path("src/fk/desktop/main.ui"))
+file = QtCore.QFile(":/main.ui")
 file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
 # noinspection PyTypeChecker
 window: QtWidgets.QMainWindow = loader.load(file, None)

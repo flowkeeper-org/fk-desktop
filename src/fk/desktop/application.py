@@ -1,8 +1,11 @@
+from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.path_resolver import resolve_path
+
+import fk.desktop.theme_common
 
 
 class Application(QApplication):
@@ -27,9 +30,9 @@ class Application(QApplication):
         fh_default.setPointSize(24)
         fm_default = QFont()
 
-        use_custom_fonts = (s.get('Application.use_custom_fonts') == 'True')
+        use_custom_fonts = (self._settings.get('Application.use_custom_fonts') == 'True')
         if use_custom_fonts:
-            font_file_header = resolve_path("res/font/OpenSans-Light.ttf")
+            font_file_header = resolve_path(":/font/OpenSans-Light.ttf")
             font_index_header: int = QFontDatabase.addApplicationFont(font_file_header)
             if font_index_header >= 0:
                 font_family_header = "Open Sans Light"  # QFontDatabase.applicationFontFamilies(font_index_header)[0]
@@ -38,7 +41,7 @@ class Application(QApplication):
             else:
                 print(f"Warning - Cannot load custom font {font_file_header}. Falling back to default system font.")
 
-            font_file_main = resolve_path("res/font/OpenSans-Variable.ttf")
+            font_file_main = resolve_path(":/font/OpenSans-Variable.ttf")
             font_index_main: int = QFontDatabase.addApplicationFont(font_file_main)
             if font_index_main >= 0:
                 font_family_main = "Open Sans"  # QFontDatabase.applicationFontFamilies(font_index_main)[0]
@@ -60,12 +63,17 @@ class Application(QApplication):
 
     def set_font(self):
         # TODO: Set from a setting
-        font_main, font_header, default_font_main, default_font_header = initialize_fonts(settings)
+        font_main, font_header, default_font_main, default_font_header = self.initialize_fonts()
         self.setFont(font_main)
 
     def set_theme(self, theme: str):
-        # TODO: Set from a setting
         # Apply CSS
-        with open(resolve_path(f"res/{theme}/style.qss"), "r") as f:
-            self.setStyleSheet(f.read())
+        if theme == 'light':
+            import fk.desktop.theme_light
+        elif theme == 'dark':
+            import fk.desktop.theme_dark
 
+        f = QFile(":/style.qss")
+        f.open(QFile.OpenModeFlag.ReadOnly)
+        self.setStyleSheet(f.readAll().toStdString())
+        f.close()
