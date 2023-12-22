@@ -24,7 +24,7 @@ QMainWindow {
 
 #search {
     padding-left: 20px;
-    background: no-repeat left url(res/icons/search_FILL0_wght200_GRAD0_opsz20.svg);
+    background: no-repeat left url(res/common/icons/search_FILL0_wght200_GRAD0_opsz20.svg);
 }
 
 #left_toolbar {
@@ -33,18 +33,22 @@ QMainWindow {
     border: none;
 }
 
-#backlogs_table, #users_table {
+QTableView {
+    selection-color: #000000;
+    selection-background-color: #cfdefc;
     color: #000000;
-    background: no-repeat right top url(res/img/shadow-corner.png) #f7f8fa;
-    /*background: repeat-y right url(res/img/shadow.png) #f7f8fa;*/
     border: none;
+    border-right: 1px solid #d7d8da;
+    border-top: 1px solid #d7d8da;
     padding: 10px;
 }
 
+#backlogs_table, #users_table {
+    background-color: #f7f8fa;
+}
+
 #workitems_table {
-    color: #000000;
     background-color: #FFFFFF;
-    border: none;
     padding: 10px 10px 10px 8px;
 }
 
@@ -64,15 +68,6 @@ QToolButton:checked {
 
 #toolNote, #toolVoid, #toolTimerMode {
     margin: 0px;
-}
-
-QTableView {
-    selection-color: #000000;
-    selection-background-color: #cfdefc;
-}
-
-QSplitter::handle {
-    background-color: #FFFFFF;
 }
 
 QScrollBar {

@@ -36,6 +36,7 @@ from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrat
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -634,21 +635,23 @@ def import_():
 # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
 # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
 # will pass through to Qt data models via Qt-like connect / emit mechanism.
-app = QtWidgets.QApplication([])
+settings = QtSettings()
+settings.connect(events.AfterSettingChanged, on_setting_changed)
+
+app = Application(sys.argv, settings)
+app.set_theme("dark")
+
 notes = ""
 
 replay_completed = False
 timer_tray: TimerWidget | None = None
 timer_display: TimerWidget | None = None
 
-default_icon = QtGui.QIcon(resolve_path("res/img/red2.png"))
+default_icon = QtGui.QIcon(resolve_path("res/common/img/icon.png"))
 next_icon = QtGui.QIcon(resolve_path("res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg"))
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
-
-settings = QtSettings()
-settings.connect(events.AfterSettingChanged, on_setting_changed)
 
 font_main, font_header, default_font_main, default_font_header = initialize_fonts(settings)
 app.setFont(font_main)
@@ -860,10 +863,6 @@ tray.setVisible(show_tray_icon)
 # TODO Empty it if it gets deleted or completed
 continue_workitem: Workitem | None = None
 
-# Quit app on close
-quit_on_close = (settings.get('Application.quit_on_close') == 'True')
-app.setQuitOnLastWindowClosed(quit_on_close)
-
 # Left toolbar
 # noinspection PyTypeChecker
 left_toolbar: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left_toolbar")
@@ -883,10 +882,6 @@ tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "
 tool_settings.clicked.connect(lambda: menu_file.exec(
     tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
 ))
-
-# Apply CSS
-with open(resolve_path("res/style/desktop.qss"), "r") as f:
-    app.setStyleSheet(f.read())
 
 # Splitter
 # noinspection PyTypeChecker

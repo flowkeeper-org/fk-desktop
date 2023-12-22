@@ -31,7 +31,7 @@ if __name__ == "__main__":
     file.close()
 
     # Create tray icon
-    tray_icon = QtGui.QIcon(resolve_path("res/img/red2.png"))
+    tray_icon = QtGui.QIcon(resolve_path("res/common/img/icon.png"))
     tray = QtWidgets.QSystemTrayIcon()
     tray.setIcon(tray_icon)
     tray.setVisible(True)
