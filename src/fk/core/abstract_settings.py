@@ -27,7 +27,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _definitions: dict[str, list[tuple[str, str, str, str, list[any]]]]
     _defaults: dict[str, str]
 
-    def __init__(self):
+    def __init__(self, default_font_family: str, default_font_size: int):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingChanged,
             events.AfterSettingChanged,
@@ -69,13 +69,20 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "colorful:Colorful",
                 ]),
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', []),
-                ('Application.use_custom_fonts', 'bool', 'Use custom fonts', 'True', []),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', []),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', []),
                 ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', []),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', []),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', []),
                 ('Application.header_background', 'file', 'Header background', '', ['*.png;*.jpg']),
+                ('Application.window_width', 'int', 'Main window width', '700', [5, 5000]),
+                ('Application.window_height', 'int', 'Main window height', '500', [5, 5000]),
+            ],
+            'Fonts': [
+                ('Application.font_main_family', 'font', 'Main font family', default_font_family, []),
+                ('Application.font_main_size', 'int', 'Main font size', str(default_font_size), [3, 48]),
+                ('Application.font_header_family', 'font', 'Title font family', default_font_family, []),
+                ('Application.font_header_size', 'int', 'Title font size', str(int(24.0 / 9 * default_font_size)), [3, 72]),
             ],
             'Audio': [
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', []),

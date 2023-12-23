@@ -58,7 +58,7 @@ class UserModel(QtGui.QStandardItemModel):
 
     def set_row(self, i: int, user: User) -> None:
         state, remaining = user.get_state()
-        font = self._font_busy if state == 'Busy' else self._font_normal
+        font = self._font_busy if state == 'Focus' else self._font_normal
 
         col1 = QtGui.QStandardItem()
         col1.setData(f'{user.get_name()} ({state})', Qt.DisplayRole)

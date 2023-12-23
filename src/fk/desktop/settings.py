@@ -20,7 +20,7 @@ from typing import Callable
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
-    QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog
+    QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_settings import QtSettings
@@ -162,6 +162,15 @@ class SettingsDialog(QDialog):
             ed6.setCurrentIndex(i)
             self._widgets[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
             return [ed6]
+        elif option_type == 'font':
+            ed7 = QFontComboBox(parent)
+            ed7.currentFontChanged.connect(lambda v: self._enable_save_buttons(
+                option_id,
+                v.family()
+            ))
+            ed7.setCurrentFont(option_value)
+            self._widgets[option_id] = lambda: ed7.currentFont().family()
+            return [ed7]
         else:
             return []
 
