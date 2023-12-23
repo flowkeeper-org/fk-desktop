@@ -179,7 +179,9 @@ class SettingsDialog(QDialog):
         layout = QFormLayout(res)
         res.setLayout(layout)
 
-        for option_id, option_type, option_display, option_value, option_options in settings:
+        for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
+            if not option_visible:
+                continue
             widgets = self._display_option(res, option_id, option_type, option_value, option_options)
             label = QLabel(option_display, res)
             if len(widgets) == 0:
