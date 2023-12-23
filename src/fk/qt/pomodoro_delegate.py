@@ -40,13 +40,12 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
         }
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        size = option.rect.height() * 1
-        padding = 0
+        size = option.rect.height()
         for i, p in enumerate(index.data().split(',')):
             if p != '':
                 rect = QtCore.QRect(
-                    option.rect.left() + size * i + padding,
-                    option.rect.center().y() - (size / 2) + 2 * padding,
-                    size - 2 * padding,
-                    size - 2 * padding)
+                    option.rect.left() + size * i,
+                    option.rect.center().y() - (size / 2) + 1,
+                    size,
+                    size)
                 self._svg_renderer[p].render(painter, rect)

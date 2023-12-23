@@ -330,10 +330,13 @@ def get_timer_ui_mode() -> str:
 
 
 def show_timer() -> None:
-    global last_height
-    last_height = window.size().height()
-    main_layout.hide()
     header_layout.show()
+    main_layout.hide()
+    # left_toolbar.hide()
+    # splitter.hide()
+    # backlogs_table.hide()
+    # users_table.hide()
+    # workitems_table.hide()
     window.setMaximumHeight(header_layout.size().height())
     window.setMinimumHeight(header_layout.size().height())
     tool_show_timer_only.hide()
@@ -349,15 +352,13 @@ def show_timer_automatically() -> None:
 
 
 def hide_timer() -> None:
-    global last_height
     main_layout.show()
     header_layout.show()
-    window.setMaximumHeight(last_height)
-    window.setMinimumHeight(last_height)
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
     tool_show_timer_only.show()
     tool_show_all.hide()
+    restore_size()
 
 
 def hide_timer_automatically(workitem) -> None:
@@ -423,15 +424,11 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
     timer_display.repaint()
 
 
-def auto_resize() -> (int, int):
-    txt = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    metrics = QtGui.QFontMetrics(QtGui.QFont())
-    w: int = metrics.horizontalAdvance(txt)
-    h: int = metrics.height()
-    users_table.verticalHeader().setDefaultSectionSize(h + 8)
-    backlogs_table.verticalHeader().setDefaultSectionSize(h + 8)
-    workitems_table.verticalHeader().setDefaultSectionSize(h + 8)
-    return w, h
+def auto_resize() -> None:
+    h: int = QtGui.QFontMetrics(QtGui.QFont()).height() + 8
+    users_table.verticalHeader().setDefaultSectionSize(h)
+    backlogs_table.verticalHeader().setDefaultSectionSize(h)
+    workitems_table.verticalHeader().setDefaultSectionSize(h)
 
 
 def restore_size() -> None:
@@ -925,7 +922,7 @@ header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSub
 # Fonts, styles, etc.
 initialize_fonts(settings)
 
-_, last_height = auto_resize()  # It's important to do it after the fonts are set
+auto_resize()  # It's important to do it after the fonts are set
 restore_size()
 event_filter = MainWindowEventFilter(window)
 window.installEventFilter(event_filter)
