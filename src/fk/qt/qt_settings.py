@@ -26,7 +26,6 @@ class QtSettings(AbstractSettings):
 
     def __init__(self):
         font = QFont()
-        print(f'Font: {font}')
         super().__init__(font.family(), font.pointSize())
         self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
 

@@ -431,9 +431,46 @@ def auto_resize() -> (int, int):
     users_table.verticalHeader().setDefaultSectionSize(h + 8)
     backlogs_table.verticalHeader().setDefaultSectionSize(h + 8)
     workitems_table.verticalHeader().setDefaultSectionSize(h + 8)
-    window.resize(QtCore.QSize(int(settings.get('Application.window_width')),
-                               int(settings.get('Application.window_height'))))
     return w, h
+
+
+def restore_size() -> None:
+    w = int(settings.get('Application.window_width'))
+    h = int(settings.get('Application.window_height'))
+    splitter_width = int(settings.get('Application.window_splitter_width'))
+    splitter.setSizes([splitter_width, w - splitter_width])
+    window.resize(QtCore.QSize(w, h))
+
+
+def save_splitter_size(new_width: int, index: int) -> None:
+    old_width = int(settings.get('Application.window_splitter_width'))
+    if old_width != new_width:
+        settings.set('Application.window_splitter_width', str(new_width))
+        #print(f"Saved new splitter width {new_width}")
+
+
+class MainWindowEventFilter(QtWidgets.QMainWindow):
+    _window: QtWidgets.QMainWindow
+
+    def __init__(self, window: QtWidgets.QMainWindow):
+        super().__init__()
+        self._window = window
+
+    def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if event.type() == QtCore.QEvent.Type.Resize and isinstance(event, QtGui.QResizeEvent):
+            if widget == self._window:
+                new_width = event.size().width()
+                new_height = event.size().height()
+                if new_height == 80:    # Avoid saving Timer mode
+                    return False
+                # We'll check against the old value to avoid resize loops and spurious setting change events
+                old_width = int(settings.get('Application.window_width'))
+                old_height = int(settings.get('Application.window_height'))
+                if old_width != new_width or old_height != new_height:
+                    settings.set('Application.window_width', str(new_width))
+                    settings.set('Application.window_height', str(new_height))
+                    #print(f"Saved new window size {new_width} x {new_height}")
+        return False
 
 
 def note_pomodoro() -> None:
@@ -558,7 +595,7 @@ def eye_candy():
 
 
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
-    print(f'Setting {name} changed from {old_value} to {new_value}')
+    # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
     if name == 'Source.type':
         m = QtWidgets.QMessageBox()
@@ -850,7 +887,7 @@ tool_settings.clicked.connect(lambda: menu_file.exec(
 # Splitter
 # noinspection PyTypeChecker
 splitter: QtWidgets.QSplitter = window.findChild(QtWidgets.QSplitter, "splitter")
-splitter.setSizes([200, 500])
+splitter.splitterMoved.connect(save_splitter_size)
 
 # Header
 # noinspection PyTypeChecker
@@ -889,6 +926,9 @@ header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSub
 initialize_fonts(settings)
 
 _, last_height = auto_resize()  # It's important to do it after the fonts are set
+restore_size()
+event_filter = MainWindowEventFilter(window)
+window.installEventFilter(event_filter)
 window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
 window.show()

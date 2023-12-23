@@ -77,6 +77,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.header_background', 'file', 'Header background', '', ['*.png;*.jpg']),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000]),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000]),
+                ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000]),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', default_font_family, []),
