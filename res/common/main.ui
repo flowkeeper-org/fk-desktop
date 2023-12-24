@@ -587,6 +587,7 @@
     <addaction name="actionAddPomodoro"/>
     <addaction name="actionRemovePomodoro"/>
     <addaction name="actionStart"/>
+    <addaction name="actionVoid"/>
     <addaction name="actionSearch"/>
    </widget>
    <widget class="QMenu" name="menuBacklog">
@@ -618,6 +619,7 @@
    <addaction name="actionExport"/>
    <addaction name="actionNewBacklog"/>
    <addaction name="actionStart"/>
+   <addaction name="actionVoid"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -635,6 +637,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
+   </property>
+  </action>
+  <action name="actionShowMainWindow">
+   <property name="text">
+    <string>Show Main Window</string>
    </property>
   </action>
   <action name="actionBacklogs">
@@ -660,7 +667,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Import</string>
+    <string>Import...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+I</string>
@@ -671,7 +678,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Export</string>
+    <string>Export...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
@@ -736,6 +743,21 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionVoid">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/tool-void.svg</normaloff>:/icons/tool-void.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Void Pomodoro</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
    </property>
   </action>
   <action name="actionAddPomodoro">
@@ -849,6 +871,7 @@
   <addaction name="separator"/>
   <addaction name="actionToggleStatusbar"/>
   <addaction name="actionTimerMode"/>
+  <addaction name="actionShowMainWindow"/>
   <addaction name="actionAbout"/>
   <addaction name="actionNewWorkitem"/>
   <addaction name="actionCompleteWorkitem"/>
@@ -869,6 +892,7 @@
   <addaction name="actionTeams"/>
   <addaction name="actionNewBacklog"/>
   <addaction name="actionStart"/>
+  <addaction name="actionVoid"/>
   <addaction name="actionSearch"/>
  </widget>
  <tabstops>

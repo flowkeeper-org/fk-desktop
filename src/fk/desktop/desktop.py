@@ -333,10 +333,6 @@ def show_timer() -> None:
     header_layout.show()
     main_layout.hide()
     left_toolbar.hide()
-    # splitter.hide()
-    # backlogs_table.hide()
-    # users_table.hide()
-    # workitems_table.hide()
     window.setMaximumHeight(header_layout.size().height())
     window.setMinimumHeight(header_layout.size().height())
     tool_show_timer_only.hide()
@@ -344,6 +340,9 @@ def show_timer() -> None:
 
 
 def show_timer_automatically() -> None:
+    global continue_workitem
+    action_void.setEnabled(True)
+    continue_workitem = None
     mode = get_timer_ui_mode()
     if mode == 'focus':
         show_timer()
@@ -365,8 +364,10 @@ def hide_timer() -> None:
 def hide_timer_automatically(workitem) -> None:
     global continue_workitem
 
+    action_void.setDisabled(True)
+
     # Show "Next" icon if there's pomodoros remaining
-    if workitem.is_startable():
+    if workitem is not None and workitem.is_startable():
         continue_workitem = workitem
         # TODO Show "Complete" button here, too
         tool_next.show()
@@ -622,7 +623,7 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
                   QtWidgets.QMessageBox.StandardButton.Ok)
     elif name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
         # TODO: This really doesn't work well
-        hide_timer_automatically()
+        hide_timer_automatically(None)
         show_timer_automatically()
     elif name == 'Application.quit_on_close':
         app.setQuitOnLastWindowClosed(new_value == 'True')
@@ -792,6 +793,10 @@ export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
 export_action.triggered.connect(export)
 
 # noinspection PyTypeChecker
+action_show_main_window: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowMainWindow")
+action_show_main_window.triggered.connect(lambda: window.show())
+
+# noinspection PyTypeChecker
 action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
 action_backlogs.toggled.connect(toggle_backlogs)
 
@@ -843,6 +848,10 @@ action_remove_pomodoro.triggered.connect(remove_pomodoro)
 action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
 action_search.triggered.connect(lambda: search.show())
 
+# noinspection PyTypeChecker
+action_void: QtGui.QAction = window.findChild(QtGui.QAction, "actionVoid")
+action_void.triggered.connect(lambda: void_pomodoro())
+
 # Main menu
 # noinspection PyTypeChecker
 main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
@@ -870,8 +879,10 @@ show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
 tray = QtWidgets.QSystemTrayIcon()
 tray.activated.connect(lambda reason: (tray_clicked() if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger else None))
 menu = QtWidgets.QMenu()
+menu.addAction(action_void)
+menu.addSeparator()
+menu.addAction(action_show_main_window)
 menu.addAction(settings_action)
-menu.addAction(export_action)
 menu.addAction(quit_action)
 tray.setContextMenu(menu)
 reset_tray_icon()
@@ -909,7 +920,7 @@ splitter.splitterMoved.connect(save_splitter_size)
 # Header
 # noinspection PyTypeChecker
 tool_void: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolVoid")
-tool_void.clicked.connect(lambda: void_pomodoro())
+tool_void.setDefaultAction(action_void)
 tool_void.hide()
 
 # noinspection PyTypeChecker
