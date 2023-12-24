@@ -332,7 +332,7 @@ def get_timer_ui_mode() -> str:
 def show_timer() -> None:
     header_layout.show()
     main_layout.hide()
-    # left_toolbar.hide()
+    left_toolbar.hide()
     # splitter.hide()
     # backlogs_table.hide()
     # users_table.hide()
@@ -354,6 +354,7 @@ def show_timer_automatically() -> None:
 def hide_timer() -> None:
     main_layout.show()
     header_layout.show()
+    left_toolbar.show()
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
     tool_show_timer_only.show()
@@ -452,25 +453,39 @@ def save_splitter_size(new_width: int, index: int) -> None:
 
 class MainWindowEventFilter(QtWidgets.QMainWindow):
     _window: QtWidgets.QMainWindow
+    _timer: QtTimer
+    _is_resizing: bool
 
     def __init__(self, window: QtWidgets.QMainWindow):
         super().__init__()
         self._window = window
+        self._timer = QtTimer()
+        self._is_resizing = False
+
+    def resize_completed(self):
+        self._is_resizing = False
+        if not main_layout.isVisible():  # Avoid saving window size in Timer mode
+            return
+        # We'll check against the old value to avoid resize loops and spurious setting change events
+        new_width = self._window.size().width()
+        new_height = self._window.size().height()
+        old_width = int(settings.get('Application.window_width'))
+        old_height = int(settings.get('Application.window_height'))
+        if old_width != new_width or old_height != new_height:
+            settings.set('Application.window_width', str(new_width))
+            settings.set('Application.window_height', str(new_height))
+            #print(f"Saved new window size {new_width} x {new_height}")
 
     def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if event.type() == QtCore.QEvent.Type.Resize and isinstance(event, QtGui.QResizeEvent):
             if widget == self._window:
-                new_width = event.size().width()
-                new_height = event.size().height()
-                if new_height == 80:    # Avoid saving Timer mode
+                if self._is_resizing:   # Don't fire those events too frequently
                     return False
-                # We'll check against the old value to avoid resize loops and spurious setting change events
-                old_width = int(settings.get('Application.window_width'))
-                old_height = int(settings.get('Application.window_height'))
-                if old_width != new_width or old_height != new_height:
-                    settings.set('Application.window_width', str(new_width))
-                    settings.set('Application.window_height', str(new_height))
-                    #print(f"Saved new window size {new_width} x {new_height}")
+                self._timer.schedule(1000,
+                                     lambda _: self.resize_completed(),
+                                     None,
+                                     True)
+                self._is_resizing = True
         return False
 
 
@@ -895,6 +910,7 @@ splitter.splitterMoved.connect(save_splitter_size)
 # noinspection PyTypeChecker
 tool_void: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolVoid")
 tool_void.clicked.connect(lambda: void_pomodoro())
+tool_void.hide()
 
 # noinspection PyTypeChecker
 tool_next: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNext")
