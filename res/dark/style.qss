@@ -78,3 +78,7 @@ QProgressBar {
 QProgressBar::chunk {
     background: #64686C;
 }
+
+QSplitter::handle {
+    background-color: #000000;
+}

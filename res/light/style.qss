@@ -3,21 +3,21 @@ QMainWindow {
 }
 
 #headerText {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 #headerSubtext {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 #statusBar {
-    color: #FFFFFF;
+    color: #ffffff;
     background-color: #27282e;
 }
 
 #footerLabel {
     color: #000000;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     padding-left: 5px;
     padding-right: 5px;
 }
@@ -28,7 +28,7 @@ QMainWindow {
 }
 
 #left_toolbar {
-    color: #FFFFFF;
+    color: #ffffff;
     background-color: #44484C;
     border: none;
 }
@@ -48,7 +48,7 @@ QTableView {
 }
 
 #workitems_table {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     padding: 10px 10px 10px 8px;
 }
 
@@ -59,10 +59,14 @@ QToolButton {
 
 QToolButton:checked {
     background: #64686C;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 QScrollBar {
     height: 0px;
     width: 0px;
+}
+
+QSplitter::handle {
+    background-color: #ffffff;
 }
