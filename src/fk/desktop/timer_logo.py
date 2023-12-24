@@ -18,7 +18,6 @@ import sys
 
 from PySide6 import QtWidgets, QtUiTools, QtCore, QtGui
 
-from fk.core.path_resolver import resolve_path
 from fk.qt.timer_widget import render_for_logo
 
 if __name__ == "__main__":

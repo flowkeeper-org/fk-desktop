@@ -30,7 +30,6 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import DeleteBacklogStrategy, CreateBacklogStrategy
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
-from fk.core.path_resolver import resolve_path
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, CompletePomodoroStrategy, \
     StartWorkStrategy
 from fk.core.timer import PomodoroTimer
@@ -293,7 +292,7 @@ def show_notification(event: str = None, **kwargs) -> None:
         audio_player.stop()     # In case it was ticking or playing rest music
         alarm_file = settings.get('Application.alarm_sound_file')
         reset_audio()
-        audio_player.setSource(QtCore.QUrl.fromLocalFile(alarm_file))
+        audio_player.setSource(alarm_file)
         audio_player.setLoops(1)
         audio_player.play()
 
@@ -308,7 +307,8 @@ def start_ticking(timer: PomodoroTimer = None, event: str = None) -> None:
         audio_player.stop()     # Just in case
         tick_file = settings.get('Application.tick_sound_file')
         reset_audio()
-        audio_player.setSource(QtCore.QUrl.fromLocalFile(tick_file))
+        print(f'Will tick: {tick_file}')
+        audio_player.setSource(tick_file)
         audio_player.setLoops(QtMultimedia.QMediaPlayer.Loops.Infinite)
         audio_player.play()
 
@@ -319,7 +319,7 @@ def start_rest_sound() -> None:
         audio_player.stop()     # In case it was ticking
         rest_file = settings.get('Application.rest_sound_file')
         reset_audio()
-        audio_player.setSource(QtCore.QUrl.fromLocalFile(rest_file))
+        audio_player.setSource(rest_file)
         audio_player.setLoops(1)
         audio_player.play()     # This will substitute the bell sound
 
@@ -429,6 +429,10 @@ def auto_resize() -> None:
     users_table.verticalHeader().setDefaultSectionSize(h)
     backlogs_table.verticalHeader().setDefaultSectionSize(h)
     workitems_table.verticalHeader().setDefaultSectionSize(h)
+    # Save it to Settings, so that we can use this value when
+    # calculating display hints for the Pomodoro Delegate.
+    # As of now, this requires app restart to apply.
+    settings.set('Application.table_row_height', str(h))
 
 
 def restore_size() -> None:
@@ -552,9 +556,10 @@ def on_messages(event: str = None) -> None:
     # noinspection PyTypeChecker
     timer_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "timer")
     timer_display = render_for_widget(
+        window.palette(),
         timer_widget,
         QtGui.QFont(),
-        0.33
+        0.3
     )
     timer_tray = render_for_pixmap()
 

@@ -1,0 +1,77 @@
+QMainWindow {
+    background-color: #27282e;
+    color: #ffffff;
+}
+
+#headerText {
+    color: #ffffff;
+}
+
+#headerSubtext {
+    color: #ffffff;
+}
+
+#statusBar {
+    color: #ffffff;
+    background-color: #27282e;
+}
+
+#footerLabel {
+    color: #000000;
+    background-color: #ffffff;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#search {
+    padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background: no-repeat left url(:/icons/tool-search.svg);
+    color: #000000;
+    background-color: #ffffff;
+}
+
+#left_toolbar {
+    color: #ffffff;
+    background-color: #44484C;
+    border: none;
+}
+
+QTableView {
+    selection-color: #000000;
+    selection-background-color: #cfdefc;
+    color: #000000;
+    border: none;
+    border-right: 1px solid #d7d8da;
+    border-top: 1px solid #d7d8da;
+    padding: 10px;
+}
+
+#backlogs_table, #users_table {
+    background-color: #f7f8fa;
+}
+
+#workitems_table {
+    background-color: #ffffff;
+    padding: 10px 10px 10px 8px;
+}
+
+QToolButton {
+    background: none;
+    border-radius: 5px;
+}
+
+QToolButton:checked {
+    background: #64686C;
+    color: #ffffff;
+}
+
+QScrollBar {
+    height: 0px;
+    width: 0px;
+}
+
+QSplitter::handle {
+    background-color: #ffffff;
+}

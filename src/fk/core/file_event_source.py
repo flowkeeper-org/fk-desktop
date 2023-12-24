@@ -22,7 +22,6 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.path_resolver import resolve_path
 from fk.core.strategy_factory import strategy_from_string
 
 TRoot = TypeVar('TRoot')

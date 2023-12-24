@@ -19,7 +19,6 @@ import sys
 
 from PySide6 import QtWidgets, QtUiTools, QtCore, QtGui
 
-from fk.core.path_resolver import resolve_path
 from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
 
 
@@ -66,6 +65,7 @@ if __name__ == "__main__":
     tray.setVisible(True)
 
     t_widget = render_for_widget(
+        app.palette(),
         w,
         QtGui.QFont(),
         0.35

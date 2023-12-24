@@ -31,6 +31,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
     _backlog: Backlog | None
+    _row_height: int
 
     def __init__(self, parent: QtWidgets.QWidget, source: AbstractEventSource):
         super().__init__(0, 3, parent)
@@ -48,6 +49,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         source.connect(AfterWorkitemStart, self._pomodoro_changed)
         source.connect('AfterPomodoro*', self._pomodoro_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
+        self._row_height = int(source.get_config_parameter('Application.table_row_height'))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -116,7 +118,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col3 = QtGui.QStandardItem()
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
         # TODO: Get row height here somehow
-        col3.setData(QSize(len(workitem) * 26, 26), Qt.SizeHintRole)
+        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
         col3.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)

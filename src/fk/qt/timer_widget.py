@@ -88,7 +88,10 @@ class TimerWidget(QtCore.QObject):
         )
 
         my_hue = int((self._hue_to - self._hue_from) * self._my_value + self._hue_from)
-        my_color_pen = QtGui.QPen(QtGui.QColor().fromHsl(my_hue, 255, 220))
+        if self._bg_pen is None:
+            my_color_pen = QtGui.QPen(QtGui.QColor().fromHsl(my_hue, 255, 220))
+        else:
+            my_color_pen = QtGui.QPen(self._bg_pen)
         my_color_pen.setWidth(self._pen_width)
         my_color_brush = QtGui.QColor().fromHsl(my_hue, 255, 128)
         painter.setPen(my_color_pen)
@@ -165,15 +168,18 @@ class TimerWidget(QtCore.QObject):
         self._widget.show()
 
 
-def render_for_widget(widget: QtWidgets.QWidget, font: QtGui.QFont, thickness: float) -> TimerWidget:
+def render_for_widget(ref_palette: QtGui.QPalette, widget: QtWidgets.QWidget, font: QtGui.QFont, thickness: float) -> TimerWidget:
+    bg_color = ref_palette.color(QtGui.QPalette.ColorRole.Base)
+    fg_color = ref_palette.color(QtGui.QPalette.ColorRole.Text)
+
     result = TimerWidget(
         widget,
-        QtGui.QColor("#44484C"),
-        QtGui.QColor("#27282e"),
+        fg_color,
+        bg_color,
         0.05,
         thickness,
         font,
-        QtGui.QColor("#FFFFFF"),
+        fg_color,
         2,
         0,
         120,

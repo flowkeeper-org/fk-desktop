@@ -19,6 +19,8 @@ from os import path
 ROOT_DIR: str | None = None
 
 
+# TODO: This is not used anymore, as we switched to Qt Resources fwk
+# Consider removing
 def resolve_path(filename: str) -> str:
     global ROOT_DIR
     if ROOT_DIR is None:

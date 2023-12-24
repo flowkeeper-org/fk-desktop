@@ -62,11 +62,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], True),
                 ('Application.theme', 'choice', 'Theme', 'light', [
-                    "auto:Detect automatically",
                     "light:Light",
                     "dark:Dark",
                     "mixed:Mixed",
-                    "colorful:Colorful",
                 ], True),
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], True),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], True),
@@ -78,6 +76,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], False),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], False),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], False),
+                ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], False),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', default_font_family, [], True),
@@ -87,11 +86,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             ],
             'Audio': [
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], True),
-                ('Application.alarm_sound_file', 'file', 'Alarm sound file', '../../../res/sound/bell.wav', ['*.wav;*.mp3'], True),
-                ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], True),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', '../../../res/sound/rest.mp3', ['*.wav;*.mp3'], True),
+                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], True),
+                ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'False', [], True),
+                ('Application.rest_sound_file', 'file', '"Rest" sound file', '', ['*.wav;*.mp3'], True),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], True),
-                ('Application.tick_sound_file', 'file', 'Ticking sound file', '../../../res/sound/tick.wav', ['*.wav;*.mp3'], True),
+                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], True),
             ],
         }
 

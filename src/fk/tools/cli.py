@@ -22,7 +22,6 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
-from fk.core.path_resolver import resolve_path
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 
@@ -82,7 +81,7 @@ def do_export_v2(source: AbstractEventSource):
     seq = 1
     when = '2023-01-01 00:00:01+00:00'
 
-    with open(resolve_path('export-v2.txt'), 'w', encoding='UTF-8') as f:
+    with open('export-v2.txt', 'w', encoding='UTF-8') as f:
         for user in source.get_data().values():
             if user.get_identity() == 'admin@local.host':
                 continue

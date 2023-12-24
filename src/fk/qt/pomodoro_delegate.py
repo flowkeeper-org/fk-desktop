@@ -16,8 +16,6 @@
 
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 
-from fk.core.path_resolver import resolve_path
-
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
     _svg_renderer: dict[str, QtSvg.QSvgRenderer]

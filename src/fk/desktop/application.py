@@ -1,9 +1,7 @@
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.path_resolver import resolve_path
 
 import fk.desktop.theme_common
 from fk.qt.qt_settings import QtSettings
@@ -38,9 +36,13 @@ class Application(QApplication):
             import fk.desktop.theme_light
         elif theme == 'dark':
             import fk.desktop.theme_dark
+        elif theme == 'mixed':
+            import fk.desktop.theme_mixed
 
         # TODO: Can't change this on the fly
         f = QFile(":/style.qss")
         f.open(QFile.OpenModeFlag.ReadOnly)
         self.setStyleSheet(f.readAll().toStdString())
         f.close()
+
+        print('Stylesheet loaded')

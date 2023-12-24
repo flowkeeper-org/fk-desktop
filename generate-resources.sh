@@ -37,3 +37,4 @@ cd res
 generate_resources "common"
 generate_resources "light"
 generate_resources "dark"
+generate_resources "mixed"

@@ -1,5 +1,6 @@
 QMainWindow {
     background-color: #2b2d30;
+    color: #ced0d6;
 }
 
 #headerText {
@@ -24,7 +25,11 @@ QMainWindow {
 
 #search {
     padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
     background: no-repeat left url(:/icons/tool-search.svg);
+    color: #ced0d6;
+    background-color: #1e1f22;
 }
 
 #left_toolbar {
