@@ -64,7 +64,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self.auto_seal()
 
     def _get_filename(self) -> str:
-        return resolve_path(self.get_config_parameter("FileEventSource.filename"))
+        return self.get_config_parameter("FileEventSource.filename")
 
     def _is_watch_changes(self) -> bool:
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"

@@ -20,7 +20,7 @@ from fk.core.abstract_settings import AbstractSettings
 
 class MockSettings(AbstractSettings):
     def __init__(self, filename=None, username=None):
-        super().__init__()
+        super().__init__('Arial', 10)
         self._settings = {
             'FileEventSource.filename': filename,
             'Source.username': username,

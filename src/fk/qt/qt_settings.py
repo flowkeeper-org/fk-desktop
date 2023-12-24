@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6 import QtCore
+from PySide6.QtGui import QFont
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
@@ -24,7 +25,8 @@ class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
 
     def __init__(self):
-        super().__init__()
+        font = QFont()
+        super().__init__(font.family(), font.pointSize())
         self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
 
     def set(self, name: str, value: str) -> str:

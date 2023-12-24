@@ -115,7 +115,8 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
         col3 = QtGui.QStandardItem()
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
-        col3.setData(QSize(len(workitem) * 30 * 1, 30), Qt.SizeHintRole)
+        # TODO: Get row height here somehow
+        col3.setData(QSize(len(workitem) * 26, 26), Qt.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
         col3.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)

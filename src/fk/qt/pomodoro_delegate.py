@@ -24,29 +24,28 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
 
     @staticmethod
     def _get_renderer(name):
-        return QtSvg.QSvgRenderer(resolve_path('res/icons/' + name))
+        return QtSvg.QSvgRenderer(f':/icons/pomodoro-{name}.svg')
 
     def __init__(self, parent: QtCore.QObject = None):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._svg_renderer = {
-            '[x]': PomodoroDelegate._get_renderer("disabled_by_default_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[ ]': PomodoroDelegate._get_renderer("check_box_outline_blank_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[v]': PomodoroDelegate._get_renderer("check_box_FILL0_wght200_GRAD0_opsz48.svg"),
-            '[*]': PomodoroDelegate._get_renderer("dialogs_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(x)': PomodoroDelegate._get_renderer("cancel_FILL0_wght200_GRAD0_opsz48_black.svg"),
-            '( )': PomodoroDelegate._get_renderer("radio_button_unchecked_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(v)': PomodoroDelegate._get_renderer("check_circle_FILL0_wght200_GRAD0_opsz48.svg"),
-            '(*)': PomodoroDelegate._get_renderer("radio_button_checked_FILL0_wght200_GRAD0_opsz48.svg"),
+            '[x]': PomodoroDelegate._get_renderer('[x]'),
+            '[ ]': PomodoroDelegate._get_renderer("[ ]"),
+            '[v]': PomodoroDelegate._get_renderer("[v]"),
+            '[#]': PomodoroDelegate._get_renderer("[#]"),
+            '(x)': PomodoroDelegate._get_renderer("(x)"),
+            '( )': PomodoroDelegate._get_renderer("( )"),
+            '(v)': PomodoroDelegate._get_renderer("(v)"),
+            '(#)': PomodoroDelegate._get_renderer("(#)"),
         }
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        size = option.rect.height() * 1
-        padding = 0
+        size = option.rect.height()
         for i, p in enumerate(index.data().split(',')):
             if p != '':
                 rect = QtCore.QRect(
-                    option.rect.left() + size * i + padding,
-                    option.rect.center().y() - (size / 2) + 2 * padding,
-                    size - 2 * padding,
-                    size - 2 * padding)
+                    option.rect.left() + size * i,
+                    option.rect.center().y() - (size / 2) + 1,
+                    size,
+                    size)
                 self._svg_renderer[p].render(painter, rect)

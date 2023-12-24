@@ -1,0 +1,80 @@
+QMainWindow {
+    background-color: #2b2d30;
+}
+
+#headerText {
+    color: #ced0d6;
+}
+
+#headerSubtext {
+    color: #ced0d6;
+}
+
+#statusBar {
+    color: #ced0d6;
+    background-color: #27282e;
+}
+
+#footerLabel {
+    color: #ced0d6;
+    background-color: #1e1f22;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#search {
+    padding-left: 20px;
+    background: no-repeat left url(:/icons/tool-search.svg);
+}
+
+#left_toolbar {
+    color: #ced0d6;
+    background-color: #44484C;
+    border: none;
+    border-right: 1px solid #000000;
+    border-top: 1px solid #000000;
+}
+
+QTableView {
+    selection-color: #ced0d6;
+    selection-background-color: #43454a;
+    color: #ced0d6;
+    border: none;
+    border-right: 1px solid #000000;
+    border-top: 1px solid #000000;
+    padding: 10px;
+}
+
+#backlogs_table, #users_table {
+    background-color: #2b2d30;
+}
+
+#workitems_table {
+    background-color: #1e1f22;
+    padding: 10px 10px 10px 8px;
+}
+
+QToolButton {
+    background: none;
+    border-radius: 5px;
+}
+
+QToolButton:checked {
+    background: #64686C;
+    color: #ced0d6;
+}
+
+QScrollBar {
+    height: 0px;
+    width: 0px;
+}
+
+QProgressBar {
+    background: #2b2d30;
+    color: #ced0d6;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background: #64686C;
+}

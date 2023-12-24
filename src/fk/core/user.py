@@ -53,13 +53,13 @@ class User(AbstractDataItem):
     def is_system_user(self) -> bool:
         return self._is_system_user
 
-    # Returns (state, total remaining). State can be Unknown, Busy, Rest and Idle
+    # Returns (state, total remaining). State can be Unknown, Focus, Rest and Idle
     def get_state(self) -> (str, int):
         if self._last_pomodoro is None:
             return "Unknown", 0
         remaining = self._last_pomodoro.remaining_time_in_current_state()
         if self._last_pomodoro.is_running():
-            return "Busy", remaining
+            return "Focus", remaining
         elif remaining > 0:
             return "Rest", remaining
         else:

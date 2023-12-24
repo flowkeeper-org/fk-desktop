@@ -6,3 +6,4 @@ dist
 .coverage
 .DS_Store
 htmlcov
+src/fk/desktop/theme_*.py

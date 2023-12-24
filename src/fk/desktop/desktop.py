@@ -36,6 +36,7 @@ from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrat
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -329,10 +330,13 @@ def get_timer_ui_mode() -> str:
 
 
 def show_timer() -> None:
-    global last_height
-    last_height = window.size().height()
-    main_layout.hide()
     header_layout.show()
+    main_layout.hide()
+    # left_toolbar.hide()
+    # splitter.hide()
+    # backlogs_table.hide()
+    # users_table.hide()
+    # workitems_table.hide()
     window.setMaximumHeight(header_layout.size().height())
     window.setMinimumHeight(header_layout.size().height())
     tool_show_timer_only.hide()
@@ -348,15 +352,13 @@ def show_timer_automatically() -> None:
 
 
 def hide_timer() -> None:
-    global last_height
     main_layout.show()
     header_layout.show()
-    window.setMaximumHeight(last_height)
-    window.setMinimumHeight(last_height)
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
     tool_show_timer_only.show()
     tool_show_all.hide()
+    restore_size()
 
 
 def hide_timer_automatically(workitem) -> None:
@@ -400,7 +402,7 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
         remaining_duration = timer.get_remaining_duration()     # This is always >= 0
         remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
         remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
-        state = 'Busy' if timer.is_working() else 'Rest'
+        state = 'Focus' if timer.is_working() else 'Rest'
         txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
         header_text.setText(f'{txt} left')
         header_subtext.setText(running_workitem.get_name())
@@ -422,18 +424,50 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
     timer_display.repaint()
 
 
-def resize(ref_font) -> (int, int):
-    # Resize the window based on the font size -- seems to work well to make it
-    # portable across Mac, Windows and Linux
-    txt = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    metrics = QtGui.QFontMetrics(ref_font)
-    w: int = metrics.horizontalAdvance(txt)
-    h: int = metrics.height()
-    window.resize(QtCore.QSize(w * 2, h * 35))
-    users_table.verticalHeader().setDefaultSectionSize(h + 8)
-    backlogs_table.verticalHeader().setDefaultSectionSize(h + 8)
-    workitems_table.verticalHeader().setDefaultSectionSize(h + 8)
-    return w, h
+def auto_resize() -> None:
+    h: int = QtGui.QFontMetrics(QtGui.QFont()).height() + 8
+    users_table.verticalHeader().setDefaultSectionSize(h)
+    backlogs_table.verticalHeader().setDefaultSectionSize(h)
+    workitems_table.verticalHeader().setDefaultSectionSize(h)
+
+
+def restore_size() -> None:
+    w = int(settings.get('Application.window_width'))
+    h = int(settings.get('Application.window_height'))
+    splitter_width = int(settings.get('Application.window_splitter_width'))
+    splitter.setSizes([splitter_width, w - splitter_width])
+    window.resize(QtCore.QSize(w, h))
+
+
+def save_splitter_size(new_width: int, index: int) -> None:
+    old_width = int(settings.get('Application.window_splitter_width'))
+    if old_width != new_width:
+        settings.set('Application.window_splitter_width', str(new_width))
+        #print(f"Saved new splitter width {new_width}")
+
+
+class MainWindowEventFilter(QtWidgets.QMainWindow):
+    _window: QtWidgets.QMainWindow
+
+    def __init__(self, window: QtWidgets.QMainWindow):
+        super().__init__()
+        self._window = window
+
+    def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if event.type() == QtCore.QEvent.Type.Resize and isinstance(event, QtGui.QResizeEvent):
+            if widget == self._window:
+                new_width = event.size().width()
+                new_height = event.size().height()
+                if new_height == 80:    # Avoid saving Timer mode
+                    return False
+                # We'll check against the old value to avoid resize loops and spurious setting change events
+                old_width = int(settings.get('Application.window_width'))
+                old_height = int(settings.get('Application.window_height'))
+                if old_width != new_width or old_height != new_height:
+                    settings.set('Application.window_width', str(new_width))
+                    settings.set('Application.window_height', str(new_height))
+                    #print(f"Saved new window size {new_width} x {new_height}")
+        return False
 
 
 def note_pomodoro() -> None:
@@ -469,43 +503,24 @@ def next_in_tray_icon() -> None:
 
 
 def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QFont, QtGui.QFont):
-    fh: QtGui.QFont | None = None
-    fm: QtGui.QFont | None = None
+    font_header = QtGui.QFont(s.get('Application.font_header_family'),
+                              int(s.get('Application.font_header_size')))
+    if font_header is None:
+        font_header = QtGui.QFont()
+        font_header.setPointSize(int(font_header.pointSize() * 24.0 / 9))
 
-    fh_default = QtGui.QFont()
-    fh_default.setPointSize(24)
-    fm_default = QtGui.QFont()
+    font_main = QtGui.QFont(s.get('Application.font_main_family'),
+                            int(s.get('Application.font_main_size')))
+    if font_main is None:
+        font_main = QtGui.QFont()
 
-    use_custom_fonts = (s.get('Application.use_custom_fonts') == 'True')
-    if use_custom_fonts:
-        font_file_header = resolve_path("res/font/OpenSans-Light.ttf")
-        font_index_header: int = QtGui.QFontDatabase.addApplicationFont(font_file_header)
-        if font_index_header >= 0:
-            font_family_header = "Open Sans Light"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_header)[0]
-            fh = QtGui.QFont(font_family_header, 24)
-            print(f"Loaded custom header font: {font_family_header}")
-        else:
-            print(f"Warning - Cannot load custom font {font_file_header}. Falling back to default system font.")
+    app.setFont(font_main)
+    backlogs_table.setFont(font_main)  # Even though we set it on the App level, Windows just ignores it
+    users_table.setFont(font_main)
+    workitems_table.setFont(font_main)
+    header_text.setFont(font_header)
 
-        font_file_main = resolve_path("res/font/OpenSans-Variable.ttf")
-        font_index_main: int = QtGui.QFontDatabase.addApplicationFont(font_file_main)
-        if font_index_main >= 0:
-            font_family_main = "Open Sans"  # QtGui.QFontDatabase.applicationFontFamilies(font_index_main)[0]
-            fm = QtGui.QFont(font_family_main, 11)
-            print(f"Loaded custom main font: {font_family_main}")
-        else:
-            print(f"Warning - Cannot load custom font {font_file_main}. Falling back to default system font.")
-
-    if fh is None:
-        fh = fh_default
-
-    if fm is None:
-        fm = fm_default
-
-    print(f'Header font: {fh.family()}')
-    print(f'Main font: {fm.family()}')
-
-    return fm, fh, fm_default, fh_default
+    auto_resize()
 
 
 def toggle_backlogs(visible) -> None:
@@ -538,7 +553,7 @@ def on_messages(event: str = None) -> None:
     timer_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "timer")
     timer_display = render_for_widget(
         timer_widget,
-        font_main,
+        QtGui.QFont(),
         0.33
     )
     timer_tray = render_for_pixmap()
@@ -577,10 +592,7 @@ def eye_candy():
 
 
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
-    global font_main
-    global font_header
-
-    print(f'Setting {name} changed from {old_value} to {new_value}')
+    # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
     if name == 'Source.type':
         m = QtWidgets.QMessageBox()
@@ -594,17 +606,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         show_timer_automatically()
     elif name == 'Application.quit_on_close':
         app.setQuitOnLastWindowClosed(new_value == 'True')
-    elif name == 'Application.use_custom_fonts':
-        if new_value == 'False':
-            font_main = default_font_main
-            font_header = default_font_header
-        else:
-            font_main, font_header, _, _ = initialize_fonts(settings)
-        app.setFont(font_main)
-        backlogs_table.setFont(font_main)
-        users_table.setFont(font_main)
-        workitems_table.setFont(font_main)
-        header_text.setFont(font_header)
+    elif 'Application.font_' in name:
+        initialize_fonts(settings)
     elif name == 'Application.show_main_menu':
         main_menu.setVisible(new_value == 'True')
     elif name == 'Application.show_status_bar':
@@ -617,6 +620,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         tray.setVisible(new_value == 'True')
     elif name == 'Application.header_background':
         eye_candy()
+    elif name == 'Application.theme':
+        app.set_theme(new_value)
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
@@ -638,24 +643,21 @@ def import_():
 # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
 # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
 # will pass through to Qt data models via Qt-like connect / emit mechanism.
-app = QtWidgets.QApplication([])
+app = Application(sys.argv)
+settings = app.get_settings()
+settings.connect(events.AfterSettingChanged, on_setting_changed)
+
 notes = ""
 
 replay_completed = False
 timer_tray: TimerWidget | None = None
 timer_display: TimerWidget | None = None
 
-default_icon = QtGui.QIcon(resolve_path("res/img/red2.png"))
-next_icon = QtGui.QIcon(resolve_path("res/icons/play_circle_FILL0_wght200_GRAD0_opsz48.svg"))
+default_icon = QtGui.QIcon(":/icons/logo.png")
+next_icon = QtGui.QIcon(":/icons/tool-next.svg")
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
-
-settings = QtSettings()
-settings.connect(events.AfterSettingChanged, on_setting_changed)
-
-font_main, font_header, default_font_main, default_font_header = initialize_fonts(settings)
-app.setFont(font_main)
 
 audio_output = QtMultimedia.QAudioOutput()
 audio_player = QtMultimedia.QMediaPlayer(app)
@@ -675,11 +677,9 @@ data = source.get_data()
 source.connect(SourceMessagesProcessed, on_messages)
 
 loader = QtUiTools.QUiLoader()
-resource_root: str = resolve_path('.')
-loader.setWorkingDirectory(QtCore.QDir(resource_root))
 
 # Load main window
-file = QtCore.QFile(resolve_path("src/fk/desktop/main.ui"))
+file = QtCore.QFile(":/main.ui")
 file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
 # noinspection PyTypeChecker
 window: QtWidgets.QMainWindow = loader.load(file, None)
@@ -698,7 +698,6 @@ menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 backlogs_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "backlogs_table")
 backlogs_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
 backlogs_table.customContextMenuRequested.connect(lambda p: menu_backlog.exec(backlogs_table.mapToGlobal(p)))
-backlogs_table.setFont(font_main)   # Even though we set it on the App level, Windows just ignores it
 backlog_model = BacklogModel(app, source)
 backlogs_table.setModel(backlog_model)
 backlogs_table.selectionModel().selectionChanged.connect(backlog_changed)
@@ -706,7 +705,6 @@ backlogs_table.selectionModel().selectionChanged.connect(backlog_changed)
 # Users table
 # noinspection PyTypeChecker
 users_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "users_table")
-users_table.setFont(font_main)
 user_model = UserModel(app, source)
 users_table.setModel(user_model)
 users_table.setVisible(False)
@@ -714,7 +712,6 @@ users_table.setVisible(False)
 # Workitems table
 # noinspection PyTypeChecker
 workitems_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "workitems_table")
-workitems_table.setFont(font_main)
 workitems_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
 workitems_table.customContextMenuRequested.connect(lambda p: menu_workitem.exec(workitems_table.mapToGlobal(p)))
 workitems_table.setItemDelegateForColumn(2, PomodoroDelegate())
@@ -864,10 +861,6 @@ tray.setVisible(show_tray_icon)
 # TODO Empty it if it gets deleted or completed
 continue_workitem: Workitem | None = None
 
-# Quit app on close
-quit_on_close = (settings.get('Application.quit_on_close') == 'True')
-app.setQuitOnLastWindowClosed(quit_on_close)
-
 # Left toolbar
 # noinspection PyTypeChecker
 left_toolbar: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left_toolbar")
@@ -888,14 +881,10 @@ tool_settings.clicked.connect(lambda: menu_file.exec(
     tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
 ))
 
-# Apply CSS
-with open(resolve_path("res/style/desktop.qss"), "r") as f:
-    app.setStyleSheet(f.read())
-
 # Splitter
 # noinspection PyTypeChecker
 splitter: QtWidgets.QSplitter = window.findChild(QtWidgets.QSplitter, "splitter")
-splitter.setSizes([200, 500])
+splitter.splitterMoved.connect(save_splitter_size)
 
 # Header
 # noinspection PyTypeChecker
@@ -927,11 +916,16 @@ tool_show_timer_only.clicked.connect(show_timer)
 
 # noinspection PyTypeChecker
 header_text: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerText")
-header_text.setFont(font_header)
 # noinspection PyTypeChecker
 header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSubtext")
 
-_, last_height = resize(font_main)
+# Fonts, styles, etc.
+initialize_fonts(settings)
+
+auto_resize()  # It's important to do it after the fonts are set
+restore_size()
+event_filter = MainWindowEventFilter(window)
+window.installEventFilter(event_filter)
 window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
 window.show()
