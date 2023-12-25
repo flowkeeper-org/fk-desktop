@@ -574,6 +574,8 @@
     <addaction name="actionImport"/>
     <addaction name="actionExport"/>
     <addaction name="separator"/>
+    <addaction name="actionAbout"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -586,12 +588,6 @@
     <addaction name="separator"/>
     <addaction name="actionToggleStatusbar"/>
     <addaction name="actionTimerMode"/>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -626,7 +622,6 @@
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuFilter"/>
-   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
@@ -921,7 +916,6 @@
   <addaction name="menuEdit"/>
   <addaction name="menuView"/>
   <addaction name="menuFilter"/>
-  <addaction name="menuHelp"/>
   <addaction name="actionBacklogs"/>
   <addaction name="actionImport"/>
   <addaction name="actionExport"/>

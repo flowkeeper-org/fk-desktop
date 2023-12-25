@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>429</width>
-    <height>420</height>
+    <width>497</width>
+    <height>515</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -132,6 +132,20 @@
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <widget class="QTextEdit" name="credits">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_license">
+      <attribute name="title">
+       <string>License</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QTextEdit" name="license">
          <property name="readOnly">
           <bool>true</bool>
          </property>
