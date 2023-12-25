@@ -1,0 +1,11 @@
+Constantine Kulak <https://github.com/co-stig>: Author and maintaner.
+
+Flowkeeper is built using Qt Community Edition by The Qt Company <https://www.qt.io/licensing>.
+
+All monochrome icons, including Pomodoro symbols: Google Material Icons <https://fonts.google.com/icons>.
+
+Flowkeeper logo (red tomato icon): "Tomate" by Andreas Preuss AKA marauder <https://openclipart.org/detail/117469/tomate>.
+
+Pomodoro and Pomodoro Technique are registered trademarks of Francesco Cirillo.
+
+Embedded sounds (bell and tick): Cannot find the original author. I used the same sounds in the original Flowkeeper (v1) in 2010.

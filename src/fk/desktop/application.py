@@ -2,8 +2,6 @@ from PySide6.QtCore import QFile
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_settings import AbstractSettings
-
-import fk.desktop.theme_common
 from fk.qt.qt_settings import QtSettings
 
 
@@ -30,8 +28,10 @@ class Application(QApplication):
     def on_settings_change(self):
         pass
 
+    # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
         # Apply CSS
+        import fk.desktop.theme_common
         if theme == 'light':
             import fk.desktop.theme_light
         elif theme == 'dark':

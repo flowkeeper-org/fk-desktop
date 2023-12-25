@@ -23,7 +23,6 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy
-from fk.core.user import User
 
 font_new = QtGui.QFont()
 font_today = QtGui.QFont()

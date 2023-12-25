@@ -18,7 +18,6 @@ from unittest import TestCase
 
 from fk.core.app import App
 from fk.core.backlog_strategies import CreateBacklogStrategy
-from fk.core.user import User
 from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
                                  test_users, TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
 

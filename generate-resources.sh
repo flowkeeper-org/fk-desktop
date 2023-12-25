@@ -20,9 +20,6 @@
 
 source venv/bin/activate
 
-# Simple test run
-# PYTHONPATH=src python -m unittest discover -v fk.tests
-
 generate_resources() {
   name="$1"
   qrc="theme-$name.qrc"

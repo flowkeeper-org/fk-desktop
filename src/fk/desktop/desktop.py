@@ -42,7 +42,6 @@ from fk.desktop.settings import SettingsDialog
 from fk.qt.backlog_model import BacklogModel
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
-from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.search_completer import SearchBar
 from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
@@ -658,6 +657,31 @@ def import_():
     wizard.show()
 
 
+def show_about():
+    # noinspection PyTypeChecker
+    about_version: QtWidgets.QLabel = about_window.findChild(QtWidgets.QLabel, "version")
+    file = QtCore.QFile(":/VERSION.txt")
+    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+    about_version.setText(file.readAll().toStdString())
+    file.close()
+
+    # noinspection PyTypeChecker
+    about_changelog: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "notes")
+    file = QtCore.QFile(":/CHANGELOG.txt")
+    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+    about_changelog.setText(file.readAll().toStdString())
+    file.close()
+
+    # noinspection PyTypeChecker
+    about_credits: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "credits")
+    file = QtCore.QFile(":/CREDITS.txt")
+    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+    about_credits.setText(file.readAll().toStdString())
+    file.close()
+
+    about_window.show()
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
@@ -704,6 +728,13 @@ file = QtCore.QFile(":/main.ui")
 file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
 # noinspection PyTypeChecker
 window: QtWidgets.QMainWindow = loader.load(file, None)
+file.close()
+
+# Load main window
+file = QtCore.QFile(":/about.ui")
+file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+# noinspection PyTypeChecker
+about_window: QtWidgets.QMainWindow = loader.load(file, None)
 file.close()
 
 # Context menus
@@ -851,6 +882,10 @@ action_search.triggered.connect(lambda: search.show())
 # noinspection PyTypeChecker
 action_void: QtGui.QAction = window.findChild(QtGui.QAction, "actionVoid")
 action_void.triggered.connect(lambda: void_pomodoro())
+
+# noinspection PyTypeChecker
+action_about: QtGui.QAction = window.findChild(QtGui.QAction, "actionAbout")
+action_about.triggered.connect(lambda: show_about())
 
 # Main menu
 # noinspection PyTypeChecker

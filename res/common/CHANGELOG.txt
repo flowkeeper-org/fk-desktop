@@ -1,0 +1,14 @@
+# v0.1.3 (25 December 2023)
+- Multiple bugfixes.
+- Configurable fonts and timer header background.
+- Themes: Light, Dark and Mixed.
+
+# v0.1.2, (11 December 2023)
+- Unit tests.
+- Websocket authentication.
+
+# v0.1.1, (6 December 2023)
+- Packaged for Windows, Mac and Linux.
+
+# v0.1.0, (27 November 2023)
+- First public version.

@@ -27,10 +27,8 @@ from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 from fk.core.strategy_factory import strategy_from_string
-from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
-
 
 TRoot = TypeVar('TRoot')
 

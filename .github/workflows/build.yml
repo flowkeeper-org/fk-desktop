@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
       - name: Package the build
         run: |
           pyinstaller desktop.spec
@@ -53,6 +56,25 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+      - name: Generate resources
+        run: |
+          cd res
+          cd common
+          pyside6-rcc --project -o theme-common.qrc
+          pyside6-rcc -g python theme-common.qrc -o "../../src/fk/desktop/theme_common.py"
+          cd ..
+          cd light
+          pyside6-rcc --project -o theme-light.qrc
+          pyside6-rcc -g python theme-light.qrc -o "../../src/fk/desktop/theme_light.py"
+          cd ..
+          cd dark
+          pyside6-rcc --project -o theme-dark.qrc
+          pyside6-rcc -g python theme-dark.qrc -o "../../src/fk/desktop/theme_dark.py"
+          cd ..
+          cd mixed
+          pyside6-rcc --project -o theme-mixed.qrc
+          pyside6-rcc -g python theme-mixed.qrc -o "../../src/fk/desktop/theme_mixed.py"
+          cd ..
       - name: Package the build
         run: |
           pyinstaller desktop.spec
@@ -100,6 +122,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           brew install create-dmg
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
       - name: Package the build
         run: |
           pyinstaller desktop.spec
