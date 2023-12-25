@@ -16,7 +16,19 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-From here you can start coding. To run Flowkeeper:
+The Websocket backend relies on Qt WebSockets module, which in turn
+requires OpenSSL 3.0. Note that some of the legacy OS like Ubuntu 20.04 require 
+manual steps to install OpenSSL v3.
+
+From here you can start coding. If you make any changes to resources
+(files in `/res` directory) you need to rebuild the corresponding Python
+classes:
+
+```shell
+./generate-resource.sh
+```
+
+Finally, to run Flowkeeper:
 
 ```shell
 PYTHONPATH=src python -m fk.desktop.desktop

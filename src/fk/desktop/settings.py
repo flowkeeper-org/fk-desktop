@@ -41,7 +41,7 @@ class SettingsDialog(QDialog):
         buttons = QDialogButtonBox(self)
         buttons.setStandardButtons(
             QDialogButtonBox.StandardButton.Apply |
-            QDialogButtonBox.StandardButton.Discard |
+            QDialogButtonBox.StandardButton.Close |
             QDialogButtonBox.StandardButton.Save
         )
         buttons.clicked.connect(lambda btn: self._on_action(buttons.buttonRole(btn)))
@@ -69,7 +69,7 @@ class SettingsDialog(QDialog):
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
         if role == QDialogButtonBox.ButtonRole.ApplyRole:
             self._save_settings()
-        elif role == QDialogButtonBox.ButtonRole.DestructiveRole:
+        elif role == QDialogButtonBox.ButtonRole.RejectRole:
             self.close()
         elif role == QDialogButtonBox.ButtonRole.AcceptRole:
             self._save_settings()

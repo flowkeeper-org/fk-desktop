@@ -611,15 +611,18 @@ def eye_candy():
         window.setStyleSheet(f"#headerLayout {{ background: none; }}")
 
 
+def restart_warning() -> None:
+    QtWidgets.QMessageBox().warning(window,
+                                    "Restart required",
+                                    f"Please restart Flowkeeper to apply new settings",
+                                    QtWidgets.QMessageBox.StandardButton.Ok)
+
+
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
     if name == 'Source.type':
-        m = QtWidgets.QMessageBox()
-        m.warning(window,
-                  "Restart required",
-                  f"Please restart Flowkeeper to change the source type",
-                  QtWidgets.QMessageBox.StandardButton.Ok)
+        restart_warning()
     elif name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
         # TODO: This really doesn't work well
         hide_timer_automatically(None)
@@ -641,7 +644,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     elif name == 'Application.header_background':
         eye_candy()
     elif name == 'Application.theme':
-        app.set_theme(new_value)
+        restart_warning()
+        # app.set_theme(new_value)
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes

@@ -46,7 +46,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "flowkeeper.pro:Flowkeeper.pro",
                     "websocket:Self-hosted server",
                 ], True),
-                ('Source.fullname', 'str', 'User full name', 'Local User', [], True),
+                ('Source.fullname', 'str', 'User full name', 'Local User', [], False),
                 ('Source.username', 'email', 'User email', 'user@local.host', [], True),
                 ('', 'separator', '', '', [], True),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], True),
@@ -61,7 +61,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ], True),
-                ('Application.theme', 'choice', 'Theme', 'light', [
+                ('Application.theme', 'choice', 'Theme', 'mixed', [
                     "light:Light",
                     "dark:Dark",
                     "mixed:Mixed",
