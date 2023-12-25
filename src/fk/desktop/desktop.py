@@ -398,10 +398,12 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
         w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
         if w is not None and w.is_startable():
             header_text.setText('Start another Pomodoro?')
-            header_subtext.setText(f"{w.get_name()}")
+            header_subtext.setText(w.get_name())
+            tray.setToolTip(f'Start another Pomodoro? ({w.get_name()})')
         else:
             header_text.setText('Idle')
             header_subtext.setText("It's time for the next Pomodoro.")
+            tray.setToolTip("It's time for the next Pomodoro.")
         tool_void.hide()
         timer_display.set_values(0, None, "")
         timer_display.hide()
@@ -413,6 +415,7 @@ def update_header(timer: PomodoroTimer, **kwargs) -> None:
         txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
         header_text.setText(f'{txt} left')
         header_subtext.setText(running_workitem.get_name())
+        tray.setToolTip(f"{txt} left ({running_workitem.get_name()})")
         tool_void.show()
         tool_next.hide()
         tool_complete.hide()
