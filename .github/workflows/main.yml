@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
       - name: Test coverage
         run: |
           PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
