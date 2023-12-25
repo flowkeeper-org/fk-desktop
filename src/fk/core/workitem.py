@@ -101,6 +101,12 @@ class Workitem(AbstractDataItem):
     def is_running(self) -> bool:
         return self._state == 'running'
 
+    def has_running_pomodoro(self) -> bool:
+        for p in self._pomodoros:
+            if p.is_running():
+                return True
+        return False
+
     def is_sealed(self) -> bool:
         return self._state in ('finished', 'canceled')
 

@@ -241,6 +241,23 @@
         </widget>
        </item>
        <item>
+        <widget class="QToolButton" name="toolFilter">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>:/icons/tool-filter.svg</normaloff>:/icons/tool-filter.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QToolButton" name="toolShowAll">
          <property name="text">
           <string/>
@@ -598,10 +615,17 @@
     <addaction name="actionRenameBacklog"/>
     <addaction name="actionDeleteBacklog"/>
    </widget>
+   <widget class="QMenu" name="menuFilter">
+    <property name="title">
+     <string>Filter</string>
+    </property>
+    <addaction name="actionShowCompletedWorkitems"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuBacklog"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
+   <addaction name="menuFilter"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -660,6 +684,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionShowCompletedWorkitems">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show completed workitems</string>
    </property>
   </action>
   <action name="actionImport">
@@ -885,6 +920,7 @@
   <addaction name="menuBacklog"/>
   <addaction name="menuEdit"/>
   <addaction name="menuView"/>
+  <addaction name="menuFilter"/>
   <addaction name="menuHelp"/>
   <addaction name="actionBacklogs"/>
   <addaction name="actionImport"/>
@@ -894,6 +930,7 @@
   <addaction name="actionStart"/>
   <addaction name="actionVoid"/>
   <addaction name="actionSearch"/>
+  <addaction name="actionShowCompletedWorkitems"/>
  </widget>
  <tabstops>
   <tabstop>workitems_table</tabstop>

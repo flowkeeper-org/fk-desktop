@@ -28,6 +28,7 @@ class SearchBar(QtWidgets.QLineEdit):
     _source: AbstractEventSource
     _backlogs_table: QTableView
     _workitems_table: QTableView
+    _show_completed: bool
 
     def __init__(self,
                  parent: QtWidgets.QWidget,
@@ -39,6 +40,7 @@ class SearchBar(QtWidgets.QLineEdit):
         self._source = source
         self._backlogs_table = backlogs_table
         self._workitems_table = workitems_table
+        self._show_completed = True
         self.hide()
         self.setPlaceholderText('Search')
         self.installEventFilter(self)
@@ -78,6 +80,8 @@ class SearchBar(QtWidgets.QLineEdit):
 
         model = QStandardItemModel()
         for wi in self._source.workitems():
+            if not self._show_completed and wi.is_sealed():
+                continue
             item = QStandardItem()
             item.setText(wi.get_name())
             item.setData(wi, 500)
@@ -95,3 +99,6 @@ class SearchBar(QtWidgets.QLineEdit):
             if event.matches(QtGui.QKeySequence.StandardKey.Cancel):
                 self.hide()
         return False
+
+    def show_completed(self, show: bool) -> None:
+        self._show_completed = show

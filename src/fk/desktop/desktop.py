@@ -246,11 +246,17 @@ def start_work() -> None:
 
 def complete_work() -> None:
     workitem: Workitem = get_selected_workitem()
-    source.execute(CompleteWorkitemStrategy, [workitem.get_uid(), "finished"])
-    hide_timer()
-    tool_next.hide()
-    tool_complete.hide()
-    update_header(pomodoro_timer)
+    if not workitem.has_running_pomodoro() or QtWidgets.QMessageBox().warning(window,
+            "Confirmation",
+            f"Are you sure you want to complete current workitem? This will void current pomodoro.",
+            QtWidgets.QMessageBox.StandardButton.Ok,
+            QtWidgets.QMessageBox.StandardButton.Cancel
+            ) == QtWidgets.QMessageBox.StandardButton.Ok:
+        source.execute(CompleteWorkitemStrategy, [workitem.get_uid(), "finished"])
+        hide_timer()
+        tool_next.hide()
+        tool_complete.hide()
+        update_header(pomodoro_timer)
 
 
 def get_work_duration() -> int:
@@ -503,8 +509,7 @@ def void_pomodoro() -> None:
     for backlog in source.backlogs():
         workitem, _ = backlog.get_running_workitem()
         if workitem is not None:
-            m = QtWidgets.QMessageBox()
-            if m.warning(window,
+            if QtWidgets.QMessageBox().warning(window,
                          "Confirmation",
                          f"Are you sure you want to void current pomodoro?",
                          QtWidgets.QMessageBox.StandardButton.Ok,
@@ -545,6 +550,14 @@ def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QF
 def toggle_backlogs(visible) -> None:
     backlogs_table.setVisible(visible)
     left_table_layout.setVisible(visible or users_table.isVisible())
+
+
+def toggle_show_completed_workitems(checked) -> None:
+    workitem_model.show_completed(checked)
+    search.show_completed(checked)
+    workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+    workitems_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+    workitems_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
 
 
 def toggle_users(visible) -> None:
@@ -748,6 +761,8 @@ menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
 menu_backlog: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuBacklog")
 # noinspection PyTypeChecker
 menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
+# noinspection PyTypeChecker
+menu_filter: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFilter")
 
 # Backlogs table
 # noinspection PyTypeChecker
@@ -838,6 +853,10 @@ action_backlogs.toggled.connect(toggle_backlogs)
 # noinspection PyTypeChecker
 action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
 action_teams.toggled.connect(toggle_users)
+
+# noinspection PyTypeChecker
+action_show_completed_workitems: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowCompletedWorkitems")
+action_show_completed_workitems.toggled.connect(toggle_show_completed_workitems)
 
 # noinspection PyTypeChecker
 action_new_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionNewBacklog")
@@ -975,6 +994,12 @@ tool_complete.hide()
 # noinspection PyTypeChecker
 tool_note: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNote")
 tool_note.clicked.connect(lambda: note_pomodoro())
+
+# noinspection PyTypeChecker
+tool_filter: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolFilter")
+tool_filter.clicked.connect(lambda: menu_filter.exec(
+    tool_filter.parentWidget().mapToGlobal(tool_filter.geometry().center())
+))
 
 # noinspection PyTypeChecker
 tool_show_all: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolShowAll")

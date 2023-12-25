@@ -32,6 +32,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _font_sealed: QtGui.QFont
     _backlog: Backlog | None
     _row_height: int
+    _show_completed: bool
 
     def __init__(self, parent: QtWidgets.QWidget, source: AbstractEventSource):
         super().__init__(0, 3, parent)
@@ -42,6 +43,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
+        self._show_completed = True
         source.connect(AfterWorkitemCreate, self._workitem_created)
         source.connect(AfterWorkitemDelete, self._workitem_deleted)
         source.connect(AfterWorkitemRename, self._pomodoro_changed)
@@ -130,6 +132,8 @@ class WorkitemModel(QtGui.QStandardItemModel):
         if backlog is not None:
             i = 0
             for workitem in backlog.values():
+                if not self._show_completed and workitem.is_sealed():
+                    continue
                 item = QtGui.QStandardItem('')
                 self.appendRow(item)
                 self.set_row(i, workitem)
@@ -137,3 +141,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(1, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(2, QtGui.QStandardItem(''))
+
+    def show_completed(self, show: bool) -> None:
+        self._show_completed = show
+        self.load(self._backlog)
