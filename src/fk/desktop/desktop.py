@@ -666,6 +666,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     elif name == 'Application.theme':
         restart_warning()
         # app.set_theme(new_value)
+    elif name.startswith('WebsocketEventSource.'):
+        source.start()
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
@@ -717,7 +719,7 @@ def on_exception(exc_type, exc_value, exc_trace):
     to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
     if QtWidgets.QMessageBox().critical(window,
                                         "Unexpected error",
-                                        f"Error message: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
+                                        f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
                                         QtWidgets.QMessageBox.StandardButton.Ok,
                                         QtWidgets.QMessageBox.StandardButton.Open) \
             == QtWidgets.QMessageBox.StandardButton.Open:

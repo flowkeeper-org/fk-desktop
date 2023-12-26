@@ -66,3 +66,25 @@ class ReplayStrategy(AbstractStrategy):
 
     def execute(self) -> (str, any):
         return None, None
+
+
+# Error("401", "User not found")
+@strategy
+class ErrorStrategy(AbstractStrategy):
+    _error_code: int
+    _error_message: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any]], None],
+                 data: 'App',
+                 settings: AbstractSettings):
+        super().__init__(seq, when, user, params, emit, data, settings)
+        self._error_code = int(params[0])
+        self._error_message = params[1]
+
+    def execute(self) -> (str, any):
+        raise Exception(self._error_message)

@@ -15,9 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import enum
 from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
+from PySide6.QtNetwork import QAbstractSocket
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -25,7 +27,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
-from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy
+from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy
 from fk.qt.qt_timer import QtTimer
 
 TRoot = TypeVar('TRoot')
@@ -37,6 +39,7 @@ class WebsocketEventSource(AbstractEventSource):
     _mute_requested: bool
     _connection_attempt: int
     _reconnect_timer: AbstractTimer
+    _received_error: bool
 
     def __init__(self,
                  settings: AbstractSettings,
@@ -45,6 +48,7 @@ class WebsocketEventSource(AbstractEventSource):
         self._data = root
         self._mute_requested = True
         self._connection_attempt = 0
+        self._received_error = False
         self._reconnect_timer = QtTimer()
         self._ws = QtWebSockets.QWebSocket()
         self._ws.connected.connect(lambda: self.replay())
@@ -52,15 +56,22 @@ class WebsocketEventSource(AbstractEventSource):
         self._ws.textMessageReceived.connect(lambda msg: self._on_message(msg))
 
         # Log errors
-        self._ws.sslErrors.connect(lambda e: print(f'SslErrors: {e}'))
-        self._ws.errorOccurred.connect(lambda e: print(f'ErrorOccurred: {e}'))
-        self._ws.handshakeInterruptedOnError.connect(lambda e: print(f'HandshakeInterruptedOnError: {e}'))
-        self._ws.peerVerifyError.connect(lambda e: print(f'PeerVerifyError: {e}'))
+        self._ws.sslErrors.connect(lambda e: self._on_error('SSL error', e))
+        self._ws.errorOccurred.connect(lambda e: self._on_error('error occurred', e))
+        self._ws.handshakeInterruptedOnError.connect(lambda e: self._on_error('handshake interrupted on error', e))
+        self._ws.peerVerifyError.connect(lambda e: self._on_error('peer verify error', e))
 
-    def _connection_lost(self):
+    def _on_error(self, s: str, e: enum) -> None:
+        if type(e) != QAbstractSocket.SocketError:
+            raise Exception(f'WebSocket {s}: {e}')
+
+    def _connection_lost(self) -> None:
         next_reconnect = min(max(500, int(pow(1.5, self._connection_attempt))), 30000)
-        print(f'WS Client disconnected. Will reconnect in {next_reconnect}ms')
-        self._reconnect_timer.schedule(next_reconnect, self._connect, None, True)
+        if self._received_error:
+            print(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
+        else:
+            print(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
+            self._reconnect_timer.schedule(next_reconnect, self._connect, None, True)
 
     def _connect(self, params: dict | None = None) -> None:
         self._connection_attempt += 1
@@ -83,7 +94,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _on_message(self, message: str) -> None:
         lines = message.split('\n')
-        print(f'Received: {len(lines)}')
+        print(f'Received {len(lines)} messages')
         for line in lines:
             if line == 'ReplayCompleted()':
                 if self._mute_requested:
@@ -93,9 +104,14 @@ class WebsocketEventSource(AbstractEventSource):
             s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
             if type(s) is str:
                 continue
+            if type(s) is ErrorStrategy:
+                self._received_error = True
+                s.execute()  # This will throw an exception
             if s.get_sequence() is not None and s.get_sequence() > self._last_seq:
                 if s.get_sequence() != self._last_seq + 1:
-                    raise Exception("Strategies must go in sequence")
+                    raise Exception(f"Strategies must go in sequence. "
+                                    f"Received {s.get_sequence()} after {self._last_seq}. "
+                                    f"To attempt a repair go to Settings > Connection > Repair.")
                 self._last_seq = s.get_sequence()
                 # print(f" - {s}")
                 self._execute_prepared_strategy(s)
@@ -103,6 +119,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def replay(self) -> None:
         self._connection_attempt = 0    # This will allow us to reconnect quickly
+        self._received_error = False
         print('Connected. Authenticating')
         username = self.get_config_parameter('WebsocketEventSource.username')
         token = self.get_config_parameter('WebsocketEventSource.password')
