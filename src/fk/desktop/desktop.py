@@ -257,6 +257,7 @@ def complete_work() -> None:
         tool_next.hide()
         tool_complete.hide()
         update_header(pomodoro_timer)
+        reset_tray_icon()
 
 
 def get_work_duration() -> int:

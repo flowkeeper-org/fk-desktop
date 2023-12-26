@@ -175,3 +175,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             for option_id, option_type, option_display, option_default, option_options, option_visible
             in self._definitions[category]
         ]
+
+    def reset_to_defaults(self) -> None:
+        for lst in self._definitions.values():
+            for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
+                self.set(option_id, option_default)

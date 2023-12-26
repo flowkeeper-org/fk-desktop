@@ -20,7 +20,8 @@ from typing import Callable
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
-    QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox
+    QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
+    QMessageBox
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_settings import QtSettings
@@ -37,13 +38,14 @@ class SettingsDialog(QDialog):
         self._data = data
         self._widgets_value = dict()
         self._widgets_visibility = dict()
-        self.resize(QSize(400, 400))
+        self.resize(QSize(500, 450))
         self.setWindowTitle("Settings")
 
         buttons = QDialogButtonBox(self)
         buttons.setStandardButtons(
             QDialogButtonBox.StandardButton.Apply |
             QDialogButtonBox.StandardButton.Close |
+            QDialogButtonBox.StandardButton.Reset |
             QDialogButtonBox.StandardButton.Save
         )
         buttons.clicked.connect(lambda btn: self._on_action(buttons.buttonRole(btn)))
@@ -75,6 +77,16 @@ class SettingsDialog(QDialog):
             self._save_settings()
         elif role == QDialogButtonBox.ButtonRole.RejectRole:
             self.close()
+        elif role == QDialogButtonBox.ButtonRole.ResetRole:
+            if QMessageBox().warning(self,
+                                     "Confirmation",
+                                     f"Are you sure you want to reset settings to their default values, "
+                                     f"including data source connection?",
+                                     QMessageBox.StandardButton.Ok,
+                                     QMessageBox.StandardButton.Cancel
+                                     ) == QMessageBox.StandardButton.Ok:
+                self._data.reset_to_defaults()
+                self.close()
         elif role == QDialogButtonBox.ButtonRole.AcceptRole:
             self._save_settings()
             self.close()
