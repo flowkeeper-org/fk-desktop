@@ -974,6 +974,8 @@ tool_backlogs.setDefaultAction(action_backlogs)
 # noinspection PyTypeChecker
 tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
 tool_teams.setDefaultAction(action_teams)
+action_teams.setEnabled(settings.is_team_supported())
+tool_teams.setVisible(settings.is_team_supported())
 
 # noinspection PyTypeChecker
 tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")

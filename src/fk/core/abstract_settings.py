@@ -150,6 +150,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         else:
             return self.get('WebsocketEventSource.username')
 
+    def is_team_supported(self) -> bool:
+        return self.get('Source.type') != 'local'
+
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
 
