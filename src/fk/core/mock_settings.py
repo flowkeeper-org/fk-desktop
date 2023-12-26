@@ -23,7 +23,7 @@ class MockSettings(AbstractSettings):
         super().__init__('Arial', 10)
         self._settings = {
             'FileEventSource.filename': filename,
-            'Source.username': username,
+            'WebsocketEventSource.username': username,
         }
 
     def get(self, name: str) -> str:

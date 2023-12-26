@@ -64,7 +64,15 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _connect(self, params: dict | None = None) -> None:
         self._connection_attempt += 1
-        url = self.get_config_parameter('WebsocketEventSource.url')
+        source_type = self.get_config_parameter('Source.type')
+        if source_type == 'websocket':
+            url = self.get_config_parameter('WebsocketEventSource.url')
+        elif source_type == 'flowkeeper.org':
+            url = 'wss://app.flowkeeper.org'
+        elif source_type == 'flowkeeper.pro':
+            url = 'wss://app.flowkeeper.pro'
+        else:
+            raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
         print(f'Connecting to {url}, attempt {self._connection_attempt}')
         self._ws.open(QtCore.QUrl(url))
 
@@ -96,7 +104,7 @@ class WebsocketEventSource(AbstractEventSource):
     def replay(self) -> None:
         self._connection_attempt = 0    # This will allow us to reconnect quickly
         print('Connected. Authenticating')
-        username = self.get_config_parameter('Source.username')
+        username = self.get_config_parameter('WebsocketEventSource.username')
         token = self.get_config_parameter('WebsocketEventSource.password')
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         auth = AuthenticateStrategy(1,
