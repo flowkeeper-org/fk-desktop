@@ -145,7 +145,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_username(self) -> str:
-        return self.get('WebsocketEventSource.username')
+        if self.get('Source.type') == 'local':
+            return 'user@local.host'
+        else:
+            return self.get('WebsocketEventSource.username')
 
     def get_fullname(self) -> str:
         return self.get('Source.fullname')

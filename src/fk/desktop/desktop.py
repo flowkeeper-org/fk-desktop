@@ -689,21 +689,21 @@ def show_about():
     about_changelog: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "notes")
     file = QtCore.QFile(":/CHANGELOG.txt")
     file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_changelog.setText(file.readAll().toStdString())
+    about_changelog.setMarkdown(file.readAll().toStdString())
     file.close()
 
     # noinspection PyTypeChecker
     about_credits: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "credits")
     file = QtCore.QFile(":/CREDITS.txt")
     file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_credits.setText(file.readAll().toStdString())
+    about_credits.setMarkdown(file.readAll().toStdString())
     file.close()
 
     # noinspection PyTypeChecker
     about_license: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "license")
     file = QtCore.QFile(":/LICENSE.txt")
     file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_license.setText(file.readAll().toStdString())
+    about_license.setMarkdown(file.readAll().toStdString())
     file.close()
 
     about_window.show()
