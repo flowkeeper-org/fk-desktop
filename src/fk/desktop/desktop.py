@@ -16,6 +16,9 @@
 
 import datetime
 import sys
+import traceback
+import urllib
+import webbrowser
 from typing import Iterable
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
@@ -710,12 +713,29 @@ def show_about():
     about_window.show()
 
 
+def on_exception(exc_type, exc_value, exc_trace):
+    to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
+    if QtWidgets.QMessageBox().critical(window,
+                                        "Unexpected error",
+                                        f"Error message: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
+                                        QtWidgets.QMessageBox.StandardButton.Ok,
+                                        QtWidgets.QMessageBox.StandardButton.Open) \
+            == QtWidgets.QMessageBox.StandardButton.Open:
+        params = urllib.parse.urlencode({
+            'labels': 'exception',
+            'title': f'Unhandled {exc_type.__name__}',
+            'body': f'PLEASE PROVIDE SOME DETAILS HERE.\nREVIEW THE BELOW PART FOR SENSITIVE DATA.\n\n```\n{to_log}```'
+        })
+        webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
 # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
 # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
 # will pass through to Qt data models via Qt-like connect / emit mechanism.
+sys.excepthook = on_exception
 app = Application(sys.argv)
 settings = app.get_settings()
 settings.connect(events.AfterSettingChanged, on_setting_changed)
