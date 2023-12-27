@@ -16,7 +16,7 @@
 
 from typing import Callable
 
-from PySide6.QtCore import QItemSelection, Qt, QItemSelectionModel, QModelIndex
+from PySide6.QtCore import QItemSelection, Qt, QModelIndex
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QTableView, QWidget, QHeaderView, QMenu, QMessageBox
 
@@ -118,15 +118,8 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
 
-    def _get_selected_index(self) -> QModelIndex | None:
-        model: QItemSelectionModel = self.selectionModel()
-        if model is not None:
-            indexes = model.selectedIndexes()
-            if len(indexes) == 3:
-                return indexes[1]
-
-    def get_selected(self) -> Backlog | None:
-        index = self._get_selected_index()
+    def get_current(self) -> Backlog | None:
+        index = self.currentIndex()
         if index is not None:
             return index.data(500)
 
@@ -152,6 +145,7 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         is_workitem_selected = new_workitem is not None
         self._action_delete_workitem.setEnabled(is_workitem_selected)
         self._action_rename_workitem.setEnabled(is_workitem_selected)
+        self._action_complete_workitem.setEnabled(is_workitem_selected)
         # TODO + based on new_workitem.is_sealed()
         # complete
         # start
@@ -175,13 +169,13 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         self.edit(index)
 
     def rename_selected_workitem(self) -> None:
-        index: QModelIndex = self._get_selected_index()
+        index: QModelIndex = self.currentIndex()
         if index is None:
             raise Exception("Trying to rename a workitem, while there's none selected")
         self.edit(index)
 
     def delete_selected_workitem(self) -> None:
-        selected: Workitem = self.get_selected()
+        selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to delete a workitem, while there's none selected")
         if QMessageBox().warning(self,
@@ -193,7 +187,7 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
             self._source.execute(DeleteWorkitemStrategy, [selected.get_uid()])
 
     def complete_selected_workitem(self) -> None:
-        selected: Workitem = self.get_selected()
+        selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to complete a workitem, while there's none selected")
         params = {

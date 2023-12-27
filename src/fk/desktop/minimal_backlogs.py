@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.app import App
+from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.desktop.application import Application
 from fk.qt.backlog_tableview import BacklogTableView
@@ -47,6 +48,7 @@ app.setQuitOnLastWindowClosed(True)
 window.show()
 
 try:
+    source.on(SourceMessagesProcessed, lambda event: backlogs_table.load_for_user(root.get_current_user()))
     source.start()
 except Exception as ex:
     app.on_exception(type(ex), ex, ex.__traceback__)

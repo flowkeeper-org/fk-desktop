@@ -74,19 +74,19 @@ def tray_clicked() -> None:
 
 
 def add_pomodoro() -> None:
-    selected: Workitem = workitems_table.get_selected()
+    selected: Workitem = workitems_table.get_current()
     if selected is not None:
         source.execute(AddPomodoroStrategy, [selected.get_uid(), "1"])
 
 
 def remove_pomodoro() -> None:
-    selected: Workitem = workitems_table.get_selected()
+    selected: Workitem = workitems_table.get_current()
     if selected is not None:
         source.execute(RemovePomodoroStrategy, [selected.get_uid(), "1"])
 
 
 def start_work() -> None:
-    workitem: Workitem = workitems_table.get_selected()
+    workitem: Workitem = workitems_table.get_current()
     # TODO: This is where we can adjust work duration
     # TODO: Move this to Timer and adjust rest, too
     source.execute(StartWorkStrategy, [workitem.get_uid(), str(get_work_duration())])

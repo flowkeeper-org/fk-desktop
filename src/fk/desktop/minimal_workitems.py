@@ -20,9 +20,9 @@ from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.app import App
+from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.desktop.application import Application
-from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.websocket_event_source import WebsocketEventSource
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -48,6 +48,7 @@ app.setQuitOnLastWindowClosed(True)
 window.show()
 
 try:
+    source.on(SourceMessagesProcessed, lambda event: workitems_table.load_for_backlog(list(root.get_current_user().values())[0]))
     source.start()
 except Exception as ex:
     app.on_exception(type(ex), ex, ex.__traceback__)

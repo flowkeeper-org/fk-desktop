@@ -17,7 +17,7 @@
 import datetime
 from typing import Callable
 
-from PySide6.QtCore import QItemSelection, Qt, QItemSelectionModel, QModelIndex
+from PySide6.QtCore import QItemSelection, Qt, QModelIndex
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QTableView, QWidget, QHeaderView, QMenu, QMessageBox
 
@@ -97,15 +97,8 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
     def is_loaded(self):
         return self._is_loaded
 
-    def _get_selected_index(self) -> QModelIndex | None:
-        model: QItemSelectionModel = self.selectionModel()
-        if model is not None:
-            indexes = model.selectedIndexes()
-            if len(indexes) == 1:
-                return indexes[0]
-
-    def get_selected(self) -> Backlog | None:
-        index = self._get_selected_index()
+    def get_current(self) -> Backlog | None:
+        index = self.currentIndex()
         if index is not None:
             return index.data(500)
 
@@ -157,13 +150,13 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
         self.edit(index)
 
     def rename_selected_backlog(self) -> None:
-        index: QModelIndex = self._get_selected_index()
+        index: QModelIndex = self.currentIndex()
         if index is None:
             raise Exception("Trying to rename a backlog, while there's none selected")
         self.edit(index)
 
     def delete_selected_backlog(self) -> None:
-        selected: Backlog = self.get_selected()
+        selected: Backlog = self.get_current()
         if selected is None:
             raise Exception("Trying to delete a backlog, while there's none selected")
         if QMessageBox().warning(self,
