@@ -32,10 +32,14 @@ class SettingsDialog(QDialog):
     _widgets_value: dict[str, Callable[[], str]]
     _widgets_visibility: dict[QWidget, Callable[[dict[str, str]], bool]]
     _buttons: QDialogButtonBox
+    _buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None
 
-    def __init__(self, data: AbstractSettings):
+    def __init__(self,
+                 data: AbstractSettings,
+                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         super().__init__()
         self._data = data
+        self._buttons_mapping = buttons_mapping
         self._widgets_value = dict()
         self._widgets_visibility = dict()
         self.resize(QSize(500, 450))
@@ -166,6 +170,12 @@ class SettingsDialog(QDialog):
             btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
             layout.addWidget(btn)
             return [widget]
+        elif option_type == 'button':
+            btn = QPushButton(parent)
+            btn.setText('Execute...')
+            btn.clicked.connect(lambda: self._handle_button_click(option_id))
+            self._widgets_value[option_id] = lambda: ""
+            return [btn]
         elif option_type == 'int':
             ed4 = QSpinBox(parent)
             ed4.setMinimum(option_options[0])
@@ -206,6 +216,20 @@ class SettingsDialog(QDialog):
             return [ed7]
         else:
             return []
+
+    def _handle_button_click(self, option_id: str):
+        if self._buttons_mapping is None or option_id not in self._buttons_mapping:
+            QMessageBox().warning(self,
+                                  "Not available",
+                                  "This button doesn't do anything",
+                                  QMessageBox.StandardButton.Close)
+            return
+
+        values: dict[str, str] = dict()
+        for name in self._widgets_value:
+            values[name] = self._widgets_value[name]()
+
+        self._buttons_mapping[option_id](values)
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
         res = QWidget(tabs)

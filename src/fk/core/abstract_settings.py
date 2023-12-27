@@ -59,7 +59,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
     _defaults: dict[str, str]
 
-    def __init__(self, default_font_family: str, default_font_size: int):
+    def __init__(self,
+                 default_font_family: str,
+                 default_font_size: int,
+                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingChanged,
             events.AfterSettingChanged,
@@ -82,9 +85,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3'], _show_for_file_source),
+                ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_websocket_source),
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'False', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'False', [], _show_for_websocket_source),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [

@@ -731,6 +731,32 @@ def on_exception(exc_type, exc_value, exc_trace):
         webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
 
 
+def repair_file_event_source(_):
+    if QtWidgets.QMessageBox().warning(window,
+                                        "Confirmation",
+                                        f"Are you sure you want to repair the data source? "
+                                        f"This action will\n"
+                                        f"1. Remove duplicates,\n"
+                                        f"2. Create missing data entities like users and backlogs, on first reference,\n"
+                                        f"3. Renumber / reindex data,\n"
+                                        f"4. Remove any events, which fail after 1 -- 3,\n"
+                                        f"5. Create a backup file and overwrite the original data source one,\n"
+                                        f"6. Display a detailed log of what it did.\n"
+                                        f"\n"
+                                        f"If there are no errors, then this action won't create or overwrite any files.",
+                                        QtWidgets.QMessageBox.StandardButton.Ok,
+                                        QtWidgets.QMessageBox.StandardButton.Cancel) \
+            == QtWidgets.QMessageBox.StandardButton.Ok:
+        cast: FileEventSource = source
+        log = cast.repair()
+        QtWidgets.QInputDialog.getMultiLineText(window,
+                                                "Repair completed",
+                                                "Please save this log for future reference. "
+                                                "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
+                                                "Flowkeeper restart is required to reload the changes.",
+                                                "\n".join(log))
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
@@ -860,7 +886,9 @@ eye_candy()
 # Settings
 # noinspection PyTypeChecker
 settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
-settings_action.triggered.connect(lambda: SettingsDialog(settings).show())
+settings_action.triggered.connect(lambda: SettingsDialog(settings, {
+    'FileEventSource.repair': repair_file_event_source
+}).show())
 
 # Connect menu actions to the toolbar
 # noinspection PyTypeChecker

@@ -13,16 +13,24 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import os
+import time
+from collections import deque
 from os import path
-from typing import Self, TypeVar
+from typing import Self, TypeVar, Iterable
 
 from fk.core import events
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.app import App
+from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.strategy_factory import strategy_from_string
+from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
+    CompleteWorkitemStrategy
 
 TRoot = TypeVar('TRoot')
 
@@ -30,17 +38,25 @@ TRoot = TypeVar('TRoot')
 class FileEventSource(AbstractEventSource[TRoot]):
     _data: TRoot
     _watcher: AbstractFilesystemWatcher | None
+    _existing_strategies: Iterable[AbstractStrategy] | None
+    _last_strategy: AbstractStrategy | None
 
     def __init__(self,
                  settings: AbstractSettings,
                  root: TRoot,
-                 filesystem_watcher: AbstractFilesystemWatcher = None):
+                 filesystem_watcher: AbstractFilesystemWatcher = None,
+                 existing_strategies: Iterable[AbstractStrategy] | None = None):
         super().__init__(settings)
         self._data = root
         self._watcher = None
+        self._existing_strategies = existing_strategies
+        self._last_strategy = None
         if self._is_watch_changes() and filesystem_watcher is not None:
             self._watcher = filesystem_watcher
             self._watcher.watch(self._get_filename(), lambda f: self._on_file_change(f))
+
+    def get_last_strategy(self) -> AbstractStrategy | None:
+        return self._last_strategy
 
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
@@ -53,10 +69,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
                 if type(strategy) is str:
                     continue
+                self._last_strategy = strategy
                 seq = strategy.get_sequence()
                 if seq > self._last_seq:
                     if seq != self._last_seq + 1:
-                        raise Exception("Strategies must go in sequence")
+                        self._sequence_error(self._last_seq, seq)
                     self._last_seq = seq
                     # print(f" - {strategy}")
                     self._execute_prepared_strategy(strategy)
@@ -69,6 +86,39 @@ class FileEventSource(AbstractEventSource[TRoot]):
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
     def start(self, mute_events=True) -> None:
+        if self._existing_strategies is None:
+            return self._process_from_file(mute_events)
+        else:
+            return self._process_from_existing()
+
+    def _process_from_existing(self) -> None:
+        # This method is called when we repair an existing data source
+        # All events are muted during processing
+        self._emit(events.SourceMessagesRequested, dict())
+        self.mute()
+        is_first = True
+        seq = 1
+        for strategy in self._existing_strategies:
+            strategy._data = self._data
+            strategy._settings = self._settings
+            strategy._emit = self._emit
+            if type(strategy) is str:
+                continue
+            self._last_strategy = strategy
+
+            if is_first:
+                is_first = False
+            else:
+                seq = strategy.get_sequence()
+                if seq != self._last_seq + 1:
+                    self._sequence_error(self._last_seq, seq)
+            self._last_seq = seq
+            self._execute_prepared_strategy(strategy)
+        self.auto_seal()
+        self.unmute()
+        self._emit(events.SourceMessagesProcessed, dict())
+
+    def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
         self._emit(events.SourceMessagesRequested, dict())
         if mute_events:
@@ -88,13 +138,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
                 if type(strategy) is str:
                     continue
+                self._last_strategy = strategy
 
                 if is_first:
                     is_first = False
                 else:
                     seq = strategy.get_sequence()
                     if seq != self._last_seq + 1:
-                        raise Exception(f"Strategies must go in sequence ({seq})")
+                        self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self._execute_prepared_strategy(strategy)
         self.auto_seal()
@@ -103,32 +154,158 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, dict())
 
-    def repair(self) -> None:
-        # This method attempts some basic repairs:
-        # 1. Renumber strategies
-        # It will create a new file with "-repaired" suffix
+    def repair(self) -> Iterable[str]:
+        # This method attempts some basic repairs, trying to save as much
+        # data as possible:
+        # 0. Remove duplicate creations
+        # 1. Create non-existent users on first reference
+        # 2. Create non-existent backlogs on first reference
+        # 3. Create non-existent workitems on first reference
+        # 4. Renumber strategies
+        # 5. Restart and remove failing strategies
+        # Perform 4 -- 5 in the loop
+        # It will overwrite existing data file and will create a backup with "-backup-<date>" suffix
 
-        # Read all strategies
+        log = list()
+        changes: int = 0
+
+        # Read strategies and repair in one pass
         filename = self._get_filename()
-        strategies = list()
+        strategies: deque[AbstractStrategy] = deque()
+        all_users: set[str] = set()
+        all_backlogs: set[str] = set()
+        all_workitems: set[str] = set()
+        repaired_backlog: str = None
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                s = strategy_from_string(line, self._emit, self._data, self._settings)
+                t = type(s)
+
+                # Create users on the first reference
+                if t is CreateUserStrategy:
+                    cast: CreateUserStrategy = s
+                    if cast.get_user_identity() in all_users:   # Remove duplicate creation
+                        log.append(f'Skipped duplicate user: {s}')
+                        changes += 1
+                        continue
+                    all_users.add(cast.get_user_identity())
+                elif t is DeleteUserStrategy or t is RenameUserStrategy:
+                    cast: DeleteUserStrategy | RenameUserStrategy = s
+                    uid = cast.get_user_identity()
+                    if uid not in all_users:
+                        strategies.append(CreateUserStrategy(1,
+                                                             s._when,
+                                                             s._user,
+                                                             [uid, f"[Repaired] {uid}"],
+                                                             self._emit,
+                                                             self._data,
+                                                             self._settings))
+                        all_users.add(uid)
+                        log.append(f'Created missing user on first reference: {s}')
+                        changes += 1
+
+                # Create backlogs on the first reference
+                elif t is CreateBacklogStrategy:
+                    cast: CreateBacklogStrategy = s
+                    if cast.get_backlog_uid() in all_backlogs:   # Remove duplicate creation
+                        log.append(f'Skipped duplicate backlog: {s}')
+                        changes += 1
+                        continue
+                    all_backlogs.add(cast.get_backlog_uid())
+                elif t is DeleteBacklogStrategy or t is RenameBacklogStrategy or t is CreateWorkitemStrategy:
+                    cast: DeleteBacklogStrategy | RenameBacklogStrategy | CreateWorkitemStrategy = s
+                    uid = cast.get_backlog_uid()
+                    if uid not in all_backlogs:
+                        strategies.append(CreateBacklogStrategy(1,
+                                                             s._when,
+                                                             s._user,
+                                                             [uid, f"[Repaired] {uid}"],
+                                                             self._emit,
+                                                             self._data,
+                                                             self._settings))
+                        all_backlogs.add(uid)
+                        log.append(f'Created missing backlog on first reference: {s}')
+                        changes += 1
+                    if t is CreateWorkitemStrategy:
+                        cast: CreateWorkitemStrategy = s
+                        if cast.get_workitem_uid() in all_workitems:  # Remove duplicate creation
+                            log.append(f'Skipped duplicate workitem: {s}')
+                            changes += 1
+                            continue
+                        all_workitems.add(cast.get_workitem_uid())
+
+                # Create workitems on the first reference
+                elif t is DeleteWorkitemStrategy or t is RenameWorkitemStrategy or t is CompleteWorkitemStrategy:
+                    cast: DeleteWorkitemStrategy | RenameWorkitemStrategy | CompleteWorkitemStrategy = s
+                    uid = cast.get_workitem_uid()
+                    if uid not in all_workitems:
+                        if repaired_backlog is None:
+                            repaired_backlog = generate_uid()
+                            strategies.append(CreateBacklogStrategy(1,
+                                                                    s._when,
+                                                                    s._user,
+                                                                    [repaired_backlog, '[Repaired] Orphan workitems'],
+                                                                    self._emit,
+                                                                    self._data,
+                                                                    self._settings))
+                            all_backlogs.add(repaired_backlog)
+                            log.append(f'Created a backlog for orphan workitems: {repaired_backlog}')
+                            changes += 1
+                        strategies.append(CreateWorkitemStrategy(1,
+                                                             s._when,
+                                                             s._user,
+                                                             [uid, repaired_backlog, f"[Repaired] {uid}"],
+                                                             self._emit,
+                                                             self._data,
+                                                             self._settings))
+                        all_workitems.add(uid)
+                        log.append(f'Created missing workitem on first reference: {s}')
+                        changes += 1
+
                 strategies.append(s)
 
-        # Repair
-        # 1. Renumber from 1 to N
-        seq = 1
-        for s in strategies:
-            if type(s) is str:
-                continue
-            s._seq = seq
-            seq += 1
-
-        # Write it back
-        with open(filename + '-repaired', 'w', encoding='UTF-8') as f:
+        while True:
+            # Renumber strategies
+            seq = strategies[0].get_sequence()
             for s in strategies:
-                f.write(str(s) + '\n')
+                if type(s) is str:
+                    continue
+                if s.get_sequence() != seq:
+                    s._seq = seq
+                    changes += 1
+                seq += 1
+            log.append(f'Renumbered strategies up to {seq}')
+
+            # Restart and remove failing strategies
+            new_source = self.clone(App(self._settings), strategies)
+            try:
+                new_source.start()
+                log.append(f'Tested successfully')
+                break   # No exceptions means we repaired successfully
+            except Exception as ex:
+                failed = new_source.get_last_strategy()
+                log.append(f'Tested with an error: {ex}. Removed failed strategy: {failed}')
+                strategies.remove(failed)
+                changes += 1
+
+        if changes > 0:
+            log.append(f'Made {changes} changes in total')
+
+            # Rename the original file
+            date = round(time.time() * 1000)
+            backup_filename = f"{filename}-backup-{date}"
+            os.rename(filename, backup_filename)
+            log.append(f'Created backup file {backup_filename}')
+
+            # Write it back
+            with open(filename, 'w', encoding='UTF-8') as f:
+                for s in strategies:
+                    f.write(str(s) + '\n')
+            log.append(f'Overwritten original file {filename}')
+        else:
+            log.append(f'No changes were made')
+
+        return log
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
@@ -152,5 +329,5 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: Implement
         pass
 
-    def clone(self, new_root: TRoot) -> Self:
-        return FileEventSource(self._settings, new_root, self._watcher)
+    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
+        return FileEventSource(self._settings, new_root, self._watcher, existing_strategies)

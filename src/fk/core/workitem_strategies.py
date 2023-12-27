@@ -33,6 +33,12 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
     _backlog_uid: str
     _workitem_name: str
 
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -88,6 +94,9 @@ def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> Non
 class DeleteWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
 
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -127,6 +136,9 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
 class RenameWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _new_workitem_name: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
 
     def __init__(self,
                  seq: int,
@@ -174,6 +186,9 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
 class CompleteWorkitemStrategy(AbstractStrategy['App']):
     _workitem_uid: str
     _target_state: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
 
     def __init__(self,
                  seq: int,

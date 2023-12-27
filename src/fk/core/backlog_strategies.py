@@ -32,6 +32,9 @@ class CreateBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
     _backlog_name: str
 
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -67,6 +70,9 @@ class CreateBacklogStrategy(AbstractStrategy['App']):
 @strategy
 class DeleteBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
+
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
 
     def __init__(self,
                  seq: int,
@@ -109,6 +115,9 @@ class DeleteBacklogStrategy(AbstractStrategy['App']):
 class RenameBacklogStrategy(AbstractStrategy['App']):
     _backlog_uid: str
     _backlog_new_name: str
+
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
 
     def __init__(self,
                  seq: int,

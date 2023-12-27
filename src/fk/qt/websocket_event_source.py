@@ -40,6 +40,8 @@ class WebsocketEventSource(AbstractEventSource):
     _connection_attempt: int
     _reconnect_timer: AbstractTimer
     _received_error: bool
+    _ignore_invalid_sequences: bool
+    _ignore_errors: bool
 
     def __init__(self,
                  settings: AbstractSettings,
@@ -54,6 +56,9 @@ class WebsocketEventSource(AbstractEventSource):
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: self._connection_lost())
         self._ws.textMessageReceived.connect(lambda msg: self._on_message(msg))
+
+        self._ignore_invalid_sequences = settings.get('WebsocketEventSource.ignore_invalid_sequence') == 'True'
+        self._ignore_errors = settings.get('WebsocketEventSource.ignore_errors') == 'True'
 
         # Log errors
         self._ws.sslErrors.connect(lambda e: self._on_error('SSL error', e))
@@ -96,25 +101,29 @@ class WebsocketEventSource(AbstractEventSource):
         lines = message.split('\n')
         print(f'Received {len(lines)} messages')
         for line in lines:
-            if line == 'ReplayCompleted()':
-                if self._mute_requested:
-                    self.unmute()
-                self._emit(events.SourceMessagesProcessed, dict())
-                break
-            s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
-            if type(s) is str:
-                continue
-            if type(s) is ErrorStrategy:
-                self._received_error = True
-                s.execute()  # This will throw an exception
-            if s.get_sequence() is not None and s.get_sequence() > self._last_seq:
-                if s.get_sequence() != self._last_seq + 1:
-                    raise Exception(f"Strategies must go in sequence. "
-                                    f"Received {s.get_sequence()} after {self._last_seq}. "
-                                    f"To attempt a repair go to Settings > Connection > Repair.")
-                self._last_seq = s.get_sequence()
-                # print(f" - {s}")
-                self._execute_prepared_strategy(s)
+            try:
+                if line == 'ReplayCompleted()':
+                    if self._mute_requested:
+                        self.unmute()
+                    self._emit(events.SourceMessagesProcessed, dict())
+                    break
+                s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                if type(s) is str:
+                    continue
+                if type(s) is ErrorStrategy:
+                    self._received_error = True
+                    s.execute()  # This will throw an exception
+                if s.get_sequence() is not None and s.get_sequence() > self._last_seq:
+                    if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
+                        self._sequence_error(self._last_seq, s.get_sequence())
+                    self._last_seq = s.get_sequence()
+                    # print(f" - {s}")
+                    self._execute_prepared_strategy(s)
+            except Exception as ex:
+                if self._ignore_errors:
+                    print(f'Error processing {line}: {ex}')
+                else:
+                    raise ex
         self.auto_seal()
 
     def replay(self) -> None:

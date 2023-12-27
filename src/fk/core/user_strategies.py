@@ -31,6 +31,9 @@ class CreateUserStrategy(AbstractStrategy['App']):
     _user_identity: str
     _user_name: str
 
+    def get_user_identity(self) -> str:
+        return self._user_identity
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -65,6 +68,9 @@ class CreateUserStrategy(AbstractStrategy['App']):
 @strategy
 class DeleteUserStrategy(AbstractStrategy['App']):
     _user_identity: str
+
+    def get_user_identity(self) -> str:
+        return self._user_identity
 
     def __init__(self,
                  seq: int,
@@ -107,6 +113,9 @@ class DeleteUserStrategy(AbstractStrategy['App']):
 class RenameUserStrategy(AbstractStrategy['App']):
     _user_identity: str
     _new_user_name: str
+
+    def get_user_identity(self) -> str:
+        return self._user_identity
 
     def __init__(self,
                  seq: int,

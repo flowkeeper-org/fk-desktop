@@ -25,12 +25,41 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.pomodoro import Pomodoro
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CreateWorkitemStrategy
 
 TRoot = TypeVar('TRoot')
+
+
+def _extract_users(strategies: Iterable[AbstractStrategy]):
+    ids = set()
+    for s in strategies:
+        if type(s) is CreateUserStrategy:
+            cast: CreateUserStrategy = s
+            ids.add(cast.get_user_identity())
+    return ids
+
+
+def _extract_backlogs(strategies: Iterable[AbstractStrategy]):
+    ids = set()
+    for s in strategies:
+        if type(s) is CreateBacklogStrategy:
+            cast: CreateBacklogStrategy = s
+            ids.add(cast.get_backlog_uid())
+    return ids
+
+
+def _extract_workitems(strategies: Iterable[AbstractStrategy]):
+    ids = set()
+    for s in strategies:
+        if type(s) is CreateWorkitemStrategy:
+            cast: CreateWorkitemStrategy = s
+            ids.add(cast.get_workitem_uid())
+    return ids
 
 
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
@@ -250,3 +279,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
         self.unmute()
         completion_callback(total)
+
+    def _sequence_error(self, prev: int, next: int) -> None:
+        raise Exception(f"Strategies must go in sequence. "
+                        f"Received {next} after {prev}. "
+                        f"To attempt a repair go to Settings > Connection > Repair.")
