@@ -24,8 +24,8 @@ from fk.core.workitem import Workitem
 
 
 # This timer never goes below 0
-# TODO: Currently we use source.connect() to subscribe to its events
-# See how we can use this class instead, i.e. timer.connect()
+# TODO: Currently we use source.on() to subscribe to its events
+# See how we can use this class instead, i.e. timer.on()
 class PomodoroTimer(AbstractEventEmitter):
     _source: AbstractEventSource
     _tick_timer: AbstractTimer
@@ -62,9 +62,9 @@ class PomodoroTimer(AbstractEventEmitter):
 
         # Start tracking changes and initialize with the latest state
         print('PomodoroTimer: Connecting')
-        source.connect(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
-        source.connect(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
-        source.connect(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
+        source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
+        source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
+        source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
         print('PomodoroTimer: Initialized')
 
     def _refresh(self) -> None:

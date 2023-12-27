@@ -37,8 +37,8 @@ def log(event, **kwargs):
 
 
 def view(source: AbstractEventSource):
-    source.connect('*', log)
-    source.connect(events.SourceMessagesProcessed, lambda event: do_view(source))
+    source.on('*', log)
+    source.on(events.SourceMessagesProcessed, lambda event: do_view(source))
 
     print('*** Replay events ***')
     source.start()
@@ -71,7 +71,7 @@ def esc(st):
 
 def export_v2(source):
     print('*** Exporting for V2 ***')
-    source.connect(SourceMessagesProcessed, lambda: do_export_v2(source))
+    source.on(SourceMessagesProcessed, lambda: do_export_v2(source))
     source.start()
 
 

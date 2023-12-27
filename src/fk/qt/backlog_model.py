@@ -60,10 +60,10 @@ class BacklogModel(QtGui.QStandardItemModel):
                  source: AbstractEventSource):
         super().__init__(0, 1, parent)
         self._source = source
-        source.connect(events.AfterBacklogCreate, self._backlog_added)
-        source.connect(events.AfterBacklogDelete, self._backlog_removed)
-        source.connect(events.AfterBacklogRename, self._backlog_renamed)
-        source.connect('*', self.on_update)
+        source.on(events.AfterBacklogCreate, self._backlog_added)
+        source.on(events.AfterBacklogDelete, self._backlog_removed)
+        source.on(events.AfterBacklogRename, self._backlog_renamed)
+        source.on('*', self.on_update)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:

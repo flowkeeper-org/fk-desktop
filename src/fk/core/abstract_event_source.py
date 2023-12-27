@@ -231,14 +231,14 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         another = self.clone(new_root)
         every = max(int(self._estimated_count / 100), 1)
         export_file = open(filename, 'w', encoding='UTF-8')
-        another.connect(events.AfterMessageProcessed,
-                        lambda event, strategy, auto: self._export_message_processed(another,
+        another.on(events.AfterMessageProcessed,
+                   lambda event, strategy, auto: self._export_message_processed(another,
                                                                                      export_file,
                                                                                      progress_callback,
                                                                                      every,
                                                                                      strategy) if not auto else None)
-        another.connect(events.SourceMessagesProcessed,
-                        lambda event: AbstractEventSource._export_completed(another,
+        another.on(events.SourceMessagesProcessed,
+                   lambda event: AbstractEventSource._export_completed(another,
                                                                             export_file,
                                                                             completion_callback))
         start_callback(self._estimated_count)

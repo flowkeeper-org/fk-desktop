@@ -15,11 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import re
-from abc import ABC
 from typing import Callable
 
 
-class AbstractEventEmitter(ABC):
+class AbstractEventEmitter:
     _muted: bool
     _connections: dict[str, list[Callable]]
 
@@ -31,7 +30,7 @@ class AbstractEventEmitter(ABC):
 
     # Event subscriptions. Here event_pattern can contain * characters
     # and other regex syntax.
-    def connect(self, event_pattern: str, callback: Callable) -> None:
+    def on(self, event_pattern: str, callback: Callable) -> None:
         regex = re.compile(event_pattern.replace('*', '.*'))
         for event in self._connections:
             if regex.match(event):
@@ -39,7 +38,7 @@ class AbstractEventEmitter(ABC):
                 if callback not in self._connections[event]:
                     self._connections[event].append(callback)
 
-    def disconnect_all(self, event_pattern: str) -> None:
+    def cancel(self, event_pattern: str) -> None:
         regex = re.compile(event_pattern.replace('*', '.*'))
         for event in self._connections:
             if regex.match(event):

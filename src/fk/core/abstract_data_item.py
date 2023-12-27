@@ -17,11 +17,20 @@
 import datetime
 import uuid
 from abc import ABC
-from typing import Self
+from typing import Self, Iterable
 
 
 def generate_uid() -> str:
     return str(uuid.uuid4())
+
+
+def generate_unique_name(prefix: str, parent: Iterable) -> str:
+    check = prefix
+    n = 1
+    while check in parent:
+        check = f"{prefix} {n}"
+        n += 1
+    return check
 
 
 class AbstractDataItem(ABC):

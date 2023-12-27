@@ -33,9 +33,9 @@ class UserModel(QtGui.QStandardItemModel):
         self._font_normal = QtGui.QFont()
         self._font_busy = QtGui.QFont()
         self._font_busy.setBold(True)
-        source.connect(events.AfterUserCreate, self._user_added)
-        source.connect(events.AfterUserDelete, self._user_removed)
-        source.connect(events.AfterUserRename, self._user_renamed)
+        source.on(events.AfterUserCreate, self._user_added)
+        source.on(events.AfterUserDelete, self._user_removed)
+        source.on(events.AfterUserRename, self._user_renamed)
 
     def _user_added(self, event: str, user: User) -> None:
         item = QtGui.QStandardItem('')

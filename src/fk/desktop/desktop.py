@@ -14,79 +14,36 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
 import sys
 import traceback
 import urllib
 import webbrowser
-from typing import Iterable
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
-from PySide6.QtCore import QItemSelection
 
 from fk.core import events
-from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.app import App
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import DeleteBacklogStrategy, CreateBacklogStrategy
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, CompletePomodoroStrategy, \
     StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
 from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
-from fk.qt.backlog_model import BacklogModel
-from fk.qt.pomodoro_delegate import PomodoroDelegate
+from fk.qt.backlog_tableview import BacklogTableView, AfterBacklogChanged
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
 from fk.qt.search_completer import SearchBar
 from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
-from fk.qt.user_model import UserModel
+from fk.qt.user_tableview import UserTableView
 from fk.qt.websocket_event_source import WebsocketEventSource
-from fk.qt.workitem_model import WorkitemModel
-
-
-#from fk.qt.websocket_event_source import WebsocketEventSource
-
-
-def _get_selected(table: QtWidgets.QTableView) -> Backlog | Workitem:
-    index = _get_selected_index(table)
-    if index is not None:
-        return index.data(500)
-
-
-def _get_selected_index(table: QtWidgets.QTableView) -> QtCore.QModelIndex:
-    model: QtCore.QItemSelectionModel = table.selectionModel()
-    if model is not None:
-        indexes = model.selectedIndexes()
-        if len(indexes) == 1:
-            return indexes[0]   # Backlogs case
-        elif len(indexes) == 3:
-            return indexes[1]   # Workitems case
-
-
-def get_selected_backlog() -> Backlog:
-    return _get_selected(backlogs_table)
-
-
-def get_selected_workitem() -> Workitem:
-    return _get_selected(workitems_table)
-
-
-def enable_workitem_actions(enable: bool) -> None:
-    action_delete_workitem.setEnabled(enable)
-    action_complete_workitem.setEnabled(enable)
-    action_rename_workitem.setEnabled(enable)
-    action_start.setEnabled(enable)
-    action_add_pomodoro.setEnabled(enable)
-    action_remove_pomodoro.setEnabled(enable)
+from fk.qt.workitem_tableview import WorkitemTableView, AfterWorkitemCompleted
 
 
 def update_progress(backlog: Backlog) -> None:
@@ -105,46 +62,6 @@ def update_progress(backlog: Backlog) -> None:
     backlog_progress_txt.setText(f'{done} of {total} done')
 
 
-def backlog_changed(selected: QItemSelection) -> None:
-    backlog: Backlog | None = None
-    if selected.data():
-        backlog = selected.data().topLeft().data(500)
-        workitem_model.load(backlog)
-        update_progress(backlog)
-
-    # It can be None if we don't have any backlogs left. BacklogModel supports None.
-    enabled = backlog is not None
-    action_delete_backlog.setEnabled(enabled)
-    action_rename_backlog.setEnabled(enabled)
-
-    # None of the workitems is selected now
-    action_new_workitem.setEnabled(enabled)
-    enable_workitem_actions(False)
-
-    # This only works if we have some data there
-    workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-    workitems_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
-    workitems_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-
-
-def load_backlogs() -> None:
-    backlog_model.load()
-    backlogs_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
-
-
-def load_users() -> None:
-    user_model.load()
-    users_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
-
-
-def workitem_changed(selected: QtCore.QModelIndex) -> None:
-    if selected.data():
-        workitem = selected.data().topLeft().data(500)
-        enable_workitem_actions(not workitem.is_sealed())
-    else:
-        enable_workitem_actions(False)
-
-
 def tray_clicked() -> None:
     if continue_workitem is not None:
         # TODO Start THAT workitem
@@ -156,111 +73,31 @@ def tray_clicked() -> None:
             window.hide()
 
 
-def delete_backlog() -> None:
-    selected: Backlog = get_selected_backlog()
-    if selected is not None:
-        m = QtWidgets.QMessageBox()
-        if m.warning(window,
-                     "Confirmation",
-                     f"Are you sure you want to delete backlog '{selected.get_name()}'?",
-                     QtWidgets.QMessageBox.StandardButton.Ok,
-                     QtWidgets.QMessageBox.StandardButton.Cancel
-                     ) == QtWidgets.QMessageBox.StandardButton.Ok:
-            source.execute(DeleteBacklogStrategy, [selected.get_uid()])
-            enable_workitem_actions(False)
-
-
-def delete_workitem() -> None:
-    selected: Workitem = get_selected_workitem()
-    if selected is not None:
-        m = QtWidgets.QMessageBox()
-        if m.warning(window,
-                     "Confirmation",
-                     f"Are you sure you want to delete workitem '{selected.get_name()}'?",
-                     QtWidgets.QMessageBox.StandardButton.Ok,
-                     QtWidgets.QMessageBox.StandardButton.Cancel
-                     ) == QtWidgets.QMessageBox.StandardButton.Ok:
-            source.execute(DeleteWorkitemStrategy, [selected.get_uid()])
-            enable_workitem_actions(False)  # Just in case
-
-
 def add_pomodoro() -> None:
-    selected: Workitem = get_selected_workitem()
+    selected: Workitem = workitems_table.get_selected()
     if selected is not None:
         source.execute(AddPomodoroStrategy, [selected.get_uid(), "1"])
 
 
 def remove_pomodoro() -> None:
-    selected: Workitem = get_selected_workitem()
+    selected: Workitem = workitems_table.get_selected()
     if selected is not None:
         source.execute(RemovePomodoroStrategy, [selected.get_uid(), "1"])
 
 
-def generate_unique_name(prefix: str, parent: Iterable) -> str:
-    check = prefix
-    n = 1
-    while check in parent:
-        check = f"{prefix} {n}"
-        n += 1
-    return check
-
-
-def create_backlog() -> None:
-    prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-    new_name = generate_unique_name(prefix, source.backlogs())
-    source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
-
-    # Start editing it. The new item will always be at the top of the list.
-    index: QtCore.QModelIndex = backlog_model.index(0, 0)
-    backlogs_table.setCurrentIndex(index)
-    backlogs_table.edit(index)
-
-
-def create_workitem() -> None:
-    backlog: Backlog = get_selected_backlog()
-    if backlog is not None:
-        new_name = generate_unique_name("Do something", backlog)
-        source.execute(CreateWorkitemStrategy, [generate_uid(), backlog.get_uid(), new_name])
-
-        # Start editing it. The new item will always be at the end of the list.
-        index: QtCore.QModelIndex = workitem_model.index(workitem_model.rowCount() - 1, 1)
-        workitems_table.setCurrentIndex(index)
-        workitems_table.edit(index)
-
-
-def rename_backlog() -> None:
-    index: QtCore.QModelIndex = _get_selected_index(backlogs_table)
-    if index is not None:
-        backlogs_table.edit(index)
-
-
-def rename_workitem() -> None:
-    index: QtCore.QModelIndex = _get_selected_index(workitems_table)
-    if index is not None:
-        workitems_table.edit(index)
-
-
 def start_work() -> None:
-    workitem: Workitem = get_selected_workitem()
+    workitem: Workitem = workitems_table.get_selected()
     # TODO: This is where we can adjust work duration
     # TODO: Move this to Timer and adjust rest, too
     source.execute(StartWorkStrategy, [workitem.get_uid(), str(get_work_duration())])
 
 
-def complete_work() -> None:
-    workitem: Workitem = get_selected_workitem()
-    if not workitem.has_running_pomodoro() or QtWidgets.QMessageBox().warning(window,
-            "Confirmation",
-            f"Are you sure you want to complete current workitem? This will void current pomodoro.",
-            QtWidgets.QMessageBox.StandardButton.Ok,
-            QtWidgets.QMessageBox.StandardButton.Cancel
-            ) == QtWidgets.QMessageBox.StandardButton.Ok:
-        source.execute(CompleteWorkitemStrategy, [workitem.get_uid(), "finished"])
-        hide_timer()
-        tool_next.hide()
-        tool_complete.hide()
-        update_header(pomodoro_timer)
-        reset_tray_icon()
+def on_workitem_completed(event, workitem) -> None:
+    hide_timer()
+    tool_next.hide()
+    tool_complete.hide()
+    update_header(pomodoro_timer)
+    reset_tray_icon()
 
 
 def get_work_duration() -> int:
@@ -584,9 +421,6 @@ def on_messages(event: str = None) -> None:
 
     print('Replay completed')
 
-    load_backlogs()
-    load_users()
-
     # Timer
     # noinspection PyTypeChecker
     timer_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "timer")
@@ -599,11 +433,11 @@ def on_messages(event: str = None) -> None:
     timer_tray = render_for_pixmap()
 
     pomodoro_timer = PomodoroTimer(source, QtTimer(), QtTimer())
-    pomodoro_timer.connect("Timer*", update_header)
-    pomodoro_timer.connect("Timer*Complete", show_notification)
-    pomodoro_timer.connect("TimerWorkStart", start_ticking)
-    pomodoro_timer.connect("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
-    pomodoro_timer.connect("TimerWorkStart", lambda timer, event: show_timer_automatically())
+    pomodoro_timer.on("Timer*", update_header)
+    pomodoro_timer.on("Timer*Complete", show_notification)
+    pomodoro_timer.on("TimerWorkStart", start_ticking)
+    pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
+    pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
     update_header(pomodoro_timer)
 
     # It's important to do it after window.show() above
@@ -766,7 +600,7 @@ def repair_file_event_source(_):
 sys.excepthook = on_exception
 app = Application(sys.argv)
 settings = app.get_settings()
-settings.connect(events.AfterSettingChanged, on_setting_changed)
+settings.on(events.AfterSettingChanged, on_setting_changed)
 
 notes = ""
 
@@ -795,12 +629,12 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 data = source.get_data()
-source.connect(SourceMessagesProcessed, on_messages)
+source.on(SourceMessagesProcessed, on_messages)
 
 loader = QtUiTools.QUiLoader()
 
 # Load main window
-file = QtCore.QFile(":/main.ui")
+file = QtCore.QFile(":/core.ui")
 file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
 # noinspection PyTypeChecker
 window: QtWidgets.QMainWindow = loader.load(file, None)
@@ -817,45 +651,30 @@ file.close()
 # noinspection PyTypeChecker
 menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
 # noinspection PyTypeChecker
-menu_backlog: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuBacklog")
-# noinspection PyTypeChecker
 menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 # noinspection PyTypeChecker
 menu_filter: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFilter")
 
-# Backlogs table
 # noinspection PyTypeChecker
-backlogs_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "backlogs_table")
-backlogs_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
-backlogs_table.customContextMenuRequested.connect(lambda p: menu_backlog.exec(backlogs_table.mapToGlobal(p)))
-backlog_model = BacklogModel(app, source)
-backlogs_table.setModel(backlog_model)
-backlogs_table.selectionModel().selectionChanged.connect(backlog_changed)
+left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
+
+# Backlogs table
+backlogs_table: BacklogTableView = BacklogTableView(window, source)
+backlogs_table.on(AfterBacklogChanged, lambda event, before, after: workitems_table.load_for_backlog(after))
+backlogs_table.on(AfterBacklogChanged, lambda event, before, after: update_progress(after) if after is not None else None)
+left_layout.addWidget(backlogs_table)
 
 # Users table
+users_table: UserTableView = UserTableView(window, source)
+left_layout.addWidget(users_table)
+
 # noinspection PyTypeChecker
-users_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "users_table")
-user_model = UserModel(app, source)
-users_table.setModel(user_model)
-users_table.setVisible(False)
+right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
 # Workitems table
-# noinspection PyTypeChecker
-workitems_table: QtWidgets.QTableView = window.findChild(QtWidgets.QTableView, "workitems_table")
-workitems_table.setContextMenuPolicy(QtGui.Qt.ContextMenuPolicy.CustomContextMenu)
-workitems_table.customContextMenuRequested.connect(lambda p: menu_workitem.exec(workitems_table.mapToGlobal(p)))
-workitems_table.setItemDelegateForColumn(2, PomodoroDelegate())
-workitem_model = WorkitemModel(workitems_table, source)
-workitems_table.setModel(workitem_model)
-workitems_table.selectionModel().selectionChanged.connect(workitem_changed)
-
-# Drag-and-drop doesn't work for some reason
-# workitems_table.setDragEnabled(True)
-# workitems_table.setAcceptDrops(True)
-# workitems_table.setDropIndicatorShown(True)
-# workitems_table.setDragDropMode(QtWidgets.QTableView.DragDropMode.DragDrop)
-# workitems_table.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
-# workitems_table.setDragDropOverwriteMode(False)
+workitems_table: WorkitemTableView = WorkitemTableView(window, source)
+workitems_table.on(AfterWorkitemCompleted, on_workitem_completed)
+right_Layout.addWidget(workitems_table)
 
 # Progress bar
 # noinspection PyTypeChecker
@@ -918,34 +737,6 @@ action_teams.toggled.connect(toggle_users)
 # noinspection PyTypeChecker
 action_show_completed_workitems: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowCompletedWorkitems")
 action_show_completed_workitems.toggled.connect(toggle_show_completed_workitems)
-
-# noinspection PyTypeChecker
-action_new_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionNewBacklog")
-action_new_backlog.triggered.connect(create_backlog)
-
-# noinspection PyTypeChecker
-action_delete_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionDeleteBacklog")
-action_delete_backlog.triggered.connect(delete_backlog)
-
-# noinspection PyTypeChecker
-action_rename_backlog: QtGui.QAction = window.findChild(QtGui.QAction, "actionRenameBacklog")
-action_rename_backlog.triggered.connect(rename_backlog)
-
-# noinspection PyTypeChecker
-action_new_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionNewWorkitem")
-action_new_workitem.triggered.connect(create_workitem)
-
-# noinspection PyTypeChecker
-action_delete_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionDeleteWorkitem")
-action_delete_workitem.triggered.connect(delete_workitem)
-
-# noinspection PyTypeChecker
-action_rename_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionRenameWorkitem")
-action_rename_workitem.triggered.connect(rename_workitem)
-
-# noinspection PyTypeChecker
-action_complete_workitem: QtGui.QAction = window.findChild(QtGui.QAction, "actionCompleteWorkitem")
-action_complete_workitem.triggered.connect(complete_work)
 
 # noinspection PyTypeChecker
 action_start: QtGui.QAction = window.findChild(QtGui.QAction, "actionStart")
@@ -1051,7 +842,7 @@ tool_next.hide()
 
 # noinspection PyTypeChecker
 tool_complete: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolComplete")
-tool_complete.clicked.connect(lambda: complete_work())  # TODO Complete next, not current
+tool_complete.clicked.connect(lambda: workitems_table.complete_selected_workitem())  # TODO Complete next, not current
 tool_complete.hide()
 
 # noinspection PyTypeChecker
@@ -1081,7 +872,6 @@ header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSub
 # Fonts, styles, etc.
 initialize_fonts(settings)
 
-auto_resize()  # It's important to do it after the fonts are set
 restore_size()
 event_filter = MainWindowEventFilter(window)
 window.installEventFilter(event_filter)

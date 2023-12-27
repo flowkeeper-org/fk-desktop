@@ -44,12 +44,12 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
         self._show_completed = True
-        source.connect(AfterWorkitemCreate, self._workitem_created)
-        source.connect(AfterWorkitemDelete, self._workitem_deleted)
-        source.connect(AfterWorkitemRename, self._pomodoro_changed)
-        source.connect(AfterWorkitemComplete, self._pomodoro_changed)
-        source.connect(AfterWorkitemStart, self._pomodoro_changed)
-        source.connect('AfterPomodoro*', self._pomodoro_changed)
+        source.on(AfterWorkitemCreate, self._workitem_created)
+        source.on(AfterWorkitemDelete, self._workitem_deleted)
+        source.on(AfterWorkitemRename, self._pomodoro_changed)
+        source.on(AfterWorkitemComplete, self._pomodoro_changed)
+        source.on(AfterWorkitemStart, self._pomodoro_changed)
+        source.on('AfterPomodoro*', self._pomodoro_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
         self._row_height = int(source.get_config_parameter('Application.table_row_height'))
 
@@ -145,3 +145,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
     def show_completed(self, show: bool) -> None:
         self._show_completed = show
         self.load(self._backlog)
+
+    def get_backlog(self) -> Backlog | None:
+        return self._backlog
