@@ -86,6 +86,7 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         res: QAction = QAction(text, self)
         res.setShortcut(shortcut)
         res.triggered.connect(lambda: member())
+        self.parent().addAction(res)
         return res
 
     def _initialize_actions(self) -> None:

@@ -180,7 +180,8 @@ class Application(QApplication):
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
-        if (QMessageBox().critical(self,
+        print("Exception", to_log)
+        if (QMessageBox().critical(None,
                                   "Unexpected error",
                                   f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
                                   QMessageBox.StandardButton.Ok,

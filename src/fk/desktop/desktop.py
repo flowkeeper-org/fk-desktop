@@ -15,9 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
-import traceback
-import urllib
-import webbrowser
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
 
@@ -28,8 +25,7 @@ from fk.core.app import App
 from fk.core.backlog import Backlog
 from fk.core.events import SourceMessagesProcessed, AfterWorkitemComplete
 from fk.core.file_event_source import FileEventSource
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, CompletePomodoroStrategy, \
-    StartWorkStrategy
+from fk.core.pomodoro_strategies import CompletePomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
@@ -73,24 +69,12 @@ def tray_clicked() -> None:
             window.hide()
 
 
-def remove_pomodoro() -> None:
-    selected: Workitem = workitems_table.get_current()
-    if selected is not None:
-        source.execute(RemovePomodoroStrategy, [selected.get_uid(), "1"])
-
-
 def on_workitem_completed(event, workitem, target_state) -> None:
     hide_timer()
     tool_next.hide()
     tool_complete.hide()
     update_header(pomodoro_timer)
     reset_tray_icon()
-
-
-# Unlike work duration, we only use it for the settings window here.
-# TODO - move this logic into the settings module
-def get_rest_duration() -> int:
-    return int(settings.get('Pomodoro.default_rest_duration'))
 
 
 def paint_timer_in_tray() -> None:
@@ -534,22 +518,6 @@ def show_about():
     about_window.show()
 
 
-def on_exception(exc_type, exc_value, exc_trace):
-    to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
-    if QtWidgets.QMessageBox().critical(window,
-                                        "Unexpected error",
-                                        f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
-                                        QtWidgets.QMessageBox.StandardButton.Ok,
-                                        QtWidgets.QMessageBox.StandardButton.Open) \
-            == QtWidgets.QMessageBox.StandardButton.Open:
-        params = urllib.parse.urlencode({
-            'labels': 'exception',
-            'title': f'Unhandled {exc_type.__name__}',
-            'body': f'PLEASE PROVIDE SOME DETAILS HERE.\nREVIEW THE BELOW PART FOR SENSITIVE DATA.\n\n```\n{to_log}```'
-        })
-        webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
-
-
 def repair_file_event_source(_):
     if QtWidgets.QMessageBox().warning(window,
                                         "Confirmation",
@@ -582,7 +550,6 @@ def repair_file_event_source(_):
 # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
 # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
 # will pass through to Qt data models via Qt-like connect / emit mechanism.
-sys.excepthook = on_exception
 app = Application(sys.argv)
 settings = app.get_settings()
 settings.on(events.AfterSettingChanged, on_setting_changed)
@@ -856,6 +823,6 @@ window.show()
 try:
     source.start()
 except Exception as ex:
-    on_exception(type(ex), ex, ex.__traceback__)
+    app.on_exception(type(ex), ex, ex.__traceback__)
 
 sys.exit(app.exec())
