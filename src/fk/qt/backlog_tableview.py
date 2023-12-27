@@ -26,7 +26,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
-from fk.core.events import SourceMessagesProcessed
+from fk.core.user import User
 from fk.qt.backlog_model import BacklogModel
 
 BeforeBacklogChanged = "BeforeBacklogChanged"
@@ -38,6 +38,7 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
     _action_new_backlog: QAction
     _action_rename_backlog: QAction
     _action_delete_backlog: QAction
+    _is_loaded: bool
 
     def __init__(self, parent: QWidget, source: AbstractEventSource):
         super().__init__(parent,
@@ -46,7 +47,10 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
                              AfterBacklogChanged,
                          ])
         self._source = source
-        source.on(SourceMessagesProcessed, lambda event: self._on_data_loaded())
+        self._is_loaded = False
+        self.setModel(BacklogModel(self, self._source))
+        self.selectionModel().selectionChanged.connect(lambda s, d: self._on_selection_changed(s, d))
+        self.selectionModel().currentRowChanged.connect(lambda s, d: self._on_current_changed(s, d))
 
         self.setObjectName('backlogs_table')
         self.setTabKeyNavigation(False)
@@ -79,12 +83,19 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
         self._action_delete_backlog = self._create_action("Delete Backlog", 'F8', self.delete_selected_backlog)
         menu.addAction(self._action_delete_backlog)
 
-    def _on_data_loaded(self) -> None:
-        backlog_model = BacklogModel(self, self._source)
-        backlog_model.load()
-        self.setModel(backlog_model)
+    def load_for_user(self, user: User) -> None:
+        if user is None:
+            # TODO: Show "no data"
+            self._action_new_backlog.setEnabled(False)
+            self._is_loaded = False
+        else:
+            self._action_new_backlog.setEnabled(True)
+            self._is_loaded = True
+        self.model().load(user)  # Handles None alright
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.selectionModel().selectionChanged.connect(lambda s, d: self._on_selection_changed(s, d))
+
+    def is_loaded(self):
+        return self._is_loaded
 
     def _get_selected_index(self) -> QModelIndex | None:
         model: QItemSelectionModel = self.selectionModel()
@@ -107,6 +118,20 @@ class BacklogTableView(QTableView, AbstractEventEmitter):
         if deselected is not None and deselected.data():
             old_backlog = deselected.data().topLeft().data(500)
 
+        print(f'Trace - Backlogs::Selected changed to {new_backlog}')
+        # TODO: Delete this method if we consistently see that
+        # _on_current_changed provides [more] correct results
+
+    def _on_current_changed(self, selected: QModelIndex, deselected: QModelIndex) -> None:
+        new_backlog: Backlog | None = None
+        if selected is not None:
+            new_backlog = selected.data(500)
+
+        old_backlog: Backlog | None = None
+        if deselected is not None:
+            old_backlog = deselected.data(500)
+
+        print(f'Trace - Backlogs::Current changed to {new_backlog}')
         params = {
             'before': old_backlog,
             'after': new_backlog,

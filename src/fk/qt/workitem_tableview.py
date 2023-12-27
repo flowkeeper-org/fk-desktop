@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
 from typing import Callable
 
 from PySide6.QtCore import QItemSelection, Qt, QItemSelectionModel, QModelIndex
@@ -25,11 +24,8 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
-from fk.core.events import SourceMessagesProcessed
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
-from fk.qt.backlog_model import BacklogModel
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 
@@ -41,11 +37,11 @@ AfterWorkitemCompleted = "AfterWorkitemCompleted"
 
 class WorkitemTableView(QTableView, AbstractEventEmitter):
     _source: AbstractEventSource
-
     _action_new_workitem: QAction
     _action_rename_workitem: QAction
     _action_delete_workitem: QAction
     _action_complete_workitem: QAction
+    _is_loaded: bool
 
     # TODO: Are pomodoro actions part of the timer, or this table?
     # _action_: QAction
@@ -63,7 +59,9 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
                              AfterWorkitemCompleted,
                          ])
         self._source = source
-        source.on(SourceMessagesProcessed, lambda event: self._on_data_loaded())
+        self._is_loaded = False
+        self.setModel(WorkitemModel(self, self._source))
+        self.selectionModel().currentRowChanged.connect(lambda s, d: self._on_current_changed(s, d))
 
         self.setObjectName('workitems_table')
         self.setTabKeyNavigation(False)
@@ -86,7 +84,7 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         # workitems_table.setDragDropOverwriteMode(False)
 
         self._initialize_actions()
-        self._on_selection_changed(None, None)
+        self._on_current_changed(None, None)
 
     def _create_action(self, text: str, shortcut: str, member: Callable) -> QAction:
         res: QAction = QAction(text, self)
@@ -107,17 +105,14 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         self._action_delete_workitem = self._create_action("Delete Item", 'Del', self.delete_selected_workitem)
         menu.addAction(self._action_delete_workitem)
 
-    def _on_data_loaded(self) -> None:
-        workitem_model = WorkitemModel(self, self._source)
-        self.setModel(workitem_model)
-        self.selectionModel().selectionChanged.connect(lambda s, d: self._on_selection_changed(s, d))
-
     def load_for_backlog(self, backlog: Backlog) -> None:
         if backlog is None:
             # TODO: Show "no data"
-            pass
+            self._action_new_workitem.setEnabled(False)
+            self._is_loaded = False
         else:
             self._action_new_workitem.setEnabled(True)
+            self._is_loaded = True
         self.model().load(backlog)  # Handles None alright
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -135,21 +130,16 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         if index is not None:
             return index.data(500)
 
-    def _on_selection_changed(self, selected: QItemSelection, deselected: QItemSelection) -> None:
-        # TODO: BUG: Create two WIs and delete the first. We receive TWO of those
-        # events -- the first with correct WI, which is now selected, but the second
-        # one is with None. We also receive a bunch of those events when we select
-        # another backlog, which is weird. Should we filter those somehow?
-
+    def _on_current_changed(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         new_workitem: Workitem | None = None
-        if selected is not None and selected.data():
-            new_workitem = selected.data().topLeft().data(500)
+        if selected is not None:
+            new_workitem = selected.data(500)
 
         old_workitem: Workitem | None = None
-        if deselected is not None and deselected.data():
-            old_workitem = deselected.data().topLeft().data(500)
+        if deselected is not None:
+            old_workitem = deselected.data(500)
 
-        print(f'New workitem is selected: {new_workitem}')
+        print(f'Trace - Workitems::Current changed to {new_workitem}')
 
         params = {
             'before': old_workitem,

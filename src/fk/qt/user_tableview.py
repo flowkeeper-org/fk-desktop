@@ -41,7 +41,6 @@ class UserTableView(QTableView, AbstractEventEmitter):
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
-        self.setVisible(False)
 
     def _on_data_loaded(self) -> None:
         user_model = UserModel(self, self._source)

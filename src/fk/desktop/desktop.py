@@ -397,7 +397,7 @@ def toggle_backlogs(visible) -> None:
 
 
 def toggle_show_completed_workitems(checked) -> None:
-    workitem_model.show_completed(checked)
+    workitems_table.model().show_completed(checked)
     search.show_completed(checked)
     workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
     workitems_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
@@ -420,6 +420,8 @@ def on_messages(event: str = None) -> None:
     replay_completed = True
 
     print('Replay completed')
+
+    backlogs_table.load_for_user(root.get_current_user())
 
     # Timer
     # noinspection PyTypeChecker
@@ -666,6 +668,7 @@ left_layout.addWidget(backlogs_table)
 
 # Users table
 users_table: UserTableView = UserTableView(window, source)
+users_table.setVisible(False)
 left_layout.addWidget(users_table)
 
 # noinspection PyTypeChecker
