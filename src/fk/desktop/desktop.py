@@ -1089,6 +1089,9 @@ window.move(app.primaryScreen().geometry().center() - window.frameGeometry().cen
 
 window.show()
 
-source.start()
+try:
+    source.start()
+except Exception as ex:
+    on_exception(type(ex), ex, ex.__traceback__)
 
 sys.exit(app.exec())

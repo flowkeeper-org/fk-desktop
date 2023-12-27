@@ -168,6 +168,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         log = list()
         changes: int = 0
+        original_watcher = self._watcher
+        self._watcher = None
 
         # Read strategies and repair in one pass
         filename = self._get_filename()
@@ -178,7 +180,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
         repaired_backlog: str = None
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                s = strategy_from_string(line, self._emit, self._data, self._settings)
+                try:
+                    s = strategy_from_string(line, self._emit, self._data, self._settings)
+                except Exception as ex:
+                    log.append(f'Skipped invalid strategy ({ex}): {s}')
+                    changes += 1
+                    continue
                 t = type(s)
 
                 # Create users on the first reference
@@ -305,6 +312,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         else:
             log.append(f'No changes were made')
 
+        self._watcher = original_watcher
         return log
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
