@@ -506,9 +506,6 @@
     <property name="title">
      <string>Work</string>
     </property>
-    <addaction name="actionAddPomodoro"/>
-    <addaction name="actionRemovePomodoro"/>
-    <addaction name="actionStart"/>
     <addaction name="actionVoid"/>
     <addaction name="actionSearch"/>
    </widget>
@@ -542,7 +539,6 @@
    </attribute>
    <addaction name="actionImport"/>
    <addaction name="actionExport"/>
-   <addaction name="actionStart"/>
    <addaction name="actionVoid"/>
   </widget>
   <action name="actionQuit">
@@ -639,17 +635,6 @@
     <string>Statistics...</string>
    </property>
   </action>
-  <action name="actionStart">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Start Work</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
-  </action>
   <action name="actionVoid">
    <property name="enabled">
     <bool>false</bool>
@@ -663,28 +648,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+V</string>
-   </property>
-  </action>
-  <action name="actionAddPomodoro">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Add Pomodoro</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl++</string>
-   </property>
-  </action>
-  <action name="actionRemovePomodoro">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Remove Pomodoro</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+-</string>
    </property>
   </action>
   <action name="actionToggleToolbar">
@@ -734,8 +697,6 @@
   <addaction name="actionTimerMode"/>
   <addaction name="actionShowMainWindow"/>
   <addaction name="actionAbout"/>
-  <addaction name="actionAddPomodoro"/>
-  <addaction name="actionRemovePomodoro"/>
   <addaction name="menuFile"/>
   <addaction name="menuBacklog"/>
   <addaction name="menuEdit"/>
@@ -745,7 +706,6 @@
   <addaction name="actionImport"/>
   <addaction name="actionExport"/>
   <addaction name="actionTeams"/>
-  <addaction name="actionStart"/>
   <addaction name="actionVoid"/>
   <addaction name="actionSearch"/>
   <addaction name="actionShowCompletedWorkitems"/>

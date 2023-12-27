@@ -26,7 +26,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.app import App
 from fk.core.backlog import Backlog
-from fk.core.events import SourceMessagesProcessed
+from fk.core.events import SourceMessagesProcessed, AfterWorkitemComplete
 from fk.core.file_event_source import FileEventSource
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, CompletePomodoroStrategy, \
     StartWorkStrategy
@@ -43,7 +43,7 @@ from fk.qt.search_completer import SearchBar
 from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
 from fk.qt.user_tableview import UserTableView
 from fk.qt.websocket_event_source import WebsocketEventSource
-from fk.qt.workitem_tableview import WorkitemTableView, AfterWorkitemCompleted
+from fk.qt.workitem_tableview import WorkitemTableView
 
 
 def update_progress(backlog: Backlog) -> None:
@@ -65,18 +65,12 @@ def update_progress(backlog: Backlog) -> None:
 def tray_clicked() -> None:
     if continue_workitem is not None:
         # TODO Start THAT workitem
-        start_work()
+        workitems_table.start_selected_workitem()
     else:
         if window.isHidden():
             window.show()
         else:
             window.hide()
-
-
-def add_pomodoro() -> None:
-    selected: Workitem = workitems_table.get_current()
-    if selected is not None:
-        source.execute(AddPomodoroStrategy, [selected.get_uid(), "1"])
 
 
 def remove_pomodoro() -> None:
@@ -85,23 +79,12 @@ def remove_pomodoro() -> None:
         source.execute(RemovePomodoroStrategy, [selected.get_uid(), "1"])
 
 
-def start_work() -> None:
-    workitem: Workitem = workitems_table.get_current()
-    # TODO: This is where we can adjust work duration
-    # TODO: Move this to Timer and adjust rest, too
-    source.execute(StartWorkStrategy, [workitem.get_uid(), str(get_work_duration())])
-
-
-def on_workitem_completed(event, workitem) -> None:
+def on_workitem_completed(event, workitem, target_state) -> None:
     hide_timer()
     tool_next.hide()
     tool_complete.hide()
     update_header(pomodoro_timer)
     reset_tray_icon()
-
-
-def get_work_duration() -> int:
-    return int(settings.get('Pomodoro.default_work_duration'))
 
 
 # Unlike work duration, we only use it for the settings window here.
@@ -676,7 +659,7 @@ right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "r
 
 # Workitems table
 workitems_table: WorkitemTableView = WorkitemTableView(window, source)
-workitems_table.on(AfterWorkitemCompleted, on_workitem_completed)
+source.on(AfterWorkitemComplete, on_workitem_completed)
 right_Layout.addWidget(workitems_table)
 
 # Progress bar
@@ -740,18 +723,6 @@ action_teams.toggled.connect(toggle_users)
 # noinspection PyTypeChecker
 action_show_completed_workitems: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowCompletedWorkitems")
 action_show_completed_workitems.toggled.connect(toggle_show_completed_workitems)
-
-# noinspection PyTypeChecker
-action_start: QtGui.QAction = window.findChild(QtGui.QAction, "actionStart")
-action_start.triggered.connect(start_work)
-
-# noinspection PyTypeChecker
-action_add_pomodoro: QtGui.QAction = window.findChild(QtGui.QAction, "actionAddPomodoro")
-action_add_pomodoro.triggered.connect(add_pomodoro)
-
-# noinspection PyTypeChecker
-action_remove_pomodoro: QtGui.QAction = window.findChild(QtGui.QAction, "actionRemovePomodoro")
-action_remove_pomodoro.triggered.connect(remove_pomodoro)
 
 # noinspection PyTypeChecker
 action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
@@ -840,7 +811,7 @@ tool_void.hide()
 
 # noinspection PyTypeChecker
 tool_next: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNext")
-tool_next.clicked.connect(lambda: start_work())     # TODO Start next, not current
+tool_next.clicked.connect(workitems_table.start_selected_workitem)     # TODO Start next, not current
 tool_next.hide()
 
 # noinspection PyTypeChecker

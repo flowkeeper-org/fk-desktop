@@ -24,6 +24,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
 from fk.qt.pomodoro_delegate import PomodoroDelegate
@@ -31,32 +32,27 @@ from fk.qt.workitem_model import WorkitemModel
 
 BeforeWorkitemChanged = "BeforeWorkitemChanged"
 AfterWorkitemChanged = "AfterWorkitemChanged"
-BeforeWorkitemCompleted = "BeforeWorkitemCompleted"
-AfterWorkitemCompleted = "AfterWorkitemCompleted"
 
 
 class WorkitemTableView(QTableView, AbstractEventEmitter):
     _source: AbstractEventSource
+    _is_loaded: bool
+
     _action_new_workitem: QAction
     _action_rename_workitem: QAction
     _action_delete_workitem: QAction
-    _action_complete_workitem: QAction
-    _is_loaded: bool
 
-    # TODO: Are pomodoro actions part of the timer, or this table?
-    # _action_: QAction
-    # _action_: QAction
-    # _action_: QAction
-    # _action_: QAction
-    # _action_: QAction
+    _action_start_workitem: QAction
+    _action_complete_workitem: QAction
+
+    _action_add_pomodoro: QAction
+    _action_remove_pomodoro: QAction
 
     def __init__(self, parent: QWidget, source: AbstractEventSource):
         super().__init__(parent,
                          allowed_events=[
                              BeforeWorkitemChanged,
                              AfterWorkitemChanged,
-                             BeforeWorkitemCompleted,
-                             AfterWorkitemCompleted,
                          ])
         self._source = source
         self._is_loaded = False
@@ -100,10 +96,18 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         menu.addAction(self._action_new_workitem)
         self._action_rename_workitem = self._create_action("Rename Item", 'F2', self.rename_selected_workitem)
         menu.addAction(self._action_rename_workitem)
-        self._action_complete_workitem = self._create_action("Complete Item", 'Ctrl+P', self.complete_selected_workitem)
-        menu.addAction(self._action_complete_workitem)
         self._action_delete_workitem = self._create_action("Delete Item", 'Del', self.delete_selected_workitem)
         menu.addAction(self._action_delete_workitem)
+
+        self._action_start_workitem = self._create_action("Start Item", 'Ctrl+S', self.start_selected_workitem)
+        menu.addAction(self._action_start_workitem)
+        self._action_complete_workitem = self._create_action("Complete Item", 'Ctrl+P', self.complete_selected_workitem)
+        menu.addAction(self._action_complete_workitem)
+
+        self._action_add_pomodoro = self._create_action("Add Pomodoro", 'Ctrl++', self.add_to_selected_workitem)
+        menu.addAction(self._action_add_pomodoro)
+        self._action_remove_pomodoro = self._create_action("Remove Pomodoro", 'Ctrl+-', self.remove_from_selected_workitem)
+        menu.addAction(self._action_remove_pomodoro)
 
     def load_for_backlog(self, backlog: Backlog) -> None:
         if backlog is None:
@@ -145,12 +149,11 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
         is_workitem_selected = new_workitem is not None
         self._action_delete_workitem.setEnabled(is_workitem_selected)
         self._action_rename_workitem.setEnabled(is_workitem_selected)
+        self._action_start_workitem.setEnabled(is_workitem_selected)
         self._action_complete_workitem.setEnabled(is_workitem_selected)
-        # TODO + based on new_workitem.is_sealed()
-        # complete
-        # start
-        # add_pomodoro
-        # remove_pomodoro
+        self._action_add_pomodoro.setEnabled(is_workitem_selected)
+        self._action_remove_pomodoro.setEnabled(is_workitem_selected)
+        # TODO + based on new_workitem.is_sealed() and if there are pomos available
 
         self._emit(AfterWorkitemChanged, params)
 
@@ -186,14 +189,19 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
                                  ) == QMessageBox.StandardButton.Ok:
             self._source.execute(DeleteWorkitemStrategy, [selected.get_uid()])
 
+    def start_selected_workitem(self) -> None:
+        selected: Workitem = self.get_current()
+        if selected is None:
+            raise Exception("Trying to start a workitem, while there's none selected")
+        self._source.execute(StartWorkStrategy, [
+            selected.get_uid(),
+            self._source.get_config_parameter('Pomodoro.default_work_duration')
+        ])
+
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to complete a workitem, while there's none selected")
-        params = {
-            'workitem': selected
-        }
-        self._emit(BeforeWorkitemCompleted, params)
         if not selected.has_running_pomodoro() or QMessageBox().warning(
                 self,
                 "Confirmation",
@@ -202,4 +210,21 @@ class WorkitemTableView(QTableView, AbstractEventEmitter):
                 QMessageBox.StandardButton.Cancel
                 ) == QMessageBox.StandardButton.Ok:
             self._source.execute(CompleteWorkitemStrategy, [selected.get_uid(), "finished"])
-        self._emit(AfterWorkitemCompleted, params)
+
+    def add_to_selected_workitem(self) -> None:
+        selected: Workitem = self.get_current()
+        if selected is None:
+            raise Exception("Trying to add pomodoro to a workitem, while there's none selected")
+        self._source.execute(AddPomodoroStrategy, [
+            selected.get_uid(),
+            "1"
+        ])
+
+    def remove_from_selected_workitem(self) -> None:
+        selected: Workitem = self.get_current()
+        if selected is None:
+            raise Exception("Trying to remove pomodoro from a workitem, while there's none selected")
+        self._source.execute(RemovePomodoroStrategy, [
+            selected.get_uid(),
+            "1"
+        ])
