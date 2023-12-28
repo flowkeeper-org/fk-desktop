@@ -17,6 +17,7 @@
 import sys
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
+from PySide6.QtGui import QAction
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -32,7 +33,8 @@ from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
-from fk.qt.backlog_tableview import BacklogTableView, AfterBacklogChanged
+from fk.qt.abstract_tableview import AfterSelectionChanged
+from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
 from fk.qt.search_completer import SearchBar
@@ -388,7 +390,8 @@ def on_messages(event: str = None) -> None:
 
     print('Replay completed')
 
-    backlogs_table.load_for_user(root.get_current_user())
+    users_table.upstream_selected(root)
+    backlogs_table.upstream_selected(root.get_current_user())
 
     # Timer
     # noinspection PyTypeChecker
@@ -610,14 +613,16 @@ menu_filter: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFilter")
 # noinspection PyTypeChecker
 left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
 
+actions: dict[str, QAction] = dict()
+
 # Backlogs table
-backlogs_table: BacklogTableView = BacklogTableView(window, source)
-backlogs_table.on(AfterBacklogChanged, lambda event, before, after: workitems_table.load_for_backlog(after))
-backlogs_table.on(AfterBacklogChanged, lambda event, before, after: update_progress(after) if after is not None else None)
+backlogs_table: BacklogTableView = BacklogTableView(window, source, actions)
+backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
+backlogs_table.on(AfterSelectionChanged, lambda event, before, after: update_progress(after) if after is not None else None)
 left_layout.addWidget(backlogs_table)
 
 # Users table
-users_table: UserTableView = UserTableView(window, source)
+users_table: UserTableView = UserTableView(window, source, actions)
 users_table.setVisible(False)
 left_layout.addWidget(users_table)
 
@@ -625,7 +630,7 @@ left_layout.addWidget(users_table)
 right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
 # Workitems table
-workitems_table: WorkitemTableView = WorkitemTableView(window, source)
+workitems_table: WorkitemTableView = WorkitemTableView(window, source, actions)
 source.on(AfterWorkitemComplete, on_workitem_completed)
 right_Layout.addWidget(workitems_table)
 

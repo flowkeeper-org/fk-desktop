@@ -13,38 +13,31 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QWidget, QHeaderView
 
-from PySide6.QtWidgets import QTableView, QWidget, QHeaderView
-
-from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.events import SourceMessagesProcessed
+from fk.core.app import App
+from fk.core.user import User
+from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.user_model import UserModel
 
 
-class UserTableView(QTableView, AbstractEventEmitter):
-    _source: AbstractEventSource
-
-    def __init__(self, parent: QWidget, source: AbstractEventSource):
+class UserTableView(AbstractTableView[App, User]):
+    def __init__(self, parent: QWidget, source: AbstractEventSource, actions: dict[str, QAction]):
         super().__init__(parent,
-                         allowed_events=[])
-        self._source = source
-        source.on(SourceMessagesProcessed, lambda event: self._on_data_loaded())
+                         source,
+                         UserModel(parent, source),
+                         'users_table',
+                         actions)
 
-        self.setObjectName('users_table')
-        self.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
-        self.setTabKeyNavigation(False)
-        self.setSelectionMode(QTableView.SelectionMode.NoSelection)
-        self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-        self.setShowGrid(False)
-        self.horizontalHeader().setVisible(False)
-        self.horizontalHeader().setMinimumSectionSize(10)
-        self.horizontalHeader().setStretchLastSection(False)
-        self.verticalHeader().setVisible(False)
+    def update_actions(self, selected: User) -> None:
+        pass
 
-    def _on_data_loaded(self) -> None:
-        user_model = UserModel(self, self._source)
-        user_model.load()
-        self.setModel(user_model)
+    def create_actions(self) -> dict[str, QAction]:
+        return dict()
+
+    def upstream_selected(self, upstream: App) -> None:
+        print(f'Loaded: {upstream}')
+        super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.selectionModel().selectionChanged.connect(lambda s, d: self._on_selection_changed(s, d))

@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.app import App
 from fk.core.user import User
 
 
@@ -68,10 +69,10 @@ class UserModel(QtGui.QStandardItemModel):
         col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 0, col1)
 
-    def load(self) -> None:
+    def load(self, app: App) -> None:
         self.clear()
         i = 0
-        for user in self._source.get_data().values():
+        for user in app.values():
             if user.is_system_user():
                 continue
             item = QtGui.QStandardItem('')

@@ -41,14 +41,16 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 window: QMainWindow = QMainWindow()
-backlogs_table: BacklogTableView = BacklogTableView(window, source)
+backlogs_table: BacklogTableView = BacklogTableView(window, source, dict())
 window.setCentralWidget(backlogs_table)
 
 app.setQuitOnLastWindowClosed(True)
 window.show()
 
 try:
-    source.on(SourceMessagesProcessed, lambda event: backlogs_table.load_for_user(root.get_current_user()))
+    source.on(SourceMessagesProcessed,
+              lambda event: backlogs_table.upstream_selected(
+                  root.get_current_user()))
     source.start()
 except Exception as ex:
     app.on_exception(type(ex), ex, ex.__traceback__)

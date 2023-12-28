@@ -41,14 +41,18 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 window: QMainWindow = QMainWindow()
-workitems_table: WorkitemTableView = WorkitemTableView(window, source)
+window.resize(600, 400)
+workitems_table: WorkitemTableView = WorkitemTableView(window, source, dict())
 window.setCentralWidget(workitems_table)
 
 app.setQuitOnLastWindowClosed(True)
 window.show()
 
 try:
-    source.on(SourceMessagesProcessed, lambda event: workitems_table.load_for_backlog(list(root.get_current_user().values())[0]))
+    source.on(SourceMessagesProcessed,
+              lambda event: workitems_table.upstream_selected(
+                  list(root.get_current_user().values())[0]
+              ))
     source.start()
 except Exception as ex:
     app.on_exception(type(ex), ex, ex.__traceback__)

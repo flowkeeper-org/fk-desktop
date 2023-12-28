@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.app import App
+from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.desktop.application import Application
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
@@ -40,13 +41,15 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 window: QMainWindow = QMainWindow()
-users_table: UserTableView = UserTableView(window, source)
+users_table: UserTableView = UserTableView(window, source, dict())
 window.setCentralWidget(users_table)
 
 app.setQuitOnLastWindowClosed(True)
 window.show()
 
 try:
+    source.on(SourceMessagesProcessed,
+              lambda event: users_table.upstream_selected(root))
     source.start()
 except Exception as ex:
     app.on_exception(type(ex), ex, ex.__traceback__)
