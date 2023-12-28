@@ -35,7 +35,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          source,
                          BacklogModel(parent, source),
                          'backlogs_table',
-                         actions)
+                         actions,
+                         'Loading, please wait...',
+                         'Select a user.\nYou should never see this message. Please report a bug in GitHub.',
+                         "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N."
+                         )
         self._init_menu(actions)
 
     def _init_menu(self, actions: dict[str, QAction]):

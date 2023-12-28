@@ -404,6 +404,7 @@ def on_messages(event: str = None) -> None:
     )
     timer_tray = render_for_pixmap()
 
+    # TDOO: Why do we do it so late? Can't we initialize the timer earlier?
     pomodoro_timer = PomodoroTimer(source, QtTimer(), QtTimer())
     pomodoro_timer.on("Timer*", update_header)
     pomodoro_timer.on("Timer*Complete", show_notification)

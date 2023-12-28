@@ -14,10 +14,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Callable, TypeVar, Generic
 
-from PySide6.QtCore import QItemSelection, Qt
+from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtGui import QAction, QPainter, QStandardItemModel, QIcon
 from PySide6.QtWidgets import QTableView, QWidget
 
@@ -37,13 +37,20 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     _is_data_loaded: bool
     _is_upstream_item_selected: bool
     _actions: dict[str, QAction]
+    _placeholder_loading: str
+    _placeholder_upstream: str
+    _placeholder_empty: str
 
     def __init__(self,
                  parent: QWidget,
                  source: AbstractEventSource,
                  model: QStandardItemModel,
                  name: str,
-                 actions: dict[str, QAction]):
+                 actions: dict[str, QAction],
+                 placeholder_loading,
+                 placeholder_upstream,
+                 placeholder_empty,
+                 ):
         super().__init__(parent,
                          allowed_events=[
                              BeforeSelectionChanged,
@@ -53,6 +60,9 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._actions = actions
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
+        self._placeholder_loading = placeholder_loading
+        self._placeholder_upstream = placeholder_upstream
+        self._placeholder_empty = placeholder_empty
         self.setModel(model)
         self.selectionModel().currentRowChanged.connect(lambda s, d: self._on_current_changed(s, d))
 
@@ -94,7 +104,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     def create_actions(self) -> dict[str, QAction]:
         pass
 
-    def upstream_selected(self, upstream: TUpstream) -> None:
+    def upstream_selected(self, upstream: TUpstream | None) -> None:
         if upstream is None:
             self._is_upstream_item_selected = False
         else:
@@ -107,10 +117,10 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             return index.data(500)
 
     @abstractmethod
-    def update_actions(self, selected: TDownstream) -> None:
+    def update_actions(self, selected: TDownstream | None) -> None:
         pass
 
-    def _on_current_changed(self, selected: QItemSelection, deselected: QItemSelection) -> None:
+    def _on_current_changed(self, selected: QModelIndex | None, deselected: QModelIndex | None) -> None:
         after: TDownstream | None = None
         if selected is not None:
             after = selected.data(500)
@@ -137,11 +147,11 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         # 4. There are items to display
         text: str
         if not self._is_data_loaded:
-            text = 'Loading, please wait...'
+            text = self._placeholder_loading
         elif not self._is_upstream_item_selected:
-            text = '← Select a backlog.'
+            text = self._placeholder_upstream
         elif self.model().rowCount() == 0:
-            text = 'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.'
+            text = self._placeholder_empty
         else:
             return
 
