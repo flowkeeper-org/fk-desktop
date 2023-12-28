@@ -17,6 +17,8 @@
 import re
 from typing import Callable
 
+from fk.qt.invoker import invoke_in_main_thread
+
 
 class AbstractEventEmitter:
     _muted: bool
@@ -48,7 +50,7 @@ class AbstractEventEmitter:
         if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event
-                callback(**params)
+                invoke_in_main_thread(callback, [], **params)
 
     def _is_muted(self) -> bool:
         return self._muted
