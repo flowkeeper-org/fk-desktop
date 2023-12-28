@@ -86,10 +86,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
     def start(self, mute_events=True) -> None:
+        print('File event source -- starting')
         if self._existing_strategies is None:
-            return self._process_from_file(mute_events)
+            self._process_from_file(mute_events)
         else:
-            return self._process_from_existing()
+            self._process_from_existing()
 
     def _process_from_existing(self) -> None:
         # This method is called when we repair an existing data source

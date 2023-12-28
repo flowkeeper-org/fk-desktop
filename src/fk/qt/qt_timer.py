@@ -13,27 +13,49 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import threading
 from typing import Callable
 
-from PySide6 import QtCore
+from PySide6.QtCore import QEvent, QCoreApplication, QTimer
 
 from fk.core.timer import AbstractTimer
 
 
+class QExtendedTimer(QTimer):
+    def __init__(self):
+        super().__init__()
+
+    def customEvent(self, event: QEvent) -> None:
+        print('QExtendedTimer:Starting', threading.get_ident(), self.objectName())
+        self.start(int(event.ms))
+
+    def schedule_start(self, ms: float) -> None:
+        print('QExtendedTimer:Scheduling', threading.get_ident(), self.objectName())
+        # We need to be careful -- this function might be called
+        # from a non-GUI thread. We should decouple it via Slots.
+        e = QEvent(QEvent.Type.User)
+        e.ms = ms
+        QCoreApplication.postEvent(self, e)
+
+
 class QtTimer(AbstractTimer):
-    _timer: QtCore.QTimer
+    _timer: QExtendedTimer
     _callback: Callable[[dict], None]
     _params: dict | None
     _once: bool
+    _name: str
 
-    def __init__(self):
-        self._timer = QtCore.QTimer()
+    def __init__(self, name: str):
+        self._name = name
+        print('Creating timer', name)
+        self._timer = QExtendedTimer()
+        self._timer.setObjectName(name)
         self._timer.timeout.connect(lambda: self._call())
 
     def _call(self) -> None:
         if self._once:
             self._timer.stop()
+        print('QtTimer:callback', threading.get_ident(), self._name)
         self._callback(self._params)
 
     def schedule(self,
@@ -41,10 +63,12 @@ class QtTimer(AbstractTimer):
                  callback: Callable[[dict], None],
                  params: dict | None,
                  once: bool = False) -> None:
+        # We need to be careful -- this function might be called
+        # from a non-GUI thread. We should decouple it via Slots.
         self._callback = callback
         self._params = params
         self._once = once
-        self._timer.start(int(ms))
+        self._timer.schedule_start(ms)
 
     def cancel(self):
         self._timer.stop()

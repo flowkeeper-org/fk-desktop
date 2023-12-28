@@ -25,6 +25,7 @@ from fk.core.file_event_source import FileEventSource
 from fk.desktop.application import Application
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
+from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 app = Application(sys.argv)
@@ -34,7 +35,9 @@ source: AbstractEventSource
 source_type = settings.get('Source.type')
 root = App(settings)
 if source_type == 'local':
-    source = FileEventSource(settings, root, QtFilesystemWatcher())
+    source = ThreadedEventSource(FileEventSource(settings,
+                                                 root,
+                                                 QtFilesystemWatcher()))
 elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
     source = WebsocketEventSource(settings, root)
 else:

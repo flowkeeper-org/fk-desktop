@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
 from PySide6.QtGui import QAction
@@ -34,6 +35,7 @@ from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.abstract_tableview import AfterSelectionChanged
+from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
@@ -278,7 +280,7 @@ class MainWindowEventFilter(QtWidgets.QMainWindow):
     def __init__(self, window: QtWidgets.QMainWindow):
         super().__init__()
         self._window = window
-        self._timer = QtTimer()
+        self._timer = QtTimer("Window resizing")
         self._is_resizing = False
 
     def resize_completed(self):
@@ -405,7 +407,7 @@ def on_messages(event: str = None) -> None:
     timer_tray = render_for_pixmap()
 
     # TDOO: Why do we do it so late? Can't we initialize the timer earlier?
-    pomodoro_timer = PomodoroTimer(source, QtTimer(), QtTimer())
+    pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
     pomodoro_timer.on("Timer*", update_header)
     pomodoro_timer.on("Timer*Complete", show_notification)
     pomodoro_timer.on("TimerWorkStart", start_ticking)
@@ -555,6 +557,9 @@ def repair_file_event_source(_):
 # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
 # will pass through to Qt data models via Qt-like connect / emit mechanism.
 app = Application(sys.argv)
+
+print('UI thread:', threading.get_ident())
+
 settings = app.get_settings()
 settings.on(events.AfterSettingChanged, on_setting_changed)
 
@@ -578,13 +583,12 @@ source: AbstractEventSource
 source_type = settings.get('Source.type')
 root = App(settings)
 if source_type == 'local':
-    source = FileEventSource(settings, root, QtFilesystemWatcher())
+    inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
+    source = ThreadedEventSource(inner_source)
 elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
     source = WebsocketEventSource(settings, root)
 else:
     raise Exception(f"Source type {source_type} not supported")
-
-data = source.get_data()
 source.on(SourceMessagesProcessed, on_messages)
 
 loader = QtUiTools.QUiLoader()

@@ -51,7 +51,7 @@ class WebsocketEventSource(AbstractEventSource):
         self._mute_requested = True
         self._connection_attempt = 0
         self._received_error = False
-        self._reconnect_timer = QtTimer()
+        self._reconnect_timer = QtTimer("WS Reconnect")
         self._ws = QtWebSockets.QWebSocket()
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: self._connection_lost())

@@ -162,3 +162,4 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                          Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
                          text)
         painter.restore()
+        painter.end()

@@ -17,8 +17,9 @@ import sys
 import traceback
 import urllib
 import webbrowser
+from typing import Callable
 
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, QThreadPool, Slot, QRunnable
 from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QTextEdit, QMessageBox

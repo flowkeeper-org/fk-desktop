@@ -42,6 +42,5 @@ class UserTableView(AbstractTableView[App, User]):
         return dict()
 
     def upstream_selected(self, upstream: App) -> None:
-        print(f'Loaded: {upstream}')
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
