@@ -16,10 +16,12 @@
 
 import datetime
 import enum
+from time import sleep
 from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
 from PySide6.QtNetwork import QAbstractSocket
+from PySide6.QtWidgets import QApplication
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -100,6 +102,7 @@ class WebsocketEventSource(AbstractEventSource):
     def _on_message(self, message: str) -> None:
         lines = message.split('\n')
         print(f'Received {len(lines)} messages')
+        i = 0
         for line in lines:
             try:
                 # TODO: Check for strategy class type here instead
@@ -120,6 +123,9 @@ class WebsocketEventSource(AbstractEventSource):
                     self._last_seq = s.get_sequence()
                     # print(f" - {s}")
                     self._execute_prepared_strategy(s)
+                i += 1
+                if i % 1000 == 0:    # Yield to Qt from time to time
+                    QApplication.processEvents()
             except Exception as ex:
                 if self._ignore_errors:
                     print(f'Error processing {line}: {ex}')
