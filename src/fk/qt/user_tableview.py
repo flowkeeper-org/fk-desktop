@@ -32,8 +32,8 @@ class UserTableView(AbstractTableView[App, User]):
                          actions,
                          'Loading, please wait...',
                          'Select a tenant.\nYou should never see this message. Please report a bug in GitHub.',
-                         'There are no users.\nYou should never see this message. Please report a bug in GitHub.'
-                         )
+                         'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
+                         0)
 
     def update_actions(self, selected: User) -> None:
         pass

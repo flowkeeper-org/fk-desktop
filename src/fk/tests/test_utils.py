@@ -45,6 +45,7 @@ def noop_emit(event: str, params: dict[str, any]) -> None:
 
 def test_user(n: int) -> User:
     return User(
+        None,
         TEST_USERNAMES[n],
         f'Test User #{n}',
         predefined_datetime(0),

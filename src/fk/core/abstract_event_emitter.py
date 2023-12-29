@@ -46,10 +46,12 @@ class AbstractEventEmitter:
             if regex.match(event):
                 self._connections[event].clear()
 
-    def _emit(self, event: str, params: dict[str, any]) -> None:
+    def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
         if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event
+                if carry is not None:
+                    params['carry'] = carry
                 invoke_in_main_thread(callback, [], **params)
 
     def _is_muted(self) -> bool:

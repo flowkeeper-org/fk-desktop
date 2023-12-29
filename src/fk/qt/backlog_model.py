@@ -86,17 +86,17 @@ class BacklogModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
-    def _backlog_added(self, event: str, backlog: Backlog) -> None:
+    def _backlog_added(self, backlog: Backlog, **kwargs) -> None:
         self.appendRow(BacklogItem(backlog))
 
-    def _backlog_removed(self, event: str, backlog: Backlog) -> None:
+    def _backlog_removed(self, backlog: Backlog, **kwargs) -> None:
         for i in range(self.rowCount()):
             bl = self.item(i).data(500)
             if bl == backlog:
                 self.removeRow(i)
                 return
 
-    def _backlog_renamed(self, event: str, backlog: Backlog, old_name: str, new_name: str) -> None:
+    def _backlog_renamed(self, backlog: Backlog, **kwargs) -> None:
         for i in range(self.rowCount()):
             bl = self.item(i).data(500)
             if bl == backlog:

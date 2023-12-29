@@ -102,6 +102,7 @@ class WebsocketEventSource(AbstractEventSource):
         print(f'Received {len(lines)} messages')
         for line in lines:
             try:
+                # TODO: Check for strategy class type here instead
                 if line == 'ReplayCompleted()':
                     if self._mute_requested:
                         self.unmute()

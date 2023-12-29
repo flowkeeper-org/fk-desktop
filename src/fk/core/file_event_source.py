@@ -102,7 +102,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         for strategy in self._existing_strategies:
             strategy._data = self._data
             strategy._settings = self._settings
-            strategy._emit = self._emit
+            strategy._emit_func = self._emit
             if type(strategy) is str:
                 continue
             self._last_strategy = strategy

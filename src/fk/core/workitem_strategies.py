@@ -44,10 +44,11 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
@@ -102,10 +103,11 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
 
     def execute(self) -> (str, any):
@@ -145,10 +147,11 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
@@ -195,10 +198,11 @@ class CompleteWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 

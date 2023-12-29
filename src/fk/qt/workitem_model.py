@@ -70,13 +70,13 @@ class WorkitemModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
-    def _workitem_created(self, event: str, workitem: Workitem) -> None:
+    def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
         if workitem.get_parent() == self._backlog:
             item = QtGui.QStandardItem('')
             self.appendRow(item)
             self.set_row(self.rowCount() - 1, workitem)
 
-    def _workitem_deleted(self, event: str, workitem: Workitem) -> None:
+    def _workitem_deleted(self, workitem: Workitem, **kwargs) -> None:
         if workitem.get_parent() == self._backlog:
             for i in range(self.rowCount()):
                 wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
@@ -84,7 +84,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
                     self.removeRow(i)
                     return
 
-    def _pomodoro_changed(self, event: str, workitem: Workitem, **kwargs) -> None:
+    def _pomodoro_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
             wi = self.item(i).data(500)
             if wi == workitem:

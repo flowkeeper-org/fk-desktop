@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.events import AfterWorkitemCreate
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
@@ -38,10 +39,11 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          actions,
                          'Loading, please wait...',
                          '← Select a backlog.',
-                         'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.'
-                         )
+                         'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
+                         1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
+        source.on(AfterWorkitemCreate, self._on_new_workitem)
 
     def _init_menu(self, actions: dict[str, QAction]):
         menu: QMenu = QMenu()
@@ -93,14 +95,23 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         backlog: Backlog = model.get_backlog()
         if backlog is None:
             raise Exception("Trying to create a workitem while there's no backlog selected")
+        new_name = generate_unique_name("Do something", backlog.names())
+        self._source.execute(CreateWorkitemStrategy,
+                             [generate_uid(), backlog.get_uid(), new_name],
+                             carry="edit")
 
-        new_name = generate_unique_name("Do something", backlog.values())
-        self._source.execute(CreateWorkitemStrategy, [generate_uid(), backlog.get_uid(), new_name])
+        # A simpler, more efficient, but a bit uglier single-step alternative
+        # (new_name, ok) = QInputDialog.getText(self,
+        #                                       "New item",
+        #                                       "Provide a name for the new item",
+        #                                       text="Do something")
+        # if ok:
+        #     self._source.execute(CreateWorkitemStrategy, [generate_uid(), backlog.get_uid(), new_name])
 
-        # Start editing it. The new item will always be at the end of the list.
-        index: QModelIndex = model.index(model.rowCount() - 1, 1)
-        self.setCurrentIndex(index)
-        self.edit(index)
+    def _on_new_workitem(self, workitem: Workitem, carry: any, **kwargs):
+        if carry == 'edit':
+            index: QModelIndex = self.select(workitem)
+            self.edit(index)
 
     def rename_selected_workitem(self) -> None:
         index: QModelIndex = self.currentIndex()

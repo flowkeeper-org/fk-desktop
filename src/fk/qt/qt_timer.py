@@ -68,7 +68,8 @@ class QtTimer(AbstractTimer):
         self._callback = callback
         self._params = params
         self._once = once
-        self._timer.schedule_start(ms)
+        #self._timer.schedule_start(ms)
+        self._timer.start(ms)
 
     def cancel(self):
         self._timer.stop()

@@ -17,7 +17,7 @@
 from abc import abstractmethod
 from typing import Callable, TypeVar, Generic
 
-from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QAction, QPainter, QStandardItemModel, QIcon
 from PySide6.QtWidgets import QTableView, QWidget
 
@@ -40,6 +40,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     _placeholder_loading: str
     _placeholder_upstream: str
     _placeholder_empty: str
+    _editable_column: int
 
     def __init__(self,
                  parent: QWidget,
@@ -47,9 +48,10 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                  model: QStandardItemModel,
                  name: str,
                  actions: dict[str, QAction],
-                 placeholder_loading,
-                 placeholder_upstream,
-                 placeholder_empty,
+                 placeholder_loading: str,
+                 placeholder_upstream: str,
+                 placeholder_empty: str,
+                 editable_column: int,
                  ):
         super().__init__(parent,
                          allowed_events=[
@@ -63,6 +65,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._placeholder_loading = placeholder_loading
         self._placeholder_upstream = placeholder_upstream
         self._placeholder_empty = placeholder_empty
+        self._editable_column = editable_column
         self.setModel(model)
         self.selectionModel().currentRowChanged.connect(lambda s, d: self._on_current_changed(s, d))
 
@@ -163,3 +166,17 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                          text)
         painter.restore()
         painter.end()
+
+    def select(self, data: TDownstream) -> QModelIndex:
+        model = self.model()
+        for i in range(model.rowCount()):
+            index = model.index(i, self._editable_column)
+            if model.data(index, 500) == data:
+                self.selectionModel().select(index,
+                                             QItemSelectionModel.SelectionFlag.SelectCurrent |
+                                             QItemSelectionModel.SelectionFlag.ClearAndSelect |
+                                             QItemSelectionModel.SelectionFlag.Rows)
+                self.setCurrentIndex(index)
+                self.scrollTo(index)
+                return index
+        raise Exception(f"Trying to select a table item {data}, which does not exist")

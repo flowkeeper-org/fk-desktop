@@ -37,10 +37,11 @@ class AuthenticateStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._username = params[0]
         self._token = params[1]
 
@@ -58,10 +59,11 @@ class ReplayStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._since_seq = int(params[0])
 
     def execute(self) -> (str, any):
@@ -79,10 +81,11 @@ class ErrorStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
 

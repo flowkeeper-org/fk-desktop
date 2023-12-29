@@ -127,7 +127,13 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
 
-    def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True, auto=False) -> None:
+    def execute(self,
+                strategy_class:
+                type[AbstractStrategy],
+                params: list[str],
+                persist: bool = True,
+                auto: bool = False,
+                carry: any = None) -> None:
         # This method is called when the user does something in the UI on THIS instance
         # TODO: Get username from the login provider instead
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -139,7 +145,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             params,
             self._emit,
             self.get_data(),
-            self._settings
+            self._settings,
+            carry
         )
         self._execute_prepared_strategy(s, auto)
 

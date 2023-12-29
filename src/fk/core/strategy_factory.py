@@ -59,7 +59,7 @@ def strategy_seq_from_string(s: str) -> int | None:
 
 
 def strategy_from_string(s: str,
-                         emit: Callable[[str, dict[str, any]], None],
+                         emit: Callable[[str, dict[str, any], any], None],
                          data: TRoot,
                          settings: AbstractSettings,
                          replacement_user: User | None = None) -> AbstractStrategy[TRoot] | str:

@@ -24,6 +24,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
+from fk.core.events import AfterBacklogCreate
 from fk.core.user import User
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.backlog_model import BacklogModel
@@ -38,9 +39,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          actions,
                          'Loading, please wait...',
                          'Select a user.\nYou should never see this message. Please report a bug in GitHub.',
-                         "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N."
-                         )
+                         "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
+                         0)
         self._init_menu(actions)
+        source.on(AfterBacklogCreate, self._on_new_backlog)
 
     def _init_menu(self, actions: dict[str, QAction]):
         menu: QMenu = QMenu()
@@ -75,13 +77,22 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     def create_backlog(self) -> None:
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source.backlogs())
-        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
+        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
+        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
 
-        # Start editing it. The new item will always be at the top of the list.
-        index: QModelIndex = self.model().index(0, 0)
-        self.setCurrentIndex(index)
-        self.edit(index)
+        # A simpler, more efficient, but a bit uglier single-step alternative
+        # new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
+        # (new_name, ok) = QInputDialog.getText(self,
+        #                                       "New backlog",
+        #                                       "Provide a name for the new backlog",
+        #                                       text=new_name)
+        # if ok:
+        #     self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
+
+    def _on_new_backlog(self, backlog: Backlog, carry: any, **kwargs):
+        if carry == 'edit':
+            index: QModelIndex = self.select(backlog)
+            self.edit(index)
 
     def rename_selected_backlog(self) -> None:
         index: QModelIndex = self.currentIndex()

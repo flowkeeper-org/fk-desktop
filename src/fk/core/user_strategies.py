@@ -39,10 +39,11 @@ class CreateUserStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._user_identity = params[0]
         self._user_name = params[1]
 
@@ -55,7 +56,7 @@ class CreateUserStrategy(AbstractStrategy['App']):
             'user_identity': self._user_identity,
             'user_name': self._user_name,
         })
-        user = User(self._user_identity, self._user_name, self._when, False)
+        user = User(self._data, self._user_identity, self._user_name, self._when, False)
         self._data[self._user_identity] = user
         user.item_updated(self._when)   # This is not strictly required, but just in case we will create Teams
         self._emit(events.AfterUserCreate, {
@@ -77,10 +78,11 @@ class DeleteUserStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._user_identity = params[0]
 
     def execute(self) -> (str, any):
@@ -122,10 +124,11 @@ class RenameUserStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._user_identity = params[0]
         self._new_user_name = params[1]
 

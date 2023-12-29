@@ -60,6 +60,9 @@ class AbstractDataContainer(AbstractDataItem, Generic[TChild, TParent]):
     def keys(self) -> Iterable[str]:
         return self._children.keys()
 
+    def names(self) -> Iterable[str]:
+        return [child.get_name() for child in self._children.values()]
+
     def get_name(self) -> str:
         return self._name
 

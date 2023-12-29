@@ -24,10 +24,10 @@ def generate_uid() -> str:
     return str(uuid.uuid4())
 
 
-def generate_unique_name(prefix: str, parent: Iterable) -> str:
+def generate_unique_name(prefix: str, names: Iterable) -> str:
     check = prefix
     n = 1
-    while check in parent:
+    while check in names:
         check = f"{prefix} {n}"
         n += 1
     return check
