@@ -72,8 +72,14 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def set_config_parameter(self, name: str, value: str) -> str:
         return self._wrapped.set_config_parameter(name, value)
 
-    def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True, auto=False) -> None:
-        self._wrapped.execute(strategy_class, params, persist, auto)
+    def execute(self,
+                strategy_class:
+                type[AbstractStrategy],
+                params: list[str],
+                persist: bool = True,
+                auto: bool = False,
+                carry: any = None) -> None:
+        self._wrapped.execute(strategy_class, params, persist, auto, carry)
 
     def auto_seal(self) -> None:
         self._wrapped.auto_seal()
