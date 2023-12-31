@@ -16,8 +16,10 @@
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QProgressBar
 
+from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.workitem import Workitem
 
 
 class ProgressWidget(QWidget):
@@ -41,6 +43,12 @@ class ProgressWidget(QWidget):
         self._progressBar.setObjectName("footerProgress")
         layout.addWidget(self._progressBar)
         self.setVisible(False)
+        source.on("AfterWorkitem*",
+                  lambda workitem: self.update_progress(workitem.get_parent()))
+        source.on("AfterPomodoroAdd",
+                  lambda workitem: self.update_progress(workitem.get_parent()))
+        source.on("AfterPomodoroRemove",
+                  lambda workitem: self.update_progress(workitem.get_parent()))
 
     def update_progress(self, backlog: Backlog) -> None:
         total: int = 0

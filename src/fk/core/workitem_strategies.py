@@ -82,7 +82,7 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
 
 
 def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> None:
-    for pomodoro in workitem:
+    for pomodoro in workitem.values():
         if pomodoro.is_running():
             strategy.execute_another(CompletePomodoroStrategy, [
                 workitem.get_uid(),

@@ -36,7 +36,7 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
 
     def get_running_workitem(self) -> (Workitem, Pomodoro):
         for workitem in self._children.values():
-            for pomodoro in workitem:
+            for pomodoro in workitem.values():
                 if pomodoro.is_running():
                     return workitem, pomodoro
         return None, None

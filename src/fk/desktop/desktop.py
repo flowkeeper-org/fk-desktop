@@ -633,10 +633,6 @@ search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "sea
 search = SearchBar(window, source, backlogs_table, workitems_table)
 search_bar.addWidget(search)
 
-# TODO: Subscribe update_progress(backlog) to events.AfterWorkitem* and +/- pomodoro
-# Can't do it now, because all those events supply workitem, but not a backlog
-# Have to wait till we have a better data model
-
 # Layouts
 # noinspection PyTypeChecker
 main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")

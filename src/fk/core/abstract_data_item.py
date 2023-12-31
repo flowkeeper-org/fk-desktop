@@ -17,7 +17,7 @@
 import datetime
 import uuid
 from abc import ABC
-from typing import Self, Iterable
+from typing import Iterable, TypeVar, Generic
 
 
 def generate_uid() -> str:
@@ -33,15 +33,18 @@ def generate_unique_name(prefix: str, names: Iterable) -> str:
     return check
 
 
-class AbstractDataItem(ABC):
+TParent = TypeVar('TParent', bound='AbstractDataItem')
+
+
+class AbstractDataItem(ABC, Generic[TParent]):
     _uid: str
-    _parent: Self
+    _parent: TParent | None
     _create_date: datetime.datetime
     _last_modified_date: datetime.datetime
 
     def __init__(self,
                  uid: str,
-                 parent: Self | None,
+                 parent: TParent | None,
                  create_date: datetime.datetime):
         self._uid = uid
         self._parent = parent
@@ -55,7 +58,7 @@ class AbstractDataItem(ABC):
     def get_owner(self) -> 'User':
         return self._parent.get_owner() if self._parent is not None else None
 
-    def get_parent(self) -> Self:
+    def get_parent(self) -> TParent:
         return self._parent
 
     def get_create_date(self) -> datetime.datetime:
