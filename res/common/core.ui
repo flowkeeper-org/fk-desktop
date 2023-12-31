@@ -437,27 +437,6 @@
              </property>
             </layout>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="rightTableFooter">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="footerLabel">
-               <property name="text">
-                <string>0 of 0 done</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QProgressBar" name="footerProgress">
-               <property name="value">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
           </layout>
          </widget>
         </widget>

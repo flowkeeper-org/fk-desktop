@@ -35,6 +35,7 @@ from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.abstract_tableview import AfterSelectionChanged
+from fk.qt.progress_widget import ProgressWidget
 from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
@@ -45,21 +46,6 @@ from fk.qt.user_tableview import UserTableView
 from fk.qt.websocket_event_source import WebsocketEventSource
 from fk.qt.workitem_tableview import WorkitemTableView
 
-
-def update_progress(backlog: Backlog) -> None:
-    total: int = 0
-    done: int = 0
-    for wi in backlog.values():
-        for p in wi.values():
-            total += 1
-            if p.is_finished() or p.is_canceled():
-                done += 1
-
-    backlog_progress.setVisible(total > 0)
-    backlog_progress.setMaximum(total)
-    backlog_progress.setValue(done)
-    backlog_progress_txt.setVisible(total > 0)
-    backlog_progress_txt.setText(f'{done} of {total} done')
 
 
 def tray_clicked() -> None:
@@ -623,7 +609,7 @@ actions: dict[str, QAction] = dict()
 # Backlogs table
 backlogs_table: BacklogTableView = BacklogTableView(window, source, actions)
 backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
-backlogs_table.on(AfterSelectionChanged, lambda event, before, after: update_progress(after) if after is not None else None)
+backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
 left_layout.addWidget(backlogs_table)
 
 # Users table
@@ -639,13 +625,9 @@ workitems_table: WorkitemTableView = WorkitemTableView(window, source, actions)
 source.on(AfterWorkitemComplete, on_workitem_completed)
 right_Layout.addWidget(workitems_table)
 
-# Progress bar
-# noinspection PyTypeChecker
-backlog_progress: QtWidgets.QProgressBar = window.findChild(QtWidgets.QProgressBar, "footerProgress")
-backlog_progress.hide()
-# noinspection PyTypeChecker
-backlog_progress_txt: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "footerLabel")
-backlog_progress_txt.hide()
+progress_widget = ProgressWidget(window, source)
+right_Layout.addWidget(progress_widget)
+
 # noinspection PyTypeChecker
 search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
 search = SearchBar(window, source, backlogs_table, workitems_table)
