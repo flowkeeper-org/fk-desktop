@@ -19,7 +19,6 @@ import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
 from PySide6.QtGui import QAction, QFont, QIcon
-from PySide6.QtWidgets import QToolButton
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -56,8 +55,7 @@ def get_timer_ui_mode() -> str:
 
 def show_timer_automatically() -> None:
     global continue_workitem
-    action_void.setEnabled(True)
-    continue_workitem = None
+    actions['actionVoid'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
         header_layout.show()
@@ -65,13 +63,13 @@ def show_timer_automatically() -> None:
         left_toolbar.hide()
         window.setMaximumHeight(header_layout.size().height())
         window.setMinimumHeight(header_layout.size().height())
-        tool_show_timer_only.hide()
-        tool_show_all.show()
+        # tool_show_timer_only.hide()
+        # tool_show_all.show()
     elif mode == 'minimize':
         window.hide()
 
 
-def hide_timer() -> None:
+def hide_timer(**kwargs) -> None:
     main_layout.show()
     header_layout.show()
     left_toolbar.show()
@@ -81,24 +79,7 @@ def hide_timer() -> None:
 
 
 def hide_timer_automatically(workitem) -> None:
-    global continue_workitem
-
-    action_void.setDisabled(True)
-
-    # Show "Next" icon if there's pomodoros remaining
-    if workitem is not None and workitem.is_startable():
-        continue_workitem = workitem
-        # TODO Show "Complete" button here, too
-        tool_next.show()
-        tool_complete.show()
-        tray.setIcon(next_icon)
-        return
-
-    continue_workitem = None
-    tool_next.hide()
-    tool_complete.hide()
-    reset_tray_icon()
-
+    actions['actionVoid'].setDisabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
         hide_timer()
