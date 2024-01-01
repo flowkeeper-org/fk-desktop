@@ -61,14 +61,14 @@ class FocusWidget(QWidget):
         self.setMinimumHeight(80)
         self.setMinimumWidth(0)
         self.setMaximumHeight(16777215)
-        self.setMaximumWidth(0)
+        self.setMaximumWidth(16777215)
 
         layout = QHBoxLayout(self)
         layout.setObjectName("layout")
         layout.setContentsMargins(15, 10, 15, 10)
         layout.setSpacing(0)
 
-        text_layout = QVBoxLayout(None)
+        text_layout = QVBoxLayout(self)
         text_layout.setObjectName("text_layout")
         # Here
         layout.addLayout(text_layout)
@@ -76,6 +76,7 @@ class FocusWidget(QWidget):
         text_layout.setSpacing(0)
 
         header_text = QLabel(self)
+        header_text.setObjectName('headerText')
         text_layout.addWidget(header_text)
         sp2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sp2.setHorizontalStretch(0)
@@ -86,6 +87,7 @@ class FocusWidget(QWidget):
         self._header_text = header_text
 
         header_subtext = QLabel(self)
+        header_subtext.setObjectName('headerSubtext')
         text_layout.addWidget(header_subtext)
         header_subtext.setText("Welcome to Flowkeeper!")
         self._header_subtext = header_subtext
@@ -176,6 +178,7 @@ class FocusWidget(QWidget):
                 a = QAction(txt, self)
                 a.triggered.connect(callback)
                 a.setShortcut(shortcut)
+                a.setIcon(QIcon(icon))
                 self._actions[action] = a
             btn.setDefaultAction(self._actions[action])
         else:

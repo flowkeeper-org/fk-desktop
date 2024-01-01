@@ -20,8 +20,7 @@ import webbrowser
 
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QTextEdit, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_settings import QtSettings
@@ -103,80 +102,6 @@ class Application(QApplication):
                             "Restart required",
                             f"Please restart Flowkeeper to apply new settings",
                             QMessageBox.StandardButton.Ok)
-
-    def on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
-        # print(f'Setting {name} changed from {old_value} to {new_value}')
-        status.showMessage('Settings changed')
-        if name == 'Source.type':
-            restart_warning()
-        elif name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
-            # TODO: This really doesn't work well
-            hide_timer_automatically(None)
-            show_timer_automatically()
-        elif name == 'Application.quit_on_close':
-            app.setQuitOnLastWindowClosed(new_value == 'True')
-        elif 'Application.font_' in name:
-            initialize_fonts(settings)
-        elif name == 'Application.show_main_menu':
-            main_menu.setVisible(new_value == 'True')
-        elif name == 'Application.show_status_bar':
-            status.setVisible(new_value == 'True')
-        elif name == 'Application.show_toolbar':
-            toolbar.setVisible(new_value == 'True')
-        elif name == 'Application.show_left_toolbar':
-            left_toolbar.setVisible(new_value == 'True')
-        elif name == 'Application.show_tray_icon':
-            tray.setVisible(new_value == 'True')
-        elif name == 'Application.header_background':
-            eye_candy()
-        elif name == 'Application.theme':
-            restart_warning()
-            # app.set_theme(new_value)
-        elif name.startswith('WebsocketEventSource.'):
-            source.start()
-        # TODO: Subscribe to sound settings
-        # TODO: Subscribe the sources to the settings they use
-        # TODO: Reload the app when the source changes
-
-    def show_about(self):
-        loader = QUiLoader()
-
-        # Load main window
-        file = QFile(":/about.ui")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        # noinspection PyTypeChecker
-        about_window: QMainWindow = loader.load(file, None)
-        file.close()
-
-        # noinspection PyTypeChecker
-        about_version: QLabel = about_window.findChild(QLabel, "version")
-        file = QFile(":/VERSION.txt")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        about_version.setText(file.readAll().toStdString())
-        file.close()
-
-        # noinspection PyTypeChecker
-        about_changelog: QTextEdit = about_window.findChild(QTextEdit, "notes")
-        file = QFile(":/CHANGELOG.txt")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        about_changelog.setMarkdown(file.readAll().toStdString())
-        file.close()
-
-        # noinspection PyTypeChecker
-        about_credits: QTextEdit = about_window.findChild(QTextEdit, "credits")
-        file = QFile(":/CREDITS.txt")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        about_credits.setMarkdown(file.readAll().toStdString())
-        file.close()
-
-        # noinspection PyTypeChecker
-        about_license: QTextEdit = about_window.findChild(QTextEdit, "license")
-        file = QFile(":/LICENSE.txt")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        about_license.setMarkdown(file.readAll().toStdString())
-        file.close()
-
-        about_window.show()
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))

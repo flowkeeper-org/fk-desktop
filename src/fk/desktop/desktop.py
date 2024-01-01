@@ -18,7 +18,8 @@ import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtGui import QAction, QFont, QIcon
+from PySide6.QtWidgets import QToolButton
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -285,7 +286,9 @@ actions: dict[str, QAction] = {
     'quit': QAction("Quit", window),
 }
 actions['showAll'].triggered.connect(hide_timer)
+actions['showAll'].setIcon(QIcon(":/icons/tool-show-all.svg"))
 actions['showTimerOnly'].triggered.connect(show_timer_automatically)
+actions['showTimerOnly'].setIcon(QIcon(":/icons/tool-show-timer-only.svg"))
 actions['showMainWindow'].triggered.connect(window.show)
 actions['quit'].triggered.connect(app.quit)
 actions['quit'].setShortcut('Ctrl+Q')
@@ -322,7 +325,8 @@ search_bar.addWidget(search)
 
 # noinspection PyTypeChecker
 root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-root_layout.insertWidget(0, FocusWidget(window, pomodoro_timer, source, settings, actions, QFont()))
+focus = FocusWidget(window, pomodoro_timer, source, settings, actions, QFont())
+root_layout.insertWidget(0, focus)
 
 # Layouts
 # noinspection PyTypeChecker
