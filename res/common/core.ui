@@ -53,248 +53,6 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QWidget" name="headerLayout" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>80</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>80</height>
-       </size>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <property name="leftMargin">
-        <number>15</number>
-       </property>
-       <property name="topMargin">
-        <number>10</number>
-       </property>
-       <property name="rightMargin">
-        <number>15</number>
-       </property>
-       <property name="bottomMargin">
-        <number>10</number>
-       </property>
-       <item>
-        <layout class="QVBoxLayout" name="headerTextLayout">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="headerText">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Idle</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="headerSubtext">
-           <property name="text">
-            <string>Welcome to Flowkeeper!</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QWidget" name="timer" native="true">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>60</width>
-           <height>60</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>60</width>
-           <height>60</height>
-          </size>
-         </property>
-         <property name="baseSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QToolButton" name="toolVoid">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/tool-void.svg</normaloff>:/icons/tool-void.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>32</width>
-              <height>32</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolNext">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-next.svg</normaloff>:/icons/tool-next.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolComplete">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-complete.svg</normaloff>:/icons/tool-complete.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolNote">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-note.svg</normaloff>:/icons/tool-note.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolFilter">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-filter.svg</normaloff>:/icons/tool-filter.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolShowAll">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-show-all.svg</normaloff>:/icons/tool-show-all.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="toolShowTimerOnly">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/tool-show-timer-only.svg</normaloff>:/icons/tool-show-timer-only.svg</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>32</width>
-           <height>32</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
      <widget class="QWidget" name="mainLayout" native="true">
       <layout class="QHBoxLayout" name="mainLayoutInternal">
        <property name="spacing">
@@ -485,7 +243,6 @@
     <property name="title">
      <string>Work</string>
     </property>
-    <addaction name="actionVoid"/>
     <addaction name="actionSearch"/>
    </widget>
    <widget class="QMenu" name="menuBacklog">
@@ -493,17 +250,10 @@
      <string>Backlog</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuFilter">
-    <property name="title">
-     <string>Filter</string>
-    </property>
-    <addaction name="actionShowCompletedWorkitems"/>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuBacklog"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
-   <addaction name="menuFilter"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
@@ -518,7 +268,6 @@
    </attribute>
    <addaction name="actionImport"/>
    <addaction name="actionExport"/>
-   <addaction name="actionVoid"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -561,17 +310,6 @@
     <string>Ctrl+B</string>
    </property>
   </action>
-  <action name="actionShowCompletedWorkitems">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show completed workitems</string>
-   </property>
-  </action>
   <action name="actionImport">
    <property name="checkable">
     <bool>false</bool>
@@ -612,21 +350,6 @@
   <action name="actionStatistics">
    <property name="text">
     <string>Statistics...</string>
-   </property>
-  </action>
-  <action name="actionVoid">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset>
-     <normaloff>:/icons/tool-void.svg</normaloff>:/icons/tool-void.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Void Pomodoro</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+V</string>
    </property>
   </action>
   <action name="actionToggleToolbar">
@@ -680,14 +403,11 @@
   <addaction name="menuBacklog"/>
   <addaction name="menuEdit"/>
   <addaction name="menuView"/>
-  <addaction name="menuFilter"/>
   <addaction name="actionBacklogs"/>
   <addaction name="actionImport"/>
   <addaction name="actionExport"/>
   <addaction name="actionTeams"/>
-  <addaction name="actionVoid"/>
   <addaction name="actionSearch"/>
-  <addaction name="actionShowCompletedWorkitems"/>
  </widget>
  <tabstops>
   <tabstop>workitems_table</tabstop>

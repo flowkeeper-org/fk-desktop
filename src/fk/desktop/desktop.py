@@ -17,129 +17,40 @@
 import sys
 import threading
 
-from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui, QtMultimedia
-from PySide6.QtGui import QAction
+from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
+from PySide6.QtGui import QAction, QFont
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
-from fk.core.app import App
-from fk.core.backlog import Backlog
 from fk.core.events import SourceMessagesProcessed, AfterWorkitemComplete
 from fk.core.file_event_source import FileEventSource
-from fk.core.pomodoro_strategies import CompletePomodoroStrategy
+from fk.core.tenant import Tenant
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
+from fk.qt.about_window import AboutWindow
 from fk.qt.abstract_tableview import AfterSelectionChanged
-from fk.qt.progress_widget import ProgressWidget
-from fk.qt.threaded_event_source import ThreadedEventSource
+from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.focus_widget import FocusWidget
+from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
+from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
-from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
+from fk.qt.threaded_event_source import ThreadedEventSource
+from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
 from fk.qt.websocket_event_source import WebsocketEventSource
 from fk.qt.workitem_tableview import WorkitemTableView
 
 
-
-def tray_clicked() -> None:
-    if continue_workitem is not None:
-        # TODO Start THAT workitem
-        workitems_table.start_selected_workitem()
-    else:
-        if window.isHidden():
-            window.show()
-        else:
-            window.hide()
-
-
-def on_workitem_completed(event, workitem, target_state) -> None:
-    hide_timer()
-    tool_next.hide()
-    tool_complete.hide()
-    update_header(pomodoro_timer)
-    reset_tray_icon()
-
-
-def paint_timer_in_tray() -> None:
-    tray_width = 48
-    tray_height = 48
-    pixmap = QtGui.QPixmap(tray_width, tray_height)
-    pixmap.fill(QtGui.Qt.GlobalColor.transparent)
-    painter = QtGui.QPainter(pixmap)
-    timer_tray.repaint(painter, QtCore.QRect(0, 0, tray_width, tray_height))
-    tray.setIcon(pixmap)
-
-
-def show_notification(event: str = None, **kwargs) -> None:
-    # Tray notification
-    if event == 'TimerWorkComplete':
-        tray.showMessage("Work is done", "Have some rest", default_icon)
-    elif event == 'TimerRestComplete':
-        icon = default_icon
-        w = kwargs.get('workitem')
-        if w is not None and w.is_startable():
-            icon = next_icon
-        tray.showMessage("Ready", "Start a new pomodoro", icon)
-
-    # Alarm bell
-    play_alarm_sound = (settings.get('Application.play_alarm_sound') == 'True')
-    play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
-    if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
-        audio_player.stop()     # In case it was ticking or playing rest music
-        alarm_file = settings.get('Application.alarm_sound_file')
-        reset_audio()
-        audio_player.setSource(alarm_file)
-        audio_player.setLoops(1)
-        audio_player.play()
-
-    # Rest music
-    if event == 'TimerWorkComplete':
-        start_rest_sound()
-
-
-def start_ticking(timer: PomodoroTimer = None, event: str = None) -> None:
-    play_tick_sound = (settings.get('Application.play_tick_sound') == 'True')
-    if play_tick_sound:
-        audio_player.stop()     # Just in case
-        tick_file = settings.get('Application.tick_sound_file')
-        reset_audio()
-        print(f'Will tick: {tick_file}')
-        audio_player.setSource(tick_file)
-        audio_player.setLoops(QtMultimedia.QMediaPlayer.Loops.Infinite)
-        audio_player.play()
-
-
-def start_rest_sound() -> None:
-    play_rest_sound = (settings.get('Application.play_rest_sound') == 'True')
-    if play_rest_sound:
-        audio_player.stop()     # In case it was ticking
-        rest_file = settings.get('Application.rest_sound_file')
-        reset_audio()
-        audio_player.setSource(rest_file)
-        audio_player.setLoops(1)
-        audio_player.play()     # This will substitute the bell sound
-
-
 def get_timer_ui_mode() -> str:
     # Options: keep (don't do anything), focus (collapse main layout), minimize (window to tray)
     return settings.get('Application.timer_ui_mode')
-
-
-def show_timer() -> None:
-    header_layout.show()
-    main_layout.hide()
-    left_toolbar.hide()
-    window.setMaximumHeight(header_layout.size().height())
-    window.setMinimumHeight(header_layout.size().height())
-    tool_show_timer_only.hide()
-    tool_show_all.show()
 
 
 def show_timer_automatically() -> None:
@@ -148,7 +59,13 @@ def show_timer_automatically() -> None:
     continue_workitem = None
     mode = get_timer_ui_mode()
     if mode == 'focus':
-        show_timer()
+        header_layout.show()
+        main_layout.hide()
+        left_toolbar.hide()
+        window.setMaximumHeight(header_layout.size().height())
+        window.setMinimumHeight(header_layout.size().height())
+        tool_show_timer_only.hide()
+        tool_show_all.show()
     elif mode == 'minimize':
         window.hide()
 
@@ -159,8 +76,6 @@ def hide_timer() -> None:
     left_toolbar.show()
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
-    tool_show_timer_only.show()
-    tool_show_all.hide()
     restore_size()
 
 
@@ -175,7 +90,7 @@ def hide_timer_automatically(workitem) -> None:
         # TODO Show "Complete" button here, too
         tool_next.show()
         tool_complete.show()
-        next_in_tray_icon()
+        tray.setIcon(next_icon)
         return
 
     continue_workitem = None
@@ -188,48 +103,6 @@ def hide_timer_automatically(workitem) -> None:
         hide_timer()
     elif mode == 'minimize':
         window.show()
-
-
-def update_header(timer: PomodoroTimer, **kwargs) -> None:
-    running_workitem: Workitem = timer.get_running_workitem()
-    if timer.is_idling():
-        w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
-        if w is not None and w.is_startable():
-            header_text.setText('Start another Pomodoro?')
-            header_subtext.setText(w.get_name())
-            tray.setToolTip(f'Start another Pomodoro? ({w.get_name()})')
-        else:
-            header_text.setText('Idle')
-            header_subtext.setText("It's time for the next Pomodoro.")
-            tray.setToolTip("It's time for the next Pomodoro.")
-        tool_void.hide()
-        timer_display.set_values(0, None, "")
-        timer_display.hide()
-    elif timer.is_working() or timer.is_resting():
-        remaining_duration = timer.get_remaining_duration()     # This is always >= 0
-        remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
-        remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
-        state = 'Focus' if timer.is_working() else 'Rest'
-        txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
-        header_text.setText(f'{txt} left')
-        header_subtext.setText(running_workitem.get_name())
-        tray.setToolTip(f"{txt} left ({running_workitem.get_name()})")
-        tool_void.show()
-        tool_next.hide()
-        tool_complete.hide()
-        timer_display.set_values(
-            remaining_duration / timer.get_planned_duration(),
-            None,
-            ""  # f'{remaining_minutes}:{remaining_seconds}'
-        )
-        timer_tray.set_values(
-            remaining_duration / timer.get_planned_duration(),
-        )
-        paint_timer_in_tray()
-        timer_display.show()
-    else:
-        raise Exception("The timer is in an unexpected state")
-    timer_display.repaint()
 
 
 def auto_resize() -> None:
@@ -255,110 +128,11 @@ def save_splitter_size(new_width: int, index: int) -> None:
     old_width = int(settings.get('Application.window_splitter_width'))
     if old_width != new_width:
         settings.set('Application.window_splitter_width', str(new_width))
-        #print(f"Saved new splitter width {new_width}")
-
-
-class MainWindowEventFilter(QtWidgets.QMainWindow):
-    _window: QtWidgets.QMainWindow
-    _timer: QtTimer
-    _is_resizing: bool
-
-    def __init__(self, window: QtWidgets.QMainWindow):
-        super().__init__()
-        self._window = window
-        self._timer = QtTimer("Window resizing")
-        self._is_resizing = False
-
-    def resize_completed(self):
-        self._is_resizing = False
-        if not main_layout.isVisible():  # Avoid saving window size in Timer mode
-            return
-        # We'll check against the old value to avoid resize loops and spurious setting change events
-        new_width = self._window.size().width()
-        new_height = self._window.size().height()
-        old_width = int(settings.get('Application.window_width'))
-        old_height = int(settings.get('Application.window_height'))
-        if old_width != new_width or old_height != new_height:
-            settings.set('Application.window_width', str(new_width))
-            settings.set('Application.window_height', str(new_height))
-            #print(f"Saved new window size {new_width} x {new_height}")
-
-    def eventFilter(self, widget: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if event.type() == QtCore.QEvent.Type.Resize and isinstance(event, QtGui.QResizeEvent):
-            if widget == self._window:
-                if self._is_resizing:   # Don't fire those events too frequently
-                    return False
-                self._timer.schedule(1000,
-                                     lambda _: self.resize_completed(),
-                                     None,
-                                     True)
-                self._is_resizing = True
-        return False
-
-
-def note_pomodoro() -> None:
-    global notes
-    (new_notes, ok) = QtWidgets.QInputDialog.getMultiLineText(window,
-                                                              "Interruption",
-                                                              "Take your notes here:",
-                                                              notes)
-    if ok:
-        notes = new_notes
-
-
-def void_pomodoro() -> None:
-    for backlog in source.backlogs():
-        workitem, _ = backlog.get_running_workitem()
-        if workitem is not None:
-            if QtWidgets.QMessageBox().warning(window,
-                         "Confirmation",
-                         f"Are you sure you want to void current pomodoro?",
-                         QtWidgets.QMessageBox.StandardButton.Ok,
-                         QtWidgets.QMessageBox.StandardButton.Cancel
-                         ) == QtWidgets.QMessageBox.StandardButton.Ok:
-                source.execute(CompletePomodoroStrategy, [workitem.get_uid(), "canceled"])
-
-
-def reset_tray_icon() -> None:
-    tray.setIcon(default_icon)
-
-
-def next_in_tray_icon() -> None:
-    tray.setIcon(next_icon)
-
-
-def initialize_fonts(s: AbstractSettings) -> (QtGui.QFont, QtGui.QFont, QtGui.QFont, QtGui.QFont):
-    font_header = QtGui.QFont(s.get('Application.font_header_family'),
-                              int(s.get('Application.font_header_size')))
-    if font_header is None:
-        font_header = QtGui.QFont()
-        font_header.setPointSize(int(font_header.pointSize() * 24.0 / 9))
-
-    font_main = QtGui.QFont(s.get('Application.font_main_family'),
-                            int(s.get('Application.font_main_size')))
-    if font_main is None:
-        font_main = QtGui.QFont()
-
-    app.setFont(font_main)
-    backlogs_table.setFont(font_main)  # Even though we set it on the App level, Windows just ignores it
-    users_table.setFont(font_main)
-    workitems_table.setFont(font_main)
-    header_text.setFont(font_header)
-
-    auto_resize()
 
 
 def toggle_backlogs(visible) -> None:
     backlogs_table.setVisible(visible)
     left_table_layout.setVisible(visible or users_table.isVisible())
-
-
-def toggle_show_completed_workitems(checked) -> None:
-    workitems_table.model().show_completed(checked)
-    search.show_completed(checked)
-    workitems_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-    workitems_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
-    workitems_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
 
 
 def toggle_users(visible) -> None:
@@ -368,9 +142,6 @@ def toggle_users(visible) -> None:
 
 def on_messages(event: str = None) -> None:
     global replay_completed
-    global timer_tray
-    global timer_display
-    global pomodoro_timer
 
     if replay_completed:
         return
@@ -381,49 +152,9 @@ def on_messages(event: str = None) -> None:
     users_table.upstream_selected(root)
     backlogs_table.upstream_selected(root.get_current_user())
 
-    # Timer
-    # noinspection PyTypeChecker
-    timer_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "timer")
-    timer_display = render_for_widget(
-        window.palette(),
-        timer_widget,
-        QtGui.QFont(),
-        0.3
-    )
-    timer_tray = render_for_pixmap()
-
-    # TDOO: Why do we do it so late? Can't we initialize the timer earlier?
-    pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-    pomodoro_timer.on("Timer*", update_header)
-    pomodoro_timer.on("Timer*Complete", show_notification)
-    pomodoro_timer.on("TimerWorkStart", start_ticking)
-    pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
-    pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
-    update_header(pomodoro_timer)
-
     # It's important to do it after window.show() above
-    if pomodoro_timer.is_working():
-        start_ticking()
+    if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         show_timer_automatically()
-    elif pomodoro_timer.is_resting():
-        start_rest_sound()
-        show_timer_automatically()
-
-
-def reset_audio():
-    global audio_output
-    global audio_player
-    audio_output = QtMultimedia.QAudioOutput()
-    audio_player = QtMultimedia.QMediaPlayer(app)
-    audio_player.setAudioOutput(audio_output)
-
-
-def eye_candy():
-    header_bg = settings.get('Application.header_background')
-    if header_bg:
-        window.setStyleSheet(f"#headerLayout {{ background: url('{header_bg}') center fit; }}")
-    else:
-        window.setStyleSheet(f"#headerLayout {{ background: none; }}")
 
 
 def restart_warning() -> None:
@@ -456,8 +187,6 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         left_toolbar.setVisible(new_value == 'True')
     elif name == 'Application.show_tray_icon':
         tray.setVisible(new_value == 'True')
-    elif name == 'Application.header_background':
-        eye_candy()
     elif name == 'Application.theme':
         restart_warning()
         # app.set_theme(new_value)
@@ -466,48 +195,6 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # TODO: Subscribe to sound settings
     # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
-
-
-def export():
-    wizard = ExportWizard(source, window)
-    wizard.show()
-
-
-def import_():
-    wizard = ImportWizard(source, window)
-    wizard.show()
-
-
-def show_about():
-    # noinspection PyTypeChecker
-    about_version: QtWidgets.QLabel = about_window.findChild(QtWidgets.QLabel, "version")
-    file = QtCore.QFile(":/VERSION.txt")
-    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_version.setText(file.readAll().toStdString())
-    file.close()
-
-    # noinspection PyTypeChecker
-    about_changelog: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "notes")
-    file = QtCore.QFile(":/CHANGELOG.txt")
-    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_changelog.setMarkdown(file.readAll().toStdString())
-    file.close()
-
-    # noinspection PyTypeChecker
-    about_credits: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "credits")
-    file = QtCore.QFile(":/CREDITS.txt")
-    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_credits.setMarkdown(file.readAll().toStdString())
-    file.close()
-
-    # noinspection PyTypeChecker
-    about_license: QtWidgets.QTextEdit = about_window.findChild(QtWidgets.QTextEdit, "license")
-    file = QtCore.QFile(":/LICENSE.txt")
-    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-    about_license.setMarkdown(file.readAll().toStdString())
-    file.close()
-
-    about_window.show()
 
 
 def repair_file_event_source(_):
@@ -549,25 +236,14 @@ print('UI thread:', threading.get_ident())
 settings = app.get_settings()
 settings.on(events.AfterSettingChanged, on_setting_changed)
 
-notes = ""
-
 replay_completed = False
-timer_tray: TimerWidget | None = None
-timer_display: TimerWidget | None = None
-
-default_icon = QtGui.QIcon(":/icons/logo.png")
-next_icon = QtGui.QIcon(":/icons/tool-next.svg")
 
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
 
-audio_output = QtMultimedia.QAudioOutput()
-audio_player = QtMultimedia.QMediaPlayer(app)
-audio_player.setAudioOutput(audio_output)
-
 source: AbstractEventSource
 source_type = settings.get('Source.type')
-root = App(settings)
+root = Tenant(settings)
 if source_type == 'local':
     inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
     source = ThreadedEventSource(inner_source)
@@ -576,6 +252,10 @@ elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
 else:
     raise Exception(f"Source type {source_type} not supported")
 source.on(SourceMessagesProcessed, on_messages)
+
+pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
+pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
+pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
 
 loader = QtUiTools.QUiLoader()
 
@@ -586,25 +266,32 @@ file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
 window: QtWidgets.QMainWindow = loader.load(file, None)
 file.close()
 
-# Load main window
-file = QtCore.QFile(":/about.ui")
-file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-# noinspection PyTypeChecker
-about_window: QtWidgets.QMainWindow = loader.load(file, None)
-file.close()
+audio = AudioPlayer(window, source, settings, pomodoro_timer)
 
 # Context menus
 # noinspection PyTypeChecker
 menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
 # noinspection PyTypeChecker
 menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
-# noinspection PyTypeChecker
-menu_filter: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFilter")
 
 # noinspection PyTypeChecker
 left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
 
-actions: dict[str, QAction] = dict()
+actions: dict[str, QAction] = {
+    'showAll': QAction("Show All", window),
+    'showTimerOnly': QAction("Show Timer Only", window),
+    'showMainWindow': QAction("Show Main Window", window),
+    'settings': QAction("Settings", window),
+    'quit': QAction("Quit", window),
+}
+actions['showAll'].triggered.connect(hide_timer)
+actions['showTimerOnly'].triggered.connect(show_timer_automatically)
+actions['showMainWindow'].triggered.connect(window.show)
+actions['quit'].triggered.connect(app.quit)
+actions['quit'].setShortcut('Ctrl+Q')
+actions['settings'].triggered.connect(lambda: SettingsDialog(settings, {
+    'FileEventSource.repair': repair_file_event_source
+}).show())
 
 # Backlogs table
 backlogs_table: BacklogTableView = BacklogTableView(window, source, actions)
@@ -622,7 +309,7 @@ right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "r
 
 # Workitems table
 workitems_table: WorkitemTableView = WorkitemTableView(window, source, actions)
-source.on(AfterWorkitemComplete, on_workitem_completed)
+source.on(AfterWorkitemComplete, hide_timer)
 right_Layout.addWidget(workitems_table)
 
 progress_widget = ProgressWidget(window, source)
@@ -630,8 +317,12 @@ right_Layout.addWidget(progress_widget)
 
 # noinspection PyTypeChecker
 search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-search = SearchBar(window, source, backlogs_table, workitems_table)
+search = SearchBar(window, source, actions, backlogs_table, workitems_table)
 search_bar.addWidget(search)
+
+# noinspection PyTypeChecker
+root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
+root_layout.insertWidget(0, FocusWidget(window, pomodoro_timer, source, settings, actions, QFont()))
 
 # Layouts
 # noinspection PyTypeChecker
@@ -641,8 +332,6 @@ header_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "headerLa
 # noinspection PyTypeChecker
 left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
 
-eye_candy()
-
 # Settings
 # noinspection PyTypeChecker
 settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
@@ -651,21 +340,14 @@ settings_action.triggered.connect(lambda: SettingsDialog(settings, {
 }).show())
 
 # Connect menu actions to the toolbar
-# noinspection PyTypeChecker
-quit_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionQuit")
-quit_action.triggered.connect(app.quit)
 
 # noinspection PyTypeChecker
 import_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionImport")
-import_action.triggered.connect(import_)
+import_action.triggered.connect(lambda: ImportWizard(source, window).show())
 
 # noinspection PyTypeChecker
 export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
-export_action.triggered.connect(export)
-
-# noinspection PyTypeChecker
-action_show_main_window: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowMainWindow")
-action_show_main_window.triggered.connect(lambda: window.show())
+export_action.triggered.connect(lambda: ExportWizard(source, window).show())
 
 # noinspection PyTypeChecker
 action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
@@ -676,20 +358,12 @@ action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
 action_teams.toggled.connect(toggle_users)
 
 # noinspection PyTypeChecker
-action_show_completed_workitems: QtGui.QAction = window.findChild(QtGui.QAction, "actionShowCompletedWorkitems")
-action_show_completed_workitems.toggled.connect(toggle_show_completed_workitems)
-
-# noinspection PyTypeChecker
 action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
 action_search.triggered.connect(lambda: search.show())
 
 # noinspection PyTypeChecker
-action_void: QtGui.QAction = window.findChild(QtGui.QAction, "actionVoid")
-action_void.triggered.connect(lambda: void_pomodoro())
-
-# noinspection PyTypeChecker
 action_about: QtGui.QAction = window.findChild(QtGui.QAction, "actionAbout")
-action_about.triggered.connect(lambda: show_about())
+action_about.triggered.connect(lambda: AboutWindow(window).show())
 
 # Main menu
 # noinspection PyTypeChecker
@@ -715,16 +389,7 @@ if toolbar is not None:
 
 # Tray icon
 show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-tray = QtWidgets.QSystemTrayIcon()
-tray.activated.connect(lambda reason: (tray_clicked() if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger else None))
-menu = QtWidgets.QMenu()
-menu.addAction(action_void)
-menu.addSeparator()
-menu.addAction(action_show_main_window)
-menu.addAction(settings_action)
-menu.addAction(quit_action)
-tray.setContextMenu(menu)
-reset_tray_icon()
+tray = TrayIcon(window, pomodoro_timer, source, actions)
 tray.setVisible(show_tray_icon)
 
 # Some global variables to support "Next pomodoro" mode
@@ -758,51 +423,8 @@ tool_settings.clicked.connect(lambda: menu_file.exec(
 splitter: QtWidgets.QSplitter = window.findChild(QtWidgets.QSplitter, "splitter")
 splitter.splitterMoved.connect(save_splitter_size)
 
-# Header
-# noinspection PyTypeChecker
-tool_void: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolVoid")
-tool_void.setDefaultAction(action_void)
-tool_void.hide()
-
-# noinspection PyTypeChecker
-tool_next: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNext")
-tool_next.clicked.connect(workitems_table.start_selected_workitem)     # TODO Start next, not current
-tool_next.hide()
-
-# noinspection PyTypeChecker
-tool_complete: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolComplete")
-tool_complete.clicked.connect(lambda: workitems_table.complete_selected_workitem())  # TODO Complete next, not current
-tool_complete.hide()
-
-# noinspection PyTypeChecker
-tool_note: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolNote")
-tool_note.clicked.connect(lambda: note_pomodoro())
-
-# noinspection PyTypeChecker
-tool_filter: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolFilter")
-tool_filter.clicked.connect(lambda: menu_filter.exec(
-    tool_filter.parentWidget().mapToGlobal(tool_filter.geometry().center())
-))
-
-# noinspection PyTypeChecker
-tool_show_all: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolShowAll")
-tool_show_all.clicked.connect(hide_timer)
-tool_show_all.hide()
-
-# noinspection PyTypeChecker
-tool_show_timer_only: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolShowTimerOnly")
-tool_show_timer_only.clicked.connect(show_timer)
-
-# noinspection PyTypeChecker
-header_text: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerText")
-# noinspection PyTypeChecker
-header_subtext: QtWidgets.QLabel = window.findChild(QtWidgets.QLabel, "headerSubtext")
-
-# Fonts, styles, etc.
-initialize_fonts(settings)
-
 restore_size()
-event_filter = MainWindowEventFilter(window)
+event_filter = ResizeEventFilter(window, main_layout, settings)
 window.installEventFilter(event_filter)
 window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 

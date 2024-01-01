@@ -44,6 +44,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
+        actions['showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
 
     def _init_menu(self, actions: dict[str, QAction]):
         menu: QMenu = QMenu()
@@ -55,6 +56,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             actions['completeItem'],
             actions['addPomodoro'],
             actions['removePomodoro'],
+            actions['showCompleted'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
@@ -68,6 +70,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             'completeItem': self._create_action("Complete Item", 'Ctrl+P', None, self.complete_selected_workitem),
             'addPomodoro': self._create_action("Add Pomodoro", 'Ctrl++', None, self.add_pomodoro),
             'removePomodoro': self._create_action("Remove Pomodoro", 'Ctrl+-', None, self.remove_pomodoro),
+            'showCompleted': self._create_action("Show completed workitems", '', None, self._toggle_show_completed_workitems, True, True),
         }
 
     def upstream_selected(self, backlog: Backlog) -> None:
@@ -170,3 +173,9 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             selected.get_uid(),
             "1"
         ])
+
+    def _toggle_show_completed_workitems(self, checked: bool) -> None:
+        self.model().show_completed(checked)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)

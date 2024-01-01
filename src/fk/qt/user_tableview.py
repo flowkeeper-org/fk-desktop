@@ -17,13 +17,13 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.user_model import UserModel
 
 
-class UserTableView(AbstractTableView[App, User]):
+class UserTableView(AbstractTableView[Tenant, User]):
     def __init__(self, parent: QWidget, source: AbstractEventSource, actions: dict[str, QAction]):
         super().__init__(parent,
                          source,
@@ -41,6 +41,6 @@ class UserTableView(AbstractTableView[App, User]):
     def create_actions(self) -> dict[str, QAction]:
         return dict()
 
-    def upstream_selected(self, upstream: App) -> None:
+    def upstream_selected(self, upstream: Tenant) -> None:
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)

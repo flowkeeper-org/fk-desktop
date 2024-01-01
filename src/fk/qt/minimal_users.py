@@ -19,7 +19,7 @@ import sys
 from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.desktop.application import Application
@@ -33,7 +33,7 @@ settings = app.get_settings()
 
 source: AbstractEventSource
 source_type = settings.get('Source.type')
-root = App(settings)
+root = Tenant(settings)
 if source_type == 'local':
     source = ThreadedEventSource(FileEventSource(settings,
                                                  root,

@@ -95,12 +95,19 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                        text: str,
                        shortcut: str,
                        icon: str | None,
-                       member: Callable) -> QAction:
+                       member: Callable,
+                       is_toggle: bool = False,
+                       is_checked: bool = False) -> QAction:
         res: QAction = QAction(text, self)
         res.setShortcut(shortcut)
         if icon is not None:
             res.setIcon(QIcon(icon))
-        res.triggered.connect(lambda: member())
+        if is_toggle:
+            res.setCheckable(True)
+            res.setChecked(is_checked)
+            res.toggled.connect(member)
+        else:
+            res.triggered.connect(member)
         return res
 
     @abstractmethod

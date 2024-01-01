@@ -16,7 +16,7 @@
 
 from unittest import TestCase
 
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
                                  test_users, TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
@@ -24,7 +24,7 @@ from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
 
 class TestBacklogStrategies(TestCase):
     @staticmethod
-    def _create_sample_backlog(existing: App | None = None) -> App:
+    def _create_sample_backlog(existing: Tenant | None = None) -> Tenant:
         data = test_data() if existing is None else existing
         s = CreateBacklogStrategy(
             1,

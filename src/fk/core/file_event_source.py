@@ -25,7 +25,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -285,7 +285,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             log.append(f'Renumbered strategies up to {seq}')
 
             # Restart and remove failing strategies
-            new_source = self.clone(App(self._settings), strategies)
+            new_source = self.clone(Tenant(self._settings), strategies)
             try:
                 new_source.start()
                 log.append(f'Tested successfully')
