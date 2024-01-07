@@ -45,7 +45,7 @@ else:
 
 window: QMainWindow = QMainWindow()
 window.resize(600, 400)
-workitems_table: WorkitemTableView = WorkitemTableView(window, source, dict())
+workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, dict())
 window.setCentralWidget(workitems_table)
 
 app.setQuitOnLastWindowClosed(True)

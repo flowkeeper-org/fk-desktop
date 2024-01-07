@@ -71,12 +71,13 @@ class UserModel(QtGui.QStandardItemModel):
 
     def load(self, app: Tenant) -> None:
         self.clear()
-        i = 0
-        for user in app.values():
-            if user.is_system_user():
-                continue
-            item = QtGui.QStandardItem('')
-            self.appendRow(item)
-            self.set_row(i, user)
-            i += 1
+        if app is not None:
+            i = 0
+            for user in app.values():
+                if user.is_system_user():
+                    continue
+                item = QtGui.QStandardItem('')
+                self.appendRow(item)
+                self.set_row(i, user)
+                i += 1
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))

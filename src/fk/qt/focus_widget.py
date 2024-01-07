@@ -26,6 +26,7 @@ from fk.core.events import AfterWorkitemComplete, AfterSettingChanged
 from fk.core.pomodoro_strategies import CompletePomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
+from fk.desktop.application import Application, AfterFontsChanged
 from fk.qt.timer_widget import render_for_widget, TimerWidget
 
 
@@ -38,19 +39,21 @@ class FocusWidget(QWidget):
     _timer_display: TimerWidget
     _actions: dict[str, QAction]
     _buttons: dict[str, QToolButton]
+    _application: Application
 
     def __init__(self,
                  parent: QWidget,
+                 application: Application,
                  timer: PomodoroTimer,
                  source: AbstractEventSource,
                  settings: AbstractSettings,
-                 actions: dict[str, QAction],
-                 font_header: QFont):
+                 actions: dict[str, QAction]):
         super().__init__(parent)
         self._source = source
         self._settings = settings
         self._timer = timer
         self._actions = actions
+        self._application = application
         self._buttons = dict()
 
         self.setObjectName('focus')
@@ -83,7 +86,8 @@ class FocusWidget(QWidget):
         sp2.setVerticalStretch(0)
         header_text.setSizePolicy(sp2)
         header_text.setText("Idle")
-        header_text.setFont(font_header)
+        header_text.setFont(application.get_header_font())
+        application.on(AfterFontsChanged, lambda header_font, **kwargs: header_text.setFont(header_font))
         self._header_text = header_text
 
         header_subtext = QLabel(self)

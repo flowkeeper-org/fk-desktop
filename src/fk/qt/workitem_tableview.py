@@ -21,18 +21,24 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.events import AfterWorkitemCreate
+from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.desktop.application import AfterSourceChanged, Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 
 
 class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
-    def __init__(self, parent: QWidget, source: AbstractEventSource, actions: dict[str, QAction]):
+    def __init__(self,
+                 parent: QWidget,
+                 application: Application,
+                 source: AbstractEventSource,
+                 actions: dict[str, QAction]):
         super().__init__(parent,
+                         application,
                          source,
                          WorkitemModel(parent, source),
                          'workitems_table',
@@ -43,8 +49,16 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        source.on(AfterWorkitemCreate, self._on_new_workitem)
         actions['showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
+        application.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source)
+
+    def _on_source_changed(self, event, source):
+        self.selectionModel().clear()
+        self.upstream_selected(None)
+        super()._on_source_changed(event, source)
+        source.on(AfterWorkitemCreate, self._on_new_workitem)
+        source.on(SourceMessagesProcessed, self._on_messages)
 
     def _init_menu(self, actions: dict[str, QAction]):
         menu: QMenu = QMenu()
@@ -179,3 +193,6 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+
+    def _on_messages(self, event):
+        self.upstream_selected(None)

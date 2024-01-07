@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QTableView, QWidget
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
+from fk.desktop.application import Application, AfterSourceChanged
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
@@ -44,6 +45,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def __init__(self,
                  parent: QWidget,
+                 application: Application,
                  source: AbstractEventSource,
                  model: QStandardItemModel,
                  name: str,
@@ -51,14 +53,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                  placeholder_loading: str,
                  placeholder_upstream: str,
                  placeholder_empty: str,
-                 editable_column: int,
-                 ):
+                 editable_column: int):
         super().__init__(parent,
                          allowed_events=[
                              BeforeSelectionChanged,
                              AfterSelectionChanged,
                          ])
-        self._source = source
+        self._source = None
         self._actions = actions
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
@@ -84,7 +85,12 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             actions[a] = my_actions[a]
             parent.addAction(my_actions[a])
 
-        self._on_current_changed(None, None)
+        self._on_source_changed("", source)
+
+    def _on_source_changed(self, event, source):
+        self._source = source
+        self._is_data_loaded = False
+        self._is_upstream_item_selected = False
         source.on(SourceMessagesProcessed, self._on_data_loaded)
 
     def _on_data_loaded(self, event):

@@ -340,3 +340,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
         return FileEventSource(self._settings, new_root, self._watcher, existing_strategies)
+
+    def disconnect(self):
+        if self._watcher is not None:
+            self._watcher.unwatch_all()

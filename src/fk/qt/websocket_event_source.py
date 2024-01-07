@@ -16,7 +16,6 @@
 
 import datetime
 import enum
-from time import sleep
 from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
@@ -100,6 +99,7 @@ class WebsocketEventSource(AbstractEventSource):
         self._connect()
 
     def _on_message(self, message: str) -> None:
+        self._received_error = False
         lines = message.split('\n')
         print(f'Received {len(lines)} messages')
         i = 0
@@ -127,7 +127,7 @@ class WebsocketEventSource(AbstractEventSource):
                 if i % 1000 == 0:    # Yield to Qt from time to time
                     QApplication.processEvents()
             except Exception as ex:
-                if self._ignore_errors:
+                if self._ignore_errors and not self._received_error:
                     print(f'Error processing {line}: {ex}')
                 else:
                     raise ex
@@ -175,3 +175,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def clone(self, new_root: TRoot) -> Self:
         return WebsocketEventSource(self._settings, new_root)
+
+    def disconnect(self):
+        self._ws.disconnected.disconnect()
+        self._ws.close()

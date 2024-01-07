@@ -58,7 +58,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
         self._wrapped.on(event_pattern, callback)
 
     def cancel(self, event_pattern: str) -> None:
-        self._wrapped(event_pattern)
+        self._wrapped.cancel(event_pattern)
 
     def unmute(self) -> None:
         self._wrapped.unmute()
@@ -107,3 +107,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                 progress_callback: Callable[[int, int], None],
                 completion_callback: Callable[[int], None]) -> None:
         self._wrapped.import_(filename, start_callback, progress_callback, completion_callback)
+
+    def disconnect(self):
+        self._wrapped.disconnect()

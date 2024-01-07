@@ -18,13 +18,11 @@ import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
-from PySide6.QtGui import QAction, QFont, QIcon
+from PySide6.QtGui import QAction, QIcon
 
 from fk.core import events
-from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.events import SourceMessagesProcessed, AfterWorkitemComplete
+from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
-from fk.core.tenant import Tenant
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
@@ -37,14 +35,11 @@ from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
-from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
-from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
-from fk.qt.websocket_event_source import WebsocketEventSource
 from fk.qt.workitem_tableview import WorkitemTableView
 
 
@@ -122,19 +117,7 @@ def toggle_users(visible) -> None:
     left_table_layout.setVisible(backlogs_table.isVisible() or visible)
 
 
-def on_messages(event: str = None) -> None:
-    global replay_completed
-
-    if replay_completed:
-        return
-    replay_completed = True
-
-    print('Replay completed')
-
-    users_table.upstream_selected(root)
-    backlogs_table.upstream_selected(root.get_current_user())
-
-    # It's important to do it after window.show() above
+def on_messages(event) -> None:
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         show_timer_automatically()
 
@@ -149,16 +132,10 @@ def restart_warning() -> None:
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
-    if name == 'Source.type':
-        restart_warning()
-    elif name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
+    if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
         # TODO: This really doesn't work well
         hide_timer_automatically(None)
         show_timer_automatically()
-    elif name == 'Application.quit_on_close':
-        app.setQuitOnLastWindowClosed(new_value == 'True')
-    elif 'Application.font_' in name:
-        initialize_fonts(settings)
     elif name == 'Application.show_main_menu':
         main_menu.setVisible(new_value == 'True')
     elif name == 'Application.show_status_bar':
@@ -169,13 +146,6 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         left_toolbar.setVisible(new_value == 'True')
     elif name == 'Application.show_tray_icon':
         tray.setVisible(new_value == 'True')
-    elif name == 'Application.theme':
-        restart_warning()
-        # app.set_theme(new_value)
-    elif name.startswith('WebsocketEventSource.'):
-        source.start()
-    # TODO: Subscribe to sound settings
-    # TODO: Subscribe the sources to the settings they use
     # TODO: Reload the app when the source changes
 
 
@@ -218,21 +188,10 @@ print('UI thread:', threading.get_ident())
 settings = app.get_settings()
 settings.on(events.AfterSettingChanged, on_setting_changed)
 
-replay_completed = False
-
 #print(QtWidgets.QStyleFactory.keys())
 #app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
 
-source: AbstractEventSource
-source_type = settings.get('Source.type')
-root = Tenant(settings)
-if source_type == 'local':
-    inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
-    source = ThreadedEventSource(inner_source)
-elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings, root)
-else:
-    raise Exception(f"Source type {source_type} not supported")
+source = app.get_source()
 source.on(SourceMessagesProcessed, on_messages)
 
 pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
@@ -278,13 +237,13 @@ actions['settings'].triggered.connect(lambda: SettingsDialog(settings, {
 }).show())
 
 # Backlogs table
-backlogs_table: BacklogTableView = BacklogTableView(window, source, actions)
+backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
 backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
 backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
 left_layout.addWidget(backlogs_table)
 
 # Users table
-users_table: UserTableView = UserTableView(window, source, actions)
+users_table: UserTableView = UserTableView(window, app, source, actions)
 users_table.setVisible(False)
 left_layout.addWidget(users_table)
 
@@ -292,7 +251,7 @@ left_layout.addWidget(users_table)
 right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
 # Workitems table
-workitems_table: WorkitemTableView = WorkitemTableView(window, source, actions)
+workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
 source.on(AfterWorkitemComplete, hide_timer)
 right_Layout.addWidget(workitems_table)
 
@@ -306,7 +265,7 @@ search_bar.addWidget(search)
 
 # noinspection PyTypeChecker
 root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-focus = FocusWidget(window, pomodoro_timer, source, settings, actions, QFont())
+focus = FocusWidget(window, app, pomodoro_timer, source, settings, actions)
 root_layout.insertWidget(0, focus)
 
 # Layouts

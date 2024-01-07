@@ -262,3 +262,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         raise Exception(f"Strategies must go in sequence. "
                         f"Received {next} after {prev}. "
                         f"To attempt a repair go to Settings > Connection > Repair.")
+
+    @abstractmethod
+    def disconnect(self):
+        pass

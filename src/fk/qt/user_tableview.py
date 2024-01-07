@@ -17,15 +17,22 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.events import SourceMessagesProcessed
 from fk.core.tenant import Tenant
 from fk.core.user import User
+from fk.desktop.application import AfterSourceChanged, Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.user_model import UserModel
 
 
 class UserTableView(AbstractTableView[Tenant, User]):
-    def __init__(self, parent: QWidget, source: AbstractEventSource, actions: dict[str, QAction]):
+    def __init__(self,
+                 parent: QWidget,
+                 application: Application,
+                 source: AbstractEventSource,
+                 actions: dict[str, QAction]):
         super().__init__(parent,
+                         application,
                          source,
                          UserModel(parent, source),
                          'users_table',
@@ -34,6 +41,14 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          'Select a tenant.\nYou should never see this message. Please report a bug in GitHub.',
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
+        application.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source)
+
+    def _on_source_changed(self, event, source):
+        self.selectionModel().clear()
+        self.upstream_selected(None)
+        super()._on_source_changed(event, source)
+        self._source.on(SourceMessagesProcessed, self._on_messages)
 
     def update_actions(self, selected: User) -> None:
         pass
@@ -44,3 +59,6 @@ class UserTableView(AbstractTableView[Tenant, User]):
     def upstream_selected(self, upstream: Tenant) -> None:
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+
+    def _on_messages(self, event):
+        self.upstream_selected(self._source.get_data())

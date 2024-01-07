@@ -44,7 +44,7 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 window: QMainWindow = QMainWindow()
-backlogs_table: BacklogTableView = BacklogTableView(window, source, dict())
+backlogs_table: BacklogTableView = BacklogTableView(window, app, source, dict())
 window.setCentralWidget(backlogs_table)
 
 app.setQuitOnLastWindowClosed(True)

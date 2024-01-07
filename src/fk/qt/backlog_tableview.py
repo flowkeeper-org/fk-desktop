@@ -24,25 +24,38 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
-from fk.core.events import AfterBacklogCreate
+from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
+from fk.desktop.application import Application, AfterSourceChanged
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.backlog_model import BacklogModel
 
 
 class BacklogTableView(AbstractTableView[User, Backlog]):
-    def __init__(self, parent: QWidget, source: AbstractEventSource, actions: dict[str, QAction]):
+    def __init__(self,
+                 parent: QWidget,
+                 application: Application,
+                 source: AbstractEventSource,
+                 actions: dict[str, QAction]):
         super().__init__(parent,
+                         application,
                          source,
                          BacklogModel(parent, source),
                          'backlogs_table',
                          actions,
                          'Loading, please wait...',
-                         'Select a user.\nYou should never see this message. Please report a bug in GitHub.',
+                         'No data or connection error.',
                          "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
                          0)
         self._init_menu(actions)
+        application.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source)
+
+    def _on_source_changed(self, event, source):
+        self.setModel(BacklogModel(self.parent(), source))
+        super()._on_source_changed(event, source)
         source.on(AfterBacklogCreate, self._on_new_backlog)
+        source.on(SourceMessagesProcessed, self._on_messages)
 
     def _init_menu(self, actions: dict[str, QAction]):
         menu: QMenu = QMenu()
@@ -111,3 +124,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                  QMessageBox.StandardButton.Cancel
                                  ) == QMessageBox.StandardButton.Ok:
             self._source.execute(DeleteBacklogStrategy, [selected.get_uid()])
+
+    def _on_messages(self, event):
+        self.upstream_selected(self._source.get_data().get_current_user())

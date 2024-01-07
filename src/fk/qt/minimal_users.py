@@ -44,7 +44,7 @@ else:
     raise Exception(f"Source type {source_type} not supported")
 
 window: QMainWindow = QMainWindow()
-users_table: UserTableView = UserTableView(window, source, dict())
+users_table: UserTableView = UserTableView(window, app, source, dict())
 window.setCentralWidget(users_table)
 
 app.setQuitOnLastWindowClosed(True)
