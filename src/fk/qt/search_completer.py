@@ -15,15 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import QModelIndex, QItemSelectionModel
+from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.user import User
 from fk.core.workitem import Workitem
-from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
-from fk.qt.invoker import invoke_in_main_thread
+from fk.qt.abstract_tableview import AbstractTableView
 
 
 class SearchBar(QtWidgets.QLineEdit):
@@ -57,9 +56,8 @@ class SearchBar(QtWidgets.QLineEdit):
         self._backlogs_table.select(backlog)
         # Queue the second selection step, as AfterSelectionChanged
         # will go through Qt postEvent
-        invoke_in_main_thread(lambda w: self._workitems_table.select(w),
-                              None,
-                              w=workitem)
+        self._source.get_settings().invoke_callback(lambda w: self._workitems_table.select(w),
+                                                    w=workitem)
         self.hide()
 
     def show(self) -> None:

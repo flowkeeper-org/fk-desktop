@@ -46,7 +46,8 @@ class PomodoroTimer(AbstractEventEmitter):
                  source: AbstractEventSource,
                  tick_timer: AbstractTimer,
                  transition_timer: AbstractTimer):
-        super().__init__(['TimerTick', 'TimerWorkStart', 'TimerWorkComplete', 'TimerRestComplete'])
+        super().__init__(['TimerTick', 'TimerWorkStart', 'TimerWorkComplete', 'TimerRestComplete'],
+                         source.get_settings().invoke_callback)
         print('PomodoroTimer: Initializing')
         self._source = source
         self._tick_timer = tick_timer

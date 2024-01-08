@@ -17,15 +17,15 @@
 import re
 from typing import Callable
 
-from fk.qt.invoker import invoke_in_main_thread
-
 
 class AbstractEventEmitter:
     _muted: bool
     _connections: dict[str, list[Callable]]
+    _callback_invoker: Callable
 
-    def __init__(self, allowed_events: list[str]):
+    def __init__(self, allowed_events: list[str], callback_invoker: Callable):
         self._muted = False
+        self._callback_invoker = callback_invoker
         self._connections = dict()
         for event in allowed_events:
             self._connections[event] = list[Callable]()
@@ -52,7 +52,7 @@ class AbstractEventEmitter:
                 params['event'] = event
                 if carry is not None:
                     params['carry'] = carry
-                invoke_in_main_thread(callback, [], **params)
+                self._callback_invoker(callback, **params)
 
     def _is_muted(self) -> bool:
         return self._muted

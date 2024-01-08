@@ -58,15 +58,19 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     # Category -> [(id, type, display, default, options)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
     _defaults: dict[str, str]
+    _callback_invoker: Callable
 
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
+                 callback_invoker: Callable,
                  buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingChanged,
             events.AfterSettingChanged,
-        ])
+        ], callback_invoker)
+
+        self._callback_invoker = callback_invoker
 
         self._definitions = {
             'General': [
@@ -136,6 +140,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             for s in lst:
                 self._defaults[s[0]] = s[3]
         # print('Filled defaults', self._defaults)
+
+    def invoke_callback(self, fn: Callable, **kwargs) -> None:
+        self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
     def set(self, name: str, value: str) -> str:

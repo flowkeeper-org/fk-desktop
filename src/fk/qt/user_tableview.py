@@ -32,7 +32,6 @@ class UserTableView(AbstractTableView[Tenant, User]):
                  source: AbstractEventSource,
                  actions: dict[str, QAction]):
         super().__init__(parent,
-                         application,
                          source,
                          UserModel(parent, source),
                          'users_table',

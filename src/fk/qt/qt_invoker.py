@@ -20,10 +20,9 @@ from PySide6.QtCore import QEvent, QObject, QCoreApplication
 class InvokeEvent(QEvent):
     EVENT_TYPE = QEvent.Type(QEvent.registerEventType())
 
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn, **kwargs):
         QEvent.__init__(self, InvokeEvent.EVENT_TYPE)
         self.fn = fn
-        self.args = args
         self.kwargs = kwargs
 
 
@@ -32,9 +31,10 @@ class Invoker(QObject):
         e.fn(**e.kwargs)
         return True
 
+
 _invoker = Invoker()
 
 
-def invoke_in_main_thread(fn, *args, **kwargs):
+def invoke_in_main_thread(fn, **kwargs):
     QCoreApplication.postEvent(_invoker,
-                               InvokeEvent(fn, *args, **kwargs))
+                               InvokeEvent(fn, **kwargs))

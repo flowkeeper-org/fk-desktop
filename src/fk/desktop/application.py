@@ -29,6 +29,7 @@ from fk.core.events import AfterSettingChanged, SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
+from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.websocket_event_source import WebsocketEventSource
@@ -45,7 +46,9 @@ class Application(QApplication, AbstractEventEmitter):
     _source: AbstractEventSource | None
 
     def __init__(self, args: [str]):
-        super().__init__(args, allowed_events=[AfterFontsChanged, AfterSourceChanged])
+        super().__init__(args,
+                         allowed_events=[AfterFontsChanged, AfterSourceChanged],
+                         callback_invoker=invoke_in_main_thread)
 
         sys.excepthook = self.on_exception
 

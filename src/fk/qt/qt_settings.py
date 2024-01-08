@@ -19,6 +19,7 @@ from PySide6.QtGui import QFont
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
+from fk.qt.qt_invoker import invoke_in_main_thread
 
 
 class QtSettings(AbstractSettings):
@@ -26,7 +27,7 @@ class QtSettings(AbstractSettings):
 
     def __init__(self):
         font = QFont()
-        super().__init__(font.family(), font.pointSize())
+        super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
         self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
 
     def set(self, name: str, value: str) -> str:

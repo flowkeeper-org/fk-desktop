@@ -79,7 +79,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.SourceModeReadWrite,
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
-        ])
+        ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
         self._settings = settings
@@ -266,3 +266,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     @abstractmethod
     def disconnect(self):
         pass
+
+    def get_settings(self) -> AbstractSettings:
+        return self._settings

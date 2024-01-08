@@ -38,7 +38,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                  source: AbstractEventSource,
                  actions: dict[str, QAction]):
         super().__init__(parent,
-                         application,
                          source,
                          BacklogModel(parent, source),
                          'backlogs_table',

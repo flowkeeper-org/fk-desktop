@@ -38,7 +38,6 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                  source: AbstractEventSource,
                  actions: dict[str, QAction]):
         super().__init__(parent,
-                         application,
                          source,
                          WorkitemModel(parent, source),
                          'workitems_table',

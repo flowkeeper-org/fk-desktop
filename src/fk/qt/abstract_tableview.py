@@ -24,7 +24,6 @@ from PySide6.QtWidgets import QTableView, QWidget
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
-from fk.desktop.application import Application, AfterSourceChanged
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
@@ -45,7 +44,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def __init__(self,
                  parent: QWidget,
-                 application: Application,
                  source: AbstractEventSource,
                  model: QStandardItemModel,
                  name: str,
@@ -58,7 +56,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                          allowed_events=[
                              BeforeSelectionChanged,
                              AfterSelectionChanged,
-                         ])
+                         ],
+                         callback_invoker=source.get_settings().invoke_callback)
         self._source = None
         self._actions = actions
         self._is_data_loaded = False
