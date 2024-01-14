@@ -53,11 +53,11 @@ def show_timer_automatically() -> None:
     actions['actionVoid'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
-        header_layout.show()
+        focus.show()
         main_layout.hide()
         left_toolbar.hide()
-        window.setMaximumHeight(header_layout.size().height())
-        window.setMinimumHeight(header_layout.size().height())
+        window.setMaximumHeight(focus.size().height())
+        window.setMinimumHeight(focus.size().height())
         # tool_show_timer_only.hide()
         # tool_show_all.show()
     elif mode == 'minimize':
@@ -66,7 +66,7 @@ def show_timer_automatically() -> None:
 
 def hide_timer(**kwargs) -> None:
     main_layout.show()
-    header_layout.show()
+    focus.show()
     left_toolbar.show()
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
@@ -260,8 +260,6 @@ root_layout.insertWidget(0, focus)
 # Layouts
 # noinspection PyTypeChecker
 main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
-# noinspection PyTypeChecker
-header_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "headerLayout")
 # noinspection PyTypeChecker
 left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
 

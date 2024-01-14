@@ -166,7 +166,7 @@ class FocusWidget(QWidget):
 
         self.update_header()
 
-        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem))
+        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
