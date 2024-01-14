@@ -64,36 +64,22 @@ def show_timer_automatically() -> None:
         window.hide()
 
 
-def hide_timer(**kwargs) -> None:
+def hide_timer() -> None:
     main_layout.show()
     focus.show()
     left_toolbar.show()
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
-    restore_size()
+    event_filter.restore_size()
 
 
-def hide_timer_automatically(workitem) -> None:
+def hide_timer_automatically() -> None:
     actions['actionVoid'].setDisabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
         hide_timer()
     elif mode == 'minimize':
         window.show()
-
-
-def restore_size() -> None:
-    w = int(settings.get('Application.window_width'))
-    h = int(settings.get('Application.window_height'))
-    splitter_width = int(settings.get('Application.window_splitter_width'))
-    splitter.setSizes([splitter_width, w - splitter_width])
-    window.resize(QtCore.QSize(w, h))
-
-
-def save_splitter_size(new_width: int, index: int) -> None:
-    old_width = int(settings.get('Application.window_splitter_width'))
-    if old_width != new_width:
-        settings.set('Application.window_splitter_width', str(new_width))
 
 
 def toggle_backlogs(visible) -> None:
@@ -123,7 +109,7 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     status.showMessage('Settings changed')
     if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
         # TODO: This really doesn't work well
-        hide_timer_automatically(None)
+        hide_timer_automatically()
         show_timer_automatically()
     elif name == 'Application.show_main_menu':
         main_menu.setVisible(new_value == 'True')
@@ -177,14 +163,11 @@ print('UI thread:', threading.get_ident())
 settings = app.get_settings()
 settings.on(events.AfterSettingChanged, on_setting_changed)
 
-#print(QtWidgets.QStyleFactory.keys())
-#app.setStyle(QtWidgets.QStyleFactory.create("Windows"))
-
 source = app.get_source()
 source.on(SourceMessagesProcessed, on_messages)
 
 pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically(workitem))
+pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
 pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
 
 loader = QtUiTools.QUiLoader()
@@ -237,15 +220,15 @@ users_table.setVisible(False)
 left_layout.addWidget(users_table)
 
 # noinspection PyTypeChecker
-right_Layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
+right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
 # Workitems table
 workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
 source.on(AfterWorkitemComplete, hide_timer)
-right_Layout.addWidget(workitems_table)
+right_layout.addWidget(workitems_table)
 
 progress_widget = ProgressWidget(window, source)
-right_Layout.addWidget(progress_widget)
+right_layout.addWidget(progress_widget)
 
 # noinspection PyTypeChecker
 search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
@@ -349,12 +332,6 @@ tool_settings.clicked.connect(lambda: menu_file.exec(
     tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
 ))
 
-# Splitter
-# noinspection PyTypeChecker
-splitter: QtWidgets.QSplitter = window.findChild(QtWidgets.QSplitter, "splitter")
-splitter.splitterMoved.connect(save_splitter_size)
-
-restore_size()
 event_filter = ResizeEventFilter(window, main_layout, settings)
 window.installEventFilter(event_filter)
 window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())

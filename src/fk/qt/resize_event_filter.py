@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtCore import QObject, QEvent
+from PySide6.QtCore import QObject, QEvent, QSize
 from PySide6.QtGui import QResizeEvent
-from PySide6.QtWidgets import QWidget, QMainWindow
+from PySide6.QtWidgets import QWidget, QMainWindow, QSplitter
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_timer import QtTimer
@@ -28,6 +28,7 @@ class ResizeEventFilter(QMainWindow):
     _is_resizing: bool
     _settings: AbstractSettings
     _main_layout: QWidget
+    _splitter: QSplitter
 
     def __init__(self,
                  window: QMainWindow,
@@ -39,6 +40,13 @@ class ResizeEventFilter(QMainWindow):
         self._main_layout = main_layout
         self._timer = QtTimer("Window resizing")
         self._is_resizing = False
+
+        # Splitter
+        # noinspection PyTypeChecker
+        self._splitter = window.findChild(QSplitter, "splitter")
+        self._splitter.splitterMoved.connect(self.save_splitter_size)
+
+        self.restore_size()
 
     def resize_completed(self):
         self._is_resizing = False
@@ -64,3 +72,15 @@ class ResizeEventFilter(QMainWindow):
                                      True)
                 self._is_resizing = True
         return False
+
+    def restore_size(self) -> None:
+        w = int(self._settings.get('Application.window_width'))
+        h = int(self._settings.get('Application.window_height'))
+        splitter_width = int(self._settings.get('Application.window_splitter_width'))
+        self._splitter.setSizes([splitter_width, w - splitter_width])
+        self._window.resize(QSize(w, h))
+
+    def save_splitter_size(self, new_width: int, index: int) -> None:
+        old_width = int(self._settings.get('Application.window_splitter_width'))
+        if old_width != new_width:
+            self._settings.set('Application.window_splitter_width', str(new_width))
