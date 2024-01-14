@@ -49,7 +49,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
         actions['showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
-        application.on(AfterSourceChanged, self._on_source_changed)
+        #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
 
     def _on_source_changed(self, event, source):

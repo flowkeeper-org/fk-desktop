@@ -67,7 +67,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._placeholder_empty = placeholder_empty
         self._editable_column = editable_column
         self.setModel(model)
-        self.selectionModel().currentRowChanged.connect(lambda s, d: self._on_current_changed(s, d))
 
         self.setObjectName(name)
         self.setTabKeyNavigation(False)
@@ -85,6 +84,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             parent.addAction(my_actions[a])
 
         self._on_source_changed("", source)
+        self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
     def _on_source_changed(self, event, source):
         self._source = source
@@ -136,6 +136,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         pass
 
     def _on_current_changed(self, selected: QModelIndex | None, deselected: QModelIndex | None) -> None:
+        print('_on_current_changed')
         after: TDownstream | None = None
         if selected is not None:
             after = selected.data(500)

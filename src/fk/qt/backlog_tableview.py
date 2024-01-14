@@ -47,11 +47,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
                          0)
         self._init_menu(actions)
-        application.on(AfterSourceChanged, self._on_source_changed)
+        #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
 
     def _on_source_changed(self, event, source):
-        self.setModel(BacklogModel(self.parent(), source))
+        #self.setModel(BacklogModel(self.parent(), source))
         super()._on_source_changed(event, source)
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
