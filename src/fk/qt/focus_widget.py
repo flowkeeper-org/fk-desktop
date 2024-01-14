@@ -15,8 +15,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Callable
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon, QFont, QAction
+from PySide6.QtCore import QSize, QRect
+from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPen, QColor, QPixmap
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
@@ -40,6 +40,7 @@ class FocusWidget(QWidget):
     _actions: dict[str, QAction]
     _buttons: dict[str, QToolButton]
     _application: Application
+    _pixmap: QPixmap | None
 
     def __init__(self,
                  parent: QWidget,
@@ -55,6 +56,7 @@ class FocusWidget(QWidget):
         self._actions = actions
         self._application = application
         self._buttons = dict()
+        self._pixmap = None
 
         self.setObjectName('focus')
         sp1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
@@ -66,12 +68,13 @@ class FocusWidget(QWidget):
         self.setMaximumHeight(16777215)
         self.setMaximumWidth(16777215)
 
-        layout = QHBoxLayout(self)
-        layout.setObjectName("layout")
+        layout = QHBoxLayout()
+        layout.setObjectName("focus_layout")
         layout.setContentsMargins(15, 10, 15, 10)
         layout.setSpacing(0)
+        self.setLayout(layout)
 
-        text_layout = QVBoxLayout(self)
+        text_layout = QVBoxLayout()
         text_layout.setObjectName("text_layout")
         # Here
         layout.addLayout(text_layout)
@@ -234,9 +237,20 @@ class FocusWidget(QWidget):
     def eye_candy(self):
         header_bg = self._settings.get('Application.header_background')
         if header_bg:
-            self.parent().setStyleSheet(f"#headerLayout {{ background: url('{header_bg}') center fit; }}")
+            header_bg = self._settings.get('Application.header_background')
+            self._pixmap = QPixmap(header_bg)
         else:
-            self.parent().setStyleSheet(f"#headerLayout {{ background: none; }}")
+            self._pixmap = None
+        self.repaint()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self._pixmap is not None:
+            painter = QPainter(self)
+            r = self.rect()
+            img = self._pixmap
+            h = int(img.width() / r.width() * r.height())
+            painter.drawPixmap(r, img, QRect(0, 0, img.width(), h))
 
     def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
         if name == 'Application.header_background':
