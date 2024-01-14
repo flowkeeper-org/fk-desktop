@@ -69,7 +69,7 @@ class PageImportSettings(QWizardPage):
         self.layout_h.addWidget(self.import_location_browse)
         self.layout_v.addLayout(self.layout_h)
         self.import_ignore_errors = QCheckBox('Ignore errors and continue')
-        self.import_ignore_errors.setDisabled(True)
+        self.import_ignore_errors.setDisabled(False)
         self.layout_v.addWidget(self.import_ignore_errors)
         self.setLayout(self.layout_v)
         self.setCommitPage(True)
@@ -83,15 +83,17 @@ class PageImportProgress(QWizardPage):
     _source: AbstractEventSource
     _import_complete: bool
     _filename: str | None
+    _ignore_errors: QCheckBox
 
     def isComplete(self):
         return self._import_complete
 
-    def __init__(self, source: AbstractEventSource):
+    def __init__(self, source: AbstractEventSource, ignore_errors: QCheckBox):
         super().__init__()
         self._import_complete = False
         self._source = source
         self._filename = None
+        self._ignore_errors = ignore_errors
         #self.setTitle("Importing...")
         self.layout_v = QVBoxLayout()
         self.label = QLabel("Data import is in progress. Please do not close this window until it completes.")
@@ -116,6 +118,7 @@ class PageImportProgress(QWizardPage):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
         self._source.import_(self._filename,
+                             self._ignore_errors.isChecked(),
                              lambda total: self.progress.setMaximum(total),
                              lambda value, total: self.progress.setValue(value),
                              lambda total: self.finish())
@@ -134,7 +137,7 @@ class ImportWizard(QWizard):
         self.setWindowTitle("Import")
         self.page_intro = PageImportIntro()
         self.page_settings = PageImportSettings()
-        self.page_progress = PageImportProgress(source)
+        self.page_progress = PageImportProgress(source, self.page_settings.import_ignore_errors)
         self.addPage(self.page_intro)
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)

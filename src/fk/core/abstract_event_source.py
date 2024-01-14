@@ -224,6 +224,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def import_(self,
                 filename: str,
+                ignore_errors: bool,
                 start_callback: Callable[[int], None],
                 progress_callback: Callable[[int, int], None],
                 completion_callback: Callable[[int], None]) -> None:
@@ -241,19 +242,25 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         i = 0
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line,
-                                                self._emit,
-                                                self.get_data(),
-                                                self._settings,
-                                                list(self.get_data().values())[0])
-                i += 1
-                if type(strategy) is str:
-                    continue
-                if type(strategy) is CreateUserStrategy:
-                    continue
-                self.execute(type(strategy), strategy.get_params())
-                if i % every == 0:
-                    progress_callback(i, total)
+                try:
+                    strategy = strategy_from_string(line,
+                                                    self._emit,
+                                                    self.get_data(),
+                                                    self._settings,
+                                                    list(self.get_data().values())[0])
+                    i += 1
+                    if type(strategy) is str:
+                        continue
+                    if type(strategy) is CreateUserStrategy:
+                        continue
+                    self.execute(type(strategy), strategy.get_params())
+                    if i % every == 0:
+                        progress_callback(i, total)
+                except Exception as e:
+                    if ignore_errors:
+                        print('Warning', e)
+                    else:
+                        raise e
 
         self.unmute()
         completion_callback(total)
