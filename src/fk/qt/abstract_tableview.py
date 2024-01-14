@@ -41,6 +41,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     _placeholder_upstream: str
     _placeholder_empty: str
     _editable_column: int
+    _row_height: int
 
     def __init__(self,
                  parent: QWidget,
@@ -68,6 +69,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._editable_column = editable_column
         self.setModel(model)
 
+        self._row_height = int(source.get_config_parameter('Application.table_row_height'))
         self.setObjectName(name)
         self.setTabKeyNavigation(False)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -77,6 +79,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(self._row_height)
 
         my_actions = self.create_actions()
         for a in my_actions:

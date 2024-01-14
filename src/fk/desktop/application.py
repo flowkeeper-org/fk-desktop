@@ -138,7 +138,10 @@ class Application(QApplication, AbstractEventEmitter):
         })
 
     def _auto_resize(self) -> int:
-        h: int = QFontMetrics(QFont()).height() + 8
+        h: int = QFontMetrics(self._font_main).height() + 8
+        # users_table.verticalHeader().setDefaultSectionSize(h)
+        # backlogs_table.verticalHeader().setDefaultSectionSize(h)
+        # workitems_table.verticalHeader().setDefaultSectionSize(h)
         # Save it to Settings, so that we can use this value when
         # calculating display hints for the Pomodoro Delegate.
         # As of now, this requires app restart to apply.

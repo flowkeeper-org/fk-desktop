@@ -82,17 +82,6 @@ def hide_timer_automatically(workitem) -> None:
         window.show()
 
 
-def auto_resize() -> None:
-    h: int = QtGui.QFontMetrics(QtGui.QFont()).height() + 8
-    users_table.verticalHeader().setDefaultSectionSize(h)
-    backlogs_table.verticalHeader().setDefaultSectionSize(h)
-    workitems_table.verticalHeader().setDefaultSectionSize(h)
-    # Save it to Settings, so that we can use this value when
-    # calculating display hints for the Pomodoro Delegate.
-    # As of now, this requires app restart to apply.
-    settings.set('Application.table_row_height', str(h))
-
-
 def restore_size() -> None:
     w = int(settings.get('Application.window_width'))
     h = int(settings.get('Application.window_height'))

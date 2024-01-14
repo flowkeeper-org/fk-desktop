@@ -119,7 +119,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
         col3 = QtGui.QStandardItem()
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
-        # TODO: Get row height here somehow
         col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
