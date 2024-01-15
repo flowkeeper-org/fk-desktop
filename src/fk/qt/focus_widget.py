@@ -16,7 +16,7 @@
 from typing import Callable
 
 from PySide6.QtCore import QSize, QRect
-from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPen, QColor, QPixmap
+from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPixmap
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
@@ -160,6 +160,10 @@ class FocusWidget(QWidget):
                                 None,
                                 ":/icons/tool-show-timer-only.svg"))
 
+        self._buttons['toolNext'].hide()
+        self._buttons['toolComplete'].hide()
+        self._buttons['toolShowAll'].hide()
+
         self._timer_display = render_for_widget(
             parent.palette(),
             outer_timer_widget,
@@ -175,7 +179,14 @@ class FocusWidget(QWidget):
         self.eye_candy()
         settings.on(AfterSettingChanged, self._on_setting_changed)
 
-    def _create_button(self, name: str, action: str, txt: str, shortcut: str, callback: Callable, icon: str, parent: QWidget = None):
+    def _create_button(self,
+                       name: str,
+                       action: str,
+                       txt: str,
+                       shortcut: str,
+                       callback: Callable | None,
+                       icon: str,
+                       parent: QWidget = None):
         btn = QToolButton(self if parent is None else parent)
         btn.setObjectName(name)
         btn.setIcon(QIcon(icon))
@@ -261,10 +272,9 @@ class FocusWidget(QWidget):
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
                 if QMessageBox().warning(self.parent(),
-                             "Confirmation",
-                             f"Are you sure you want to void current pomodoro?",
-                             QMessageBox.StandardButton.Ok,
-                             QMessageBox.StandardButton.Cancel
-                             ) == QMessageBox.StandardButton.Ok:
+                                         "Confirmation",
+                                         f"Are you sure you want to void current pomodoro?",
+                                         QMessageBox.StandardButton.Ok,
+                                         QMessageBox.StandardButton.Cancel
+                                         ) == QMessageBox.StandardButton.Ok:
                     self._source.execute(CompletePomodoroStrategy, [workitem.get_uid(), "canceled"])
-

@@ -58,8 +58,8 @@ def show_timer_automatically() -> None:
         left_toolbar.hide()
         window.setMaximumHeight(focus.size().height())
         window.setMinimumHeight(focus.size().height())
-        # tool_show_timer_only.hide()
-        # tool_show_all.show()
+        focus._buttons['toolShowTimerOnly'].hide()
+        focus._buttons['toolShowAll'].show()
     elif mode == 'minimize':
         window.hide()
 
@@ -71,12 +71,16 @@ def hide_timer() -> None:
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
     event_filter.restore_size()
+    focus._buttons['toolShowTimerOnly'].show()
+    focus._buttons['toolShowAll'].hide()
 
 
 def hide_timer_automatically() -> None:
     actions['actionVoid'].setDisabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
+        focus._buttons['toolShowTimerOnly'].show()
+        focus._buttons['toolShowAll'].hide()
         hide_timer()
     elif mode == 'minimize':
         window.show()
