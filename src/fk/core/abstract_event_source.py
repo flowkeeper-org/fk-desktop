@@ -79,6 +79,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.SourceModeReadWrite,
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
+            events.PongReceived,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
@@ -276,3 +277,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def get_settings(self) -> AbstractSettings:
         return self._settings
+
+    @abstractmethod
+    def send_ping(self) -> str | None:
+        pass

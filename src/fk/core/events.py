@@ -62,3 +62,7 @@ AfterSettingChanged = "AfterSettingChanged"
 
 BeforeMessageProcessed = "BeforeMessageProcessed"
 AfterMessageProcessed = "AfterMessageProcessed"
+
+PongReceived = "PongReceived"
+WentOnline = "WentOnline"
+WentOffline = "WentOffline"

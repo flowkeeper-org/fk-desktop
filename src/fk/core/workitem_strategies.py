@@ -77,6 +77,7 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
         workitem.item_updated(self._when)   # Update Backlog
         self._emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
+            'carry': None,
         })
         return None, None
 

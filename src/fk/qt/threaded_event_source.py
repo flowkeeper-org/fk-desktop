@@ -111,3 +111,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def disconnect(self):
         self._wrapped.disconnect()
+
+    def send_ping(self) -> str | None:
+        return self._wrapped.send_ping()

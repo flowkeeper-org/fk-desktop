@@ -344,3 +344,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def disconnect(self):
         if self._watcher is not None:
             self._watcher.unwatch_all()
+
+    def send_ping(self) -> str | None:
+        raise Exception("FileEventSource does not support send_ping()")

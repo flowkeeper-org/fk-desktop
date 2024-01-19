@@ -18,6 +18,7 @@ import datetime
 import re
 from typing import Callable
 
+from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
@@ -67,6 +68,7 @@ class ReplayStrategy(AbstractStrategy):
         self._since_seq = int(params[0])
 
     def execute(self) -> (str, any):
+        # Send only
         return None, None
 
 
@@ -91,3 +93,50 @@ class ErrorStrategy(AbstractStrategy):
 
     def execute(self) -> (str, any):
         raise Exception(self._error_message)
+
+
+# Pong("123-456-789-012", "")
+@strategy
+class PongStrategy(AbstractStrategy):
+    _uid: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any]], None],
+                 data: 'System',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        self._uid = params[0]
+
+    def execute(self) -> (str, any):
+        # print(f'Received Pong - {self._uid}')
+        self._emit(events.PongReceived, {
+            'uid': self._uid
+        })
+        return None, None
+
+
+# Ping("123-456-789-012", "")
+@strategy
+class PingStrategy(AbstractStrategy):
+    _uid: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'App',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        self._uid = params[0]
+
+    def execute(self) -> (str, any):
+        # Send only
+        return None, None

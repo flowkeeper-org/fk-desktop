@@ -54,7 +54,7 @@ class AbstractEventEmitter:
                 if carry is not None:
                     params['carry'] = carry
                 self._callback_invoker(callback, **params)
-            print(f'Emitted {self.__class__.__name__} --[{event}]({params})')
+            # print(f'Emitted {self.__class__.__name__} --[{event}]({params})')
 
     def _is_muted(self) -> bool:
         return self._muted

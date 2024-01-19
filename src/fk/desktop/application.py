@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import sys
 import traceback
 import urllib
@@ -22,12 +23,14 @@ from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterSettingChanged, SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
+from fk.qt.heartbeat import Heartbeat
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
@@ -44,12 +47,14 @@ class Application(QApplication, AbstractEventEmitter):
     _font_header: QFont
     _row_height: int
     _source: AbstractEventSource | None
+    _heartbeat: Heartbeat
 
     def __init__(self, args: [str]):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, AfterSourceChanged],
                          callback_invoker=invoke_in_main_thread)
 
+        self._heartbeat = None
         sys.excepthook = self.on_exception
 
         # It's important to initialize settings after the QApplication
@@ -71,6 +76,15 @@ class Application(QApplication, AbstractEventEmitter):
         self._source = None
         self._recreate_source()
 
+    def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
+        # TODO -- lock the UI
+        print(f'WARNING - We detected that the client went offline after {after}ms')
+        print(f'          Last time we heard from the server was {last_received}')
+
+    def _on_went_online(self, event, ping: int) -> None:
+        # TODO -- unlock the UI
+        print(f'We are (back) online with the roundtrip delay of {ping}ms')
+
     def _recreate_source(self):
         source_type = self._settings.get('Source.type')
         root = Tenant(self._settings)
@@ -80,6 +94,11 @@ class Application(QApplication, AbstractEventEmitter):
             source = ThreadedEventSource(inner_source)
         elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
             source = WebsocketEventSource(self._settings, root)
+            if self._heartbeat is not None:
+                self._heartbeat.stop()
+            self._heartbeat = Heartbeat(source, 3000, 100)
+            self._heartbeat.on(events.WentOffline, self._on_went_offline)
+            self._heartbeat.on(events.WentOnline, self._on_went_online)
         else:
             raise Exception(f"Source type {source_type} not supported")
 
