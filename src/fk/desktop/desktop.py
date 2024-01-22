@@ -64,7 +64,7 @@ def show_timer_automatically() -> None:
         window.hide()
 
 
-def hide_timer() -> None:
+def hide_timer(event: str|None = None, **kwargs) -> None:
     main_layout.show()
     focus.show()
     left_toolbar.show()

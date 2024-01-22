@@ -169,18 +169,18 @@ class Application(QApplication, AbstractEventEmitter):
 
     def restart_warning(self) -> None:
         QMessageBox().warning(self,
-                            "Restart required",
-                            f"Please restart Flowkeeper to apply new settings",
-                            QMessageBox.StandardButton.Ok)
+                              "Restart required",
+                              f"Please restart Flowkeeper to apply new settings",
+                              QMessageBox.StandardButton.Ok)
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
         print("Exception", to_log)
         if (QMessageBox().critical(None,
-                                  "Unexpected error",
-                                  f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
-                                  QMessageBox.StandardButton.Ok,
-                                  QMessageBox.StandardButton.Open)
+                                   "Unexpected error",
+                                   f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
+                                   QMessageBox.StandardButton.Ok,
+                                   QMessageBox.StandardButton.Open)
                 == QMessageBox.StandardButton.Open):
             params = urllib.parse.urlencode({
                 'labels': 'exception',

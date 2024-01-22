@@ -139,7 +139,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         pass
 
     def _on_current_changed(self, selected: QModelIndex | None, deselected: QModelIndex | None) -> None:
-        print('_on_current_changed')
         after: TDownstream | None = None
         if selected is not None:
             after = selected.data(500)
