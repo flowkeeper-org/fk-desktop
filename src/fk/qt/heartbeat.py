@@ -71,6 +71,7 @@ class Heartbeat(AbstractEventEmitter):
                     'last_received': self._last_received_time,
                 })
         self._last_sent_uid = self._source.send_ping()
+        # print(f' -> Ping {self._last_sent_uid}')
         self._last_sent_time = now
 
     def _on_pong(self, event, uid) -> None:
@@ -78,6 +79,7 @@ class Heartbeat(AbstractEventEmitter):
         if self._last_sent_uid == uid:
             diff_ms = (now - self._last_sent_time).total_seconds() * 1000
             self._last_ping_ms = diff_ms
+            # print(f' <- Pong {uid} with {diff_ms}ms delay')
             if not self.is_online():
                 if diff_ms <= self._threshold_ms:
                     self._state = 'online'

@@ -96,7 +96,7 @@ class Application(QApplication, AbstractEventEmitter):
             source = WebsocketEventSource(self._settings, root)
             if self._heartbeat is not None:
                 self._heartbeat.stop()
-            self._heartbeat = Heartbeat(source, 3000, 100)
+            self._heartbeat = Heartbeat(source, 3000, 500)
             self._heartbeat.on(events.WentOffline, self._on_went_offline)
             self._heartbeat.on(events.WentOnline, self._on_went_online)
         else:
