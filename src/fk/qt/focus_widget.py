@@ -15,8 +15,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Callable
 
-from PySide6.QtCore import QSize, QRect
-from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPixmap
+from PySide6.QtCore import QSize, QPoint
+from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPixmap, Qt, QColor, QGradient
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
@@ -246,25 +246,35 @@ class FocusWidget(QWidget):
         self._timer_display.repaint()
 
     def eye_candy(self):
-        header_bg = self._settings.get('Application.header_background')
-        if header_bg:
-            header_bg = self._settings.get('Application.header_background')
-            self._pixmap = QPixmap(header_bg)
-        else:
-            self._pixmap = None
+        eyecandy_type = self._settings.get('Application.eyecandy_type')
+        if eyecandy_type == 'image':
+            header_bg = self._settings.get('Application.eyecandy_image')
+            if header_bg:
+                header_bg = self._settings.get('Application.eyecandy_image')
+                self._pixmap = QPixmap(header_bg)
+            else:
+                self._pixmap = None
         self.repaint()
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        if self._pixmap is not None:
+        eyecandy_type = self._settings.get('Application.eyecandy_type')
+        if eyecandy_type == 'image':
+            if self._pixmap is not None:
+                img = self._pixmap
+                painter = QPainter(self)
+                painter.drawPixmap(
+                    QPoint(0, 0),
+                    img.scaled(
+                        QSize(self.width(), self.width() * img.height() / img.width()),
+                        mode=Qt.TransformationMode.SmoothTransformation))
+        elif eyecandy_type == 'gradient':
             painter = QPainter(self)
-            r = self.rect()
-            img = self._pixmap
-            h = int(img.width() / r.width() * r.height())
-            painter.drawPixmap(r, img, QRect(0, 0, img.width(), h))
+            gradient = self._settings.get('Application.eyecandy_gradient')
+            painter.fillRect(self.rect(), QGradient.Preset[gradient])
 
     def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
-        if name == 'Application.header_background':
+        if name.startswith('Application.eyecandy'):
             self.eye_candy()
 
     def void_pomodoro(self) -> None:

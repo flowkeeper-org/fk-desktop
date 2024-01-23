@@ -13,12 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import random
 import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction, QIcon, QGradient
 
 from fk.core import events
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
@@ -155,6 +155,18 @@ def repair_file_event_source(_):
                                                 "\n".join(log))
 
 
+def generate_gradient(event):
+    chosen = random.choice(list(QGradient.Preset))
+    settings.set('Application.eyecandy_gradient', chosen.name)
+
+
+def show_settings_dialog():
+    SettingsDialog(settings, {
+        'FileEventSource.repair': repair_file_event_source,
+        'Application.eyecandy_gradient_generate': generate_gradient,
+    }).show()
+
+
 # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
 # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
 # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
@@ -213,9 +225,7 @@ actions['showTimerOnly'].setIcon(QIcon(":/icons/tool-show-timer-only.svg"))
 actions['showMainWindow'].triggered.connect(window.show)
 actions['quit'].triggered.connect(app.quit)
 actions['quit'].setShortcut('Ctrl+Q')
-actions['settings'].triggered.connect(lambda: SettingsDialog(settings, {
-    'FileEventSource.repair': repair_file_event_source
-}).show())
+actions['settings'].triggered.connect(show_settings_dialog)
 
 # Backlogs table
 backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
@@ -258,9 +268,7 @@ left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left
 # Settings
 # noinspection PyTypeChecker
 settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
-settings_action.triggered.connect(lambda: SettingsDialog(settings, {
-    'FileEventSource.repair': repair_file_event_source
-}).show())
+settings_action.triggered.connect(show_settings_dialog)
 
 # Connect menu actions to the toolbar
 

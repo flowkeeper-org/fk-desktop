@@ -46,14 +46,14 @@ class ConnectionWidget(QLabel):
         if is_connected:
             self.setPixmap(self._img_online)
             self.setToolTip('Connected')
-            self.topLevelWidget().setWindowTitle('Flowkeeper [Online]')
+            self.topLevelWidget().setWindowTitle('Flowkeeper - Online')
         else:
             self.setPixmap(self._img_offline)
             self.setToolTip('Disconnected')
-            self.topLevelWidget().setWindowTitle('Flowkeeper [OFFLINE]')
+            self.topLevelWidget().setWindowTitle('Flowkeeper - OFFLINE')
 
     def _update_source(self, source: AbstractEventSource):
         self.setPixmap(self._img_unknown)
         self.setVisible(source and source.can_connect())
         self.setToolTip('Connecting...')
-        self.topLevelWidget().setWindowTitle('Flowkeeper [Connecting...]' if source.can_connect() else 'Flowkeeper')
+        self.topLevelWidget().setWindowTitle('Flowkeeper - Connecting...' if source.can_connect() else 'Flowkeeper')

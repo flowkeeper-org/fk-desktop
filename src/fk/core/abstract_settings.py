@@ -30,6 +30,14 @@ def _never_show(_) -> bool:
     return False
 
 
+def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
+    return values['Application.eyecandy_type'] == 'gradient'
+
+
+def _show_for_image_eyecandy(values: dict[str, str]) -> bool:
+    return values['Application.eyecandy_type'] == 'image'
+
+
 def _show_for_file_source(values: dict[str, str]) -> bool:
     return values['Source.type'] == 'local'
 
@@ -113,7 +121,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
-                ('Application.header_background', 'file', 'Header background', '', ['*.png;*.jpg'], _always_show),
+                ('Application.eyecandy_type', 'choice', 'Header background', 'default', [
+                    "default:Default",
+                    "image:Image",
+                    "gradient:Gradient",
+                ], _always_show),
+                ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
+                ('Application.eyecandy_gradient', 'str', 'Background gradient', 'SugarLollipop', [], _never_show),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
