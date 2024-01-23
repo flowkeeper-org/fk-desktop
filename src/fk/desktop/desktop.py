@@ -33,6 +33,7 @@ from fk.qt.about_window import AboutWindow
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_timer import QtTimer
@@ -193,6 +194,10 @@ menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 
 # noinspection PyTypeChecker
 left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
+
+# noinspection PyTypeChecker
+left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
+left_toolbar_layout.addWidget(ConnectionWidget(window, app._heartbeat, app))
 
 actions: dict[str, QAction] = {
     'showAll': QAction("Show All", window),

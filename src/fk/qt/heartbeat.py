@@ -16,11 +16,9 @@
 import datetime
 
 from fk.core import events
-from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.timer import AbstractTimer
-from fk.desktop.desktop_strategies import PingStrategy
 from fk.qt.qt_timer import QtTimer
 
 

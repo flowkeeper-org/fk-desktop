@@ -281,3 +281,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     @abstractmethod
     def send_ping(self) -> str | None:
         pass
+
+    @abstractmethod
+    def can_connect(self):
+        pass

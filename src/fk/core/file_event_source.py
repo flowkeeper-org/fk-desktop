@@ -347,3 +347,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def send_ping(self) -> str | None:
         raise Exception("FileEventSource does not support send_ping()")
+
+    def can_connect(self):
+        return False

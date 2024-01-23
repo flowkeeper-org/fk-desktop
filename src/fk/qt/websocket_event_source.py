@@ -197,3 +197,6 @@ class WebsocketEventSource(AbstractEventSource):
                             self._settings)
         self._ws.sendTextMessage(str(ping))
         return uid
+
+    def can_connect(self):
+        return True

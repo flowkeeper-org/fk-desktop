@@ -114,3 +114,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def send_ping(self) -> str | None:
         return self._wrapped.send_ping()
+
+    def can_connect(self):
+        return self._wrapped.can_connect()
