@@ -38,7 +38,7 @@ def predefined_uid(n: int) -> str:
     return PREDEFINED_UID[n]
 
 
-def noop_emit(event: str, params: dict[str, any]) -> None:
+def noop_emit(event: str, params: dict[str, any], carry: any) -> None:
     pass
     # print('Emit trace', event, params)
 
