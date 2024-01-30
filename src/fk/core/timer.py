@@ -63,12 +63,13 @@ class PomodoroTimer(AbstractEventEmitter):
 
         # Start tracking changes and initialize with the latest state
         print('PomodoroTimer: Connecting')
+        source.on(events.SourceMessagesProcessed, self._refresh)
         source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
         source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
         source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
         print('PomodoroTimer: Initialized')
 
-    def _refresh(self) -> None:
+    def _refresh(self, event: str | None = None, **kwargs) -> None:
         print('PomodoroTimer: Refreshing')
         workitem: Workitem | None = None
         pomodoro: Pomodoro | None = None
@@ -261,6 +262,9 @@ class PomodoroTimer(AbstractEventEmitter):
 
     def is_idling(self) -> bool:
         return self._state == 'idle'
+
+    def is_initializing(self) -> bool:
+        return self._state is None
 
     def get_planned_duration(self) -> int:
         return self._planned_duration

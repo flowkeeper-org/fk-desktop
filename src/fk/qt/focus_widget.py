@@ -241,6 +241,8 @@ class FocusWidget(QWidget):
                 ""  # f'{remaining_minutes}:{remaining_seconds}'
             )
             self._timer_display.show()
+        elif self._timer.is_initializing():
+            print('The timer is still initializing')
         else:
             raise Exception("The timer is in an unexpected state")
         self._timer_display.repaint()

@@ -19,7 +19,7 @@ from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QAction
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.events import AfterWorkitemComplete
+from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -56,6 +56,8 @@ class TrayIcon(QSystemTrayIcon):
         source.on(AfterWorkitemComplete, self.reset)
         source.on(AfterWorkitemComplete, self._update)
         timer.on("Timer*", self._update)
+        timer.on("Timer*Complete", self._show_notification)
+        source.on(SourceMessagesProcessed, self._update)
 
         self.activated.connect(
             lambda reason: (self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None))
@@ -67,7 +69,6 @@ class TrayIcon(QSystemTrayIcon):
         menu.addAction(actions['quit'])
         self.setContextMenu(menu)
 
-        self.reset()
         self._update()
 
     def reset(self, event: str = None, **kwargs):
@@ -102,6 +103,7 @@ class TrayIcon(QSystemTrayIcon):
                 self.setToolTip(f'Start another Pomodoro? ({w.get_name()})')
             else:
                 self.setToolTip("It's time for the next Pomodoro.")
+            self.reset()
         elif self._timer.is_working() or self._timer.is_resting():
             remaining_duration = self._timer.get_remaining_duration()     # This is always >= 0
             remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
@@ -109,6 +111,15 @@ class TrayIcon(QSystemTrayIcon):
             state = 'Focus' if self._timer.is_working() else 'Rest'
             txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
             self.setToolTip(f"{txt} left ({running_workitem.get_name()})")
+            self._timer_widget.set_values(
+                remaining_duration / self._timer.get_planned_duration(),
+                None,
+                ""  # f'{remaining_minutes}:{remaining_seconds}'
+            )
+            self._paint_timer()
+        elif self._timer.is_initializing():
+            print('The timer is still initializing')
+            self.reset()
         else:
             raise Exception("The timer is in an unexpected state")
 

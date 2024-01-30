@@ -38,7 +38,7 @@ class AbstractEventEmitter:
             if regex.match(event):
                 # Ordered set semantics
                 if callback not in self._connections[event]:
-                    print(f'{self.__class__.__name__}.on({event})')
+                    print(f'{self.__class__.__name__}.on({event}) from {callback}')
                     self._connections[event].append(callback)
 
     def cancel(self, event_pattern: str) -> None:
@@ -60,7 +60,9 @@ class AbstractEventEmitter:
         return self._muted
 
     def unmute(self) -> None:
+        print('Unmuting events')
         self._muted = False
 
     def mute(self) -> None:
+        print('Muting events')
         self._muted = True
