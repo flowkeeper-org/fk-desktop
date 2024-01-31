@@ -132,6 +132,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
+                ('Application.backlogs_visible', 'bool', 'Show backlogs', 'True', [], _never_show),
+                ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
+                ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
             ],
             'Fonts': [

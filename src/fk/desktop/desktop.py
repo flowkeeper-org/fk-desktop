@@ -87,14 +87,25 @@ def hide_timer_automatically() -> None:
         window.show()
 
 
-def toggle_backlogs(visible) -> None:
-    backlogs_table.setVisible(visible)
-    left_table_layout.setVisible(visible or users_table.isVisible())
+def toggle_backlogs(enabled):
+    settings.set('Application.backlogs_visible', str(enabled))
+    update_tables_visibility()
 
 
-def toggle_users(visible) -> None:
-    users_table.setVisible(visible)
-    left_table_layout.setVisible(backlogs_table.isVisible() or visible)
+def toggle_users(enabled):
+    settings.set('Application.users_visible', str(enabled))
+    update_tables_visibility()
+
+
+def update_tables_visibility() -> None:
+    users_visible = (settings.get('Application.users_visible') == 'True')
+    #print(f'users_table.setVisible({users_visible})')
+    users_table.setVisible(users_visible)
+    backlogs_visible = (settings.get('Application.backlogs_visible') == 'True')
+    #print(f'backlogs_table.setVisible({backlogs_visible})')
+    backlogs_table.setVisible(backlogs_visible)
+    left_table_layout.setVisible(users_visible or backlogs_visible)
+    #print(f'left_table_layout.setVisible({users_visible or backlogs_visible})')
 
 
 def on_messages(event) -> None:
@@ -235,7 +246,6 @@ left_layout.addWidget(backlogs_table)
 
 # Users table
 users_table: UserTableView = UserTableView(window, app, source, actions)
-users_table.setVisible(False)
 left_layout.addWidget(users_table)
 
 # noinspection PyTypeChecker
@@ -348,6 +358,13 @@ tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "
 tool_settings.clicked.connect(lambda: menu_file.exec(
     tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
 ))
+
+# Restore window config from settings
+users_were_visible = (settings.get('Application.users_visible') == 'True')
+backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
+action_teams.setChecked(settings.is_team_supported() and users_were_visible)
+action_backlogs.setChecked(backlogs_were_visible)
+update_tables_visibility()
 
 event_filter = ResizeEventFilter(window, main_layout, settings)
 window.installEventFilter(event_filter)

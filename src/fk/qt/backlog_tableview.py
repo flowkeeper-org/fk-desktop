@@ -27,7 +27,7 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrat
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
 from fk.desktop.application import Application, AfterSourceChanged
-from fk.qt.abstract_tableview import AbstractTableView
+from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.backlog_model import BacklogModel
 
 
@@ -49,6 +49,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._init_menu(actions)
         #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
+        self.on(AfterSelectionChanged, lambda event, before, after: self._source.set_config_parameter(
+            'Application.last_selected_backlog',
+            after.get_uid() if after is not None else ''
+        ))
 
     def _on_source_changed(self, event, source):
         #self.setModel(BacklogModel(self.parent(), source))
@@ -125,4 +129,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             self._source.execute(DeleteBacklogStrategy, [selected.get_uid()])
 
     def _on_messages(self, event):
-        self.upstream_selected(self._source.get_data().get_current_user())
+        user = self._source.get_data().get_current_user()
+        self.upstream_selected(user)
+        last_selected_oid = self._source.get_config_parameter('Application.last_selected_backlog')
+        if user is not None and last_selected_oid != '' and last_selected_oid in user:
+            self.select(user[last_selected_oid])
