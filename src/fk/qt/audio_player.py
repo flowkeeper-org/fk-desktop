@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QObject
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QAudio
 from PySide6.QtWidgets import QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
@@ -50,6 +50,15 @@ class AudioPlayer(QObject):
         self._audio_player = QMediaPlayer(self.parent())
         self._audio_player.setAudioOutput(self._audio_output)
 
+    def _set_volume(self, setting: str):
+        volume = float(self._settings.get(setting)) / 100.0
+        # This is what all mixers do
+        volume = QAudio.convertVolume(volume,
+                                      QAudio.VolumeScale.LogarithmicVolumeScale,
+                                      QAudio.VolumeScale.LinearVolumeScale)
+        self._audio_output.setVolume(volume)
+        print(f'Volume is set to {int(volume * 100)}%')
+
     def _play_audio(self, event: str = None, **kwargs) -> None:
         # Alarm bell
         play_alarm_sound = (self._settings.get('Application.play_alarm_sound') == 'True')
@@ -58,6 +67,7 @@ class AudioPlayer(QObject):
             self._audio_player.stop()     # In case it was ticking or playing rest music
             alarm_file = self._settings.get('Application.alarm_sound_file')
             self._reset()
+            self._set_volume('Application.alarm_sound_volume')
             self._audio_player.setSource(alarm_file)
             self._audio_player.setLoops(1)
             self._audio_player.play()
@@ -72,7 +82,7 @@ class AudioPlayer(QObject):
             self._audio_player.stop()     # Just in case
             tick_file = self._settings.get('Application.tick_sound_file')
             self._reset()
-            print(f'Will tick: {tick_file}')
+            self._set_volume('Application.tick_sound_volume')
             self._audio_player.setSource(tick_file)
             self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
             self._audio_player.play()
@@ -83,6 +93,7 @@ class AudioPlayer(QObject):
             self._audio_player.stop()     # In case it was ticking
             rest_file = self._settings.get('Application.rest_sound_file')
             self._reset()
+            self._set_volume('Application.rest_sound_volume')
             self._audio_player.setSource(rest_file)
             self._audio_player.setLoops(1)
             self._audio_player.play()     # This will substitute the bell sound

@@ -143,10 +143,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Audio': [
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
                 ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
+                ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'False', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', '', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
+                ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
 

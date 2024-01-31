@@ -155,7 +155,7 @@ def repair_file_event_source(_):
                                                 "\n".join(log))
 
 
-def generate_gradient(event):
+def generate_gradient(_):
     chosen = random.choice(list(QGradient.Preset))
     settings.set('Application.eyecandy_gradient', chosen.name)
 
