@@ -14,13 +14,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.qt.minimal_common import source, window, app, root, main_loop
-from fk.qt.workitem_tableview import WorkitemTableView
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QPushButton
 
-window.resize(600, 400)
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, dict())
-window.setCentralWidget(workitems_table)
+from fk.core.timer import PomodoroTimer
+from fk.qt.focus_widget import FocusWidget
+from fk.qt.minimal_common import source, window, main_loop, app
+from fk.qt.qt_timer import QtTimer
+from fk.qt.tray_icon import TrayIcon
 
-main_loop(lambda: workitems_table.upstream_selected(
-    list(root.get_current_user().values())[0]
-))
+pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
+actions: dict[str, QAction] = {
+    'showAll': QAction("Show All", window),
+    'showMainWindow': QAction("Show Main Window", window),
+    'settings': QAction("Settings", window),
+    'quit': QAction("Quit", window),
+}
+focus = FocusWidget(window, app, pomodoro_timer, source, source.get_settings(), actions)
+window.setCentralWidget(focus)
+
+main_loop()

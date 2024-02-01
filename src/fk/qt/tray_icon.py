@@ -62,11 +62,15 @@ class TrayIcon(QSystemTrayIcon):
         self.activated.connect(
             lambda reason: (self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None))
         menu = QMenu()
-        menu.addAction(actions['actionVoid'])
+        if 'actionVoid' in actions:
+            menu.addAction(actions['actionVoid'])
         menu.addSeparator()
-        menu.addAction(actions['showMainWindow'])
-        menu.addAction(actions['settings'])
-        menu.addAction(actions['quit'])
+        if 'showMainWindow' in actions:
+            menu.addAction(actions['showMainWindow'])
+        if 'settings' in actions:
+            menu.addAction(actions['settings'])
+        if 'quit' in actions:
+            menu.addAction(actions['quit'])
         self.setContextMenu(menu)
 
         self._update()

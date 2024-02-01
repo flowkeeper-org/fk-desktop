@@ -14,48 +14,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
-
-from PySide6.QtWidgets import QMainWindow
-
-from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.tenant import Tenant
-from fk.core.events import SourceMessagesProcessed
-from fk.core.file_event_source import FileEventSource
-from fk.desktop.application import Application
 from fk.qt.backlog_tableview import BacklogTableView
-from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
-from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.websocket_event_source import WebsocketEventSource
+from fk.qt.minimal_common import source, window, app, root, main_loop
 
-app = Application(sys.argv)
-settings = app.get_settings()
-
-source: AbstractEventSource
-source_type = settings.get('Source.type')
-root = Tenant(settings)
-if source_type == 'local':
-    source = ThreadedEventSource(FileEventSource(settings,
-                                                 root,
-                                                 QtFilesystemWatcher()))
-elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings, root)
-else:
-    raise Exception(f"Source type {source_type} not supported")
-
-window: QMainWindow = QMainWindow()
 backlogs_table: BacklogTableView = BacklogTableView(window, app, source, dict())
 window.setCentralWidget(backlogs_table)
 
-app.setQuitOnLastWindowClosed(True)
-window.show()
-
-try:
-    source.on(SourceMessagesProcessed,
-              lambda event: backlogs_table.upstream_selected(
-                  root.get_current_user()))
-    source.start()
-except Exception as ex:
-    app.on_exception(type(ex), ex, ex.__traceback__)
-
-sys.exit(app.exec())
+main_loop(lambda: backlogs_table.upstream_selected(root.get_current_user()))
