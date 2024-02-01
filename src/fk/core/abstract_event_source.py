@@ -75,8 +75,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterPomodoroComplete,
             events.SourceMessagesRequested,
             events.SourceMessagesProcessed,
-            events.SourceModeReadOnly,
-            events.SourceModeReadWrite,
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
             events.PongReceived,

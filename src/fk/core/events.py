@@ -54,9 +54,6 @@ AfterPomodoroComplete = "AfterPomodoroComplete"
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"
 
-SourceModeReadOnly = "SourceModeReadOnly"  # TODO: Implement
-SourceModeReadWrite = "SourceModeReadWrite"  # TODO: Implement
-
 BeforeSettingChanged = "BeforeSettingChanged"
 AfterSettingChanged = "AfterSettingChanged"
 

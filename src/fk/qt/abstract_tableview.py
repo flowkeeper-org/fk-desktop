@@ -21,6 +21,7 @@ from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QAction, QPainter, QStandardItemModel, QIcon
 from PySide6.QtWidgets import QTableView, QWidget
 
+from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
@@ -28,8 +29,8 @@ from fk.core.events import SourceMessagesProcessed
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
 
-TUpstream = TypeVar('TUpstream')
-TDownstream = TypeVar('TDownstream')
+TUpstream = TypeVar('TUpstream', bound=AbstractDataItem)
+TDownstream = TypeVar('TDownstream', bound=AbstractDataItem)
 
 
 class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDownstream]):
