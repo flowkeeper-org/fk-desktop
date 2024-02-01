@@ -21,17 +21,17 @@ from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 
 
-class User(AbstractDataContainer[Backlog, 'App']):
+class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _last_pomodoro: Pomodoro
 
     def __init__(self,
-                 app: 'App',
+                 data: 'Tenant',
                  identity: str,
                  name: str,
                  create_date: datetime.datetime,
                  is_system_user: bool):
-        super().__init__(name, app, identity, create_date)
+        super().__init__(name, data, identity, create_date)
         self._last_pomodoro = None
         self._is_system_user = is_system_user
 

@@ -29,7 +29,7 @@ EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 # Authenticate("alice@example.com", "secret")
 @strategy
-class AuthenticateStrategy(AbstractStrategy['App']):
+class AuthenticateStrategy(AbstractStrategy['Tenant']):
     _username: str
     _token: str
 
@@ -39,7 +39,7 @@ class AuthenticateStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -61,7 +61,7 @@ class ReplayStrategy(AbstractStrategy):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -84,7 +84,7 @@ class ErrorStrategy(AbstractStrategy):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -131,7 +131,7 @@ class PingStrategy(AbstractStrategy):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)

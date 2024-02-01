@@ -28,7 +28,7 @@ from fk.core.workitem import Workitem
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
 @strategy
-class CreateWorkitemStrategy(AbstractStrategy['App']):
+class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
@@ -45,7 +45,7 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -93,7 +93,7 @@ def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> Non
 
 # DeleteWorkitem("123-456-789")
 @strategy
-class DeleteWorkitemStrategy(AbstractStrategy['App']):
+class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
 
     def get_workitem_uid(self) -> str:
@@ -105,7 +105,7 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -136,7 +136,7 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
 
 # RenameWorkitem("123-456-789", "Wake up")
 @strategy
-class RenameWorkitemStrategy(AbstractStrategy['App']):
+class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _new_workitem_name: str
 
@@ -149,7 +149,7 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -187,7 +187,7 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
 
 # CompleteWorkitem("Wake up", "canceled")
 @strategy
-class CompleteWorkitemStrategy(AbstractStrategy['App']):
+class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _target_state: str
 
@@ -200,7 +200,7 @@ class CompleteWorkitemStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)

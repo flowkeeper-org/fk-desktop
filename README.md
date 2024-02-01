@@ -49,12 +49,13 @@ pyinstaller desktop.spec
 
 ## Technical details
 
-### Data structue and ownership
+### Data structue
 
-- User
-- Backlog
-- Workitem
-- Pomodoro
+- Tenant: AbstractDataContainer
+  - User: AbstractDataContainer
+    - Backlog: AbstractDataContainer
+      - Workitem: AbstractDataContainer
+        - Pomodoro: AbstractDataItem
 
 ### Events
 

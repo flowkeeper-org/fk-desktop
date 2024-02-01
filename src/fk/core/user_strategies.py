@@ -27,7 +27,7 @@ from fk.core.user import User
 
 # CreateUser("alice@example.com", "Alice Cooper")
 @strategy
-class CreateUserStrategy(AbstractStrategy['App']):
+class CreateUserStrategy(AbstractStrategy['Tenant']):
     _user_identity: str
     _user_name: str
 
@@ -40,7 +40,7 @@ class CreateUserStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -67,7 +67,7 @@ class CreateUserStrategy(AbstractStrategy['App']):
 
 # DeleteUser("alice@example.com", "")
 @strategy
-class DeleteUserStrategy(AbstractStrategy['App']):
+class DeleteUserStrategy(AbstractStrategy['Tenant']):
     _user_identity: str
 
     def get_user_identity(self) -> str:
@@ -79,7 +79,7 @@ class DeleteUserStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -112,7 +112,7 @@ class DeleteUserStrategy(AbstractStrategy['App']):
 
 # RenameUser("alice@example.com", "Alice Cooper")
 @strategy
-class RenameUserStrategy(AbstractStrategy['App']):
+class RenameUserStrategy(AbstractStrategy['Tenant']):
     _user_identity: str
     _new_user_name: str
 
@@ -125,7 +125,7 @@ class RenameUserStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)

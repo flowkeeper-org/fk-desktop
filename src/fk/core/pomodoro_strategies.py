@@ -29,7 +29,7 @@ from fk.core.workitem import Workitem
 
 # StartWork("123-456-789", "1500")
 @strategy
-class StartWorkStrategy(AbstractStrategy['App']):
+class StartWorkStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _work_duration: int
 
@@ -39,7 +39,7 @@ class StartWorkStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -93,7 +93,7 @@ class StartWorkStrategy(AbstractStrategy['App']):
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 @strategy
-class StartRestStrategy(AbstractStrategy['App']):
+class StartRestStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _rest_duration: int
 
@@ -103,7 +103,7 @@ class StartRestStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -146,7 +146,7 @@ class StartRestStrategy(AbstractStrategy['App']):
 
 # AddPomodoro("123-456-789", "1")
 @strategy
-class AddPomodoroStrategy(AbstractStrategy['App']):
+class AddPomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _num_pomodoros: int
 
@@ -156,7 +156,7 @@ class AddPomodoroStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -199,7 +199,7 @@ class AddPomodoroStrategy(AbstractStrategy['App']):
 
 # CompletePomodoro("123-456-789", "finished")
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['App']):
+class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _target_state: str
 
@@ -209,7 +209,7 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
@@ -250,7 +250,7 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
-class RemovePomodoroStrategy(AbstractStrategy['App']):
+class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _num_pomodoros: int
 
@@ -260,7 +260,7 @@ class RemovePomodoroStrategy(AbstractStrategy['App']):
                  user: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
-                 data: 'App',
+                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
