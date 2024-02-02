@@ -13,24 +13,21 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import random
 import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
-from PySide6.QtGui import QAction, QIcon, QGradient
 
 from fk.core import events
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
-from fk.core.file_event_source import FileEventSource
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
-from fk.desktop.settings import SettingsDialog
 from fk.qt.about_window import AboutWindow
 from fk.qt.abstract_tableview import AfterSelectionChanged
+from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.connection_widget import ConnectionWidget
@@ -51,7 +48,7 @@ def get_timer_ui_mode() -> str:
 
 def show_timer_automatically() -> None:
     global continue_workitem
-    actions['actionVoid'].setEnabled(True)
+    actions['focus.voidPomodoro'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
         focus.show()
@@ -59,8 +56,8 @@ def show_timer_automatically() -> None:
         left_toolbar.hide()
         window.setMaximumHeight(focus.size().height())
         window.setMinimumHeight(focus.size().height())
-        focus._buttons['toolShowTimerOnly'].hide()
-        focus._buttons['toolShowAll'].show()
+        focus._buttons['window.showFocus'].hide()
+        focus._buttons['window.showAll'].show()
     elif mode == 'minimize':
         window.hide()
 
@@ -72,16 +69,16 @@ def hide_timer(event: str|None = None, **kwargs) -> None:
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
     event_filter.restore_size()
-    focus._buttons['toolShowTimerOnly'].show()
-    focus._buttons['toolShowAll'].hide()
+    focus._buttons['window.showFocus'].show()
+    focus._buttons['window.showAll'].hide()
 
 
 def hide_timer_automatically() -> None:
-    actions['actionVoid'].setDisabled(True)
+    actions['focus.voidPomodoro'].setDisabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
-        focus._buttons['toolShowTimerOnly'].show()
-        focus._buttons['toolShowAll'].hide()
+        focus._buttons['window.showFocus'].show()
+        focus._buttons['window.showAll'].hide()
         hide_timer()
     elif mode == 'minimize':
         window.show()
@@ -140,241 +137,218 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # TODO: Reload the app when the source changes
 
 
-def repair_file_event_source(_):
-    if QtWidgets.QMessageBox().warning(window,
-                                        "Confirmation",
-                                        f"Are you sure you want to repair the data source? "
-                                        f"This action will\n"
-                                        f"1. Remove duplicates,\n"
-                                        f"2. Create missing data entities like users and backlogs, on first reference,\n"
-                                        f"3. Renumber / reindex data,\n"
-                                        f"4. Remove any events, which fail after 1 -- 3,\n"
-                                        f"5. Create a backup file and overwrite the original data source one,\n"
-                                        f"6. Display a detailed log of what it did.\n"
-                                        f"\n"
-                                        f"If there are no errors, then this action won't create or overwrite any files.",
-                                        QtWidgets.QMessageBox.StandardButton.Ok,
-                                        QtWidgets.QMessageBox.StandardButton.Cancel) \
-            == QtWidgets.QMessageBox.StandardButton.Ok:
-        cast: FileEventSource = source
-        log = cast.repair()
-        QtWidgets.QInputDialog.getMultiLineText(window,
-                                                "Repair completed",
-                                                "Please save this log for future reference. "
-                                                "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
-                                                "Flowkeeper restart is required to reload the changes.",
-                                                "\n".join(log))
+class MainWindow:
+    def show_all(self):
+        hide_timer()
+
+    def show_focus(self):
+        show_timer_automatically()
+
+    def show_window(self):
+        window.show()
+
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
+        actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
+        actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
 
 
-def generate_gradient(_):
-    chosen = random.choice(list(QGradient.Preset))
-    settings.set('Application.eyecandy_gradient', chosen.name)
+if __name__ == "__main__":
+    # The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
+    # Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
+    # Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
+    # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
+    # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
+    # will pass through to Qt data models via Qt-like connect / emit mechanism.
+    app = Application(sys.argv)
 
+    print('UI thread:', threading.get_ident())
 
-def show_settings_dialog():
-    SettingsDialog(settings, {
-        'FileEventSource.repair': repair_file_event_source,
-        'Application.eyecandy_gradient_generate': generate_gradient,
-    }).show()
+    settings = app.get_settings()
+    settings.on(events.AfterSettingChanged, on_setting_changed)
 
+    source = app.get_source()
+    source.on(SourceMessagesProcessed, on_messages)
 
-# The order is important here. Some Sources use Qt APIs, so we need an Application instance created first.
-# Then we initialize a Source. This needs to happen before we configure UI, because the Source will replay
-# Strategies in __init__, and we don't want anyone to be subscribed to their events yet. It will build the
-# data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
-# From that moment we can respond to user actions and events from the backend, which the Source + Strategies
-# will pass through to Qt data models via Qt-like connect / emit mechanism.
-app = Application(sys.argv)
+    pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
+    pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
+    pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
 
-print('UI thread:', threading.get_ident())
+    loader = QtUiTools.QUiLoader()
 
-settings = app.get_settings()
-settings.on(events.AfterSettingChanged, on_setting_changed)
+    # Load main window
+    file = QtCore.QFile(":/core.ui")
+    file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
+    # noinspection PyTypeChecker
+    window: QtWidgets.QMainWindow = loader.load(file, None)
+    file.close()
 
-source = app.get_source()
-source.on(SourceMessagesProcessed, on_messages)
+    # Collect actions from all widget types
+    actions = Actions(window)
+    Application.define_actions(actions)
+    BacklogTableView.define_actions(actions)
+    UserTableView.define_actions(actions)
+    WorkitemTableView.define_actions(actions)
+    FocusWidget.define_actions(actions)
+    MainWindow.define_actions(actions)
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
-pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
+    audio = AudioPlayer(window, source, settings, pomodoro_timer)
 
-loader = QtUiTools.QUiLoader()
+    # Context menus
+    # noinspection PyTypeChecker
+    menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
+    # noinspection PyTypeChecker
+    menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 
-# Load main window
-file = QtCore.QFile(":/core.ui")
-file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-# noinspection PyTypeChecker
-window: QtWidgets.QMainWindow = loader.load(file, None)
-file.close()
+    # noinspection PyTypeChecker
+    left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
 
-audio = AudioPlayer(window, source, settings, pomodoro_timer)
+    # noinspection PyTypeChecker
+    left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
+    left_toolbar_layout.addWidget(ConnectionWidget(window, app._heartbeat, app))
 
-# Context menus
-# noinspection PyTypeChecker
-menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
-# noinspection PyTypeChecker
-menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
+    # Backlogs table
+    backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
+    backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
+    backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
+    left_layout.addWidget(backlogs_table)
 
-# noinspection PyTypeChecker
-left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
+    # Users table
+    users_table: UserTableView = UserTableView(window, app, source, actions)
+    left_layout.addWidget(users_table)
 
-# noinspection PyTypeChecker
-left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
-left_toolbar_layout.addWidget(ConnectionWidget(window, app._heartbeat, app))
+    # noinspection PyTypeChecker
+    right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
-actions: dict[str, QAction] = {
-    'showAll': QAction("Show All", window),
-    'showTimerOnly': QAction("Show Timer Only", window),
-    'showMainWindow': QAction("Show Main Window", window),
-    'settings': QAction("Settings", window),
-    'quit': QAction("Quit", window),
-}
-actions['showAll'].triggered.connect(hide_timer)
-actions['showAll'].setIcon(QIcon(":/icons/tool-show-all.svg"))
-actions['showTimerOnly'].triggered.connect(show_timer_automatically)
-actions['showTimerOnly'].setIcon(QIcon(":/icons/tool-show-timer-only.svg"))
-actions['showMainWindow'].triggered.connect(window.show)
-actions['quit'].triggered.connect(app.quit)
-actions['quit'].setShortcut('Ctrl+Q')
-actions['settings'].triggered.connect(show_settings_dialog)
+    # Workitems table
+    workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
+    source.on(AfterWorkitemComplete, hide_timer)
+    right_layout.addWidget(workitems_table)
 
-# Backlogs table
-backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
-backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
-backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
-left_layout.addWidget(backlogs_table)
+    progress_widget = ProgressWidget(window, source)
+    right_layout.addWidget(progress_widget)
 
-# Users table
-users_table: UserTableView = UserTableView(window, app, source, actions)
-left_layout.addWidget(users_table)
+    # noinspection PyTypeChecker
+    search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
+    search = SearchBar(window, source, actions, backlogs_table, workitems_table)
+    search_bar.addWidget(search)
 
-# noinspection PyTypeChecker
-right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
+    # noinspection PyTypeChecker
+    root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
+    focus = FocusWidget(window, app, pomodoro_timer, source, settings, actions)
+    root_layout.insertWidget(0, focus)
 
-# Workitems table
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-source.on(AfterWorkitemComplete, hide_timer)
-right_layout.addWidget(workitems_table)
+    # Layouts
+    # noinspection PyTypeChecker
+    main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
+    # noinspection PyTypeChecker
+    left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
 
-progress_widget = ProgressWidget(window, source)
-right_layout.addWidget(progress_widget)
+    # Connect menu actions to the toolbar
+    # TODO -- migrate all those to Actions and remove all actions from .ui file
 
-# noinspection PyTypeChecker
-search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-search = SearchBar(window, source, actions, backlogs_table, workitems_table)
-search_bar.addWidget(search)
+    # noinspection PyTypeChecker
+    import_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionImport")
+    import_action.triggered.connect(lambda: ImportWizard(source, window).show())
 
-# noinspection PyTypeChecker
-root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-focus = FocusWidget(window, app, pomodoro_timer, source, settings, actions)
-root_layout.insertWidget(0, focus)
+    # noinspection PyTypeChecker
+    export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
+    export_action.triggered.connect(lambda: ExportWizard(source, window).show())
 
-# Layouts
-# noinspection PyTypeChecker
-main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
-# noinspection PyTypeChecker
-left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
+    # noinspection PyTypeChecker
+    action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
+    action_backlogs.toggled.connect(toggle_backlogs)
 
-# Settings
-# noinspection PyTypeChecker
-settings_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionSettings")
-settings_action.triggered.connect(show_settings_dialog)
+    # noinspection PyTypeChecker
+    action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
+    action_teams.toggled.connect(toggle_users)
 
-# Connect menu actions to the toolbar
+    # noinspection PyTypeChecker
+    action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
+    action_search.triggered.connect(lambda: search.show())
 
-# noinspection PyTypeChecker
-import_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionImport")
-import_action.triggered.connect(lambda: ImportWizard(source, window).show())
+    # noinspection PyTypeChecker
+    action_about: QtGui.QAction = window.findChild(QtGui.QAction, "actionAbout")
+    action_about.triggered.connect(lambda: AboutWindow(window).show())
 
-# noinspection PyTypeChecker
-export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
-export_action.triggered.connect(lambda: ExportWizard(source, window).show())
+    # Main menu
+    # noinspection PyTypeChecker
+    main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
+    if main_menu is not None:
+        show_main_menu = (settings.get('Application.show_main_menu') == 'True')
+        main_menu.setVisible(show_main_menu)
 
-# noinspection PyTypeChecker
-action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
-action_backlogs.toggled.connect(toggle_backlogs)
+    # Status bar
+    # noinspection PyTypeChecker
+    status: QtWidgets.QStatusBar = window.findChild(QtWidgets.QStatusBar, "statusBar")
+    if status is not None:
+        show_status_bar = (settings.get('Application.show_status_bar') == 'True')
+        status.showMessage('Ready')
+        status.setVisible(show_status_bar)
 
-# noinspection PyTypeChecker
-action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
-action_teams.toggled.connect(toggle_users)
+    # Toolbar
+    # noinspection PyTypeChecker
+    toolbar: QtWidgets.QToolBar = window.findChild(QtWidgets.QToolBar, "toolBar")
+    if toolbar is not None:
+        show_toolbar = (settings.get('Application.show_toolbar') == 'True')
+        toolbar.setVisible(show_toolbar)
 
-# noinspection PyTypeChecker
-action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
-action_search.triggered.connect(lambda: search.show())
+    # Tray icon
+    show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
+    tray = TrayIcon(window, pomodoro_timer, source, actions)
+    tray.setVisible(show_tray_icon)
 
-# noinspection PyTypeChecker
-action_about: QtGui.QAction = window.findChild(QtGui.QAction, "actionAbout")
-action_about.triggered.connect(lambda: AboutWindow(window).show())
+    # Some global variables to support "Next pomodoro" mode
+    # TODO Empty it if it gets deleted or completed
+    continue_workitem: Workitem | None = None
 
-# Main menu
-# noinspection PyTypeChecker
-main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
-if main_menu is not None:
-    show_main_menu = (settings.get('Application.show_main_menu') == 'True')
-    main_menu.setVisible(show_main_menu)
+    # Left toolbar
+    # noinspection PyTypeChecker
+    left_toolbar: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left_toolbar")
+    show_left_toolbar = (settings.get('Application.show_left_toolbar') == 'True')
+    left_toolbar.setVisible(show_left_toolbar)
 
-# Status bar
-# noinspection PyTypeChecker
-status: QtWidgets.QStatusBar = window.findChild(QtWidgets.QStatusBar, "statusBar")
-if status is not None:
-    show_status_bar = (settings.get('Application.show_status_bar') == 'True')
-    status.showMessage('Ready')
-    status.setVisible(show_status_bar)
+    # noinspection PyTypeChecker
+    tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
+    tool_backlogs.setDefaultAction(action_backlogs)
 
-# Toolbar
-# noinspection PyTypeChecker
-toolbar: QtWidgets.QToolBar = window.findChild(QtWidgets.QToolBar, "toolBar")
-if toolbar is not None:
-    show_toolbar = (settings.get('Application.show_toolbar') == 'True')
-    toolbar.setVisible(show_toolbar)
+    # noinspection PyTypeChecker
+    tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
+    tool_teams.setDefaultAction(action_teams)
+    action_teams.setEnabled(settings.is_team_supported())
+    tool_teams.setVisible(settings.is_team_supported())
 
-# Tray icon
-show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-tray = TrayIcon(window, pomodoro_timer, source, actions)
-tray.setVisible(show_tray_icon)
+    # noinspection PyTypeChecker
+    tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
+    tool_settings.clicked.connect(lambda: menu_file.exec(
+        tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
+    ))
 
-# Some global variables to support "Next pomodoro" mode
-# TODO Empty it if it gets deleted or completed
-continue_workitem: Workitem | None = None
+    # Restore window config from settings
+    users_were_visible = (settings.get('Application.users_visible') == 'True')
+    backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
+    action_teams.setChecked(settings.is_team_supported() and users_were_visible)
+    action_backlogs.setChecked(backlogs_were_visible)
+    update_tables_visibility()
 
-# Left toolbar
-# noinspection PyTypeChecker
-left_toolbar: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "left_toolbar")
-show_left_toolbar = (settings.get('Application.show_left_toolbar') == 'True')
-left_toolbar.setVisible(show_left_toolbar)
+    event_filter = ResizeEventFilter(window, main_layout, settings)
+    window.installEventFilter(event_filter)
+    window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
-# noinspection PyTypeChecker
-tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
-tool_backlogs.setDefaultAction(action_backlogs)
+    # Bind action domains to widget instances
+    actions.bind('application', app)
+    actions.bind('backlogs_table', backlogs_table)
+    actions.bind('users_table', users_table)
+    actions.bind('workitems_table', workitems_table)
+    actions.bind('focus', focus)
+    actions.bind('window', MainWindow())
 
-# noinspection PyTypeChecker
-tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
-tool_teams.setDefaultAction(action_teams)
-action_teams.setEnabled(settings.is_team_supported())
-tool_teams.setVisible(settings.is_team_supported())
+    window.show()
 
-# noinspection PyTypeChecker
-tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
-tool_settings.clicked.connect(lambda: menu_file.exec(
-    tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
-))
+    try:
+        source.start()
+    except Exception as ex:
+        app.on_exception(type(ex), ex, ex.__traceback__)
 
-# Restore window config from settings
-users_were_visible = (settings.get('Application.users_visible') == 'True')
-backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
-action_teams.setChecked(settings.is_team_supported() and users_were_visible)
-action_backlogs.setChecked(backlogs_were_visible)
-update_tables_visibility()
-
-event_filter = ResizeEventFilter(window, main_layout, settings)
-window.installEventFilter(event_filter)
-window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
-
-window.show()
-
-try:
-    source.start()
-except Exception as ex:
-    app.on_exception(type(ex), ex, ex.__traceback__)
-
-sys.exit(app.exec())
+    sys.exit(app.exec())

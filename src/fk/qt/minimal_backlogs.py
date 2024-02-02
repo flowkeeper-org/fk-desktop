@@ -15,9 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from fk.qt.backlog_tableview import BacklogTableView
-from fk.qt.minimal_common import source, window, app, root, main_loop
+from fk.qt.minimal_common import source, window, app, root, main_loop, actions
 
-backlogs_table: BacklogTableView = BacklogTableView(window, app, source, dict())
+BacklogTableView.define_actions(actions)
+backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
+actions.bind('backlogs_table', backlogs_table)
 window.setCentralWidget(backlogs_table)
 
 main_loop(lambda: backlogs_table.upstream_selected(root.get_current_user()))

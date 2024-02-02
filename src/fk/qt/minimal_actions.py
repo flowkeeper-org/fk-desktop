@@ -14,15 +14,25 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.qt.minimal_common import source, window, app, root, main_loop, actions
+from PySide6.QtWidgets import QMenuBar
+
+from fk.desktop.application import Application
+from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.focus_widget import FocusWidget
+from fk.qt.minimal_common import window, main_loop, actions, app
+from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
 
-window.resize(600, 400)
+Application.define_actions(actions)
+BacklogTableView.define_actions(actions)
+UserTableView.define_actions(actions)
 WorkitemTableView.define_actions(actions)
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-actions.bind('workitems_table', workitems_table)
-window.setCentralWidget(workitems_table)
+FocusWidget.define_actions(actions)
 
-main_loop(lambda: workitems_table.upstream_selected(
-    list(root.get_current_user().values())[0]
-))
+actions.bind('application', app)
+
+menu = QMenuBar(window)
+menu.addActions(actions.all())
+window.setCentralWidget(menu)
+
+main_loop()

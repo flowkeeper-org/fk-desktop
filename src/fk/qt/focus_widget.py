@@ -13,10 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Callable
 
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QIcon, QFont, QAction, QPainter, QPixmap, Qt, QColor, QGradient
+from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
@@ -27,6 +26,7 @@ from fk.core.pomodoro_strategies import CompletePomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterFontsChanged
+from fk.qt.actions import Actions
 from fk.qt.timer_widget import render_for_widget, TimerWidget
 
 
@@ -37,7 +37,7 @@ class FocusWidget(QWidget):
     _header_text: QLabel
     _header_subtext: QLabel
     _timer_display: TimerWidget
-    _actions: dict[str, QAction]
+    _actions: Actions
     _buttons: dict[str, QToolButton]
     _application: Application
     _pixmap: QPixmap | None
@@ -48,7 +48,7 @@ class FocusWidget(QWidget):
                  timer: PomodoroTimer,
                  source: AbstractEventSource,
                  settings: AbstractSettings,
-                 actions: dict[str, QAction]):
+                 actions: Actions):
         super().__init__(parent)
         self._source = source
         self._settings = settings
@@ -116,53 +116,20 @@ class FocusWidget(QWidget):
         inner_timer_layout.setObjectName("inner_timer_layout")
         inner_timer_layout.setContentsMargins(0, 0, 0, 0)
         inner_timer_layout.setSpacing(0)
-        inner_timer_layout.addWidget(
-            self._create_button("toolVoid",
-                                "actionVoid",
-                                "Void Pomodoro",
-                                "Ctrl+V",
-                                self.void_pomodoro,
-                                ":/icons/tool-void.svg",
-                                parent=outer_timer_widget))
-        layout.addWidget(
-            self._create_button("toolNext",
-                                "startItem",
-                                "",
-                                "",
-                                None,
-                                ":/icons/tool-next.svg"))
-        layout.addWidget(
-            self._create_button("toolComplete",
-                                "completeItem",
-                                "",
-                                "",
-                                None,
-                                ":/icons/tool-complete.svg"))
-        layout.addWidget(
-            self._create_button("toolFilter",
-                                "",
-                                "",
-                                "",
-                                self._display_filter,
-                                ":/icons/tool-filter.svg"))
-        layout.addWidget(
-            self._create_button("toolShowAll",
-                                "showAll",
-                                "",
-                                "",
-                                None,
-                                ":/icons/tool-show-all.svg"))
-        layout.addWidget(
-            self._create_button("toolShowTimerOnly",
-                                "showTimerOnly",
-                                "",
-                                "",
-                                None,
-                                ":/icons/tool-show-timer-only.svg"))
 
-        self._buttons['toolNext'].hide()
-        self._buttons['toolComplete'].hide()
-        self._buttons['toolShowAll'].hide()
+        inner_timer_layout.addWidget(self._create_button("focus.voidPomodoro"))
+        layout.addWidget(self._create_button("focus.nextPomodoro"))
+        layout.addWidget(self._create_button("focus.completeItem"))
+        layout.addWidget(self._create_button("focus.showFilter"))
+
+        if "window.showAll" in actions:
+            layout.addWidget(self._create_button("window.showAll"))
+            self._buttons['window.showAll'].hide()
+        if "window.showFocus" in actions:
+            layout.addWidget(self._create_button("window.showFocus"))
+
+        self._buttons['focus.nextPomodoro'].hide()
+        self._buttons['focus.completeItem'].hide()
 
         self._timer_display = render_for_widget(
             parent.palette(),
@@ -179,37 +146,33 @@ class FocusWidget(QWidget):
         self.eye_candy()
         settings.on(AfterSettingChanged, self._on_setting_changed)
 
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', ":/icons/tool-void.svg", FocusWidget._void_pomodoro)
+        actions.add('focus.nextPomodoro', "Next Pomodoro", None, ":/icons/tool-next.svg", FocusWidget._next_pomodoro)
+        actions.add('focus.completeItem', "Complete Item", None, ":/icons/tool-complete.svg", FocusWidget._complete_item)
+        actions.add('focus.showFilter', "Show Filter", None, ":/icons/tool-filter.svg", FocusWidget._display_filter)
+
     def _create_button(self,
                        name: str,
-                       action: str,
-                       txt: str,
-                       shortcut: str,
-                       callback: Callable | None,
-                       icon: str,
                        parent: QWidget = None):
+        action = self._actions[name]
         btn = QToolButton(self if parent is None else parent)
         btn.setObjectName(name)
-        btn.setIcon(QIcon(icon))
+        btn.setIcon(QIcon(action.icon()))
         btn.setIconSize(QSize(32, 32))
-        if action:
-            if action not in self._actions:
-                a = QAction(txt, self)
-                a.triggered.connect(callback)
-                a.setShortcut(shortcut)
-                a.setIcon(QIcon(icon))
-                self._actions[action] = a
-            btn.setDefaultAction(self._actions[action])
-        else:
-            btn.clicked.connect(callback)
+        btn.setDefaultAction(action)
         self._buttons[name] = btn
         return btn
 
     def _display_filter(self):
+        if 'workitems_table.showCompleted' not in self._actions:
+            raise Exception('Show Completed action is undefined')
         menu_filter = QMenu("Filter", self.parent())
-        menu_filter.addAction(self._actions['showCompleted'])
+        menu_filter.addAction(self._actions['workitems_table.showCompleted'])
         menu_filter.exec(
             self.parent().mapToGlobal(
-                self._buttons['toolFilter'].geometry().center()))
+                self._buttons['focus.showFilter'].geometry().center()))
 
     def update_header(self, **kwargs) -> None:
         running_workitem: Workitem = self._timer.get_running_workitem()
@@ -221,7 +184,7 @@ class FocusWidget(QWidget):
             else:
                 self._header_text.setText('Idle')
                 self._header_subtext.setText("It's time for the next Pomodoro.")
-            self._buttons['toolVoid'].hide()
+            self._buttons['focus.voidPomodoro'].hide()
             self._timer_display.set_values(0, None, "")
             self._timer_display.hide()
         elif self._timer.is_working() or self._timer.is_resting():
@@ -232,9 +195,9 @@ class FocusWidget(QWidget):
             txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
             self._header_text.setText(f'{txt} left')
             self._header_subtext.setText(running_workitem.get_name())
-            self._buttons['toolVoid'].show()
-            self._buttons['toolNext'].hide()
-            self._buttons['toolComplete'].hide()
+            self._buttons['focus.voidPomodoro'].show()
+            self._buttons['focus.nextPomodoro'].hide()
+            self._buttons['focus.completeItem'].hide()
             self._timer_display.set_values(
                 remaining_duration / self._timer.get_planned_duration(),
                 None,
@@ -279,7 +242,7 @@ class FocusWidget(QWidget):
         if name.startswith('Application.eyecandy'):
             self.eye_candy()
 
-    def void_pomodoro(self) -> None:
+    def _void_pomodoro(self) -> None:
         for backlog in self._source.backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
@@ -290,3 +253,15 @@ class FocusWidget(QWidget):
                                          QMessageBox.StandardButton.Cancel
                                          ) == QMessageBox.StandardButton.Ok:
                     self._source.execute(CompletePomodoroStrategy, [workitem.get_uid(), "canceled"])
+
+    def _next_pomodoro(self) -> None:
+        QMessageBox().warning(self.parent(),
+                              "Not implemented",
+                              f"Starting next pomodoro in the current item is not implemented",
+                              QMessageBox.StandardButton.Ok)
+
+    def _complete_item(self) -> None:
+        QMessageBox().warning(self.parent(),
+                              "Not implemented",
+                              f"Completing current item is not implemented",
+                              QMessageBox.StandardButton.Ok)

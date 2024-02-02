@@ -15,16 +15,17 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from typing import Callable, TypeVar, Generic
+from typing import TypeVar, Generic
 
 from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
-from PySide6.QtGui import QAction, QPainter, QStandardItemModel, QIcon
+from PySide6.QtGui import QPainter, QStandardItemModel
 from PySide6.QtWidgets import QTableView, QWidget
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
+from fk.qt.actions import Actions
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
@@ -37,7 +38,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     _source: AbstractEventSource
     _is_data_loaded: bool
     _is_upstream_item_selected: bool
-    _actions: dict[str, QAction]
+    _actions: Actions
     _placeholder_loading: str
     _placeholder_upstream: str
     _placeholder_empty: str
@@ -49,7 +50,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                  source: AbstractEventSource,
                  model: QStandardItemModel,
                  name: str,
-                 actions: dict[str, QAction],
+                 actions: Actions,
                  placeholder_loading: str,
                  placeholder_upstream: str,
                  placeholder_empty: str,
@@ -82,11 +83,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(self._row_height)
 
-        my_actions = self.create_actions()
-        for a in my_actions:
-            actions[a] = my_actions[a]
-            parent.addAction(my_actions[a])
-
         self._on_source_changed("", source)
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
@@ -100,27 +96,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._is_data_loaded = True
         self.repaint()
 
-    def _create_action(self,
-                       text: str,
-                       shortcut: str,
-                       icon: str | None,
-                       member: Callable,
-                       is_toggle: bool = False,
-                       is_checked: bool = False) -> QAction:
-        res: QAction = QAction(text, self)
-        res.setShortcut(shortcut)
-        if icon is not None:
-            res.setIcon(QIcon(icon))
-        if is_toggle:
-            res.setCheckable(True)
-            res.setChecked(is_checked)
-            res.toggled.connect(member)
-        else:
-            res.triggered.connect(member)
-        return res
-
-    @abstractmethod
-    def create_actions(self) -> dict[str, QAction]:
+    @staticmethod
+    def define_actions(actions: Actions):
         pass
 
     def upstream_selected(self, upstream: TUpstream | None) -> None:

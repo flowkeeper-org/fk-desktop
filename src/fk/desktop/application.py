@@ -14,14 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import random
 import sys
 import traceback
 import urllib
 import webbrowser
 
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontMetrics
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QFont, QFontMetrics, QGradient
+from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -30,6 +31,8 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterSettingChanged, SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
+from fk.desktop.settings import SettingsDialog
+from fk.qt.actions import Actions
 from fk.qt.heartbeat import Heartbeat
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
@@ -214,3 +217,46 @@ class Application(QApplication, AbstractEventEmitter):
         # TODO: Subscribe the sources to the settings they use
         # TODO: Reload the app when the source changes
         # TODO: Recreate the source
+
+    def show_settings_dialog(self):
+        SettingsDialog(self._settings, {
+            'FileEventSource.repair': self.repair_file_event_source,
+            'Application.eyecandy_gradient_generate': self.generate_gradient,
+        }).show()
+
+    def repair_file_event_source(self, _):
+        if QMessageBox().warning(None,
+                                 "Confirmation",
+                                 f"Are you sure you want to repair the data source? "
+                                 f"This action will\n"
+                                 f"1. Remove duplicates,\n"
+                                 f"2. Create missing data entities like users and backlogs, on first reference,\n"
+                                 f"3. Renumber / reindex data,\n"
+                                 f"4. Remove any events, which fail after 1 -- 3,\n"
+                                 f"5. Create a backup file and overwrite the original data source one,\n"
+                                 f"6. Display a detailed log of what it did.\n"
+                                 f"\n"
+                                 f"If there are no errors, then this action won't create or overwrite any files.",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel) \
+                == QMessageBox.StandardButton.Ok:
+            cast: FileEventSource = self._source
+            log = cast.repair()
+            QInputDialog.getMultiLineText(None,
+                                          "Repair completed",
+                                          "Please save this log for future reference. "
+                                          "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
+                                          "Flowkeeper restart is required to reload the changes.",
+                                          "\n".join(log))
+
+    def generate_gradient(self, _):
+        chosen = random.choice(list(QGradient.Preset))
+        self._settings.set('Application.eyecandy_gradient', chosen.name)
+
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
+        actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
+
+    def quit_local(self):
+        Application.quit()

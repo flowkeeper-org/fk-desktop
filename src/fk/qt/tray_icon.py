@@ -23,6 +23,7 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
+from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget, render_for_pixmap
 
 
@@ -30,7 +31,7 @@ class TrayIcon(QSystemTrayIcon):
     _about_window: QMainWindow
     _default_icon: QIcon
     _next_icon: QIcon
-    _actions: dict[str, QAction]
+    _actions: Actions
     _source: AbstractEventSource
     _timer_widget: TimerWidget | None
     _timer: PomodoroTimer
@@ -42,7 +43,7 @@ class TrayIcon(QSystemTrayIcon):
                  parent: QWidget,
                  timer: PomodoroTimer,
                  source: AbstractEventSource,
-                 actions: dict[str, QAction]):
+                 actions: Actions):
         super().__init__(parent)
 
         self._default_icon = QIcon(":/icons/logo.png")
@@ -62,15 +63,15 @@ class TrayIcon(QSystemTrayIcon):
         self.activated.connect(
             lambda reason: (self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None))
         menu = QMenu()
-        if 'actionVoid' in actions:
-            menu.addAction(actions['actionVoid'])
+        if 'focus.voidPomodoro' in actions:
+            menu.addAction(actions['focus.voidPomodoro'])
         menu.addSeparator()
-        if 'showMainWindow' in actions:
-            menu.addAction(actions['showMainWindow'])
-        if 'settings' in actions:
-            menu.addAction(actions['settings'])
-        if 'quit' in actions:
-            menu.addAction(actions['quit'])
+        if 'window.showMainWindow' in actions:
+            menu.addAction(actions['window.showMainWindow'])
+        if 'application.settings' in actions:
+            menu.addAction(actions['application.settings'])
+        if 'application.quit' in actions:
+            menu.addAction(actions['application.quit'])
         self.setContextMenu(menu)
 
         self._update()

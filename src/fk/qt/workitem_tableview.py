@@ -25,8 +25,9 @@ from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
-from fk.desktop.application import AfterSourceChanged, Application
+from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView
+from fk.qt.actions import Actions
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 
@@ -36,7 +37,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                  parent: QWidget,
                  application: Application,
                  source: AbstractEventSource,
-                 actions: dict[str, QAction]):
+                 actions: Actions):
         super().__init__(parent,
                          source,
                          WorkitemModel(parent, source),
@@ -48,7 +49,8 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        actions['showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
+        # TODO: Check!
+        self._actions['workitems_table.showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
         #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
 
@@ -59,36 +61,35 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on(SourceMessagesProcessed, self._on_messages)
 
-    def _init_menu(self, actions: dict[str, QAction]):
+    def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
         menu.addActions([
-            actions['newItem'],
-            actions['renameItem'],
-            actions['deleteItem'],
-            actions['startItem'],
-            actions['completeItem'],
-            actions['addPomodoro'],
-            actions['removePomodoro'],
-            actions['showCompleted'],
+            actions['workitems_table.newItem'],
+            actions['workitems_table.renameItem'],
+            actions['workitems_table.deleteItem'],
+            actions['workitems_table.startItem'],
+            actions['workitems_table.completeItem'],
+            actions['workitems_table.addPomodoro'],
+            actions['workitems_table.removePomodoro'],
+            actions['workitems_table.showCompleted'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
 
-    def create_actions(self) -> dict[str, QAction]:
-        return {
-            'newItem': self._create_action("New Item", 'Ins', None, self.create_workitem),
-            'renameItem': self._create_action("Rename Item", 'F2', None, self.rename_selected_workitem),
-            'deleteItem': self._create_action("Delete Item", 'Del', None, self.delete_selected_workitem),
-            'startItem': self._create_action("Start Item", 'Ctrl+S', ":/icons/tool-next.svg", self.start_selected_workitem),
-            'completeItem': self._create_action("Complete Item", 'Ctrl+P', ":/icons/tool-complete.svg", self.complete_selected_workitem),
-            'addPomodoro': self._create_action("Add Pomodoro", 'Ctrl++', None, self.add_pomodoro),
-            'removePomodoro': self._create_action("Remove Pomodoro", 'Ctrl+-', None, self.remove_pomodoro),
-            'showCompleted': self._create_action("Show completed workitems", '', None, self._toggle_show_completed_workitems, True, True),
-        }
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
+        actions.add('workitems_table.renameItem', "Rename Item", 'F2', None, WorkitemTableView.rename_selected_workitem)
+        actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
+        actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', ':/icons/tool-next.svg', WorkitemTableView.start_selected_workitem)
+        actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', ':/icons/tool-complete.svg', WorkitemTableView.complete_selected_workitem)
+        actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', None, WorkitemTableView.add_pomodoro)
+        actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', None, WorkitemTableView.remove_pomodoro)
+        actions.add('workitems_table.showCompleted', "Show Completed Items", '', None, WorkitemTableView._toggle_show_completed_workitems, True, True)
 
     def upstream_selected(self, backlog: Backlog) -> None:
         super().upstream_selected(backlog)
-        self._actions['newItem'].setEnabled(backlog is not None)
+        self._actions['workitems_table.newItem'].setEnabled(backlog is not None)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
@@ -96,12 +97,12 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def update_actions(self, selected: Workitem) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
         is_workitem_selected = selected is not None
-        self._actions['deleteItem'].setEnabled(is_workitem_selected)
-        self._actions['renameItem'].setEnabled(is_workitem_selected)
-        self._actions['startItem'].setEnabled(is_workitem_selected)
-        self._actions['completeItem'].setEnabled(is_workitem_selected)
-        self._actions['addPomodoro'].setEnabled(is_workitem_selected)
-        self._actions['removePomodoro'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.renameItem'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.startItem'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.completeItem'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_selected)
+        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_selected)
         # TODO + based on new_workitem.is_sealed() and if there are pomodoros available
 
     # Actions

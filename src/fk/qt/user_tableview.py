@@ -22,6 +22,7 @@ from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.desktop.application import AfterSourceChanged, Application
 from fk.qt.abstract_tableview import AbstractTableView
+from fk.qt.actions import Actions
 from fk.qt.user_model import UserModel
 
 
@@ -30,7 +31,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
                  parent: QWidget,
                  application: Application,
                  source: AbstractEventSource,
-                 actions: dict[str, QAction]):
+                 actions: Actions):
         super().__init__(parent,
                          source,
                          UserModel(parent, source),
@@ -52,8 +53,9 @@ class UserTableView(AbstractTableView[Tenant, User]):
     def update_actions(self, selected: User) -> None:
         pass
 
-    def create_actions(self) -> dict[str, QAction]:
-        return dict()
+    @staticmethod
+    def define_actions(actions: Actions):
+        pass
 
     def upstream_selected(self, upstream: Tenant) -> None:
         super().upstream_selected(upstream)

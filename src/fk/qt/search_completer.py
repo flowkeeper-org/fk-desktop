@@ -16,13 +16,14 @@
 
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.abstract_tableview import AbstractTableView
+from fk.qt.actions import Actions
 
 
 class SearchBar(QtWidgets.QLineEdit):
@@ -30,12 +31,12 @@ class SearchBar(QtWidgets.QLineEdit):
     _backlogs_table: AbstractTableView[User, Backlog]
     _workitems_table: AbstractTableView[Backlog, Workitem]
     _show_completed: bool
-    _actions: dict[str, QAction]
+    _actions: Actions
 
     def __init__(self,
                  parent: QtWidgets.QWidget,
                  source: AbstractEventSource,
-                 actions: dict[str, QAction],
+                 actions: Actions,
                  backlogs_table: AbstractTableView[User, Backlog],
                  workitems_table: AbstractTableView[Backlog, Workitem]):
         super().__init__(parent)
@@ -48,7 +49,7 @@ class SearchBar(QtWidgets.QLineEdit):
         self.setPlaceholderText('Search')
         self.installEventFilter(self)
         self._actions = actions
-        actions['showCompleted'].toggled.connect(self.show_completed)
+        actions['workitems_table.showCompleted'].toggled.connect(self.show_completed)
 
     def _select(self, index: QModelIndex):
         workitem: Workitem = index.data(500)

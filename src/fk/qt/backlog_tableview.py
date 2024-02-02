@@ -17,7 +17,6 @@
 import datetime
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
@@ -26,8 +25,9 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
-from fk.desktop.application import Application, AfterSourceChanged
+from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
+from fk.qt.actions import Actions
 from fk.qt.backlog_model import BacklogModel
 
 
@@ -36,7 +36,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                  parent: QWidget,
                  application: Application,
                  source: AbstractEventSource,
-                 actions: dict[str, QAction]):
+                 actions: Actions):
         super().__init__(parent,
                          source,
                          BacklogModel(parent, source),
@@ -60,34 +60,33 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
 
-    def _init_menu(self, actions: dict[str, QAction]):
+    def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
         menu.addActions([
-            actions['newBacklog'],
-            actions['renameBacklog'],
-            actions['deleteBacklog'],
+            actions['backlogs_table.newBacklog'],
+            actions['backlogs_table.renameBacklog'],
+            actions['backlogs_table.deleteBacklog'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
 
-    def create_actions(self) -> dict[str, QAction]:
-        return {
-            'newBacklog': self._create_action("New Backlog", 'Ctrl+N', None, self.create_backlog),
-            'renameBacklog': self._create_action("Rename Backlog", 'Ctrl+R', None, self.rename_selected_backlog),
-            'deleteBacklog': self._create_action("Delete Backlog", 'F8', None, self.delete_selected_backlog),
-        }
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', None, BacklogTableView.create_backlog)
+        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', None, BacklogTableView.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, BacklogTableView.delete_selected_backlog)
 
     def upstream_selected(self, user: User) -> None:
         super().upstream_selected(user)
-        self._actions['newBacklog'].setEnabled(user is not None)
+        self._actions['backlogs_table.newBacklog'].setEnabled(user is not None)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def update_actions(self, selected: Backlog) -> None:
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
-        self._actions['deleteBacklog'].setEnabled(is_backlog_selected)
-        self._actions['renameBacklog'].setEnabled(is_backlog_selected)
+        self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected)
+        self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected)
 
     # Actions
 
@@ -105,7 +104,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # if ok:
         #     self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
 
-    def _on_new_backlog(self, backlog: Backlog, carry: any, **kwargs):
+    def _on_new_backlog(self, backlog: Backlog, carry: any = None, **kwargs):
         if carry == 'edit':
             index: QModelIndex = self.select(backlog)
             self.edit(index)

@@ -25,6 +25,7 @@ from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.core.timer import PomodoroTimer
 from fk.desktop.application import Application
+from fk.qt.actions import Actions
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
@@ -47,7 +48,10 @@ elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
 else:
     raise Exception(f"Source type {source_type} not supported")
 
-window: QMainWindow = QMainWindow()
+window = QMainWindow()
+actions = Actions(window)
+Application.define_actions(actions)
+actions.bind('application', app)
 
 
 def main_loop(callback = None):
