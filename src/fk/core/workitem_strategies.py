@@ -185,7 +185,7 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
         self._emit(events.AfterWorkitemRename, params)
 
 
-# CompleteWorkitem("Wake up", "canceled")
+# CompleteWorkitem("123-456-789", "canceled")
 @strategy
 class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
