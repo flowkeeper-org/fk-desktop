@@ -31,7 +31,10 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterSettingChanged, SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
+from fk.desktop.export_wizard import ExportWizard
+from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
+from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.heartbeat import Heartbeat
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
@@ -257,6 +260,20 @@ class Application(QApplication, AbstractEventEmitter):
     def define_actions(actions: Actions):
         actions.add('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
+        actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
+        actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
+        actions.add('application.about', "About", '', None, Application.show_about)
 
     def quit_local(self):
         Application.quit()
+
+    def show_import_wizard(self):
+        ImportWizard(self._source,
+                     Application.activeWindow()).show()
+
+    def show_export_wizard(self):
+        ExportWizard(self._source,
+                     Application.activeWindow()).show()
+
+    def show_about(self):
+        AboutWindow(Application.activeWindow()).show()

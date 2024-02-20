@@ -16,16 +16,13 @@
 import sys
 import threading
 
-from PySide6 import QtCore, QtWidgets, QtUiTools, QtGui
+from PySide6 import QtCore, QtWidgets, QtUiTools
 
 from fk.core import events
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
-from fk.desktop.export_wizard import ExportWizard
-from fk.desktop.import_wizard import ImportWizard
-from fk.qt.about_window import AboutWindow
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -84,25 +81,12 @@ def hide_timer_automatically() -> None:
         window.show()
 
 
-def toggle_backlogs(enabled):
-    settings.set('Application.backlogs_visible', str(enabled))
-    update_tables_visibility()
-
-
-def toggle_users(enabled):
-    settings.set('Application.users_visible', str(enabled))
-    update_tables_visibility()
-
-
 def update_tables_visibility() -> None:
     users_visible = (settings.get('Application.users_visible') == 'True')
-    #print(f'users_table.setVisible({users_visible})')
     users_table.setVisible(users_visible)
     backlogs_visible = (settings.get('Application.backlogs_visible') == 'True')
-    #print(f'backlogs_table.setVisible({backlogs_visible})')
     backlogs_table.setVisible(backlogs_visible)
     left_table_layout.setVisible(users_visible or backlogs_visible)
-    #print(f'left_table_layout.setVisible({users_visible or backlogs_visible})')
 
 
 def on_messages(event) -> None:
@@ -147,11 +131,25 @@ class MainWindow:
     def show_window(self):
         window.show()
 
+    def show_search(self):
+        search.show()
+
+    def toggle_backlogs(self, enabled):
+        settings.set('Application.backlogs_visible', str(enabled))
+        update_tables_visibility()
+
+    def toggle_users(self, enabled):
+        settings.set('Application.users_visible', str(enabled))
+        update_tables_visibility()
+
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
         actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
         actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
+        actions.add('window.showBacklogs', "Backlogs", 'Ctrl+B', ':/icons/tool-backlogs.svg', MainWindow.toggle_backlogs)
+        actions.add('window.showUsers', "Team", 'Ctrl+T', ':/icons/tool-teams.svg', MainWindow.toggle_users)
+        actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
 
 if __name__ == "__main__":
@@ -196,8 +194,15 @@ if __name__ == "__main__":
     audio = AudioPlayer(window, source, settings, pomodoro_timer)
 
     # Context menus
-    # noinspection PyTypeChecker
-    menu_file: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuFile")
+    menu_file = QtWidgets.QMenu("File", window)
+    menu_file.addAction(actions['application.settings'])
+    menu_file.addAction(actions['application.import'])
+    menu_file.addAction(actions['application.export'])
+    menu_file.addSeparator()
+    menu_file.addAction(actions['application.about'])
+    menu_file.addSeparator()
+    menu_file.addAction(actions['application.quit'])
+
     # noinspection PyTypeChecker
     menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 
@@ -249,28 +254,8 @@ if __name__ == "__main__":
     # TODO -- migrate all those to Actions and remove all actions from .ui file
 
     # noinspection PyTypeChecker
-    import_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionImport")
-    import_action.triggered.connect(lambda: ImportWizard(source, window).show())
-
-    # noinspection PyTypeChecker
-    export_action: QtGui.QAction = window.findChild(QtGui.QAction, "actionExport")
-    export_action.triggered.connect(lambda: ExportWizard(source, window).show())
-
-    # noinspection PyTypeChecker
-    action_backlogs: QtGui.QAction = window.findChild(QtGui.QAction, "actionBacklogs")
-    action_backlogs.toggled.connect(toggle_backlogs)
-
-    # noinspection PyTypeChecker
-    action_teams: QtGui.QAction = window.findChild(QtGui.QAction, "actionTeams")
-    action_teams.toggled.connect(toggle_users)
-
-    # noinspection PyTypeChecker
-    action_search: QtGui.QAction = window.findChild(QtGui.QAction, "actionSearch")
-    action_search.triggered.connect(lambda: search.show())
-
-    # noinspection PyTypeChecker
-    action_about: QtGui.QAction = window.findChild(QtGui.QAction, "actionAbout")
-    action_about.triggered.connect(lambda: AboutWindow(window).show())
+    action_backlogs = actions['window.showBacklogs']
+    action_teams = actions['window.showUsers']
 
     # Main menu
     # noinspection PyTypeChecker

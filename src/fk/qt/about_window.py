@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow
 class AboutWindow(QObject):
     _about_window: QMainWindow
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget | None):
         super().__init__(parent)
         file = QFile(":/about.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
