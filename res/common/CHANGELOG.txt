@@ -1,3 +1,20 @@
+### v0.2.0 (20 February 2024)
+- Support for gradient timer header background.
+- Better resizing for the header background images.
+- Better error handling with "Submit an Issue" option.
+- Placeholders for empty tables.
+- Asynchronous event sources to support "Loading..." mode.
+- Backlog progress bar is now updated automatically on pomodoro actions.
+- Window configuration is now persisted.
+- Import errors can be now ignored.
+- Server connection state in the window title + icon.
+- Websocket heartbeat to keep connection alive.
+- New settings for sounds volume.
+- [Technical] Updated documentation.
+- [Technical] Major UI code refactoring, should make the app easier to maintain.
+- [Technical] Mini-apps to test UI components independently.
+- [Technical] Moved Actions from .ui file to the code.
+
 ### v0.1.3 (25 December 2023)
 - Multiple bugfixes.
 - Configurable fonts and timer header background.
