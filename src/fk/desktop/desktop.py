@@ -147,9 +147,25 @@ class MainWindow:
         actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
         actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
         actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
-        actions.add('window.showBacklogs', "Backlogs", 'Ctrl+B', ':/icons/tool-backlogs.svg', MainWindow.toggle_backlogs)
-        actions.add('window.showUsers', "Team", 'Ctrl+T', ':/icons/tool-teams.svg', MainWindow.toggle_users)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+
+        backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
+        actions.add('window.showBacklogs',
+                    "Backlogs",
+                    'Ctrl+B',
+                    ':/icons/tool-backlogs.svg',
+                    MainWindow.toggle_backlogs,
+                    True,
+                    backlogs_were_visible)
+
+        users_were_visible = (settings.get('Application.users_visible') == 'True')
+        actions.add('window.showUsers',
+                    "Team",
+                    'Ctrl+T',
+                    ':/icons/tool-teams.svg',
+                    MainWindow.toggle_users,
+                    True,
+                    settings.is_team_supported() and users_were_visible)
 
 
 if __name__ == "__main__":
@@ -311,10 +327,6 @@ if __name__ == "__main__":
     ))
 
     # Restore window config from settings
-    users_were_visible = (settings.get('Application.users_visible') == 'True')
-    backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
-    action_teams.setChecked(settings.is_team_supported() and users_were_visible)
-    action_backlogs.setChecked(backlogs_were_visible)
     update_tables_visibility()
 
     event_filter = ResizeEventFilter(window, main_layout, settings)

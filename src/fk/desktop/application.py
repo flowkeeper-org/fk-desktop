@@ -174,7 +174,7 @@ class Application(QApplication, AbstractEventEmitter):
         return h
 
     def restart_warning(self) -> None:
-        QMessageBox().warning(self,
+        QMessageBox().warning(self.activeWindow(),
                               "Restart required",
                               f"Please restart Flowkeeper to apply new settings",
                               QMessageBox.StandardButton.Ok)
@@ -182,7 +182,7 @@ class Application(QApplication, AbstractEventEmitter):
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
         print("Exception", to_log)
-        if (QMessageBox().critical(None,
+        if (QMessageBox().critical(self.activeWindow(),
                                    "Unexpected error",
                                    f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
                                    QMessageBox.StandardButton.Ok,
@@ -228,7 +228,7 @@ class Application(QApplication, AbstractEventEmitter):
         }).show()
 
     def repair_file_event_source(self, _):
-        if QMessageBox().warning(None,
+        if QMessageBox().warning(self.activeWindow(),
                                  "Confirmation",
                                  f"Are you sure you want to repair the data source? "
                                  f"This action will\n"
@@ -269,11 +269,11 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_import_wizard(self):
         ImportWizard(self._source,
-                     Application.activeWindow()).show()
+                     self.activeWindow()).show()
 
     def show_export_wizard(self):
         ExportWizard(self._source,
-                     Application.activeWindow()).show()
+                     self.activeWindow()).show()
 
     def show_about(self):
-        AboutWindow(Application.activeWindow()).show()
+        AboutWindow(self.activeWindow()).show()
