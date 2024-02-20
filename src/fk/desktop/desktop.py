@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     audio = AudioPlayer(window, source, settings, pomodoro_timer)
 
-    # Context menus
+    # File menu
     menu_file = QtWidgets.QMenu("File", window)
     menu_file.addAction(actions['application.settings'])
     menu_file.addAction(actions['application.import'])
@@ -218,9 +218,6 @@ if __name__ == "__main__":
     menu_file.addAction(actions['application.about'])
     menu_file.addSeparator()
     menu_file.addAction(actions['application.quit'])
-
-    # noinspection PyTypeChecker
-    menu_workitem: QtWidgets.QMenu = window.findChild(QtWidgets.QMenu, "menuEdit")
 
     # noinspection PyTypeChecker
     left_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "leftTableLayoutInternal")
