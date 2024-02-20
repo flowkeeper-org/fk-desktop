@@ -15,15 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
-from typing import Iterable
 
-from fk.core.abstract_data_item import AbstractDataItem, generate_uid
+from fk.core.abstract_data_container import AbstractDataContainer
+from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
 
 
-class Workitem(AbstractDataItem):
-    _name: str
-    _pomodoros: list[Pomodoro]
+class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     # State is one of the following: new, running, finished, canceled
     _state: str
     _date_work_started: datetime.datetime | None
@@ -34,25 +32,10 @@ class Workitem(AbstractDataItem):
                  uid: str,
                  backlog: 'Backlog',
                  create_date: datetime.datetime):
-        super().__init__(uid=uid, parent=backlog, create_date=create_date)
-        self._name = name
-        self._pomodoros = list()
+        super().__init__(name=name, parent=backlog, uid=uid, create_date=create_date)
         self._state = 'new'
         self._date_work_started = None
         self._date_work_ended = None
-
-    def __getitem__(self, key) -> Pomodoro:
-        return self._pomodoros[key]
-
-    def __iter__(self) -> Iterable[Pomodoro]:
-        return (x for x in self._pomodoros)
-
-    def __len__(self):
-        return len(self._pomodoros)
-
-    def values(self) -> Iterable[Pomodoro]:
-        # self._pomodoros.sort(key=AbstractDataItem.get_last_modified_date, reverse=True)
-        return self._pomodoros
 
     def __str__(self):
         if self._state == 'new':
@@ -66,7 +49,7 @@ class Workitem(AbstractDataItem):
         else:
             raise Exception(f'Invalid workitem state:{self._state}')
 
-        return f' - [{char}] {self._name} {"".join([str(p) for p in self._pomodoros])}'
+        return f' - [{char}] {self._name} {"".join([str(p) for p in self.values()])}'
 
     def seal(self, target_state: str, when: datetime.datetime) -> None:
         if target_state in ('finished', 'canceled'):
@@ -86,23 +69,24 @@ class Workitem(AbstractDataItem):
             # durations, because that's the best info we have. However, when we start
             # a Pomodoro, this duration can be updated.
             # Also, note that here we don't emit AddPomodoro events.
-            self._pomodoros.append(Pomodoro(
+            uid = generate_uid()
+            self[uid] = Pomodoro(
                 is_planned,
                 'new',
                 default_work_duration,
                 default_rest_duration,
-                generate_uid(),
+                uid,
                 self,
-                when))
+                when)
 
     def remove_pomodoro(self, pomodoro: Pomodoro) -> None:
-        self._pomodoros.remove(pomodoro)
+        del self[pomodoro.get_uid()]
 
     def is_running(self) -> bool:
         return self._state == 'running'
 
     def has_running_pomodoro(self) -> bool:
-        for p in self._pomodoros:
+        for p in self.values():
             if p.is_running():
                 return True
         return False
@@ -115,20 +99,11 @@ class Workitem(AbstractDataItem):
         return True
 
     def is_startable(self) -> bool:
-        for p in self._pomodoros:
+        for p in self.values():
             if p.is_startable():
                 return True
         return False
 
-    def get_name(self) -> str:
-        return self._name
-
-    def set_name(self, new_name: str) -> None:
-        self._name = new_name
-
     def start(self, when: datetime.datetime) -> None:
         self._state = 'running'
         self._date_work_started = when
-
-    def get_parent(self) -> 'Backlog':
-        return self._parent

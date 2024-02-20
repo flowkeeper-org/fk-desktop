@@ -4,11 +4,11 @@ QMainWindow {
 }
 
 #headerText {
-    color: #ced0d6;
+    color: #ffffff;
 }
 
 #headerSubtext {
-    color: #ced0d6;
+    color: #ffffff;
 }
 
 #statusBar {

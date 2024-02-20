@@ -28,7 +28,7 @@ from fk.core.workitem_strategies import DeleteWorkitemStrategy
 
 # CreateBacklog("123-456-789", "The first backlog")
 @strategy
-class CreateBacklogStrategy(AbstractStrategy['App']):
+class CreateBacklogStrategy(AbstractStrategy['Tenant']):
     _backlog_uid: str
     _backlog_name: str
 
@@ -40,10 +40,11 @@ class CreateBacklogStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._backlog_uid = params[0]
         self._backlog_name = params[1]
 
@@ -68,7 +69,7 @@ class CreateBacklogStrategy(AbstractStrategy['App']):
 
 # DeleteBacklog("123-456-789", "")
 @strategy
-class DeleteBacklogStrategy(AbstractStrategy['App']):
+class DeleteBacklogStrategy(AbstractStrategy['Tenant']):
     _backlog_uid: str
 
     def get_backlog_uid(self) -> str:
@@ -79,10 +80,11 @@ class DeleteBacklogStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._backlog_uid = params[0]
 
     def execute(self) -> (str, any):
@@ -112,7 +114,7 @@ class DeleteBacklogStrategy(AbstractStrategy['App']):
 
 # RenameBacklog("123-456-789", "New name")
 @strategy
-class RenameBacklogStrategy(AbstractStrategy['App']):
+class RenameBacklogStrategy(AbstractStrategy['Tenant']):
     _backlog_uid: str
     _backlog_new_name: str
 
@@ -124,10 +126,11 @@ class RenameBacklogStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._backlog_uid = params[0]
         self._backlog_new_name = params[1]
 

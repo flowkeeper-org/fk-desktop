@@ -15,76 +15,35 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
-from typing import Iterable
 
-from fk.core.abstract_data_item import AbstractDataItem
+from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 
 
-class Backlog(AbstractDataItem):
+class Backlog(AbstractDataContainer[Workitem, 'User']):
     """Backlog is a named list of workitems, belonging to a User."""
-
-    _name: str
-    _workitems: dict[str, Workitem]
-    _owner: 'User'
 
     def __init__(self,
                  name: str,
                  user: 'User',
                  uid: str,
                  create_date: datetime.datetime):
-        super().__init__(uid=uid, parent=user, create_date=create_date)
-        self._name = name
-        self._workitems = dict()
-        self._owner = user
-
-    def __getitem__(self, uid: str) -> Workitem:
-        return self._workitems[uid]
-
-    def __contains__(self, uid: str):
-        return uid in self._workitems
-
-    def __setitem__(self, uid: str, value: Workitem):
-        self._workitems[uid] = value
-
-    def __delitem__(self, uid: str):
-        del self._workitems[uid]
-
-    def __iter__(self) -> Iterable[str]:
-        return (x for x in self._workitems)
-
-    def __len__(self):
-        return len(self._workitems)
-
-    def values(self) -> Iterable[Workitem]:
-        # items = list(self._workitems.values())
-        # items.sort(key=AbstractDataItem.get_last_modified_date, reverse=True)
-        # return items
-        return self._workitems.values()
+        super().__init__(name=name, parent=user, uid=uid, create_date=create_date)
 
     def __str__(self):
         return f'Backlog "{self._name}"'
 
-    def get_name(self) -> str:
-        return self._name
-
-    def set_name(self, new_name: str) -> None:
-        self._name = new_name
-
     def get_running_workitem(self) -> (Workitem, Pomodoro):
-        for workitem in self._workitems.values():
-            for pomodoro in workitem:
+        for workitem in self._children.values():
+            for pomodoro in workitem.values():
                 if pomodoro.is_running():
                     return workitem, pomodoro
         return None, None
 
-    def get_owner(self) -> 'User':
-        return self._owner
-
-    def get_parent(self) -> 'User':
-        return self._parent
-
     def is_today(self) -> bool:
         # "Today" = Created within the last 12 hours
         return (datetime.datetime.now(tz=datetime.timezone.utc) - self.get_create_date()).total_seconds() < 3600 * 12
+
+    def get_owner(self) -> 'User':
+        return self._parent

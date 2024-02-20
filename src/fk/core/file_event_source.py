@@ -25,7 +25,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -86,10 +86,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
     def start(self, mute_events=True) -> None:
+        print('File event source -- starting')
         if self._existing_strategies is None:
-            return self._process_from_file(mute_events)
+            self._process_from_file(mute_events)
         else:
-            return self._process_from_existing()
+            self._process_from_existing()
 
     def _process_from_existing(self) -> None:
         # This method is called when we repair an existing data source
@@ -101,7 +102,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         for strategy in self._existing_strategies:
             strategy._data = self._data
             strategy._settings = self._settings
-            strategy._emit = self._emit
+            strategy._emit_func = self._emit
             if type(strategy) is str:
                 continue
             self._last_strategy = strategy
@@ -284,7 +285,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             log.append(f'Renumbered strategies up to {seq}')
 
             # Restart and remove failing strategies
-            new_source = self.clone(App(self._settings), strategies)
+            new_source = self.clone(Tenant(self._settings), strategies)
             try:
                 new_source.start()
                 log.append(f'Tested successfully')
@@ -339,3 +340,13 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
         return FileEventSource(self._settings, new_root, self._watcher, existing_strategies)
+
+    def disconnect(self):
+        if self._watcher is not None:
+            self._watcher.unwatch_all()
+
+    def send_ping(self) -> str | None:
+        raise Exception("FileEventSource does not support send_ping()")
+
+    def can_connect(self):
+        return False

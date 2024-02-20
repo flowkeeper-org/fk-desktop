@@ -29,7 +29,7 @@ from fk.core.workitem import Workitem
 
 # StartWork("123-456-789", "1500")
 @strategy
-class StartWorkStrategy(AbstractStrategy['App']):
+class StartWorkStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _work_duration: int
 
@@ -38,10 +38,11 @@ class StartWorkStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._work_duration = int(params[1])
 
@@ -66,7 +67,7 @@ class StartWorkStrategy(AbstractStrategy['App']):
             # calling Source that it should attempt auto-seal and retry.
             return 'auto-seal', running
 
-        for pomodoro in workitem:
+        for pomodoro in workitem.values():
             if pomodoro.is_startable():
                 work_duration = self._work_duration if self._work_duration != 0 else pomodoro.get_work_duration()
                 params = {
@@ -92,7 +93,7 @@ class StartWorkStrategy(AbstractStrategy['App']):
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 @strategy
-class StartRestStrategy(AbstractStrategy['App']):
+class StartRestStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _rest_duration: int
 
@@ -101,10 +102,11 @@ class StartRestStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._rest_duration = int(params[1])
 
@@ -124,7 +126,7 @@ class StartRestStrategy(AbstractStrategy['App']):
 
         # Note that unlike StartWorkStrategy we don't care about auto-sealing here, since this
         # should've been done for the StartWork earlier.
-        for pomodoro in workitem:
+        for pomodoro in workitem.values():
             if pomodoro.is_working():
                 rest_duration = self._rest_duration if self._rest_duration != 0 else pomodoro.get_rest_duration()
                 params = {
@@ -144,7 +146,7 @@ class StartRestStrategy(AbstractStrategy['App']):
 
 # AddPomodoro("123-456-789", "1")
 @strategy
-class AddPomodoroStrategy(AbstractStrategy['App']):
+class AddPomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _num_pomodoros: int
 
@@ -153,10 +155,11 @@ class AddPomodoroStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = int(settings.get('Pomodoro.default_work_duration'))
@@ -196,7 +199,7 @@ class AddPomodoroStrategy(AbstractStrategy['App']):
 
 # CompletePomodoro("123-456-789", "finished")
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['App']):
+class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _target_state: str
 
@@ -205,10 +208,11 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
@@ -226,7 +230,7 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
         if not workitem.is_running():
             raise Exception(f'Workitem "{self._workitem_uid}" is not running')
 
-        for pomodoro in workitem:
+        for pomodoro in workitem.values():
             # TODO: Check that if we are finishing work successfully, then the time since the rest started
             #  corresponds well to what was planned, +/- 10 seconds
             if pomodoro.is_running():
@@ -246,7 +250,7 @@ class CompletePomodoroStrategy(AbstractStrategy['App']):
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
-class RemovePomodoroStrategy(AbstractStrategy['App']):
+class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _num_pomodoros: int
 
@@ -255,10 +259,11 @@ class RemovePomodoroStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
 
@@ -281,7 +286,7 @@ class RemovePomodoroStrategy(AbstractStrategy['App']):
 
         # Check that we have enough "new" pomodoro to remove
         to_remove = list[Pomodoro]()
-        for p in reversed(workitem):
+        for p in reversed(workitem.values()):
             if p.is_startable():
                 to_remove.append(p)
                 if len(to_remove) == self._num_pomodoros:

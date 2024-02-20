@@ -25,41 +25,12 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.pomodoro import Pomodoro
 from fk.core.strategy_factory import strategy_from_string
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import CreateWorkitemStrategy
 
 TRoot = TypeVar('TRoot')
-
-
-def _extract_users(strategies: Iterable[AbstractStrategy]):
-    ids = set()
-    for s in strategies:
-        if type(s) is CreateUserStrategy:
-            cast: CreateUserStrategy = s
-            ids.add(cast.get_user_identity())
-    return ids
-
-
-def _extract_backlogs(strategies: Iterable[AbstractStrategy]):
-    ids = set()
-    for s in strategies:
-        if type(s) is CreateBacklogStrategy:
-            cast: CreateBacklogStrategy = s
-            ids.add(cast.get_backlog_uid())
-    return ids
-
-
-def _extract_workitems(strategies: Iterable[AbstractStrategy]):
-    ids = set()
-    for s in strategies:
-        if type(s) is CreateWorkitemStrategy:
-            cast: CreateWorkitemStrategy = s
-            ids.add(cast.get_workitem_uid())
-    return ids
 
 
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
@@ -104,11 +75,10 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterPomodoroComplete,
             events.SourceMessagesRequested,
             events.SourceMessagesProcessed,
-            events.SourceModeReadOnly,
-            events.SourceModeReadWrite,
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
-        ])
+            events.PongReceived,
+        ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
         self._settings = settings
@@ -156,7 +126,13 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
 
-    def execute(self, strategy_class: type[AbstractStrategy], params: list[str], persist=True, auto=False):
+    def execute(self,
+                strategy_class:
+                type[AbstractStrategy],
+                params: list[str],
+                persist: bool = True,
+                auto: bool = False,
+                carry: any = None) -> None:
         # This method is called when the user does something in the UI on THIS instance
         # TODO: Get username from the login provider instead
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -168,7 +144,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             params,
             self._emit,
             self.get_data(),
-            self._settings
+            self._settings,
+            carry
         )
         self._execute_prepared_strategy(s, auto)
 
@@ -231,14 +208,14 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         another = self.clone(new_root)
         every = max(int(self._estimated_count / 100), 1)
         export_file = open(filename, 'w', encoding='UTF-8')
-        another.connect(events.AfterMessageProcessed,
-                        lambda event, strategy, auto: self._export_message_processed(another,
+        another.on(events.AfterMessageProcessed,
+                   lambda event, strategy, auto: self._export_message_processed(another,
                                                                                      export_file,
                                                                                      progress_callback,
                                                                                      every,
                                                                                      strategy) if not auto else None)
-        another.connect(events.SourceMessagesProcessed,
-                        lambda event: AbstractEventSource._export_completed(another,
+        another.on(events.SourceMessagesProcessed,
+                   lambda event: AbstractEventSource._export_completed(another,
                                                                             export_file,
                                                                             completion_callback))
         start_callback(self._estimated_count)
@@ -246,6 +223,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def import_(self,
                 filename: str,
+                ignore_errors: bool,
                 start_callback: Callable[[int], None],
                 progress_callback: Callable[[int, int], None],
                 completion_callback: Callable[[int], None]) -> None:
@@ -263,19 +241,25 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         i = 0
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line,
-                                                self._emit,
-                                                self.get_data(),
-                                                self._settings,
-                                                list(self.get_data().values())[0])
-                i += 1
-                if type(strategy) is str:
-                    continue
-                if type(strategy) is CreateUserStrategy:
-                    continue
-                self.execute(type(strategy), strategy.get_params())
-                if i % every == 0:
-                    progress_callback(i, total)
+                try:
+                    strategy = strategy_from_string(line,
+                                                    self._emit,
+                                                    self.get_data(),
+                                                    self._settings,
+                                                    list(self.get_data().values())[0])
+                    i += 1
+                    if type(strategy) is str:
+                        continue
+                    if type(strategy) is CreateUserStrategy:
+                        continue
+                    self.execute(type(strategy), strategy.get_params())
+                    if i % every == 0:
+                        progress_callback(i, total)
+                except Exception as e:
+                    if ignore_errors:
+                        print('Warning', e)
+                    else:
+                        raise e
 
         self.unmute()
         completion_callback(total)
@@ -284,3 +268,18 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         raise Exception(f"Strategies must go in sequence. "
                         f"Received {next} after {prev}. "
                         f"To attempt a repair go to Settings > Connection > Repair.")
+
+    @abstractmethod
+    def disconnect(self):
+        pass
+
+    def get_settings(self) -> AbstractSettings:
+        return self._settings
+
+    @abstractmethod
+    def send_ping(self) -> str | None:
+        pass
+
+    @abstractmethod
+    def can_connect(self):
+        pass

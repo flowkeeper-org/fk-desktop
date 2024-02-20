@@ -28,7 +28,7 @@ from fk.core.workitem import Workitem
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
 @strategy
-class CreateWorkitemStrategy(AbstractStrategy['App']):
+class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
@@ -44,10 +44,11 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
@@ -76,12 +77,13 @@ class CreateWorkitemStrategy(AbstractStrategy['App']):
         workitem.item_updated(self._when)   # Update Backlog
         self._emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
+            'carry': None,
         })
         return None, None
 
 
 def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> None:
-    for pomodoro in workitem:
+    for pomodoro in workitem.values():
         if pomodoro.is_running():
             strategy.execute_another(CompletePomodoroStrategy, [
                 workitem.get_uid(),
@@ -91,7 +93,7 @@ def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> Non
 
 # DeleteWorkitem("123-456-789")
 @strategy
-class DeleteWorkitemStrategy(AbstractStrategy['App']):
+class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
 
     def get_workitem_uid(self) -> str:
@@ -102,10 +104,11 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
 
     def execute(self) -> (str, any):
@@ -133,7 +136,7 @@ class DeleteWorkitemStrategy(AbstractStrategy['App']):
 
 # RenameWorkitem("123-456-789", "Wake up")
 @strategy
-class RenameWorkitemStrategy(AbstractStrategy['App']):
+class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _new_workitem_name: str
 
@@ -145,10 +148,11 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
@@ -181,9 +185,9 @@ class RenameWorkitemStrategy(AbstractStrategy['App']):
         self._emit(events.AfterWorkitemRename, params)
 
 
-# CompleteWorkitem("Wake up", "canceled")
+# CompleteWorkitem("123-456-789", "canceled")
 @strategy
-class CompleteWorkitemStrategy(AbstractStrategy['App']):
+class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
     _target_state: str
 
@@ -195,10 +199,11 @@ class CompleteWorkitemStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 

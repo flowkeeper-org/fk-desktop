@@ -30,6 +30,14 @@ def _never_show(_) -> bool:
     return False
 
 
+def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
+    return values['Application.eyecandy_type'] == 'gradient'
+
+
+def _show_for_image_eyecandy(values: dict[str, str]) -> bool:
+    return values['Application.eyecandy_type'] == 'image'
+
+
 def _show_for_file_source(values: dict[str, str]) -> bool:
     return values['Source.type'] == 'local'
 
@@ -58,15 +66,19 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     # Category -> [(id, type, display, default, options)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
     _defaults: dict[str, str]
+    _callback_invoker: Callable
 
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
+                 callback_invoker: Callable,
                  buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingChanged,
             events.AfterSettingChanged,
-        ])
+        ], callback_invoker)
+
+        self._callback_invoker = callback_invoker
 
         self._definitions = {
             'General': [
@@ -109,10 +121,20 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
-                ('Application.header_background', 'file', 'Header background', '', ['*.png;*.jpg'], _always_show),
+                ('Application.eyecandy_type', 'choice', 'Header background', 'default', [
+                    "default:Default",
+                    "image:Image",
+                    "gradient:Gradient",
+                ], _always_show),
+                ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
+                ('Application.eyecandy_gradient', 'str', 'Background gradient', 'SugarLollipop', [], _never_show),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
+                ('Application.backlogs_visible', 'bool', 'Show backlogs', 'True', [], _never_show),
+                ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
+                ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
             ],
             'Fonts': [
@@ -124,10 +146,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Audio': [
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
                 ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
+                ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'False', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', '', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
+                ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
 
@@ -136,6 +163,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             for s in lst:
                 self._defaults[s[0]] = s[3]
         # print('Filled defaults', self._defaults)
+
+    def invoke_callback(self, fn: Callable, **kwargs) -> None:
+        self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
     def set(self, name: str, value: str) -> str:

@@ -15,26 +15,30 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import QModelIndex, QItemSelectionModel
+from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QStandardItemModel, QStandardItem
-from PySide6.QtWidgets import QTableView
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.user import User
 from fk.core.workitem import Workitem
+from fk.qt.abstract_tableview import AbstractTableView
+from fk.qt.actions import Actions
 
 
 class SearchBar(QtWidgets.QLineEdit):
     _source: AbstractEventSource
-    _backlogs_table: QTableView
-    _workitems_table: QTableView
+    _backlogs_table: AbstractTableView[User, Backlog]
+    _workitems_table: AbstractTableView[Backlog, Workitem]
     _show_completed: bool
+    _actions: Actions
 
     def __init__(self,
                  parent: QtWidgets.QWidget,
                  source: AbstractEventSource,
-                 backlogs_table: QTableView,
-                 workitems_table: QTableView):
+                 actions: Actions,
+                 backlogs_table: AbstractTableView[User, Backlog],
+                 workitems_table: AbstractTableView[Backlog, Workitem]):
         super().__init__(parent)
         self.setObjectName("search")
         self._source = source
@@ -44,32 +48,17 @@ class SearchBar(QtWidgets.QLineEdit):
         self.hide()
         self.setPlaceholderText('Search')
         self.installEventFilter(self)
+        self._actions = actions
+        actions['workitems_table.showCompleted'].toggled.connect(self.show_completed)
 
     def _select(self, index: QModelIndex):
         workitem: Workitem = index.data(500)
         backlog: Backlog = workitem.get_parent()
-
-        b_table = self._backlogs_table
-        w_table = self._workitems_table
-        b_model = b_table.model()
-        w_model = w_table.model()
-        for i in range(b_model.rowCount()):
-            b_index = b_model.index(i, 0)
-            if b_model.data(b_index, 500) == backlog:
-                b_table.selectionModel().select(b_index,
-                                                QItemSelectionModel.SelectionFlag.SelectCurrent |
-                                                QItemSelectionModel.SelectionFlag.Rows)
-                b_table.scrollTo(b_index)
-                # We are lucky -- Qt emits signals synchronously, so we can already select the right workitem
-                for j in range(w_model.rowCount()):
-                    w_index = w_model.index(j, 1)
-                    if w_model.data(w_index, 500) == workitem:
-                        w_table.selectionModel().select(w_index,
-                                                        QItemSelectionModel.SelectionFlag.SelectCurrent |
-                                                        QItemSelectionModel.SelectionFlag.Rows)
-                        w_table.scrollTo(w_index)
-                        break
-                break
+        self._backlogs_table.select(backlog)
+        # Queue the second selection step, as AfterSelectionChanged
+        # will go through Qt postEvent
+        self._source.get_settings().invoke_callback(lambda w: self._workitems_table.select(w),
+                                                    w=workitem)
         self.hide()
 
     def show(self) -> None:

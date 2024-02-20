@@ -15,40 +15,31 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
-from typing import Iterable
 
-from fk.core.abstract_data_item import AbstractDataItem
+from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 
 
-class User(AbstractDataItem):
-    _identity: str
-    _name: str
+class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _last_pomodoro: Pomodoro
-    _backlogs: dict[str, Backlog]
 
     def __init__(self,
+                 data: 'Tenant',
                  identity: str,
                  name: str,
                  create_date: datetime.datetime,
                  is_system_user: bool):
-        super().__init__(identity, None, create_date)
-        self._identity = identity
-        self._backlogs = dict()
+        super().__init__(name, data, identity, create_date)
         self._last_pomodoro = None
-        self._name = name
         self._is_system_user = is_system_user
 
     def __str__(self):
-        return f'User "{self._name} <{self._identity}>"'
-
-    def get_name(self) -> str:
-        return self._name
+        return f'User "{self.get_name()} <{self.get_uid()}>"'
 
     def get_identity(self) -> str:
-        return self._identity
+        return self.get_uid()
 
     def is_system_user(self) -> bool:
         return self._is_system_user
@@ -64,30 +55,3 @@ class User(AbstractDataItem):
             return "Rest", remaining
         else:
             return "Idle", 0
-
-    def __getitem__(self, uid: str) -> Backlog:
-        return self._backlogs[uid]
-
-    def __contains__(self, uid: str):
-        return uid in self._backlogs
-
-    def __setitem__(self, uid: str, value: Backlog):
-        self._backlogs[uid] = value
-
-    def __delitem__(self, uid: str):
-        del self._backlogs[uid]
-
-    def __iter__(self) -> Iterable[str]:
-        return (x for x in self._backlogs)
-
-    def __len__(self):
-        return len(self._backlogs)
-
-    def values(self) -> Iterable[Backlog]:
-        # items = list(self._backlogs.values())
-        # items.sort(key=AbstractDataItem.get_last_modified_date, reverse=True)
-        # return items
-        return self._backlogs.values()
-
-    def get_parent(self) -> None:
-        return None

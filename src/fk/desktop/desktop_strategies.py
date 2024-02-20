@@ -18,6 +18,7 @@ import datetime
 import re
 from typing import Callable
 
+from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
@@ -28,7 +29,7 @@ EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 # Authenticate("alice@example.com", "secret")
 @strategy
-class AuthenticateStrategy(AbstractStrategy['App']):
+class AuthenticateStrategy(AbstractStrategy['Tenant']):
     _username: str
     _token: str
 
@@ -37,10 +38,11 @@ class AuthenticateStrategy(AbstractStrategy['App']):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._username = params[0]
         self._token = params[1]
 
@@ -58,13 +60,15 @@ class ReplayStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._since_seq = int(params[0])
 
     def execute(self) -> (str, any):
+        # Send only
         return None, None
 
 
@@ -79,12 +83,60 @@ class ErrorStrategy(AbstractStrategy):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'App',
-                 settings: AbstractSettings):
-        super().__init__(seq, when, user, params, emit, data, settings)
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
 
     def execute(self) -> (str, any):
         raise Exception(self._error_message)
+
+
+# Pong("123-456-789-012", "")
+@strategy
+class PongStrategy(AbstractStrategy):
+    _uid: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any]], None],
+                 data: 'System',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        self._uid = params[0]
+
+    def execute(self) -> (str, any):
+        # print(f'Received Pong - {self._uid}')
+        self._emit(events.PongReceived, {
+            'uid': self._uid
+        })
+        return None, None
+
+
+# Ping("123-456-789-012", "")
+@strategy
+class PingStrategy(AbstractStrategy):
+    _uid: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        self._uid = params[0]
+
+    def execute(self) -> (str, any):
+        # Send only
+        return None, None

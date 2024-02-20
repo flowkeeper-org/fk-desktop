@@ -19,7 +19,7 @@ import datetime
 from fk.core.abstract_data_item import AbstractDataItem
 
 
-class Pomodoro(AbstractDataItem):
+class Pomodoro(AbstractDataItem['Workitem']):
     _is_planned: bool
     _state: str
     _work_duration: int

@@ -24,8 +24,8 @@ from fk.core.workitem import Workitem
 
 
 # This timer never goes below 0
-# TODO: Currently we use source.connect() to subscribe to its events
-# See how we can use this class instead, i.e. timer.connect()
+# TODO: Currently we use source.on() to subscribe to its events
+# See how we can use this class instead, i.e. timer.on()
 class PomodoroTimer(AbstractEventEmitter):
     _source: AbstractEventSource
     _tick_timer: AbstractTimer
@@ -46,7 +46,8 @@ class PomodoroTimer(AbstractEventEmitter):
                  source: AbstractEventSource,
                  tick_timer: AbstractTimer,
                  transition_timer: AbstractTimer):
-        super().__init__(['TimerTick', 'TimerWorkStart', 'TimerWorkComplete', 'TimerRestComplete'])
+        super().__init__([self.TimerTick, self.TimerWorkStart, self.TimerWorkComplete, self.TimerRestComplete],
+                         source.get_settings().invoke_callback)
         print('PomodoroTimer: Initializing')
         self._source = source
         self._tick_timer = tick_timer
@@ -62,12 +63,13 @@ class PomodoroTimer(AbstractEventEmitter):
 
         # Start tracking changes and initialize with the latest state
         print('PomodoroTimer: Connecting')
-        source.connect(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
-        source.connect(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
-        source.connect(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
+        source.on(events.SourceMessagesProcessed, self._refresh)
+        source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
+        source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
+        source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
         print('PomodoroTimer: Initialized')
 
-    def _refresh(self) -> None:
+    def _refresh(self, event: str | None = None, **kwargs) -> None:
         print('PomodoroTimer: Refreshing')
         workitem: Workitem | None = None
         pomodoro: Pomodoro | None = None
@@ -260,6 +262,9 @@ class PomodoroTimer(AbstractEventEmitter):
 
     def is_idling(self) -> bool:
         return self._state == 'idle'
+
+    def is_initializing(self) -> bool:
+        return self._state is None
 
     def get_planned_duration(self) -> int:
         return self._planned_duration

@@ -44,12 +44,12 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
         self._show_completed = True
-        source.connect(AfterWorkitemCreate, self._workitem_created)
-        source.connect(AfterWorkitemDelete, self._workitem_deleted)
-        source.connect(AfterWorkitemRename, self._pomodoro_changed)
-        source.connect(AfterWorkitemComplete, self._pomodoro_changed)
-        source.connect(AfterWorkitemStart, self._pomodoro_changed)
-        source.connect('AfterPomodoro*', self._pomodoro_changed)
+        source.on(AfterWorkitemCreate, self._workitem_created)
+        source.on(AfterWorkitemDelete, self._workitem_deleted)
+        source.on(AfterWorkitemRename, self._pomodoro_changed)
+        source.on(AfterWorkitemComplete, self._pomodoro_changed)
+        source.on(AfterWorkitemStart, self._pomodoro_changed)
+        source.on('AfterPomodoro*', self._pomodoro_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
         self._row_height = int(source.get_config_parameter('Application.table_row_height'))
 
@@ -70,13 +70,13 @@ class WorkitemModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
-    def _workitem_created(self, event: str, workitem: Workitem) -> None:
+    def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
         if workitem.get_parent() == self._backlog:
             item = QtGui.QStandardItem('')
             self.appendRow(item)
             self.set_row(self.rowCount() - 1, workitem)
 
-    def _workitem_deleted(self, event: str, workitem: Workitem) -> None:
+    def _workitem_deleted(self, workitem: Workitem, **kwargs) -> None:
         if workitem.get_parent() == self._backlog:
             for i in range(self.rowCount()):
                 wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
@@ -84,7 +84,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
                     self.removeRow(i)
                     return
 
-    def _pomodoro_changed(self, event: str, workitem: Workitem, **kwargs) -> None:
+    def _pomodoro_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
             wi = self.item(i).data(500)
             if wi == workitem:
@@ -119,7 +119,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
         col3 = QtGui.QStandardItem()
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
-        # TODO: Get row height here somehow
         col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
@@ -145,3 +144,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
     def show_completed(self, show: bool) -> None:
         self._show_completed = show
         self.load(self._backlog)
+
+    def get_backlog(self) -> Backlog | None:
+        return self._backlog

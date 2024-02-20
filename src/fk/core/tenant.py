@@ -26,7 +26,7 @@ from fk.core.user_strategies import CreateUserStrategy
 ADMIN_USER = 'admin@local.host'
 
 
-class App(AbstractDataContainer[User, None]):
+class Tenant(AbstractDataContainer[User, None]):
     """App is the root of the data hierarchy in Flowkeeper Client.
     It contains users and has no parent."""
 
@@ -39,6 +39,7 @@ class App(AbstractDataContainer[User, None]):
                          datetime.datetime.utcnow())
         self._settings = settings
         self[ADMIN_USER] = User(
+            self,
             ADMIN_USER,
             'System',
             datetime.datetime.now(),
@@ -57,7 +58,7 @@ class App(AbstractDataContainer[User, None]):
     def get_current_user(self) -> User:
         return self[self._settings.get_username()]
 
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any]], None]) -> AbstractStrategy[Self]:
+    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
         return CreateUserStrategy(1,
                                   datetime.datetime.utcnow(),
                                   self[ADMIN_USER],

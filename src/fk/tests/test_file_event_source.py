@@ -17,7 +17,7 @@
 from unittest import TestCase
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.app import App
+from fk.core.tenant import Tenant
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.user import User
@@ -33,7 +33,7 @@ class TestFileEventSource(TestCase):
             filename='src/fk/tests/fixtures/flowkeeper-data.txt',
             username='alice@flowkeeper.org'
         )
-        self.source = FileEventSource(self.settings, App(self.settings), None)
+        self.source = FileEventSource(self.settings, Tenant(self.settings), None)
         self.source.start()
         self.data = self.source.get_data()
 

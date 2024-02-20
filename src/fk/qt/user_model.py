@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.tenant import Tenant
 from fk.core.user import User
 
 
@@ -33,9 +34,9 @@ class UserModel(QtGui.QStandardItemModel):
         self._font_normal = QtGui.QFont()
         self._font_busy = QtGui.QFont()
         self._font_busy.setBold(True)
-        source.connect(events.AfterUserCreate, self._user_added)
-        source.connect(events.AfterUserDelete, self._user_removed)
-        source.connect(events.AfterUserRename, self._user_renamed)
+        source.on(events.AfterUserCreate, self._user_added)
+        source.on(events.AfterUserDelete, self._user_removed)
+        source.on(events.AfterUserRename, self._user_renamed)
 
     def _user_added(self, event: str, user: User) -> None:
         item = QtGui.QStandardItem('')
@@ -68,14 +69,15 @@ class UserModel(QtGui.QStandardItemModel):
         col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 0, col1)
 
-    def load(self) -> None:
+    def load(self, app: Tenant) -> None:
         self.clear()
-        i = 0
-        for user in self._source.get_data().values():
-            if user.is_system_user():
-                continue
-            item = QtGui.QStandardItem('')
-            self.appendRow(item)
-            self.set_row(i, user)
-            i += 1
+        if app is not None:
+            i = 0
+            for user in app.values():
+                if user.is_system_user():
+                    continue
+                item = QtGui.QStandardItem('')
+                self.appendRow(item)
+                self.set_row(i, user)
+                i += 1
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))

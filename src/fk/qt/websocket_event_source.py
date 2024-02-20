@@ -20,14 +20,17 @@ from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
 from PySide6.QtNetwork import QAbstractSocket
+from PySide6.QtWidgets import QApplication
 
 from fk.core import events
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
-from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy
+from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
+    PingStrategy
 from fk.qt.qt_timer import QtTimer
 
 TRoot = TypeVar('TRoot')
@@ -51,7 +54,7 @@ class WebsocketEventSource(AbstractEventSource):
         self._mute_requested = True
         self._connection_attempt = 0
         self._received_error = False
-        self._reconnect_timer = QtTimer()
+        self._reconnect_timer = QtTimer("WS Reconnect")
         self._ws = QtWebSockets.QWebSocket()
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: self._connection_lost())
@@ -98,10 +101,13 @@ class WebsocketEventSource(AbstractEventSource):
         self._connect()
 
     def _on_message(self, message: str) -> None:
+        self._received_error = False
         lines = message.split('\n')
-        print(f'Received {len(lines)} messages')
+        # print(f'Received {len(lines)}')
+        i = 0
         for line in lines:
             try:
+                # TODO: Check for strategy class type here instead
                 if line == 'ReplayCompleted()':
                     if self._mute_requested:
                         self.unmute()
@@ -110,17 +116,23 @@ class WebsocketEventSource(AbstractEventSource):
                 s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
                 if type(s) is str:
                     continue
-                if type(s) is ErrorStrategy:
+                elif type(s) is ErrorStrategy:
                     self._received_error = True
                     s.execute()  # This will throw an exception
-                if s.get_sequence() is not None and s.get_sequence() > self._last_seq:
+                elif type(s) is PongStrategy:
+                    # A special case where we want to ignore the sequence
+                    self._execute_prepared_strategy(s)
+                elif s.get_sequence() is not None and s.get_sequence() > self._last_seq:
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
                     # print(f" - {s}")
                     self._execute_prepared_strategy(s)
+                i += 1
+                if i % 1000 == 0:    # Yield to Qt from time to time
+                    QApplication.processEvents()
             except Exception as ex:
-                if self._ignore_errors:
+                if self._ignore_errors and not self._received_error:
                     print(f'Error processing {line}: {ex}')
                 else:
                     raise ex
@@ -168,3 +180,23 @@ class WebsocketEventSource(AbstractEventSource):
 
     def clone(self, new_root: TRoot) -> Self:
         return WebsocketEventSource(self._settings, new_root)
+
+    def disconnect(self):
+        self._ws.disconnected.disconnect()
+        self._ws.close()
+
+    def send_ping(self) -> str | None:
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        uid = generate_uid()
+        ping = PingStrategy(1,
+                            now,
+                            self._data.get_admin_user(),
+                            [uid],
+                            self._emit,
+                            self._data,
+                            self._settings)
+        self._ws.sendTextMessage(str(ping))
+        return uid
+
+    def can_connect(self):
+        return True

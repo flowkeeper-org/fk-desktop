@@ -18,9 +18,13 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 
 
+def invoke_direct(fn, **kwargs):
+    fn(**kwargs)
+
+
 class MockSettings(AbstractSettings):
     def __init__(self, filename=None, username=None):
-        super().__init__('Arial', 10)
+        super().__init__('Arial', 10, invoke_direct)
         self._settings = {
             'FileEventSource.filename': filename,
             'WebsocketEventSource.username': username,

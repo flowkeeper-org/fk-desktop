@@ -23,6 +23,7 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy
+from fk.core.user import User
 
 font_new = QtGui.QFont()
 font_today = QtGui.QFont()
@@ -54,16 +55,18 @@ class BacklogItem(QtGui.QStandardItem):
 
 class BacklogModel(QtGui.QStandardItemModel):
     _source: AbstractEventSource
+    _user: User | None
 
     def __init__(self,
                  parent: QtCore.QObject,
                  source: AbstractEventSource):
         super().__init__(0, 1, parent)
         self._source = source
-        source.connect(events.AfterBacklogCreate, self._backlog_added)
-        source.connect(events.AfterBacklogDelete, self._backlog_removed)
-        source.connect(events.AfterBacklogRename, self._backlog_renamed)
-        source.connect('*', self.on_update)
+        self._user = None
+        source.on(events.AfterBacklogCreate, self._backlog_added)
+        source.on(events.AfterBacklogDelete, self._backlog_removed)
+        source.on(events.AfterBacklogRename, self._backlog_renamed)
+        source.on('*', self._sort)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
@@ -83,29 +86,34 @@ class BacklogModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
-    def _backlog_added(self, event: str, backlog: Backlog) -> None:
+    def _backlog_added(self, backlog: Backlog, **kwargs) -> None:
         self.appendRow(BacklogItem(backlog))
 
-    def _backlog_removed(self, event: str, backlog: Backlog) -> None:
+    def _backlog_removed(self, backlog: Backlog, **kwargs) -> None:
         for i in range(self.rowCount()):
             bl = self.item(i).data(500)
             if bl == backlog:
                 self.removeRow(i)
                 return
 
-    def _backlog_renamed(self, event: str, backlog: Backlog, old_name: str, new_name: str) -> None:
+    def _backlog_renamed(self, backlog: Backlog, **kwargs) -> None:
         for i in range(self.rowCount()):
             bl = self.item(i).data(500)
             if bl == backlog:
                 self.item(i).update_display()
                 return
 
-    def load(self) -> None:
+    def load(self, user: User) -> None:
         self.clear()
-        for backlog in self._source.get_data().get_current_user().values():
-            self.appendRow(BacklogItem(backlog))
+        self._user = user
+        if user is not None:
+            for backlog in user.values():
+                self.appendRow(BacklogItem(backlog))
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
-        self.on_update()
+        self._sort()
 
-    def on_update(self, event: str = None, **kwargs):
+    def _sort(self, event: str = None, **kwargs):
         self.sort(0, Qt.SortOrder.DescendingOrder)
+
+    def get_user(self) -> User | None:
+        return self._user

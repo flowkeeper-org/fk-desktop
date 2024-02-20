@@ -26,3 +26,7 @@ class AbstractFilesystemWatcher(ABC):
     @abstractmethod
     def unwatch(self, filename: str) -> None:
         pass
+
+    @abstractmethod
+    def unwatch_all(self) -> None:
+        pass

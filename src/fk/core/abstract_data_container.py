@@ -19,11 +19,11 @@ from typing import Iterable, Generic, TypeVar
 
 from fk.core.abstract_data_item import AbstractDataItem
 
-TParent = TypeVar('TParent')
-TChild = TypeVar('TChild')
+TParent = TypeVar('TParent', bound=AbstractDataItem)
+TChild = TypeVar('TChild', bound=AbstractDataItem)
 
 
-class AbstractDataContainer(AbstractDataItem, Generic[TChild, TParent]):
+class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent]):
     _name: str
     _children: dict[str, TChild]
 
@@ -60,14 +60,14 @@ class AbstractDataContainer(AbstractDataItem, Generic[TChild, TParent]):
     def keys(self) -> Iterable[str]:
         return self._children.keys()
 
+    def names(self) -> Iterable[str]:
+        return [child.get_name() for child in self._children.values()]
+
     def get_name(self) -> str:
         return self._name
 
     def set_name(self, new_name: str) -> None:
         self._name = new_name
-
-    def get_parent(self) -> TParent:
-        return super().get_parent()
 
     def get(self, key: str, default: TChild = None) -> TChild:
         if key in self._children:

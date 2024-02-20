@@ -30,10 +30,11 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     _seq: int
     _when: datetime.datetime
     _params: list[str]
-    _emit: Callable[[str, dict[str, any]], None]
+    _emit_func: Callable[[str, dict[str, any], any], None]
     _data: TRoot
     _settings: AbstractSettings
     _user: User
+    _carry: any
 
     # TODO -- Add strategy source, i.e. where it originates from
     # This will allow us have master / slave clients and maintain
@@ -44,16 +45,18 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                  when: datetime.datetime,
                  user: User,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
+                 emit: Callable[[str, dict[str, any], any], None],
                  data: TRoot,
-                 settings: AbstractSettings):
+                 settings: AbstractSettings,
+                 carry: any = None):
         self._seq = seq
         self._when = when
         self._user = user
         self._params = params
-        self._emit = emit
+        self._emit_func = emit
         self._data = data
         self._settings = settings
+        self._carry = carry
 
     @staticmethod
     def escape_parameter(value):
@@ -88,7 +91,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                        self._when,
                        self._user,
                        params,
-                       self._emit,
+                       self._emit_func,
                        self._data,
                        self._settings)
         params = {'strategy': strategy, 'auto': True}
@@ -96,3 +99,6 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         res = strategy.execute()
         self._emit(events.AfterMessageProcessed, params)
         return res
+
+    def _emit(self, name: str, params: dict[str, any]):
+        self._emit_func(name, params, self._carry)
