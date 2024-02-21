@@ -60,6 +60,10 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         super()._on_source_changed(event, source)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on(SourceMessagesProcessed, self._on_messages)
+        source.on("AfterWorkitem*",
+                  lambda workitem, **kwargs: self.update_actions(workitem))
+        source.on("AfterPomodoro*",
+                  lambda workitem, **kwargs: self.update_actions(workitem))
 
     def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
@@ -96,14 +100,15 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
 
     def update_actions(self, selected: Workitem) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
+        # TODO: Call this on any workitem and timer event
         is_workitem_selected = selected is not None
+        is_workitem_editable = is_workitem_selected and not selected.is_sealed()
         self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.renameItem'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.startItem'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.completeItem'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_selected)
-        # TODO + based on new_workitem.is_sealed() and if there are pomodoros available
+        self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
+        self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable and selected.is_startable())
+        self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
+        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable)
+        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable and selected.is_startable())
 
     # Actions
 
