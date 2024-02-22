@@ -146,6 +146,13 @@ class Pomodoro(AbstractDataItem['Workitem']):
         else:
             return 0
 
+    def remaining_minutes_in_current_state(self) -> str:
+        m = self.remaining_time_in_current_state() / 60
+        if m < 1:
+            return "Less than a minute"
+        else:
+            return f"{round(m)} minutes"
+
     def planned_time_in_current_state(self) -> int:
         # Planned time in the current state in seconds. Will be 0 if this pomodoro is
         # sealed or hasn't started yet.

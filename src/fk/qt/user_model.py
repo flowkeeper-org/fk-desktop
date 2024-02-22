@@ -62,7 +62,10 @@ class UserModel(QtGui.QStandardItemModel):
         font = self._font_busy if state == 'Focus' else self._font_normal
 
         col1 = QtGui.QStandardItem()
-        col1.setData(f'{user.get_name()} ({state})', Qt.DisplayRole)
+        if state == 'Idle':
+            col1.setData(f'{user.get_name()}', Qt.DisplayRole)
+        else:
+            col1.setData(f'{user.get_name()}: {state}, {remaining} left', Qt.DisplayRole)
         col1.setData(font, Qt.FontRole)
         col1.setData(user, 500)
         col1.setData('title', 501)
