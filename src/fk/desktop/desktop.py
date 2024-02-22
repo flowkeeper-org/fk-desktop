@@ -118,6 +118,8 @@ def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
         left_toolbar.setVisible(new_value == 'True')
     elif name == 'Application.show_tray_icon':
         tray.setVisible(new_value == 'True')
+    elif name == 'Application.shortcuts':
+        actions.update_from_settings()
     # TODO: Reload the app when the source changes
 
 
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     file.close()
 
     # Collect actions from all widget types
-    actions = Actions(window)
+    actions = Actions(window, settings)
     Application.define_actions(actions)
     BacklogTableView.define_actions(actions)
     UserTableView.define_actions(actions)

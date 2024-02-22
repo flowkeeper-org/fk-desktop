@@ -1,46 +1,48 @@
-#             'newItem': self._create_action("New Item", 'Ins', None, self.create_workitem),
-#             'renameItem': self._create_action("Rename Item", 'F2', None, self.rename_selected_workitem),
-#             'deleteItem': self._create_action("Delete Item", 'Del', None, self.delete_selected_workitem),
-#             'startItem': self._create_action("Start Item", 'Ctrl+S', ":/icons/tool-next.svg", self.start_selected_workitem),
-#             'completeItem': self._create_action("Complete Item", 'Ctrl+P', ":/icons/tool-complete.svg", self.complete_selected_workitem),
-#             'addPomodoro': self._create_action("Add Pomodoro", 'Ctrl++', None, self.add_pomodoro),
-#             'removePomodoro': self._create_action("Remove Pomodoro", 'Ctrl+-', None, self.remove_pomodoro),
-#             'showCompleted': self._create_action("Show completed workitems", '', None, self._toggle_show_completed_workitems, True, True),
-import datetime
-from typing import Callable, Iterable
+#  Flowkeeper - Pomodoro timer for power users and teams
+#  Copyright (c) 2023 Constantine Kulak
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import json
+from typing import Callable, Iterable, Self
 
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QWidget
 
-from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.backlog_strategies import CreateBacklogStrategy
-
-
-class CreateBacklogAction(QAction):
-    _source: AbstractEventSource
-
-    def __init__(self, parent: QWidget, source: AbstractEventSource):
-        super().__init__('New Backlog', parent)
-        self._source = source
-        self.setShortcut('Ctrl+N')
-        self.triggered.connect(self.action)
-
-    def action(self):
-        prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
-        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
+from fk.core.abstract_settings import AbstractSettings
 
 
 class Actions:
+    ALL: Self = None
     _window: QWidget
     _domains: dict[str, object]
     _actions: dict[str, QAction]
+    _shortcuts: dict[str, str]
+    _settings: AbstractSettings
 
-    def __init__(self, window: QWidget):
+    def __init__(self, window: QWidget, settings: AbstractSettings):
         self._window = window
         self._domains = dict()
         self._actions = dict()
+        self._settings = settings
+        self.update_from_settings()
+        Actions.ALL = self
+
+    def update_from_settings(self):
+        self._shortcuts = json.loads(self._settings.get('Application.shortcuts'))
+        for a in self._actions.keys():
+            if a in self._shortcuts:
+                self._actions[a].setShortcut(self._shortcuts[a])
 
     def add(self,
             name: str,
@@ -53,7 +55,10 @@ class Actions:
         res: QAction = QAction(text, self._window)
         res.setObjectName(name)
         if shortcut is not None:
-            res.setShortcut(shortcut)
+            if name in self._shortcuts:
+                res.setShortcut(self._shortcuts[name])
+            else:
+                res.setShortcut(shortcut)
         if icon is not None:
             res.setIcon(QIcon(icon))
         if is_toggle:

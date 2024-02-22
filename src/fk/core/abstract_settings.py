@@ -85,6 +85,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Pomodoro.default_work_duration', 'int', 'Default work duration (s)', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'int', 'Default rest duration (s)', str(5 * 60), [1, 60 * 60], _always_show),
                 ('Pomodoro.auto_seal_after', 'int', 'Auto-seal items after (s)', str(5), [1, 120], _always_show),
+                ('', 'separator', '', '', [], _always_show),
+                ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
