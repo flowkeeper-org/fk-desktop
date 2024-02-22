@@ -1,3 +1,14 @@
+### v0.3.0 (xx February 2024)
+- [Technical] Pomodoros expired offline now succeed by default.
+- [Technical] CompletePomodoro strategy is replaced by VoidPomodoro one.
+- [Technical] More robust data synchronization.
+- [Technical] Synchronization conflicts are treated as warnings by default.
+- [Technical] Strategies have unique IDs and parent IDs instead of incremental sequence numbers.
+
+### v0.2.1 (22 February 2024)
+- Fixed work item actions visibility
+- Keyboard shortcuts are now configurable in Settings
+
 ### v0.2.0 (20 February 2024)
 - Support for gradient timer header background.
 - Better resizing for the header background images.

@@ -197,11 +197,10 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
         return None, None
 
 
-# CompletePomodoro("123-456-789", "finished")
+# VoidPomodoro("123-456-789")
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
+class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
-    _target_state: str
 
     def __init__(self,
                  seq: int,
@@ -214,7 +213,6 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
-        self._target_state = params[1]
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -237,7 +235,7 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                 params = {
                     'workitem': workitem,
                     'pomodoro': pomodoro,
-                    'target_state': self._target_state,
+                    'target_state': 'canceled',
                 }
                 self._emit(events.BeforePomodoroComplete, params)
                 pomodoro.seal(self._target_state, self._when)
@@ -247,6 +245,32 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
 
         raise Exception(f'No running pomodoros in "{self._workitem_uid}"')
 
+
+# CompletePomodoro("123-456-789", "finished")
+# Legacy
+@strategy
+class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
+    _another: VoidPomodoroStrategy | None
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        if params[1] == 'canceled':
+            self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
+        else:
+            self._another = None
+
+    def execute(self) -> (str, any):
+        if self._another:
+            return self._another.execute()
+        else:
+            return None, None   # Since version 1.3.x we always complete pomodoros implicitly
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
