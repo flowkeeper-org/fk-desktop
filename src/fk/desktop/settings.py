@@ -13,17 +13,18 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import json
 import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QKeySequence
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox
+    QMessageBox, QVBoxLayout, QKeySequenceEdit
 
 from fk.core.abstract_settings import AbstractSettings
+from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
 
 
@@ -165,17 +166,17 @@ class SettingsDialog(QDialog):
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
             self._widgets_value[option_id] = ed3.text
             layout.addWidget(ed3)
-            btn = QPushButton(parent)
-            btn.setText('Browse...')
-            btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
-            layout.addWidget(btn)
+            sequence_edit = QPushButton(parent)
+            sequence_edit.setText('Browse...')
+            sequence_edit.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
+            layout.addWidget(sequence_edit)
             return [widget]
         elif option_type == 'button':
-            btn = QPushButton(parent)
-            btn.setText('Execute...')
-            btn.clicked.connect(lambda: self._handle_button_click(option_id))
+            sequence_edit = QPushButton(parent)
+            sequence_edit.setText('Execute...')
+            sequence_edit.clicked.connect(lambda: self._handle_button_click(option_id))
             self._widgets_value[option_id] = lambda: ""
-            return [btn]
+            return [sequence_edit]
         elif option_type == 'int':
             ed4 = QSpinBox(parent)
             ed4.setMinimum(option_options[0])
@@ -214,6 +215,43 @@ class SettingsDialog(QDialog):
             ed7.setCurrentFont(option_value)
             self._widgets_value[option_id] = lambda: ed7.currentFont().family()
             return [ed7]
+        elif option_type == 'shortcuts':
+            widget = QWidget(parent)
+            layout = QVBoxLayout(widget)
+            layout.setContentsMargins(0, 0, 0, 0)
+
+            actions = list(Actions.ALL.keys())
+            shortcuts = dict()
+            # There's no need to do something like "shortcuts = json.loads(option_value)"
+            # as those have been already initialized from the settings on startup
+            for a in actions:
+                shortcuts[a] = Actions.ALL[a].shortcut().toString()
+            sequence_edit = QKeySequenceEdit(parent)
+            sequence_edit.setKeySequence(shortcuts[actions[0]])
+            reset_button = QPushButton(widget)
+            reset_button.setText('Clear')
+            reset_button.clicked.connect(lambda: sequence_edit.clear())
+
+            def on_shortcut_changed(k: QKeySequence):
+                shortcuts[actions[ed8.currentIndex()]] = k.toString()
+                self._on_value_changed(option_id, json.dumps(shortcuts))
+
+            sequence_edit.keySequenceChanged.connect(on_shortcut_changed)
+
+            ed8 = QComboBox(parent)
+            ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
+            ed8.currentIndexChanged.connect(lambda v: sequence_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
+            self._widgets_value[option_id] = lambda: json.dumps(shortcuts)
+
+            layout.addWidget(ed8)
+
+            hlayout = QHBoxLayout(widget)
+            hlayout.setContentsMargins(0, 0, 0, 0)
+            hlayout.addWidget(sequence_edit)
+            hlayout.addWidget(reset_button)
+
+            layout.addLayout(hlayout)
+            return [widget]
         else:
             return []
 

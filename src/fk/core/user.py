@@ -23,7 +23,6 @@ from fk.core.pomodoro import Pomodoro
 
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
-    _last_pomodoro: Pomodoro
 
     def __init__(self,
                  data: 'Tenant',
@@ -32,7 +31,6 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
                  create_date: datetime.datetime,
                  is_system_user: bool):
         super().__init__(name, data, identity, create_date)
-        self._last_pomodoro = None
         self._is_system_user = is_system_user
 
     def __str__(self):
@@ -44,14 +42,20 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def is_system_user(self) -> bool:
         return self._is_system_user
 
-    # Returns (state, total remaining). State can be Unknown, Focus, Rest and Idle
+    def get_running_pomodoro(self) -> Pomodoro | None:
+        for b in self.values():
+            for w in b.values():
+                if w.is_running():
+                    for p in w.values():
+                        if p.is_running():
+                            return p
+
+    # Returns (state, total remaining). State can be Focus, Rest and Idle
     def get_state(self) -> (str, int):
-        if self._last_pomodoro is None:
-            return "Unknown", 0
-        remaining = self._last_pomodoro.remaining_time_in_current_state()
-        if self._last_pomodoro.is_running():
-            return "Focus", remaining
-        elif remaining > 0:
-            return "Rest", remaining
+        p = self.get_running_pomodoro()
+        if p.is_working():
+            return f"Focus", p.remaining_minutes_in_current_state()
+        elif p.is_resting():
+            return "Rest", p.remaining_minutes_in_current_state()
         else:
             return "Idle", 0
