@@ -238,7 +238,7 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
                     'target_state': 'canceled',
                 }
                 self._emit(events.BeforePomodoroComplete, params)
-                pomodoro.seal(self._target_state, self._when)
+                pomodoro.seal('canceled', self._when)
                 pomodoro.item_updated(self._when)
                 self._emit(events.AfterPomodoroComplete, params)
                 return None, None
@@ -261,6 +261,7 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                  data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
         if params[1] == 'canceled':
             self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
         else:

@@ -1,4 +1,5 @@
 ### v0.3.0 (xx February 2024)
+- Flowkeeper.org authentication via Google
 - [Technical] Pomodoros expired offline now succeed by default.
 - [Technical] CompletePomodoro strategy is replaced by VoidPomodoro one.
 - [Technical] More robust data synchronization.
