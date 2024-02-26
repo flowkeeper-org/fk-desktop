@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pprint import pprint
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, QByteArray
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager
 from PySide6.QtNetworkAuth import QOAuth2AuthorizationCodeFlow, QOAuthHttpServerReplyHandler, QAbstractOAuth
@@ -23,40 +23,34 @@ from PySide6.QtWidgets import QPushButton
 
 from fk.qt.minimal_common import window, main_loop
 
+client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
+client_secret = 'xxx'
+local_port = 8888
+auth_url = 'https://accounts.google.com/o/oauth2/auth'
+token_url = 'https://oauth2.googleapis.com/token'
 
-def mpf(stage, parameters):
-    print('mpf:', stage, parameters)
+
+def fix_parameters(stage, parameters):
     if stage == QAbstractOAuth.Stage.RequestingAccessToken:
-        # parameters['code'] = [QByteArray.fromPercentEncoding(parameters['code'][0])]
-        parameters['client_id'] = ['248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com']
-        parameters['client_secret'] = ['...']
+        parameters['client_id'] = [client_id]
+        parameters['client_secret'] = [client_secret]
         parameters['code'] = [QUrl.fromPercentEncoding(parameters['code'][0])]
-        parameters['redirect_uri'] = ['http://127.0.0.1:8888/']
+        parameters['redirect_uri'] = [f'http://127.0.0.1:{local_port}/']
     elif stage == QAbstractOAuth.Stage.RequestingAuthorization:
         parameters['access_type'] = ['offline']
-        parameters['prompt'] = ['prompt']
-    pprint(parameters)
+    return parameters
 
 
 def login():
     mgr = QNetworkAccessManager(window)
-    reply_handler = QOAuthHttpServerReplyHandler(8888, window)
-
-    flow = QOAuth2AuthorizationCodeFlow('248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com',
-                                        'https://accounts.google.com/o/oauth2/auth',
-                                        'http://localhost:8090/token',
-                                        mgr,
-                                        window)
+    flow = QOAuth2AuthorizationCodeFlow(client_id, auth_url, token_url, mgr, window)
     flow.setScope('email')
-    flow.setClientIdentifierSharedKey('...')
+    flow.setClientIdentifierSharedKey(client_secret)
     flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
-    flow.setReplyHandler(reply_handler)
-    flow.setModifyParametersFunction(mpf)
-    flow.granted.connect(lambda t: print('Granted:', flow.token()))
-
-    print('Logging in...')
+    flow.setReplyHandler(QOAuthHttpServerReplyHandler(local_port, window))
+    flow.setModifyParametersFunction(fix_parameters)
+    flow.granted.connect(lambda: print('Granted:', flow.token()))
     flow.grant()
-    print('Grant requested')
 
 
 button = QPushButton(window)
