@@ -31,6 +31,7 @@ from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
     PingStrategy
+from fk.qt.oauth import get_id_token
 from fk.qt.qt_timer import QtTimer
 
 TRoot = TypeVar('TRoot')
@@ -87,9 +88,9 @@ class WebsocketEventSource(AbstractEventSource):
         if source_type == 'websocket':
             url = self.get_config_parameter('WebsocketEventSource.url')
         elif source_type == 'flowkeeper.org':
-            url = 'wss://app.flowkeeper.org'
+            url = 'wss://app.flowkeeper.org/ws'
         elif source_type == 'flowkeeper.pro':
-            url = 'wss://app.flowkeeper.pro'
+            url = 'wss://app.flowkeeper.pro/ws'
         else:
             raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
         print(f'Connecting to {url}, attempt {self._connection_attempt}')
@@ -138,17 +139,29 @@ class WebsocketEventSource(AbstractEventSource):
                     raise ex
         self.auto_seal()
 
+    def _authenticate_with_google(self):
+        refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')
+        return get_id_token(refresh_token)
+
     def replay(self) -> None:
         self._connection_attempt = 0    # This will allow us to reconnect quickly
         self._received_error = False
         print('Connected. Authenticating')
+
+        auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
         username = self.get_config_parameter('WebsocketEventSource.username')
-        token = self.get_config_parameter('WebsocketEventSource.password')
+        if auth_type == 'basic':
+            token = self.get_config_parameter('WebsocketEventSource.password')
+        elif auth_type == 'google':
+            token = self._authenticate_with_google()
+        else:
+            raise Exception(f'Unsupported authentication type: {auth_type}')
+
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         auth = AuthenticateStrategy(1,
                                     now,
                                     self._data.get_admin_user(),
-                                    [username, token],
+                                    [username, f'{auth_type}|{token}', 'false'],
                                     self._emit,
                                     self._data,
                                     self._settings)

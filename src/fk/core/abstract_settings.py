@@ -50,6 +50,14 @@ def _show_for_custom_websocket_source(values: dict[str, str]) -> bool:
     return values['Source.type'] == 'websocket'
 
 
+def _show_for_basic_auth(values: dict[str, str]) -> bool:
+    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'basic'
+
+
+def _show_for_google_auth(values: dict[str, str]) -> bool:
+    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'google'
+
+
 def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_alarm_sound'] == 'True'
 
@@ -101,8 +109,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3'], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
-                ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_websocket_source),
-                ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_websocket_source),
+                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'basic', [
+                    "basic:Simple username and password",
+                    "google:Google account (more secure)",
+                ], _show_for_websocket_source),
+                ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
+                ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
+                ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'False', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'False', [], _show_for_websocket_source),
             ],
