@@ -225,6 +225,7 @@ class Application(QApplication, AbstractEventEmitter):
         SettingsDialog(self._settings, {
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
+            'WebsocketEventSource.authenticate': self.sign_in,
         }).show()
 
     def repair_file_event_source(self, _):
@@ -255,6 +256,9 @@ class Application(QApplication, AbstractEventEmitter):
     def generate_gradient(self, _):
         chosen = random.choice(list(QGradient.Preset))
         self._settings.set('Application.eyecandy_gradient', chosen.name)
+
+    def sign_in(self, _):
+        self._settings.set('WebsocketEventSource.token', '123')
 
     @staticmethod
     def define_actions(actions: Actions):
