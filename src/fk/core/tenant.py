@@ -27,7 +27,7 @@ ADMIN_USER = 'admin@local.host'
 
 
 class Tenant(AbstractDataContainer[User, None]):
-    """App is the root of the data hierarchy in Flowkeeper Client.
+    """Tenant is the root of the data hierarchy in Flowkeeper Client.
     It contains users and has no parent."""
 
     _settings: AbstractSettings
