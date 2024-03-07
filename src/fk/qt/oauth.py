@@ -27,6 +27,7 @@ class AuthenticationRecord:
 def authenticate(callback: Callable[[AuthenticationRecord], None]):
     auth = AuthenticationRecord()
     auth.email = '123'
+    auth.refresh_token = '123'
     callback(auth)
 
 

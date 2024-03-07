@@ -88,9 +88,9 @@ class WebsocketEventSource(AbstractEventSource):
         if source_type == 'websocket':
             url = self.get_config_parameter('WebsocketEventSource.url')
         elif source_type == 'flowkeeper.org':
-            url = 'wss://app.flowkeeper.org'
+            url = 'wss://app.flowkeeper.org/ws'
         elif source_type == 'flowkeeper.pro':
-            url = 'wss://app.flowkeeper.pro'
+            url = 'wss://app.flowkeeper.pro/ws'
         else:
             raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
         print(f'Connecting to {url}, attempt {self._connection_attempt}')
