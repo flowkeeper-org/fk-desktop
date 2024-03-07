@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import datetime
 import random
 import sys
@@ -37,6 +38,7 @@ from fk.desktop.settings import SettingsDialog
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.heartbeat import Heartbeat
+from fk.qt.oauth import authenticate, AuthenticationRecord
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
@@ -258,7 +260,11 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set('Application.eyecandy_gradient', chosen.name)
 
     def sign_in(self, _):
-        self._settings.set('WebsocketEventSource.token', '123')
+        def save(auth: AuthenticationRecord):
+            self._settings.set('WebsocketEventSource.auth_type', 'google')
+            self._settings.set('WebsocketEventSource.username', auth.email)
+            self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
+        authenticate(save)
 
     @staticmethod
     def define_actions(actions: Actions):

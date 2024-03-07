@@ -115,7 +115,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
-                ('WebsocketEventSource.token', 'secret', 'OAuth Token', '', [], _never_show),
+                ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'False', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'False', [], _show_for_websocket_source),
