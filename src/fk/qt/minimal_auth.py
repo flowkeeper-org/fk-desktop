@@ -15,19 +15,21 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pprint import pprint
 
+import jwt
 from PySide6.QtCore import QUrl, QByteArray
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtNetwork import QNetworkAccessManager
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtNetworkAuth import QOAuth2AuthorizationCodeFlow, QOAuthHttpServerReplyHandler, QAbstractOAuth
 from PySide6.QtWidgets import QPushButton
 
 from fk.qt.minimal_common import window, main_loop
 
 client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
-client_secret = 'xxx'
+client_secret = '...'
 local_port = 8888
 auth_url = 'https://accounts.google.com/o/oauth2/auth'
 token_url = 'https://oauth2.googleapis.com/token'
+cert_url = 'https://www.googleapis.com/oauth2/v3/certs'
 
 
 def fix_parameters(stage, parameters):
@@ -49,8 +51,27 @@ def login():
     flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
     flow.setReplyHandler(QOAuthHttpServerReplyHandler(local_port, window))
     flow.setModifyParametersFunction(fix_parameters)
-    flow.granted.connect(lambda: print('Granted:', flow.token()))
+    flow.granted.connect(lambda: pr(flow, mgr))
     flow.grant()
+
+
+def pp(resp: QNetworkReply, flow: QOAuth2AuthorizationCodeFlow):
+    cert = resp.readAll().toStdString()
+
+    print('Cert:', cert)
+    print('Access token:', flow.token())
+    id_token = flow.extraTokens().get('id_token', None)
+    print('ID token:', id_token)
+    algorithm = jwt.get_unverified_header(id_token).get('alg')
+    print('Alg:', algorithm)
+    print('Decoded:', jwt.decode(jwt=id_token,
+                                 algorithms=algorithm))
+    print('Refresh token:', flow.refreshToken())
+
+
+def pr(flow: QOAuth2AuthorizationCodeFlow, mgr: QNetworkAccessManager):
+    resp = mgr.get(QNetworkRequest(cert_url))
+    resp.finished.connect(lambda: pp(resp, flow))
 
 
 button = QPushButton(window)

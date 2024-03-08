@@ -264,7 +264,7 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.set('WebsocketEventSource.auth_type', 'google')
             self._settings.set('WebsocketEventSource.username', auth.email)
             self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
-        authenticate(save)
+        authenticate(self, save)
 
     @staticmethod
     def define_actions(actions: Actions):
