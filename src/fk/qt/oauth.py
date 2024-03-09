@@ -13,7 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import base64
+import json
 from typing import Callable
 
 from PySide6.QtCore import QUrl, QObject
@@ -23,16 +24,24 @@ from PySide6.QtNetworkAuth import QAbstractOAuth, QOAuth2AuthorizationCodeFlow, 
 
 client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
 client_secret = '...'
-local_port = 8888
+local_port = 18889
 auth_url = 'https://accounts.google.com/o/oauth2/auth'
 token_url = 'https://oauth2.googleapis.com/token'
 
 
 class AuthenticationRecord:
+    type: str
     email: str
     refresh_token: str
     access_token: str
     id_token: str
+
+    def __str__(self):
+        return (f'AuthenticationRecord({self.type}):\n'
+                f' - Email: {self.email}\n'
+                f' - Refresh token: {self.refresh_token}\n'
+                f' - Access token: {self.access_token}\n'
+                f' - ID token: {self.id_token}')
 
 
 def _fix_parameters(stage, parameters):
@@ -46,32 +55,56 @@ def _fix_parameters(stage, parameters):
     return parameters
 
 
-def authenticate(parent: QObject, callback: Callable[[AuthenticationRecord], None]):
+def authenticate(parent: QObject, callback: Callable[[AuthenticationRecord], None]) -> None:
+    print(f'Authenticating for a refresh token')
+    return _perform_flow(parent, callback, None)
+
+
+def get_id_token(parent: QObject, callback: Callable[[AuthenticationRecord], None], refresh_token: str) -> None:
+    print(f'Getting ID token for refresh token {refresh_token}')
+    _perform_flow(parent, callback, refresh_token)
+
+
+def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], None], refresh_token: str | None):
     mgr = QNetworkAccessManager(parent)
     flow = QOAuth2AuthorizationCodeFlow(client_id, auth_url, token_url, mgr, parent)
     flow.setScope('email')
+    if refresh_token is not None:
+        flow.setRefreshToken(refresh_token)
     flow.setClientIdentifierSharedKey(client_secret)
     flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
     flow.setReplyHandler(QOAuthHttpServerReplyHandler(local_port, parent))
     flow.setModifyParametersFunction(_fix_parameters)
     flow.granted.connect(lambda: _granted(flow, callback))
-    flow.grant()
+    flow.error.connect(lambda err: _error(err, flow, callback))
+    if refresh_token is not None:
+        print('Refreshing access token')
+        flow.refreshAccessToken()
+    else:
+        print('Requesting access grant')
+        flow.grant()
+
+
+def _extract_email(id_token: str) -> str:
+    b = bytes(id_token.split('.')[1], 'iso8859-1')
+    t = json.loads(base64.decodebytes(b + b'===='))
+    return t['email']
+
+
+def _error(err, flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[AuthenticationRecord], None]):
+    print('Error in OAuth2 Authorization Flow', err)
 
 
 def _granted(flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[AuthenticationRecord], None]):
+    print('Access granted')
     id_token = flow.extraTokens().get('id_token', None)
-    print('OAuth access granted:')
-    print(' - Access token:', flow.token())
-    print(' - ID token:', id_token)
-    print(' - Refresh token:', flow.refreshToken())
+    email = _extract_email(id_token)
     auth = AuthenticationRecord()
-    auth.email = '???'
+    auth.email = email
+    auth.type = 'google'
     auth.access_token = flow.token()
     auth.id_token = id_token
     auth.refresh_token = flow.refreshToken()
+    print('OAuth access granted / refreshed')
+    print(auth)
     callback(auth)
-
-
-def get_id_token(refresh_token: str) -> str:
-    # TODO: Get access token from this refresh one, then get ID token
-    return '123'

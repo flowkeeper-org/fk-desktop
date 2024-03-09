@@ -40,7 +40,7 @@ if source_type == 'local':
                                                  root,
                                                  QtFilesystemWatcher()))
 elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings, root)
+    source = WebsocketEventSource(settings, app, root)
 else:
     raise Exception(f"Source type {source_type} not supported")
 

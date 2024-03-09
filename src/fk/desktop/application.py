@@ -101,7 +101,7 @@ class Application(QApplication, AbstractEventEmitter):
             inner_source = FileEventSource(self._settings, root, QtFilesystemWatcher())
             source = ThreadedEventSource(inner_source)
         elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-            source = WebsocketEventSource(self._settings, root)
+            source = WebsocketEventSource(self._settings, self, root)
             if self._heartbeat is not None:
                 self._heartbeat.stop()
             self._heartbeat = Heartbeat(source, 3000, 500)

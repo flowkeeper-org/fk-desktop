@@ -1,5 +1,3 @@
 PySide6>=6.6
 pyinstaller
 coverage
-python-jose[cryptography]
-cryptography

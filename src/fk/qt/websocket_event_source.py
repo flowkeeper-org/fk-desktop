@@ -31,7 +31,7 @@ from fk.core.abstract_timer import AbstractTimer
 from fk.core.strategy_factory import strategy_from_string
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
     PingStrategy
-from fk.qt.oauth import get_id_token
+from fk.qt.oauth import get_id_token, AuthenticationRecord
 from fk.qt.qt_timer import QtTimer
 
 TRoot = TypeVar('TRoot')
@@ -46,12 +46,15 @@ class WebsocketEventSource(AbstractEventSource):
     _received_error: bool
     _ignore_invalid_sequences: bool
     _ignore_errors: bool
+    _application: QApplication
 
     def __init__(self,
                  settings: AbstractSettings,
+                 application: QApplication,
                  root: TRoot):
         super().__init__(settings)
         self._data = root
+        self._application = application
         self._mute_requested = True
         self._connection_attempt = 0
         self._received_error = False
@@ -139,33 +142,22 @@ class WebsocketEventSource(AbstractEventSource):
                     raise ex
         self.auto_seal()
 
-    def _authenticate_with_google(self):
+    def _authenticate_with_google_and_replay(self):
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')
-        return get_id_token(refresh_token)
+        return get_id_token(self._application, self._replay_after_auth, refresh_token)
 
-    def replay(self) -> None:
-        self._connection_attempt = 0    # This will allow us to reconnect quickly
-        self._received_error = False
-        print('Connected. Authenticating')
-
-        auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
-        username = self.get_config_parameter('WebsocketEventSource.username')
-        if auth_type == 'basic':
-            token = self.get_config_parameter('WebsocketEventSource.password')
-        elif auth_type == 'google':
-            token = self._authenticate_with_google()
-        else:
-            raise Exception(f'Unsupported authentication type: {auth_type}')
-
+    def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
+        print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        auth = AuthenticateStrategy(1,
+        auth_strategy = AuthenticateStrategy(1,
                                     now,
                                     self._data.get_admin_user(),
-                                    [username, f'{auth_type}|{token}', 'false'],
+                                    [auth.email, f'{auth.type}|{auth.id_token}', 'false'],
                                     self._emit,
                                     self._data,
                                     self._settings)
-        self._ws.sendTextMessage(str(auth))
+        print(f'Sending auth strategy: {auth_strategy}')
+        self._ws.sendTextMessage(str(auth_strategy))
 
         print(f'Requesting replay starting from #{self._last_seq}')
         replay = ReplayStrategy(2,
@@ -181,6 +173,25 @@ class WebsocketEventSource(AbstractEventSource):
         if self._mute_requested:
             self.mute()
 
+    def replay(self) -> None:
+        self._connection_attempt = 0    # This will allow us to reconnect quickly
+        self._received_error = False
+
+        auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
+        print(f'Connected. Authenticating with {auth_type}')
+
+        if auth_type == 'basic':
+            auth = AuthenticationRecord()
+            auth.email = self.get_config_parameter('WebsocketEventSource.username')
+            auth.type = auth_type
+            auth.id_token = self.get_config_parameter('WebsocketEventSource.password')
+            self._replay_after_auth(auth)
+        elif auth_type == 'google':
+            self._authenticate_with_google_and_replay()
+        else:
+            raise Exception(f'Unsupported authentication type: {auth_type}')
+
+
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
             self._ws.sendTextMessage(str(s))
@@ -192,7 +203,7 @@ class WebsocketEventSource(AbstractEventSource):
         return self._data
 
     def clone(self, new_root: TRoot) -> Self:
-        return WebsocketEventSource(self._settings, new_root)
+        return WebsocketEventSource(self._settings, self._application, new_root)
 
     def disconnect(self):
         self._ws.disconnected.disconnect()
