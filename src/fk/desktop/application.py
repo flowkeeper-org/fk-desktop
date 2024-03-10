@@ -287,3 +287,6 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_about(self):
         AboutWindow(self.activeWindow()).show()
+
+    def get_heartbeat(self) -> Heartbeat:
+        return self._heartbeat
