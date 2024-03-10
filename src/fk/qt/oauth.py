@@ -28,6 +28,8 @@ local_port = 18889
 auth_url = 'https://accounts.google.com/o/oauth2/auth'
 token_url = 'https://oauth2.googleapis.com/token'
 
+MGR: QNetworkAccessManager = None
+HANDLER: QOAuthHttpServerReplyHandler = None
 
 class AuthenticationRecord:
     type: str
@@ -66,14 +68,18 @@ def get_id_token(parent: QObject, callback: Callable[[AuthenticationRecord], Non
 
 
 def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], None], refresh_token: str | None):
-    mgr = QNetworkAccessManager(parent)
-    flow = QOAuth2AuthorizationCodeFlow(client_id, auth_url, token_url, mgr, parent)
+    global MGR, HANDLER
+    if MGR is None:
+        MGR = QNetworkAccessManager(parent)
+    if HANDLER is None:
+        HANDLER = QOAuthHttpServerReplyHandler(local_port, parent)
+    flow = QOAuth2AuthorizationCodeFlow(client_id, auth_url, token_url, MGR, parent)
     flow.setScope('email')
     if refresh_token is not None:
         flow.setRefreshToken(refresh_token)
     flow.setClientIdentifierSharedKey(client_secret)
     flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
-    flow.setReplyHandler(QOAuthHttpServerReplyHandler(local_port, parent))
+    flow.setReplyHandler(HANDLER)
     flow.setModifyParametersFunction(_fix_parameters)
     flow.granted.connect(lambda: _granted(flow, callback))
     flow.error.connect(lambda err: _error(err, flow, callback))
@@ -88,6 +94,7 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
 def _extract_email(id_token: str) -> str:
     b = bytes(id_token.split('.')[1], 'iso8859-1')
     t = json.loads(base64.decodebytes(b + b'===='))
+    print(f'Extracted JWT info: {json.dumps(t)}')
     return t['email']
 
 
