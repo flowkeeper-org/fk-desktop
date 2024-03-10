@@ -101,6 +101,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
+        # TODO: Double-clicking the backlog name doesn't use those
 
     # Actions
 

@@ -91,7 +91,7 @@ class PomodoroTimer(AbstractEventEmitter):
             self._tick_timer.cancel()
         elif workitem is not None and pomodoro is not None:
             self._state = 'rest' if pomodoro.is_resting() else 'work'
-            print(f'PomodoroTimer: Currently {self._state}')
+            print(f'PomodoroTimer: Current state is "{self._state}"')
             self._pomodoro = pomodoro
             self._workitem = workitem
             self._planned_duration = pomodoro.get_rest_duration() \

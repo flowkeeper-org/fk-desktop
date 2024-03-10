@@ -109,13 +109,15 @@ class WebsocketEventSource(AbstractEventSource):
         lines = message.split('\n')
         # print(f'Received {len(lines)}')
         i = 0
+        to_unmute = False   # It's important to unmute / emit AFTER auto_seal
+        to_emit = False
         for line in lines:
             try:
                 # TODO: Check for strategy class type here instead
                 if line == 'ReplayCompleted()':
                     if self._mute_requested:
-                        self.unmute()
-                    self._emit(events.SourceMessagesProcessed, dict())
+                        to_unmute = True
+                    to_emit = True
                     break
                 s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
                 if type(s) is str:
@@ -141,6 +143,10 @@ class WebsocketEventSource(AbstractEventSource):
                 else:
                     raise ex
         self.auto_seal()
+        if to_unmute:
+            self.unmute()
+        if to_emit:
+            self._emit(events.SourceMessagesProcessed, dict())
 
     def _authenticate_with_google_and_replay(self):
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')
