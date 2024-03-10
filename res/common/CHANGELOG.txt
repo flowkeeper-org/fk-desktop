@@ -1,5 +1,6 @@
-### v0.3.0 (xx February 2024)
-- Flowkeeper.org authentication via Google
+### v0.3.0 (10 March 2024)
+- Flowkeeper.org authentication via Google OAuth.
+- [Known bug] The app crashes after you authenticate with Google. Just restart it.
 - [Technical] Pomodoros expired offline now succeed by default.
 - [Technical] CompletePomodoro strategy is replaced by VoidPomodoro one.
 - [Technical] More robust data synchronization.
