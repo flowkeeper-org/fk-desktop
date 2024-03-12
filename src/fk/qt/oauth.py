@@ -23,10 +23,9 @@ from PySide6.QtNetwork import QNetworkAccessManager
 from PySide6.QtNetworkAuth import QAbstractOAuth, QOAuth2AuthorizationCodeFlow, QOAuthHttpServerReplyHandler
 
 client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
-client_secret = '...'
-local_port = 18889
+local_port = 64166
 auth_url = 'https://accounts.google.com/o/oauth2/auth'
-token_url = 'https://oauth2.googleapis.com/token'
+token_url = 'https://app.flowkeeper.org/token'
 
 MGR: QNetworkAccessManager = None
 HANDLER: QOAuthHttpServerReplyHandler = None
@@ -49,7 +48,8 @@ class AuthenticationRecord:
 def _fix_parameters(stage, parameters):
     if stage == QAbstractOAuth.Stage.RequestingAccessToken:
         parameters['client_id'] = [client_id]
-        parameters['client_secret'] = [client_secret]
+        # The client secret is handled on the server side
+        # parameters['client_secret'] = [client_secret]
         parameters['code'] = [QUrl.fromPercentEncoding(parameters['code'][0])]
         parameters['redirect_uri'] = [f'http://127.0.0.1:{local_port}/']
     elif stage == QAbstractOAuth.Stage.RequestingAuthorization:
@@ -77,7 +77,8 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
     flow.setScope('email')
     if refresh_token is not None:
         flow.setRefreshToken(refresh_token)
-    flow.setClientIdentifierSharedKey(client_secret)
+    # We are adding the client secret on the server side
+    # flow.setClientIdentifierSharedKey(client_secret)
     flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
     flow.setReplyHandler(HANDLER)
     flow.setModifyParametersFunction(_fix_parameters)
