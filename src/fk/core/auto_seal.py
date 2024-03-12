@@ -17,7 +17,7 @@
 from typing import Iterable, Callable, Type
 
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.pomodoro_strategies import CompletePomodoroStrategy, StartRestStrategy
+from fk.core.pomodoro_strategies import StartRestStrategy, VoidPomodoroStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 
@@ -31,9 +31,11 @@ def auto_seal(workitems: Iterable[Workitem],
             if pomodoro.is_running():
                 remaining_time = pomodoro.total_remaining_time()
                 if remaining_time + delta < 0:
-                    # This pomodoro has completely expired, i.e. work + rest happened in the past
-                    executor(CompletePomodoroStrategy, [workitem.get_uid(), 'canceled'], False)
-                    print(f'Warning - automatically voided a pomodoro on '
+                    # This pomodoro has finished, i.e. work + rest happened in the past
+                    # This used to produce a warning, but since version 0.3.1 this is a normal
+                    # thing, as all pomodoros are completed implic
+                    executor(FinishPomodoroInternalStrategy, [workitem.get_uid()], False)
+                    print(f'Info - automatically finished a pomodoro on '
                           f'{workitem.get_name()} '
                           f'(transition happened when the client was offline)')
                 elif pomodoro.is_working():

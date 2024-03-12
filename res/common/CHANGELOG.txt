@@ -1,11 +1,8 @@
-### v0.3.0 (10 March 2024)
+### v0.3.1 (10 March 2024)
 - Flowkeeper.org authentication via Google OAuth.
 - [Known bug] The app crashes after you authenticate with Google. Just restart it.
-- [Technical] Pomodoros expired offline now succeed by default.
-- [Technical] CompletePomodoro strategy is replaced by VoidPomodoro one.
-- [Technical] More robust data synchronization.
-- [Technical] Synchronization conflicts are treated as warnings by default.
-- [Technical] Strategies have unique IDs and parent IDs instead of incremental sequence numbers.
+- [Technical] Pomodoros expired offline now finish successfully.
+- [Technical] All pomodoros now complete implicitly. CompletePomodoro strategy is deprecated.
 
 ### v0.2.1 (22 February 2024)
 - Fixed work item actions visibility

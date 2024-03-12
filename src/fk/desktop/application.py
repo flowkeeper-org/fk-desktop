@@ -265,7 +265,16 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.set('WebsocketEventSource.auth_type', 'google')
             self._settings.set('WebsocketEventSource.username', auth.email)
             self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
-        authenticate(self, save)
+
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Known bug",
+                                 f"After you login the app may crash. It will remember your credentials, so you just "
+                                 f"need to restart it. This is due to a bug in Qt6 OAuth module, for which we are "
+                                 f"implementing a workaround. In the meantime we apologize for the inconvenience.",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel
+                                 ) == QMessageBox.StandardButton.Ok:
+            authenticate(self, save)
 
     @staticmethod
     def define_actions(actions: Actions):

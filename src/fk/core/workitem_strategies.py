@@ -20,7 +20,7 @@ from typing import Callable
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.pomodoro_strategies import CompletePomodoroStrategy
+from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
@@ -85,9 +85,8 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
 def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> None:
     for pomodoro in workitem.values():
         if pomodoro.is_running():
-            strategy.execute_another(CompletePomodoroStrategy, [
+            strategy.execute_another(VoidPomodoroStrategy, [
                 workitem.get_uid(),
-                'canceled'
             ])
 
 
