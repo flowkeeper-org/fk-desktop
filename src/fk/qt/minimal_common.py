@@ -50,14 +50,15 @@ Application.define_actions(actions)
 actions.bind('application', app)
 
 
-def main_loop(callback = None):
+def main_loop(callback = None, start_source = True):
     app.setQuitOnLastWindowClosed(True)
     window.show()
 
     try:
         if callback is not None:
             source.on(SourceMessagesProcessed, lambda event: callback())
-        source.start()
+        if start_source:
+            source.start()
     except Exception as ex:
         app.on_exception(type(ex), ex, ex.__traceback__)
 

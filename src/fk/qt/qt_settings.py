@@ -31,6 +31,8 @@ class QtSettings(AbstractSettings):
         self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
 
     def set(self, name: str, value: str) -> str:
+        if self.get(name) == value:
+            return value
         params = {
             'name': name,
             'old_value': self.get(name),

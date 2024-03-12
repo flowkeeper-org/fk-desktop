@@ -148,9 +148,9 @@ class WebsocketEventSource(AbstractEventSource):
         if to_emit:
             self._emit(events.SourceMessagesProcessed, dict())
 
-    def _authenticate_with_google_and_replay(self):
+    def _authenticate_with_google_and_replay(self) -> None:
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')
-        return get_id_token(self._application, self._replay_after_auth, refresh_token)
+        get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
@@ -196,7 +196,6 @@ class WebsocketEventSource(AbstractEventSource):
             self._authenticate_with_google_and_replay()
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
-
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:

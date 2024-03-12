@@ -261,6 +261,7 @@ class Application(QApplication, AbstractEventEmitter):
 
     def sign_in(self, _):
         def save(auth: AuthenticationRecord):
+            # TODO: Set multiple settings in a single event
             self._settings.set('WebsocketEventSource.auth_type', 'google')
             self._settings.set('WebsocketEventSource.username', auth.email)
             self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
