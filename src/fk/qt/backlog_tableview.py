@@ -57,8 +57,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             after.get_uid() if after is not None else ''
         ))
         self._application = application
-        application.get_heartbeat().on(events.WentOffline, self._lock_ui)
-        application.get_heartbeat().on(events.WentOnline, self._unlock_ui)
+
+        heartbeat = application.get_heartbeat()
+        if heartbeat is not None:
+            heartbeat.on(events.WentOffline, self._lock_ui)
+            heartbeat.on(events.WentOnline, self._unlock_ui)
 
     def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
         self.update_actions(self.get_current())
@@ -97,7 +100,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
-        is_online = self._application.get_heartbeat().is_online()
+
+        heartbeat = self._application.get_heartbeat()
+        is_online = heartbeat is None or heartbeat.is_online()
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)

@@ -187,10 +187,12 @@ class Application(QApplication, AbstractEventEmitter):
         return h
 
     def restart_warning(self) -> None:
-        QMessageBox().warning(self.activeWindow(),
-                              "Restart required",
-                              f"Please restart Flowkeeper to apply new settings",
-                              QMessageBox.StandardButton.Ok)
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Restart required",
+                                 f"To apply new settings Flowkeeper needs a restart. "
+                                 f"Please run it again after pressing OK. We apologize for this inconvenience.",
+                                 QMessageBox.StandardButton.Ok) == QMessageBox.StandardButton.Ok:
+            self.exit(0)
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
@@ -220,8 +222,10 @@ class Application(QApplication, AbstractEventEmitter):
     def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
         # print(f'Setting {name} changed from {old_value} to {new_value}')
         if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
-            self._recreate_source()
-            self._source.start()
+            self.restart_warning()
+            # This is not safe yet:
+            # self._recreate_source()
+            # self._source.start()
         elif name == 'Application.quit_on_close':
             self.setQuitOnLastWindowClosed(new_value == 'True')
         elif 'Application.font_' in name:

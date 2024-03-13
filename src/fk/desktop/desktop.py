@@ -94,13 +94,6 @@ def on_messages(event) -> None:
         show_timer_automatically()
 
 
-def restart_warning() -> None:
-    QtWidgets.QMessageBox().warning(window,
-                                    "Restart required",
-                                    f"Please restart Flowkeeper to apply new settings",
-                                    QtWidgets.QMessageBox.StandardButton.Ok)
-
-
 def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
     # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
