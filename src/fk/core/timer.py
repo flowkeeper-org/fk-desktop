@@ -19,7 +19,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import CompletePomodoroStrategy, StartRestStrategy
+from fk.core.pomodoro_strategies import StartRestStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 
@@ -91,7 +91,7 @@ class PomodoroTimer(AbstractEventEmitter):
             self._tick_timer.cancel()
         elif workitem is not None and pomodoro is not None:
             self._state = 'rest' if pomodoro.is_resting() else 'work'
-            print(f'PomodoroTimer: Currently {self._state}')
+            print(f'PomodoroTimer: Current state is "{self._state}"')
             self._pomodoro = pomodoro
             self._workitem = workitem
             self._planned_duration = pomodoro.get_rest_duration() \
@@ -164,12 +164,13 @@ class PomodoroTimer(AbstractEventEmitter):
             )
             print(f"PomodoroTimer: Executed StartRestStrategy")
         elif target_state == 'finished':
-            print(f"PomodoroTimer: Will execute CompletePomodoroStrategy('{target_workitem.get_name()}', 'finished')")
+            print(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
             self._source.execute(
-                CompletePomodoroStrategy,
-                [target_workitem.get_uid(), "finished"]
+                FinishPomodoroInternalStrategy,
+                [target_workitem.get_uid()],
+                False
             )
-            print(f"PomodoroTimer: Executed CompletePomodoroStrategy")
+            print(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
         else:
             raise Exception(f"Unexpected scheduled transition state: {target_state}")
         print(f'PomodoroTimer: Done - Handling transition to {target_state}')

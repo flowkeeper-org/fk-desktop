@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLa
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterWorkitemComplete, AfterSettingChanged
-from fk.core.pomodoro_strategies import CompletePomodoroStrategy
+from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterFontsChanged
@@ -252,7 +252,7 @@ class FocusWidget(QWidget):
                                          QMessageBox.StandardButton.Ok,
                                          QMessageBox.StandardButton.Cancel
                                          ) == QMessageBox.StandardButton.Ok:
-                    self._source.execute(CompletePomodoroStrategy, [workitem.get_uid(), "canceled"])
+                    self._source.execute(VoidPomodoroStrategy, [workitem.get_uid()])
 
     def _next_pomodoro(self) -> None:
         QMessageBox().warning(self.parent(),

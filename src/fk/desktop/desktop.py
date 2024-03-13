@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     # noinspection PyTypeChecker
     left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
-    left_toolbar_layout.addWidget(ConnectionWidget(window, app._heartbeat, app))
+    left_toolbar_layout.addWidget(ConnectionWidget(window, app.get_heartbeat(), app))
 
     # Backlogs table
     backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)

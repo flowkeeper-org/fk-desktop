@@ -156,17 +156,16 @@ for the calling user. Emits `BeforeBacklogRename` / `AfterBacklogRename` events.
 with this UID is not found or if a workitem with this UID already exists in that backlog. 
 Emits `BeforeWorkitemCreate` / `AfterWorkitemCreate` events.
 - `DeleteWorkitem("<UID>", "")` - Deletes a workitem **recursively**, i.e. executes
-`CompletePomodoroStrategy` with `canceled` state for each of the running pomodoros first. Fails 
-if a workitem with a given UID is not found in any backlog. Emits `BeforeWorkitemDelete` / 
-`AfterWorkitemDelete` events.
+`VoidPomodoroStrategy` for each of the running pomodoros first. Fails if a workitem with a given 
+UID is not found in any backlog. Emits `BeforeWorkitemDelete` / `AfterWorkitemDelete` events.
 - `RenameWorkitem("<UID>", "<NEW_NAME>")` - Fails if a workitem with a given UID is not found in
 any backlog or if it is sealed (finished or canceled). Doesn't do anything if the new name is 
 identical to the old one, otherwise emits `BeforeWorkitemRename` / `AfterWorkitemRename` events.
 - `CompleteWorkitem("<UID>", "<STATE>")` - Seals the workitem with a given state (`finished` or 
-`canceled`) **recursively**, i.e. executes `CompletePomodoroStrategy` with `canceled` state for 
-each of the running pomodoros, if any. Fails if a workitem with a given UID is not found in any 
-backlog, if the target state is neither `finished` nor `canceled`, or if the workitem is already 
-sealed. Emits `BeforeWorkitemComplete` / `AfterWorkitemComplete` events.
+`canceled`) **recursively**, i.e. executes `VoidPomodoroStrategy` for each of the running 
+pomodoros, if any. Fails if a workitem with a given UID is not found in any backlog, if the 
+target state is neither `finished` nor `canceled`, or if the workitem is already sealed. Emits 
+`BeforeWorkitemComplete` / `AfterWorkitemComplete` events.
 
 #### Pomodoro strategies
 
@@ -180,10 +179,11 @@ pomodoros is less than 1, or if the workitem with specified UID is not found or 
 pomodoros is less than 1, or if the workitem with specified UID is not found or sealed, or if 
 there's not enough startable (`new` state) pomodoros in the workitem. Emits 
 `BeforePomodoroRemove` / `AfterPomodoroRemove` events.
-- `CompletePomodoroStrategy("<WORKITEM_UID>", "<TARGET_STATE>")` - Fails if the workitem with 
-specified UID is not found or sealed, or has no running pomodoros, or if the target state is
-neither `finished` nor `canceled`. Emits `BeforePomodoroComplete` / `AfterPomodoroComplete` 
-events.
+- `CompletePomodoroStrategy("<WORKITEM_UID>", "<TARGET_STATE>")` - **DEPRECATED** If the target
+state is `canceled`, it works as a synonym for `VoidPomodoroStrategy`, otherwise it is ignored.
+- `VoidPomodoroStrategy("<WORKITEM_UID>")` - Fails if the workitem with specified UID is not 
+found or sealed, or has no running pomodoros. Emits `BeforePomodoroComplete` / 
+`AfterPomodoroComplete` events with target state `canceled`.
 - `StartWorkStrategy("<WORKITEM_UID>", "<WORK_DURATION_IN_SECONDS>")` - Fails if the workitem 
 with specified UID is not found or sealed, or has no startable (`new`) pomodoros. If the 
 specified work duration is `0`, then the default value at the pomodoro creation moment is used. 

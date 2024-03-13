@@ -1,3 +1,13 @@
+### v0.3.1 (10 March 2024)
+- Flowkeeper.org authentication via Google OAuth.
+- [Known bug] The app crashes after you authenticate with Google. Just restart it.
+- [Technical] Pomodoros expired offline now finish successfully.
+- [Technical] All pomodoros now complete implicitly. CompletePomodoro strategy is deprecated.
+
+### v0.2.1 (22 February 2024)
+- Fixed work item actions visibility
+- Keyboard shortcuts are now configurable in Settings
+
 ### v0.2.0 (20 February 2024)
 - Support for gradient timer header background.
 - Better resizing for the header background images.

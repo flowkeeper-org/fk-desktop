@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import datetime
 import random
 import sys
@@ -37,6 +38,7 @@ from fk.desktop.settings import SettingsDialog
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.heartbeat import Heartbeat
+from fk.qt.oauth import authenticate, AuthenticationRecord
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
@@ -99,7 +101,7 @@ class Application(QApplication, AbstractEventEmitter):
             inner_source = FileEventSource(self._settings, root, QtFilesystemWatcher())
             source = ThreadedEventSource(inner_source)
         elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-            source = WebsocketEventSource(self._settings, root)
+            source = WebsocketEventSource(self._settings, self, root)
             if self._heartbeat is not None:
                 self._heartbeat.stop()
             self._heartbeat = Heartbeat(source, 3000, 500)
@@ -225,6 +227,7 @@ class Application(QApplication, AbstractEventEmitter):
         SettingsDialog(self._settings, {
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
+            'WebsocketEventSource.authenticate': self.sign_in,
         }).show()
 
     def repair_file_event_source(self, _):
@@ -256,6 +259,23 @@ class Application(QApplication, AbstractEventEmitter):
         chosen = random.choice(list(QGradient.Preset))
         self._settings.set('Application.eyecandy_gradient', chosen.name)
 
+    def sign_in(self, _):
+        def save(auth: AuthenticationRecord):
+            # TODO: Set multiple settings in a single event
+            self._settings.set('WebsocketEventSource.auth_type', 'google')
+            self._settings.set('WebsocketEventSource.username', auth.email)
+            self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
+
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Known bug",
+                                 f"After you login the app may crash. It will remember your credentials, so you just "
+                                 f"need to restart it. This is due to a bug in Qt6 OAuth module, for which we are "
+                                 f"implementing a workaround. In the meantime we apologize for the inconvenience.",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel
+                                 ) == QMessageBox.StandardButton.Ok:
+            authenticate(self, save)
+
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
@@ -277,3 +297,6 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_about(self):
         AboutWindow(self.activeWindow()).show()
+
+    def get_heartbeat(self) -> Heartbeat:
+        return self._heartbeat

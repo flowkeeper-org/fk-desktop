@@ -19,6 +19,7 @@ import datetime
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
+from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
@@ -32,6 +33,8 @@ from fk.qt.backlog_model import BacklogModel
 
 
 class BacklogTableView(AbstractTableView[User, Backlog]):
+    _application: Application
+
     def __init__(self,
                  parent: QWidget,
                  application: Application,
@@ -53,6 +56,15 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             'Application.last_selected_backlog',
             after.get_uid() if after is not None else ''
         ))
+        self._application = application
+        application.get_heartbeat().on(events.WentOffline, self._lock_ui)
+        application.get_heartbeat().on(events.WentOnline, self._unlock_ui)
+
+    def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
+        self.update_actions(self.get_current())
+
+    def _unlock_ui(self, event, ping: int) -> None:
+        self.update_actions(self.get_current())
 
     def _on_source_changed(self, event, source):
         #self.setModel(BacklogModel(self.parent(), source))
@@ -85,8 +97,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
-        self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected)
-        self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected)
+        is_online = self._application.get_heartbeat().is_online()
+        self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
+        self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
+        self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
+        # TODO: Double-clicking the backlog name doesn't use those
 
     # Actions
 

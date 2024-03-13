@@ -197,11 +197,45 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
         return None, None
 
 
-# CompletePomodoro("123-456-789", "finished")
+def _complete_pomodoro(user: User,
+                       workitem_uid: str,
+                       target_state: str,
+                       emit: Callable[[str, dict[str, any], any], None],
+                       when: datetime.datetime) -> None:
+    workitem: Workitem | None = None
+    for backlog in user.values():
+        if workitem_uid in backlog:
+            workitem = backlog[workitem_uid]
+            break
+
+    if workitem is None:
+        raise Exception(f'Workitem "{workitem_uid}" not found')
+
+    if not workitem.is_running():
+        raise Exception(f'Workitem "{workitem_uid}" is not running')
+
+    for pomodoro in workitem.values():
+        # TODO: Check that if we are finishing work successfully, then the time since the rest started
+        #  corresponds well to what was planned, +/- 10 seconds
+        if pomodoro.is_running():
+            params = {
+                'workitem': workitem,
+                'pomodoro': pomodoro,
+                'target_state': target_state,
+            }
+            emit(events.BeforePomodoroComplete, params)
+            pomodoro.seal(target_state, when)
+            pomodoro.item_updated(when)
+            emit(events.AfterPomodoroComplete, params)
+            return
+
+    raise Exception(f'No running pomodoros in "{workitem_uid}"')
+
+
+# VoidPomodoro("123-456-789")
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
+class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
-    _target_state: str
 
     def __init__(self,
                  seq: int,
@@ -214,39 +248,61 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
-        self._target_state = params[1]
 
     def execute(self) -> (str, any):
-        workitem: Workitem | None = None
         user = self._data[self._user.get_identity()]
-        for backlog in user.values():
-            if self._workitem_uid in backlog:
-                workitem = backlog[self._workitem_uid]
-                break
+        _complete_pomodoro(user, self._workitem_uid, 'canceled', self._emit, self._when)
+        return None, None
 
-        if workitem is None:
-            raise Exception(f'Workitem "{self._workitem_uid}" not found')
 
-        if not workitem.is_running():
-            raise Exception(f'Workitem "{self._workitem_uid}" is not running')
+# Not available externally, not registered as a strategy
+class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
+    _workitem_uid: str
 
-        for pomodoro in workitem.values():
-            # TODO: Check that if we are finishing work successfully, then the time since the rest started
-            #  corresponds well to what was planned, +/- 10 seconds
-            if pomodoro.is_running():
-                params = {
-                    'workitem': workitem,
-                    'pomodoro': pomodoro,
-                    'target_state': self._target_state,
-                }
-                self._emit(events.BeforePomodoroComplete, params)
-                pomodoro.seal(self._target_state, self._when)
-                pomodoro.item_updated(self._when)
-                self._emit(events.AfterPomodoroComplete, params)
-                return None, None
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        self._workitem_uid = params[0]
 
-        raise Exception(f'No running pomodoros in "{self._workitem_uid}"')
+    def execute(self) -> (str, any):
+        user = self._data[self._user.get_identity()]
+        _complete_pomodoro(user, self._workitem_uid, 'finished', self._emit, self._when)
+        return None, None
 
+
+# CompletePomodoro("123-456-789", "finished")
+# Legacy, for compatibility purposes only. To be removed in the future.
+@strategy
+class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
+    _another: VoidPomodoroStrategy | None
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user: User,
+                 params: list[str],
+                 emit: Callable[[str, dict[str, any], any], None],
+                 data: 'Tenant',
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        if params[1] == 'canceled':
+            self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
+        else:
+            self._another = None
+
+    def execute(self) -> (str, any):
+        if self._another:
+            return self._another.execute()
+        else:
+            return None, None   # Since version 0.3.1 we always complete pomodoros implicitly
 
 # RemovePomodoro("123-456-789", "1")
 @strategy

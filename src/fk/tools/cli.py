@@ -136,7 +136,7 @@ if __name__ == '__main__':
     mode = sys.argv[1] if len(sys.argv) == 2 else 'view'
 
     #s = FileEventSource(MockSettings(), None)
-    s = WebsocketEventSource(MockSettings(filename='/home/w/flowkeeper-data-new.txt'))
+    s = WebsocketEventSource(MockSettings(filename='/home/w/flowkeeper-data-new.txt'), None, None)
 
     if mode == 'view':
         view(s)
