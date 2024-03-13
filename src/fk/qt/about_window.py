@@ -33,9 +33,10 @@ class AboutWindow(QObject):
     def show(self):
         # noinspection PyTypeChecker
         about_version: QLabel = self._about_window.findChild(QLabel, "version")
-        file = QFile(":/VERSION.txt")
+        file = QFile(":/CHANGELOG.txt")
         file.open(QFile.OpenModeFlag.ReadOnly)
-        about_version.setText(file.readAll().toStdString())
+        version = file.readLine().toStdString().replace('#', '').strip()
+        about_version.setText(version)
         file.close()
 
         # noinspection PyTypeChecker

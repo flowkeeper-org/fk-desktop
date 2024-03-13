@@ -1,3 +1,7 @@
+### v0.3.2 (TBD)
+- App version is parsed from the changelog.
+-
+
 ### v0.3.1 (10 March 2024)
 - Flowkeeper.org authentication via Google OAuth.
 - [Known bug] The app crashes after you authenticate with Google. Just restart it.

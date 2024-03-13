@@ -1,6 +1,6 @@
 [Setup]
 AppName=Flowkeeper
-AppVersion=0.1.0
+AppVersion={#GetEnv('FK_VERSION')}
 AppPublisher=Vilia SARL
 AppPublisherURL=https://flowkeeper.org
 AppSupportURL=https://flowkeeper.org
