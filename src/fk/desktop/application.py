@@ -326,6 +326,8 @@ class Application(QApplication, AbstractEventEmitter):
                         'latest': latest,
                         'changelog': changelog,
                     })
+                else:
+                    print(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
             else:
                 print("Warning: Couldn't get the latest release info from GitHub")
         print('Will check GitHub releases for the latest version')

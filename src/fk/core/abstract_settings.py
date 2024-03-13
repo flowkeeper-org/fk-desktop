@@ -120,8 +120,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
-                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'False', [], _show_for_websocket_source),
-                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'False', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
