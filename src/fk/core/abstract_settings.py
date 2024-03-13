@@ -94,6 +94,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Pomodoro.default_rest_duration', 'int', 'Default rest duration (s)', str(5 * 60), [1, 60 * 60], _always_show),
                 ('Pomodoro.auto_seal_after', 'int', 'Auto-seal items after (s)', str(5), [1, 120], _always_show),
                 ('', 'separator', '', '', [], _always_show),
+                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
+                ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
+                ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
             ],
             'Connection': [
@@ -106,7 +109,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
-                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3'], _show_for_file_source),
+                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'basic', [
