@@ -131,15 +131,17 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 type[AbstractStrategy],
                 params: list[str],
                 persist: bool = True,
+                when: datetime.datetime = None,
                 auto: bool = False,
                 carry: any = None) -> None:
         # This method is called when the user does something in the UI on THIS instance
         # TODO: Get username from the login provider instead
-        now = datetime.datetime.now(datetime.timezone.utc)
+        if when is None:
+            when = datetime.datetime.now(datetime.timezone.utc)
         new_sequence = self._last_seq + 1
         s = strategy_class(
             new_sequence,
-            now,
+            when,
             self.get_data().get_user(self._settings.get_username()),
             params,
             self._emit,
@@ -157,10 +159,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         delta = int(self._settings.get('Pomodoro.auto_seal_after'))
         auto_seal(self.workitems(),
                   delta,
-                  lambda strategy_class, params, persist: self.execute(strategy_class,
-                                                                       params,
-                                                                       persist,
-                                                                       auto=True))
+                  lambda strategy_class, params, persist, when: self.execute(strategy_class,
+                                                                             params,
+                                                                             persist=persist,
+                                                                             when=when,
+                                                                             auto=True))
 
     def backlogs(self) -> Iterable[Backlog]:
         for user in self.get_data().values():

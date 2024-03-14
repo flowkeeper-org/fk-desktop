@@ -78,7 +78,6 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
                 if not workitem.is_running():
                     self._emit(events.BeforeWorkitemStart, params)
                     workitem.start(self._when)
-                    workitem.item_updated(self._when)
                     self._emit(events.AfterWorkitemStart, params)
                 self._emit(events.BeforePomodoroWorkStart, params)
                 pomodoro.update_work_duration(work_duration)

@@ -58,7 +58,7 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
         })
         user = User(self._data, self._user_identity, self._user_name, self._when, False)
         self._data[self._user_identity] = user
-        user.item_updated(self._when)   # This is not strictly required, but just in case we will create Teams
+        user.item_updated(self._when)   # This will also update the Tenant
         self._emit(events.AfterUserCreate, {
             'user': user
         })

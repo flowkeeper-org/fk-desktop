@@ -107,3 +107,9 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     def start(self, when: datetime.datetime) -> None:
         self._state = 'running'
         self._date_work_started = when
+
+    def dump(self, indent: str = '') -> str:
+        return f'{super().dump(indent)}\n' \
+               f'{indent} - State: {self._state}\n' \
+               f'{indent} - Work started: {self._date_work_started}\n' \
+               f'{indent} - Work ended: {self._date_work_ended}'

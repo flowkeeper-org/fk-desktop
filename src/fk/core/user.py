@@ -59,3 +59,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
             return "Rest", p.remaining_minutes_in_current_state()
         else:
             return "Idle", 0
+
+    def dump(self, indent: str = '') -> str:
+        return f'{super().dump(indent)}\n' \
+               f'{indent} - System user: {self._is_system_user}'

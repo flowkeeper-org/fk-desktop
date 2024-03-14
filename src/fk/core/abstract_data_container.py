@@ -74,3 +74,13 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
             return self._children[key]
         else:
             return default
+
+    def dump(self, indent: str = '') -> str:
+        if len(self._children) > 0:
+            children = f'\n{indent} --------\n'.join(child.dump(indent + ' - ') for child in self._children.values())
+        else:
+            children = f'{indent} - <None>'
+        return f'{super().dump(indent)}\n' \
+               f'{indent} - Name: {self._name}\n' \
+               f'{indent} - Children: {len(self._children)}\n' \
+               f'{children}'

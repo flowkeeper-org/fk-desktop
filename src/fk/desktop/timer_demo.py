@@ -23,7 +23,7 @@ from fk.qt.timer_widget import render_for_widget, render_for_pixmap, TimerWidget
 
 
 def update(timer_widget: TimerWidget, timer_tray: TimerWidget):
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
     v1 = 1 - (now.second + (now.microsecond / 1000000)) / 60.0
 
     # Update widget

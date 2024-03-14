@@ -17,7 +17,7 @@
 import datetime
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
@@ -81,6 +81,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             actions['backlogs_table.newBacklog'],
             actions['backlogs_table.renameBacklog'],
             actions['backlogs_table.deleteBacklog'],
+            # Uncomment to troubleshoot
+            # actions['backlogs_table.dumpBacklog'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
@@ -90,6 +92,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', None, BacklogTableView.create_backlog)
         actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', None, BacklogTableView.rename_selected_backlog)
         actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, BacklogTableView.delete_selected_backlog)
+        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
 
     def upstream_selected(self, user: User) -> None:
         super().upstream_selected(user)
@@ -106,6 +109,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
+        self._actions['backlogs_table.dumpBacklog'].setEnabled(is_backlog_selected)
         # TODO: Double-clicking the backlog name doesn't use those
 
     # Actions
@@ -146,6 +150,15 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                  QMessageBox.StandardButton.Cancel
                                  ) == QMessageBox.StandardButton.Ok:
             self._source.execute(DeleteBacklogStrategy, [selected.get_uid()])
+
+    def dump_selected_backlog(self) -> None:
+        selected: Backlog = self.get_current()
+        if selected is None:
+            raise Exception("Trying to dump a backlog, while there's none selected")
+        QInputDialog.getMultiLineText(None,
+                                      "Backlog dump",
+                                      "Technical information for debug / development purposes",
+                                      selected.dump())
 
     def _on_messages(self, event):
         user = self._source.get_data().get_current_user()

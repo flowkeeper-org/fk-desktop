@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import datetime
 from typing import TypeVar, Self, Callable, Iterable
 
 from PySide6.QtCore import QThreadPool, Slot
@@ -77,9 +77,10 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                 type[AbstractStrategy],
                 params: list[str],
                 persist: bool = True,
+                when: datetime.datetime = None,
                 auto: bool = False,
                 carry: any = None) -> None:
-        self._wrapped.execute(strategy_class, params, persist, auto, carry)
+        self._wrapped.execute(strategy_class, params, persist, when, auto, carry)
 
     def auto_seal(self) -> None:
         self._wrapped.auto_seal()
