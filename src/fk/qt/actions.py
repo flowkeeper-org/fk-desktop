@@ -104,3 +104,6 @@ class Actions:
 
     def keys(self) -> Iterable[str]:
         return self._actions.keys()
+
+    def get_settings(self):
+        return self._settings

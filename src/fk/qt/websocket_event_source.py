@@ -162,7 +162,7 @@ class WebsocketEventSource(AbstractEventSource):
                                     self._emit,
                                     self._data,
                                     self._settings)
-        print(f'Sending auth strategy: {auth_strategy}')
+        # print(f'Sending auth strategy: {auth_strategy}')
         self._ws.sendTextMessage(str(auth_strategy))
 
         print(f'Requesting replay starting from #{self._last_seq}')
@@ -199,7 +199,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
-            print('Sending', str(s))
+            # print('Sending', str(s))
             self._ws.sendTextMessage(str(s))
 
     def get_name(self) -> str:

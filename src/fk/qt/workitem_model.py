@@ -43,7 +43,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
-        self._show_completed = True
+        self._show_completed = (source.get_config_parameter('Application.show_completed') == 'True')
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._pomodoro_changed)
@@ -88,7 +88,10 @@ class WorkitemModel(QtGui.QStandardItemModel):
         for i in range(self.rowCount()):
             wi = self.item(i).data(500)
             if wi == workitem:
-                self.set_row(i, wi)
+                if not self._show_completed and workitem.is_sealed():
+                    self.removeRow(i)
+                else:
+                    self.set_row(i, wi)
                 return
 
     def set_row(self, i: int, workitem: Workitem) -> None:
