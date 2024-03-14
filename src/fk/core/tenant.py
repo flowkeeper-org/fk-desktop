@@ -36,13 +36,13 @@ class Tenant(AbstractDataContainer[User, None]):
         super().__init__('Flowkeeper Desktop Client',
                          None,
                          '0',
-                         datetime.datetime.utcnow())
+                         datetime.datetime.now(datetime.timezone.utc))
         self._settings = settings
         self[ADMIN_USER] = User(
             self,
             ADMIN_USER,
             'System',
-            datetime.datetime.now(),
+            datetime.datetime.now(datetime.timezone.utc),
             True
         )
 
@@ -60,7 +60,7 @@ class Tenant(AbstractDataContainer[User, None]):
 
     def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
         return CreateUserStrategy(1,
-                                  datetime.datetime.utcnow(),
+                                  datetime.datetime.now(datetime.timezone.utc),
                                   self[ADMIN_USER],
                                   [self._settings.get_username(), self._settings.get_fullname()],
                                   emit,

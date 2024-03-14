@@ -288,10 +288,11 @@ a deleted object -- we'll find a way how to do it by processing the history.
 8. Strategies are only executed as a result of users' actions or timer events. Client
 startup or shutdown won't add any strategies to the history.
 9. The Timer never fires "in the past".
+10. All Pomodoros run and end implicitly. They can only be started and voided explicitly.
 
 ## Copyright
 
-Copyright (c) 2023 Constantine Kulak.
+Copyright (c) 2023 - 2024 Constantine Kulak.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

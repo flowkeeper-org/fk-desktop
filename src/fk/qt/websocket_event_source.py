@@ -154,7 +154,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.timezone.utc)
         auth_strategy = AuthenticateStrategy(1,
                                     now,
                                     self._data.get_admin_user(),
@@ -162,7 +162,7 @@ class WebsocketEventSource(AbstractEventSource):
                                     self._emit,
                                     self._data,
                                     self._settings)
-        print(f'Sending auth strategy: {auth_strategy}')
+        # print(f'Sending auth strategy: {auth_strategy}')
         self._ws.sendTextMessage(str(auth_strategy))
 
         print(f'Requesting replay starting from #{self._last_seq}')
@@ -199,6 +199,7 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
+            # print('Sending', str(s))
             self._ws.sendTextMessage(str(s))
 
     def get_name(self) -> str:
@@ -215,7 +216,7 @@ class WebsocketEventSource(AbstractEventSource):
         self._ws.close()
 
     def send_ping(self) -> str | None:
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.timezone.utc)
         uid = generate_uid()
         ping = PingStrategy(1,
                             now,

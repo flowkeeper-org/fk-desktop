@@ -37,8 +37,10 @@ class ConnectionWidget(QLabel):
         self._img_offline = QPixmap(':/icons/conn-offline.svg')
         self._img_unknown = QPixmap(':/icons/conn-unknown.svg')
 
-        heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
-        heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
+        if heartbeat is not None:
+            heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
+            heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
+
         app.on(AfterSourceChanged, lambda event, source: self._update_source(source))
         self._update_source(app.get_source())
 

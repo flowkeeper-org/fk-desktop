@@ -23,13 +23,14 @@ import webbrowser
 
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics, QGradient
-from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog
+from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
+from semantic_version import Version
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.events import AfterSettingChanged, SourceMessagesProcessed
+from fk.core.events import AfterSettingChanged
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.desktop.export_wizard import ExportWizard
@@ -37,16 +38,19 @@ from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
+from fk.qt.app_version import get_latest_version, get_current_version
 from fk.qt.heartbeat import Heartbeat
 from fk.qt.oauth import authenticate, AuthenticationRecord
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
+from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 AfterFontsChanged = "AfterFontsChanged"
 AfterSourceChanged = "AfterSourceChanged"
+NewReleaseAvailable = "NewReleaseAvailable"
 
 
 class Application(QApplication, AbstractEventEmitter):
@@ -56,10 +60,11 @@ class Application(QApplication, AbstractEventEmitter):
     _row_height: int
     _source: AbstractEventSource | None
     _heartbeat: Heartbeat
+    _version_timer: QtTimer
 
     def __init__(self, args: [str]):
         super().__init__(args,
-                         allowed_events=[AfterFontsChanged, AfterSourceChanged],
+                         allowed_events=[AfterFontsChanged, AfterSourceChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
 
         self._heartbeat = None
@@ -80,6 +85,12 @@ class Application(QApplication, AbstractEventEmitter):
         # Fonts, styles, etc.
         self._initialize_fonts()
         self._row_height = self._auto_resize()
+
+        # Version checks
+        self._version_timer = QtTimer('Version checker')
+        self.on(NewReleaseAvailable, self.on_new_version)
+        if self._settings.get('Application.check_updates') == 'True':
+            self._version_timer.schedule(5000, self.check_version, None, True)
 
         self._source = None
         self._recreate_source()
@@ -176,10 +187,12 @@ class Application(QApplication, AbstractEventEmitter):
         return h
 
     def restart_warning(self) -> None:
-        QMessageBox().warning(self.activeWindow(),
-                              "Restart required",
-                              f"Please restart Flowkeeper to apply new settings",
-                              QMessageBox.StandardButton.Ok)
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Restart required",
+                                 f"To apply new settings Flowkeeper needs a restart. "
+                                 f"Please run it again after pressing OK. We apologize for this inconvenience.",
+                                 QMessageBox.StandardButton.Ok) == QMessageBox.StandardButton.Ok:
+            self.exit(0)
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
@@ -209,8 +222,10 @@ class Application(QApplication, AbstractEventEmitter):
     def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
         # print(f'Setting {name} changed from {old_value} to {new_value}')
         if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
-            self._recreate_source()
-            self._source.start()
+            self.restart_warning()
+            # This is not safe yet:
+            # self._recreate_source()
+            # self._source.start()
         elif name == 'Application.quit_on_close':
             self.setQuitOnLastWindowClosed(new_value == 'True')
         elif 'Application.font_' in name:
@@ -218,6 +233,10 @@ class Application(QApplication, AbstractEventEmitter):
         elif name == 'Application.theme':
             self.restart_warning()
             # app.set_theme(new_value)
+        elif name == 'Application.check_updates':
+            if new_value == 'True':
+                self._version_timer.schedule(1000, self.check_version, None, True)
+
         # TODO: Subscribe to sound settings
         # TODO: Subscribe the sources to the settings they use
         # TODO: Reload the app when the source changes
@@ -300,3 +319,42 @@ class Application(QApplication, AbstractEventEmitter):
 
     def get_heartbeat(self) -> Heartbeat:
         return self._heartbeat
+
+    def check_version(self, event: str) -> None:
+        def on_version(latest: Version, changelog: str):
+            if latest is not None:
+                current: Version = get_current_version()
+                if latest > current:
+                    self._emit(NewReleaseAvailable, {
+                        'current': current,
+                        'latest': latest,
+                        'changelog': changelog,
+                    })
+                else:
+                    print(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+            else:
+                print("Warning: Couldn't get the latest release info from GitHub")
+        print('Will check GitHub releases for the latest version')
+        get_latest_version(self, on_version)
+
+    def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
+        ignored = self._settings.get('Application.ignored_updates').split(',')
+        latest_str = str(latest)
+        if latest_str in ignored:
+            print(f'An updated version {latest_str} is available, but the user chose to ignore it')
+            return
+        msg = QMessageBox(QMessageBox.Icon.Information,
+                          "An update is available",
+                          f"You currently use Flowkeeper {current}. A newer version {latest_str} is now available at "
+                          f"flowkeeper.org. Would you like to download it? The changes include:\n\n"
+                          f"{changelog}",
+                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                          self.activeWindow())
+        check = QCheckBox("Ignore this update", msg)
+        msg.setCheckBox(check)
+        res = msg.exec()
+        if check.isChecked():
+            ignored.append(latest_str)
+            self._settings.set('Application.ignored_updates', ','.join(ignored))
+        if res == QMessageBox.StandardButton.Yes:
+            webbrowser.open(f"https://flowkeeper.org/#download")

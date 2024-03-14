@@ -1,6 +1,12 @@
-### v0.3.2 (TBD)
-- App version is parsed from the changelog.
--
+### v0.3.2 (14 March 2024)
+- Flowkeeper checks for updates against GitHub (configurable).
+- Flowkeeper shuts down automatically when important settings are changed.
+- The filter for completed items is now stored in Settings.
+- [Bugfix] Backlog auto-ordering is corrected.
+- [Bugfix] Completed items now hide immediately if the filter is enabled.
+- [Technical] App version is parsed from the changelog.
+- [Technical] Event sequence errors are ignored by default.
+- [Technical] New troubleshooting mechanism ("backlog dump") via Ctrl+D.
 
 ### v0.3.1 (10 March 2024)
 - Flowkeeper.org authentication via Google OAuth.

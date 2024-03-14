@@ -18,6 +18,8 @@ from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject
 from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow
 
+from fk.qt.app_version import get_current_version
+
 
 class AboutWindow(QObject):
     _about_window: QMainWindow
@@ -33,11 +35,7 @@ class AboutWindow(QObject):
     def show(self):
         # noinspection PyTypeChecker
         about_version: QLabel = self._about_window.findChild(QLabel, "version")
-        file = QFile(":/CHANGELOG.txt")
-        file.open(QFile.OpenModeFlag.ReadOnly)
-        version = file.readLine().toStdString().replace('#', '').strip()
-        about_version.setText(version)
-        file.close()
+        about_version.setText(str(get_current_version()))
 
         # noinspection PyTypeChecker
         about_changelog: QTextEdit = self._about_window.findChild(QTextEdit, "notes")

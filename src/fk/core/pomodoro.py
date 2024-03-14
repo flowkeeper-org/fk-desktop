@@ -179,3 +179,13 @@ class Pomodoro(AbstractDataItem['Workitem']):
 
     def get_parent(self) -> 'Workitem':
         return self._parent
+
+    def dump(self, indent: str = '') -> str:
+        return f'{super().dump(indent)}\n' \
+               f'{indent} - State: {self._state}\n' \
+               f'{indent} - Is planned: {self._is_planned}\n' \
+               f'{indent} - Work duration: {self._work_duration}\n' \
+               f'{indent} - Rest duration: {self._rest_duration}\n' \
+               f'{indent} - Work started: {self._date_work_started}\n' \
+               f'{indent} - Rest started: {self._date_rest_started}\n' \
+               f'{indent} - Completed: {self._date_completed}'

@@ -168,7 +168,7 @@ class PomodoroTimer(AbstractEventEmitter):
             self._source.execute(
                 FinishPomodoroInternalStrategy,
                 [target_workitem.get_uid()],
-                False
+                persist=False
             )
             print(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
         else:

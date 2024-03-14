@@ -49,9 +49,6 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        # TODO: Check!
-        self._actions['workitems_table.showCompleted'].toggled.connect(self._toggle_show_completed_workitems)
-        #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
 
     def _on_source_changed(self, event, source):
@@ -89,7 +86,13 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', None, WorkitemTableView.complete_selected_workitem)
         actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', None, WorkitemTableView.add_pomodoro)
         actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', None, WorkitemTableView.remove_pomodoro)
-        actions.add('workitems_table.showCompleted', "Show Completed Items", '', None, WorkitemTableView._toggle_show_completed_workitems, True, True)
+        actions.add('workitems_table.showCompleted',
+                    "Show Completed Items",
+                    '',
+                    None,
+                    WorkitemTableView._toggle_show_completed_workitems,
+                    True,
+                    actions.get_settings().get('Application.show_completed') == 'True')
 
     def upstream_selected(self, backlog: Backlog) -> None:
         super().upstream_selected(backlog)
@@ -198,6 +201,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self._source.set_config_parameter('Application.show_completed', str(checked))
 
     def _on_messages(self, event):
         self.upstream_selected(None)

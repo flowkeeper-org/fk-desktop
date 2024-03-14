@@ -93,6 +93,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Pomodoro.default_work_duration', 'int', 'Default work duration (s)', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'int', 'Default rest duration (s)', str(5 * 60), [1, 60 * 60], _always_show),
                 ('Pomodoro.auto_seal_after', 'int', 'Auto-seal items after (s)', str(5), [1, 120], _always_show),
+                ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
+                ('', 'separator', '', '', [], _always_show),
+                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
+                ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
             ],
@@ -106,7 +110,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
-                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', ['*.wav;*.mp3'], _show_for_file_source),
+                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'basic', [
@@ -117,8 +121,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
-                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'False', [], _show_for_websocket_source),
-                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'False', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
+                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [

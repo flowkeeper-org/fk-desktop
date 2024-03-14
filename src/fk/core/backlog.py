@@ -43,7 +43,7 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
 
     def is_today(self) -> bool:
         # "Today" = Created within the last 12 hours
-        return (datetime.datetime.now(tz=datetime.timezone.utc) - self.get_create_date()).total_seconds() < 3600 * 12
+        return (datetime.datetime.now(datetime.timezone.utc) - self.get_create_date()).total_seconds() < 3600 * 12
 
     def get_owner(self) -> 'User':
         return self._parent

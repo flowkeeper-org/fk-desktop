@@ -60,7 +60,7 @@ class CreateBacklogStrategy(AbstractStrategy['Tenant']):
         })
         backlog = Backlog(self._backlog_name, user, self._backlog_uid, self._when)
         user[self._backlog_uid] = backlog
-        backlog.item_updated(self._when)    # This will update the User
+        backlog.item_updated(self._when)    # This will also update the User
         self._emit(events.AfterBacklogCreate, {
             'backlog': backlog
         })
@@ -103,7 +103,7 @@ class DeleteBacklogStrategy(AbstractStrategy['Tenant']):
             self.execute_another(DeleteWorkitemStrategy, [
                 workitem.get_uid()
             ])
-        backlog.item_updated(self._when)    # This will update the User
+        backlog.item_updated(self._when)    # This will also update the User
 
         # Now we can delete the backlog itself
         del user[self._backlog_uid]

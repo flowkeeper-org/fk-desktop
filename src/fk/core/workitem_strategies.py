@@ -74,7 +74,7 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
             self._when,
         )
         backlog[self._workitem_uid] = workitem
-        workitem.item_updated(self._when)   # Update Backlog
+        workitem.item_updated(self._when)   # This will also update the Backlog
         self._emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
             'carry': None,
