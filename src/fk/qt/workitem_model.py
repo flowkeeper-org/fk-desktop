@@ -114,6 +114,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col2.setData(font, Qt.FontRole)
         col2.setData(workitem, 500)
         col2.setData('title', 501)
+        col2.setData(workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
         flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         if not workitem.is_sealed():
             flags |= Qt.ItemFlag.ItemIsEditable

@@ -37,6 +37,7 @@ class BacklogItem(QtGui.QStandardItem):
         super().__init__()
         self._backlog = backlog
         self.setData(backlog, 500)
+        self.setData(backlog.get_name(), Qt.ItemDataRole.ToolTipRole)
         self.setData('title', 501)
         self.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
         self.update_display()
