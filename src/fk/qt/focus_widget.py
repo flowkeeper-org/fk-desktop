@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient
+from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
@@ -236,7 +236,11 @@ class FocusWidget(QWidget):
         elif eyecandy_type == 'gradient':
             painter = QPainter(self)
             gradient = self._settings.get('Application.eyecandy_gradient')
-            painter.fillRect(self.rect(), QGradient.Preset[gradient])
+            try:
+                painter.fillRect(self.rect(), QGradient.Preset[gradient])
+            except Exception as e:
+                print('ERROR while updating the gradient -- ignoring it', e)
+                painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         for name in new_values.keys():
