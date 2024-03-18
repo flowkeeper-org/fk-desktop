@@ -91,7 +91,7 @@ to subclass `AbstractEventSource`. All UI updates should be based on those event
   - `PongReceived(uid: str)`
 
 - AbstractSettings
-  - `BeforeSettingChanged(name: str, old_value: str, new_value: str)`, `AfterSettingChanged(--//--)`
+  - `BeforeSettingsChanged(old_values: dict[str, str], new_values: dict[str, str])`, `AfterSettingsChanged(--//--)`
 
 - AbstractTableView
   - `BeforeSelectionChanged(before: AbstractDataItem, after: AbstractDataItem)`, `AfterSelectionChanged(--//--)`

@@ -82,8 +82,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                  callback_invoker: Callable,
                  buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         AbstractEventEmitter.__init__(self, [
-            events.BeforeSettingChanged,
-            events.AfterSettingChanged,
+            events.BeforeSettingsChanged,
+            events.AfterSettingsChanged,
         ], callback_invoker)
 
         self._callback_invoker = callback_invoker
@@ -188,7 +188,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
-    def set(self, name: str, value: str) -> str:
+    def set(self, values: dict[str, str]) -> None:
         pass
 
     @abstractmethod
@@ -236,6 +236,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         ]
 
     def reset_to_defaults(self) -> None:
+        to_set = dict[str, str]()
         for lst in self._definitions.values():
             for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-                self.set(option_id, option_default)
+                to_set[option_id] = option_default
+        self.set(to_set)

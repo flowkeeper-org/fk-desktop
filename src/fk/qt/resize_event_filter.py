@@ -58,8 +58,10 @@ class ResizeEventFilter(QMainWindow):
         old_width = int(self._settings.get('Application.window_width'))
         old_height = int(self._settings.get('Application.window_height'))
         if old_width != new_width or old_height != new_height:
-            self._settings.set('Application.window_width', str(new_width))
-            self._settings.set('Application.window_height', str(new_height))
+            self._settings.set({
+                'Application.window_width': str(new_width),
+                'Application.window_height': str(new_height),
+            })
 
     def eventFilter(self, widget: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.Resize and isinstance(event, QResizeEvent):
@@ -83,4 +85,4 @@ class ResizeEventFilter(QMainWindow):
     def save_splitter_size(self, new_width: int, index: int) -> None:
         old_width = int(self._settings.get('Application.window_splitter_width'))
         if old_width != new_width:
-            self._settings.set('Application.window_splitter_width', str(new_width))
+            self._settings.set({'Application.window_splitter_width': str(new_width)})

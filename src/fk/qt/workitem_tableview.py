@@ -201,7 +201,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self._source.set_config_parameter('Application.show_completed', str(checked))
+        self._source.set_config_parameters({'Application.show_completed': str(checked)})
 
     def _on_messages(self, event):
         self.upstream_selected(None)

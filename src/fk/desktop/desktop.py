@@ -94,26 +94,27 @@ def on_messages(event) -> None:
         show_timer_automatically()
 
 
-def on_setting_changed(event: str, name: str, old_value: str, new_value: str):
+def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     # print(f'Setting {name} changed from {old_value} to {new_value}')
     status.showMessage('Settings changed')
-    if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
-        # TODO: This really doesn't work well
-        hide_timer_automatically()
-        show_timer_automatically()
-    elif name == 'Application.show_main_menu':
-        main_menu.setVisible(new_value == 'True')
-    elif name == 'Application.show_status_bar':
-        status.setVisible(new_value == 'True')
-    elif name == 'Application.show_toolbar':
-        toolbar.setVisible(new_value == 'True')
-    elif name == 'Application.show_left_toolbar':
-        left_toolbar.setVisible(new_value == 'True')
-    elif name == 'Application.show_tray_icon':
-        tray.setVisible(new_value == 'True')
-    elif name == 'Application.shortcuts':
-        actions.update_from_settings()
-    # TODO: Reload the app when the source changes
+    for name in new_values.keys():
+        new_value = new_values[name]
+        if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
+            # TODO: This really doesn't work well
+            hide_timer_automatically()
+            show_timer_automatically()
+        elif name == 'Application.show_main_menu':
+            main_menu.setVisible(new_value == 'True')
+        elif name == 'Application.show_status_bar':
+            status.setVisible(new_value == 'True')
+        elif name == 'Application.show_toolbar':
+            toolbar.setVisible(new_value == 'True')
+        elif name == 'Application.show_left_toolbar':
+            left_toolbar.setVisible(new_value == 'True')
+        elif name == 'Application.show_tray_icon':
+            tray.setVisible(new_value == 'True')
+        elif name == 'Application.shortcuts':
+            actions.update_from_settings()
 
 
 class MainWindow:
@@ -130,11 +131,11 @@ class MainWindow:
         search.show()
 
     def toggle_backlogs(self, enabled):
-        settings.set('Application.backlogs_visible', str(enabled))
+        settings.set({'Application.backlogs_visible': str(enabled)})
         update_tables_visibility()
 
     def toggle_users(self, enabled):
-        settings.set('Application.users_visible', str(enabled))
+        settings.set({'Application.users_visible': str(enabled)})
         update_tables_visibility()
 
     @staticmethod
@@ -175,7 +176,7 @@ if __name__ == "__main__":
     print('UI thread:', threading.get_ident())
 
     settings = app.get_settings()
-    settings.on(events.AfterSettingChanged, on_setting_changed)
+    settings.on(events.AfterSettingsChanged, on_setting_changed)
 
     source = app.get_source()
     source.on(SourceMessagesProcessed, on_messages)

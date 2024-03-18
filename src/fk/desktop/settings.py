@@ -123,10 +123,12 @@ class SettingsDialog(QDialog):
         self._buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(is_enabled)
 
     def _save_settings(self):
+        to_set = dict[str, str]()
         for name in self._widgets_value:
             value = self._widgets_value[name]()
             if self._data.get(name) != value:
-                self._data.set(name, value)
+                to_set[name] = value
+        self._data.set(to_set)
         self._set_buttons_state(False)
 
     @staticmethod

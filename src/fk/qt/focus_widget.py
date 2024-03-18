@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLa
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.events import AfterWorkitemComplete, AfterSettingChanged
+from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -144,7 +144,7 @@ class FocusWidget(QWidget):
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
-        settings.on(AfterSettingChanged, self._on_setting_changed)
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -238,9 +238,11 @@ class FocusWidget(QWidget):
             gradient = self._settings.get('Application.eyecandy_gradient')
             painter.fillRect(self.rect(), QGradient.Preset[gradient])
 
-    def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
-        if name.startswith('Application.eyecandy'):
-            self.eye_candy()
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        for name in new_values.keys():
+            if name.startswith('Application.eyecandy'):
+                self.eye_candy()
+                return
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source.backlogs():

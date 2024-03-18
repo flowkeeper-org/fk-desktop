@@ -98,9 +98,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def get_config_parameter(self, name: str) -> str:
         return self._settings.get(name)
 
-    def set_config_parameter(self, name: str, value: str) -> str:
-        self._settings.set(name, value)
-        return value
+    def set_config_parameters(self, values: dict[str, str]) -> None:
+        self._settings.set(values)
 
     # Assuming those strategies have been already executed. We do not replay them here.
     # Override

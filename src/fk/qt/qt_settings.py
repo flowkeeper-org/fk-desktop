@@ -30,18 +30,21 @@ class QtSettings(AbstractSettings):
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
         self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
 
-    def set(self, name: str, value: str) -> str:
-        if self.get(name) == value:
-            return value
+    def set(self, values: dict[str, str]) -> None:
+        old_values: dict[str, str] = dict()
+        for name in values.keys():
+            old_value = self.get(name)
+            if old_value != values[name]:
+                old_values[name] = old_value
         params = {
-            'name': name,
-            'old_value': self.get(name),
-            'new_value': value,
+            'old_values': old_values,
+            'new_values': values,
         }
-        self._emit(events.BeforeSettingChanged, params)
-        self._settings.setValue(name, value)
-        self._emit(events.AfterSettingChanged, params)
-        return value
+        self._emit(events.BeforeSettingsChanged, params)
+        for name in old_values.keys():  # This is not a typo, we've just filtered this list
+            # to only contain settings which actually changed.
+            self._settings.setValue(name, values[name])
+        self._emit(events.AfterSettingsChanged, params)
 
     def get(self, name: str) -> str:
         return str(self._settings.value(name, self._defaults[name]))
