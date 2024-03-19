@@ -1,7 +1,9 @@
 ### v0.3.3 (TBD)
 - If something goes terribly wrong on startup, Flowkeeper asks to reset the settings.
 - Removed deprecated settings and the progress bar, which looked wrong on Windows.
+- All table items now have tooltips.
 - [Technical] Settings are now set in bulk.
+- [Technical] Gradient generator now has a fallback, just in case.
 - [Bugfix] Fixed gradient generation which was failing on Windows and Mac sometimes.
 
 ### v0.3.2 (14 March 2024)
