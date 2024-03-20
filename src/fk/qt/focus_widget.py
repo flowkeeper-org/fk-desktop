@@ -59,14 +59,6 @@ class FocusWidget(QWidget):
         self._pixmap = None
 
         self.setObjectName('focus')
-        sp1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sp1.setHorizontalStretch(0)
-        sp1.setVerticalStretch(0)
-        self.setSizePolicy(sp1)
-        self.setMinimumHeight(80)
-        self.setMinimumWidth(0)
-        self.setMaximumHeight(16777215)
-        self.setMaximumWidth(16777215)
 
         layout = QHBoxLayout()
         layout.setObjectName("focus_layout")
@@ -84,10 +76,6 @@ class FocusWidget(QWidget):
         header_text = QLabel(self)
         header_text.setObjectName('headerText')
         text_layout.addWidget(header_text)
-        sp2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sp2.setHorizontalStretch(0)
-        sp2.setVerticalStretch(0)
-        header_text.setSizePolicy(sp2)
         header_text.setText("Idle")
         header_text.setFont(application.get_header_font())
         application.on(AfterFontsChanged, lambda header_font, **kwargs: header_text.setFont(header_font))

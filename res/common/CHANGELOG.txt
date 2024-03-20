@@ -5,6 +5,7 @@
 - [Technical] Settings are now set in bulk.
 - [Technical] Gradient generator now has a fallback, just in case.
 - [Bugfix] Fixed gradient generation which was failing on Windows and Mac sometimes.
+- [Bugfix] Timer window now resizes correctly on Windows.
 
 ### v0.3.2 (14 March 2024)
 - Flowkeeper checks for updates against GitHub (configurable).

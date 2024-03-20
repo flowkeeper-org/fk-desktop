@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import sys
 import threading
-import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools
 from PySide6.QtWidgets import QMessageBox
@@ -51,11 +50,13 @@ def show_timer_automatically() -> None:
     actions['focus.voidPomodoro'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
+        height = focus.size().height()
         focus.show()
         main_layout.hide()
         left_toolbar.hide()
-        window.setMaximumHeight(focus.size().height())
-        window.setMinimumHeight(focus.size().height())
+        window.setFixedWidth(window.width())    # TODO: Make it flexible
+        window.setFixedHeight(height)
+        window.adjustSize()
         focus._buttons['window.showFocus'].hide()
         focus._buttons['window.showAll'].show()
     elif mode == 'minimize':
@@ -68,6 +69,8 @@ def hide_timer(event: str|None = None, **kwargs) -> None:
     left_toolbar.show()
     window.setMaximumHeight(16777215)
     window.setMinimumHeight(0)
+    window.setMaximumWidth(16777215)
+    window.setMinimumWidth(0)
     event_filter.restore_size()
     focus._buttons['window.showFocus'].show()
     focus._buttons['window.showAll'].hide()
