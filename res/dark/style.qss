@@ -17,10 +17,14 @@ QMainWindow {
 }
 
 #footerLabel {
+    color: #000000;
+    background-color: #ffffff;
+}
+
+#footerLabel {
     color: #ced0d6;
     background-color: #1e1f22;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding: 4px;
 }
 
 #search {

@@ -14,18 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QProgressBar
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 
-from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.workitem import Workitem
 
 
 class ProgressWidget(QWidget):
     _source: AbstractEventSource
     _label: QLabel
-    _progressBar: QProgressBar
 
     def __init__(self,
                  parent: QWidget,
@@ -39,9 +36,6 @@ class ProgressWidget(QWidget):
         self._label = QLabel(self)
         self._label.setObjectName("footerLabel")
         layout.addWidget(self._label)
-        self._progressBar = QProgressBar(self)
-        self._progressBar.setObjectName("footerProgress")
-        layout.addWidget(self._progressBar)
         self.setVisible(False)
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
@@ -58,7 +52,6 @@ class ProgressWidget(QWidget):
                     done += 1
 
         self.setVisible(total > 0)
-        self._progressBar.setMaximum(total)
-        self._progressBar.setValue(done)
         self._label.setVisible(total > 0)
-        self._label.setText(f'{done} of {total} done')
+        percent = f' ({round(100 * done / total)}%)' if total > 0 else ''
+        self._label.setText(f'{done} of {total} done{percent}')

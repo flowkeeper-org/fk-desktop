@@ -19,8 +19,7 @@ QMainWindow {
 #footerLabel {
     color: #000000;
     background-color: #ffffff;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding: 4px;
 }
 
 #search {
