@@ -277,8 +277,11 @@ class Application(QApplication, AbstractEventEmitter):
                                           "\n".join(log))
 
     def generate_gradient(self, _):
-        chosen = random.choice(list(QGradient.Preset))
-        self._settings.set({'Application.eyecandy_gradient': chosen.name})
+        preset_names = [preset.name for preset in QGradient.Preset]
+        if 'NumPresets' in preset_names:
+            preset_names.remove('NumPresets')
+        chosen = random.choice(preset_names)
+        self._settings.set({'Application.eyecandy_gradient': chosen})
 
     def sign_in(self, _):
         def save(auth: AuthenticationRecord):
