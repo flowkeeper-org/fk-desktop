@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+cd dist
+rm -rf deb
+mkdir deb
+
+# 1. Copy application files
+mkdir -p deb/usr/local/bin
+mkdir -p deb/usr/local/lib/flowkeeper
+cp flowkeeper/Flowkeeper deb/usr/local/bin/
+cp -r flowkeeper/_internal/* deb/usr/local/lib/flowkeeper
+
+# 2. Create metadata
+mkdir deb/DEBIAN
+cp ../installer/debian-control deb/DEBIAN/control
+
+# 3. Build DEB file
+dpkg-deb --build deb flowkeeper.deb

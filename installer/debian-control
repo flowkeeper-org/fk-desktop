@@ -1,0 +1,5 @@
+Package: flowkeeper
+Version: 0.3.3
+Maintainer: Constantine Kulak
+Architecture: amd64
+Description: Flowkeeper is a Pomodoro Technique desktop timer for power users and professional teams.
