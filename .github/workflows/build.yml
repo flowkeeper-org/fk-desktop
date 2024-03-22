@@ -136,7 +136,7 @@ jobs:
           pyinstaller installer/normal-build.spec
       - name: Create DMG installer
         run: |
-          rm dist/flowkeeper
+          rm -rf dist/flowkeeper
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
