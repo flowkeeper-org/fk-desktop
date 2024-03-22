@@ -1,4 +1,4 @@
-# Flowkeeper Desktop
+# Flowkeeper
 
 ![Pipeline status](https://github.com/flowkeeper-org/fk-desktop/actions/workflows/main.yml/badge.svg?branch=main "Pipeline status")
 
