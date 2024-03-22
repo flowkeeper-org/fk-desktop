@@ -33,15 +33,17 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+       - name: Package builds
         run: |
-          pyinstaller desktop.spec
-      - name: Archive the build 
+          pyinstaller installer/portable-build.spec
+          # We'll use the normal build for creating DEBs, RPMs, etc.
+          # pyinstaller installer/normal-build.spec
+      - name: Archive portable build 
         uses: actions/upload-artifact@v3
         with:
           name: dist-linux-standalone
           path: |
-            dist/desktop
+            dist/Flowkeeper
 
   package-windows:
     runs-on: windows-latest
@@ -77,8 +79,8 @@ jobs:
           cd ..
       - name: Package builds
         run: |
-          pyinstaller installer\windows-portable.spec
-          pyinstaller installer\windows-normal.spec
+          pyinstaller installer\portable-build.spec
+          pyinstaller installer\normal-build.spec
       - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
@@ -127,13 +129,14 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
+          # There's no portable executables in macOS as such
+          # pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
       - name: Create DMG installer
         run: |
-          rm dist/desktop
-          mv dist/desktop.app dist/Flowkeeper.app
+          rm dist/flowkeeper
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
@@ -145,7 +148,7 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper.dmg" \
             "dist/"
-      - name: Archive the build 
+      - name: Archive DMG installer
         uses: actions/upload-artifact@v3
         with:
           name: dist-macOS-dmg
