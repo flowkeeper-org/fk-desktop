@@ -75,11 +75,11 @@ jobs:
           pyside6-rcc --project -o theme-mixed.qrc
           pyside6-rcc -g python theme-mixed.qrc -o "../../src/fk/desktop/theme_mixed.py"
           cd ..
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
-          move dist\desktop.exe dist\Flowkeeper.exe
-      - name: Archive the build 
+          pyinstaller installer\windows-portable.spec
+          pyinstaller installer\windows-normal.spec
+      - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
           name: dist-windows-standalone
@@ -97,8 +97,8 @@ jobs:
         run: |
           set /p FIRST_LINE=< res\common\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
-          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
-          move Output\mysetup.exe dist\setup.exe
+          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
+          move installer\Output\mysetup.exe dist\setup.exe
       - name: Archive installer
         uses: actions/upload-artifact@v3
         with:

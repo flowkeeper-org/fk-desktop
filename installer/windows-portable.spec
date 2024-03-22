@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('res', 'res'), ('src/fk/desktop', 'src/fk/desktop')]
+datas = []
 binaries = []
 hiddenimports = []
 tmp_ret = collect_all('fk')
@@ -9,8 +9,8 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['src/fk/desktop/desktop.py'],
-    pathex=['src'],
+    ['../src/fk/desktop/desktop.py'],
+    pathex=['../src'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -28,7 +28,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [('v', None, 'OPTION')],
-    name='desktop',
+    name='Flowkeeper',
     debug=True,
     bootloader_ignore_signals=False,
     strip=False,
@@ -41,11 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['res/flowkeeper.ico'],
-)
-app = BUNDLE(
-    exe,
-    name='desktop.app',
-    icon='res/flowkeeper.icns',
-    bundle_identifier=None,
+    icon=['../res/flowkeeper.ico'],
 )

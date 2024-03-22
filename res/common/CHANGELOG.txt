@@ -2,6 +2,7 @@
 - If something goes terribly wrong on startup, Flowkeeper asks to reset the settings.
 - Removed deprecated settings and the progress bar, which looked wrong on Windows.
 - All table items now have tooltips.
+- When installed on Windows, Flowkeeper now launches much faster
 - [Technical] Settings are now set in bulk.
 - [Technical] Gradient generator now has a fallback, just in case.
 - [Bugfix] Fixed gradient generation which was failing on Windows and Mac sometimes.
