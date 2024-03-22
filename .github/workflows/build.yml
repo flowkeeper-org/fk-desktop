@@ -33,12 +33,12 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
-       - name: Package builds
+      - name: Package builds
         run: |
           pyinstaller installer/portable-build.spec
           # We'll use the normal build for creating DEBs, RPMs, etc.
           # pyinstaller installer/normal-build.spec
-      - name: Archive portable build 
+      - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
           name: dist-linux-standalone
