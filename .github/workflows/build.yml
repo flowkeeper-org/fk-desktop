@@ -43,7 +43,22 @@ jobs:
           name: dist-linux-standalone
           path: |
             dist/Flowkeeper
+      - name: Archive one-folder build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-one-folder
+          path: |
+            dist/flowkeeper
       - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-deb
+          path: |
+            dist/flowkeeper.deb
+      - name: Create Flatpak installer
         run: |
           ./package-deb.sh
       - name: Archive DEB installer

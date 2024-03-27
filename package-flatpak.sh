@@ -30,9 +30,11 @@ flatpak build-init flatpak org.flowkeeper.Flowkeeper org.kde.Sdk//6.6 org.kde.Pl
 flatpak build flatpak cp -r deb/usr/local/* /app
 flatpak build-finish flatpak --socket=x11 --share=network --command=flowkeeper
 flatpak build-export repo flatpak
-flatpak --user remote-add --no-gpg-verify --if-not-exists flowkeeper-repo repo
+
+# Now we can archive dist/repo
 
 # 2. Test
+flatpak --user remote-add --no-gpg-verify --if-not-exists flowkeeper-repo repo
 flatpak --user remove -y org.flowkeeper.Flowkeeper
 flatpak --user install -y flowkeeper-repo org.flowkeeper.Flowkeeper
 flatpak run org.flowkeeper.Flowkeeper
