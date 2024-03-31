@@ -26,10 +26,8 @@ jobs:
           ./generate-resources.sh
       - name: Test coverage
         run: |
-          PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
-          python -m coverage html
-      - name: Archive code coverage results 
-        uses: actions/upload-artifact@v3
-        with:
-          name: code-coverage-report
-          path: htmlcov
+          PYTHONPATH=src coverage run -m unittest discover -v fk.tests
+      - name: Upload code coverage to coveralls.io
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
