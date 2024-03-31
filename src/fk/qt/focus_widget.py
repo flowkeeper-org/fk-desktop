@@ -173,6 +173,7 @@ class FocusWidget(QWidget):
                 self._header_text.setText('Idle')
                 self._header_subtext.setText("It's time for the next Pomodoro.")
             self._buttons['focus.voidPomodoro'].hide()
+            self._actions['focus.voidPomodoro'].setDisabled(True)
             self._timer_display.set_values(0, None, "")
             self._timer_display.hide()
         elif self._timer.is_working() or self._timer.is_resting():
@@ -184,6 +185,7 @@ class FocusWidget(QWidget):
             self._header_text.setText(f'{txt} left')
             self._header_subtext.setText(running_workitem.get_name())
             self._buttons['focus.voidPomodoro'].show()
+            self._actions['focus.voidPomodoro'].setDisabled(False)
             self._buttons['focus.nextPomodoro'].hide()
             self._buttons['focus.completeItem'].hide()
             self._timer_display.set_values(
