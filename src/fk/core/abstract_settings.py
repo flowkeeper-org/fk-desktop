@@ -141,7 +141,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _never_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
-                ('Application.eyecandy_type', 'choice', 'Header background', 'default', [
+                ('Application.eyecandy_type', 'choice', 'Header background', 'gradient', [
                     "default:Default",
                     "image:Image",
                     "gradient:Gradient",
