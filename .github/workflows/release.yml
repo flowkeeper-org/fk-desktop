@@ -81,9 +81,6 @@ jobs:
           name: dist-linux-deb
           path: |
             dist/flowkeeper.deb
-      - name: Create Flatpak installer
-        run: |
-          ./package-deb.sh
       - name: Archive DEB installer
         uses: actions/upload-artifact@v3
         with:
