@@ -353,7 +353,7 @@ if __name__ == "__main__":
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
-        if 'tests' == True:
+        if 'e2e' in app.arguments():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
             tt = E2eTest(app, test_backlog_loaded)
