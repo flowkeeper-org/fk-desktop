@@ -69,3 +69,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return False
+
+    def dump(self):
+        for s in self._content:
+            print(s)
