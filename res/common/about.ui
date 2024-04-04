@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Flowkeeper - Pomodoro timer for power users and teams
+  ~ Copyright (c) 2023 Constantine Kulak
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation; either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <ui version="4.0">
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
@@ -56,7 +74,7 @@
        <item>
         <widget class="QLabel" name="description">
          <property name="text">
-          <string>Flowkeeper is a Pomodoro Technique desktop timer for power users and professional teams.</string>
+          <string>Flowkeeper is an independent and free Pomodoro Technique desktop timer for power users and professional teams.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

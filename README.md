@@ -3,7 +3,7 @@
 ![Pipeline status](https://github.com/flowkeeper-org/fk-desktop/actions/workflows/main.yml/badge.svg?branch=main "Pipeline status")
 [![Coverage Status](https://coveralls.io/repos/github/flowkeeper-org/fk-desktop/badge.svg?branch=main)](https://coveralls.io/github/flowkeeper-org/fk-desktop?branch=main)
 
-Flowkeeper is a Pomodoro Technique desktop timer for power users and professional teams. It is a 
+Flowkeeper is an independent Pomodoro Technique desktop timer for power users and professional teams. It is a 
 simple tool, which focuses on doing one thing well. It is Free Software with open source. Visit 
 [flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
 

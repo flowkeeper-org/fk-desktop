@@ -99,13 +99,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
+                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
+                ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org",
-                    "flowkeeper.pro:Flowkeeper.pro",
+                    #"flowkeeper.pro:Flowkeeper.pro",
                     "websocket:Self-hosted server",
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
@@ -113,7 +115,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
-                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'basic', [
+                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
                     "basic:Simple username and password",
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
@@ -207,7 +209,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             return self.get('WebsocketEventSource.username')
 
     def is_team_supported(self) -> bool:
-        return self.get('Source.type') != 'local'
+        return self.get('Source.type') != 'local' and self.get('Application.enable_teams') == 'True'
 
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
