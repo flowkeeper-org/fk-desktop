@@ -13,10 +13,13 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6.QtAsyncio import QAsyncioEventLoop
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -219,6 +222,7 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addSeparator()
+        menu_file.addAction(actions['application.tutorial'])
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])
@@ -349,10 +353,14 @@ if __name__ == "__main__":
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
-        if 'tests' == True:
+        if 'e2e' in app.arguments():
+            # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
+            # This is an experimental feature in Qt 6.6.2+.
             tt = E2eTest(app, test_backlog_loaded)
-
-        QtAsyncio.run()
+            QtAsyncio.run()
+        else:
+            # This would work on any Qt 6.6.x
+            sys.exit(app.exec())
 
     except Exception as exc:
         print("FATAL: Exception on startup", exc)

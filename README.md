@@ -3,7 +3,7 @@
 ![Pipeline status](https://github.com/flowkeeper-org/fk-desktop/actions/workflows/main.yml/badge.svg?branch=main "Pipeline status")
 [![Coverage Status](https://coveralls.io/repos/github/flowkeeper-org/fk-desktop/badge.svg?branch=main)](https://coveralls.io/github/flowkeeper-org/fk-desktop?branch=main)
 
-Flowkeeper is a Pomodoro Technique desktop timer for power users and professional teams. It is a 
+Flowkeeper is an independent Pomodoro Technique desktop timer for power users and professional teams. It is a 
 simple tool, which focuses on doing one thing well. It is Free Software with open source. Visit 
 [flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
 
@@ -23,7 +23,7 @@ Create a virtual environment and install dependencies:
 ```shell
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-run.txt
 ```
 
 Then you need to "generate resources", which means converting data files in `/res` directory into
@@ -37,7 +37,8 @@ to rerun this command, too:
 From here you can start coding. If you want to build an installer, refer to the CI/CD pipeline in
 `.github/workflows/build.yml`. For example, if you want to build a DEB file, you'd need to execute 
 `pyinstaller installer/normal-build.spec` and then `./package-deb.sh`. The process is a bit more 
-involved for Windows and macOS.
+involved for Windows and macOS. **Note** that you'd also need to install extra requirements from 
+`requirements-build.txt`.
 
 To run Flowkeeper:
 
@@ -45,12 +46,14 @@ To run Flowkeeper:
 PYTHONPATH=src python -m fk.desktop.desktop
 ```
 
-To run unit tests w/test coverage:
+To run unit tests w/test coverage (install requirements from `requirements-test.txt` first):
 
 ```shell
 PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
 python -m coverage html
 ```
+
+TODO: Explain how to run e2e tests.
 
 #### Building for Alpine Linux
 

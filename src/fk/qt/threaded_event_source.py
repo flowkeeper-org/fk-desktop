@@ -118,3 +118,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return self._wrapped.can_connect()
+
+    def repair(self):
+        return self._wrapped.repair()
