@@ -24,7 +24,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-test.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
@@ -52,7 +52,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
@@ -100,7 +100,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           cd res
@@ -167,7 +167,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
           brew install create-dmg
       - name: Generate resources
         run: |
