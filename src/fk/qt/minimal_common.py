@@ -19,6 +19,7 @@ import sys
 from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
@@ -39,6 +40,9 @@ if source_type == 'local':
     source = ThreadedEventSource(FileEventSource(settings,
                                                  root,
                                                  QtFilesystemWatcher()))
+elif source_type == 'ephemeral':
+    source = ThreadedEventSource(EphemeralEventSource(settings,
+                                                 root))
 elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
     source = WebsocketEventSource(settings, app, root)
 else:

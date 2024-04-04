@@ -112,7 +112,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events=True) -> None:
         pass
 
-    def _execute_prepared_strategy(self, strategy: AbstractStrategy, auto: bool = False) -> None:
+    def execute_prepared_strategy(self, strategy: AbstractStrategy, auto: bool = False) -> None:
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
         res = strategy.execute()
@@ -148,7 +148,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._settings,
             carry
         )
-        self._execute_prepared_strategy(s, auto)
+        self.execute_prepared_strategy(s, auto)
 
         if persist:
             self._last_seq = new_sequence   # Only save it if all went well

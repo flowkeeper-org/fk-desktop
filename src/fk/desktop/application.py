@@ -30,6 +30,7 @@ from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.events import AfterSettingsChanged
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
@@ -110,6 +111,9 @@ class Application(QApplication, AbstractEventEmitter):
         source: AbstractEventSource
         if source_type == 'local':
             inner_source = FileEventSource(self._settings, root, QtFilesystemWatcher())
+            source = ThreadedEventSource(inner_source)
+        elif source_type == 'ephemeral':
+            inner_source = EphemeralEventSource(self._settings, root)
             source = ThreadedEventSource(inner_source)
         elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
             source = WebsocketEventSource(self._settings, self, root)

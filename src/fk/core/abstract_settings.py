@@ -107,6 +107,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "flowkeeper.org:Flowkeeper.org",
                     "flowkeeper.pro:Flowkeeper.pro",
                     "websocket:Self-hosted server",
+                    "ephemeral:Ephemeral (for testing only)",
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
