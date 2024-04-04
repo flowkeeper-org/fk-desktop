@@ -16,7 +16,7 @@
 import sys
 import threading
 
-from PySide6 import QtCore, QtWidgets, QtUiTools
+from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -24,6 +24,8 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
+from fk.e2e.backlog_e2e import test_backlog_loaded
+from fk.e2e.e2e_test import E2eTest
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -347,7 +349,10 @@ if __name__ == "__main__":
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
-        sys.exit(app.exec())
+        if 'tests' == True:
+            tt = E2eTest(app, test_backlog_loaded)
+
+        QtAsyncio.run()
 
     except Exception as exc:
         print("FATAL: Exception on startup", exc)

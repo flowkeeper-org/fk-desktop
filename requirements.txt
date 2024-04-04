@@ -5,3 +5,4 @@ semantic-version
 pyinstaller
 coverage
 coveralls
+assertpy
