@@ -356,7 +356,7 @@ class Application(QApplication, AbstractEventEmitter):
         get_latest_version(self, on_version)
 
     def show_tutorial(self, event: str = None) -> None:
-        TutorialWindow(self.activeWindow()).show()
+        TutorialWindow(self.activeWindow(), self._settings).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
