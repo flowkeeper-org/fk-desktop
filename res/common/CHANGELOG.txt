@@ -1,13 +1,21 @@
-### v0.3.3 (TBD)
+### v0.3.3 (5 April 2024)
+- Added a tutorial / quickstart wizard.
 - If something goes terribly wrong on startup, Flowkeeper asks to reset the settings.
 - Removed deprecated settings and the progress bar, which looked wrong on Windows.
 - All table items now have tooltips.
 - When installed on Windows or macOS, Flowkeeper now launches much faster.
-- CI/CD pipeline now also builds a DEB installer.
+- CI/CD pipeline now also builds a DEB installer for Debian-based systems.
+- Ubuntu 20.04 is now supported (used to require 22.04+)
+- Minor improvements to the Settings UI.
 - [Technical] Settings are now set in bulk.
 - [Technical] Gradient generator now has a fallback, just in case.
+- [Technical] Wrote new unit tests.
+- [Technical] Implemented Ephemeral event source, useful for the unit tests.
+- [Technical] Started working on end-to-end (e2e) tests.
+- [Technical] CI pipeline now collects unit test coverage.
 - [Bugfix] Fixed gradient generation which was failing on Windows and Mac sometimes.
 - [Bugfix] Timer window now resizes correctly on Windows.
+- [Bugfix] Void Pomodoro button is now displayed correctly.
 
 ### v0.3.2 (14 March 2024)
 - Flowkeeper checks for updates against GitHub (configurable).
