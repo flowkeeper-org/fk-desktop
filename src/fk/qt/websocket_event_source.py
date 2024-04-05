@@ -127,13 +127,13 @@ class WebsocketEventSource(AbstractEventSource):
                     s.execute()  # This will throw an exception
                 elif type(s) is PongStrategy:
                     # A special case where we want to ignore the sequence
-                    self._execute_prepared_strategy(s)
+                    self.execute_prepared_strategy(s)
                 elif s.get_sequence() is not None and s.get_sequence() > self._last_seq:
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
                     # print(f" - {s}")
-                    self._execute_prepared_strategy(s)
+                    self.execute_prepared_strategy(s)
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
                     QApplication.processEvents()

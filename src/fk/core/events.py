@@ -54,8 +54,8 @@ AfterPomodoroComplete = "AfterPomodoroComplete"
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"
 
-BeforeSettingChanged = "BeforeSettingChanged"
-AfterSettingChanged = "AfterSettingChanged"
+BeforeSettingsChanged = "BeforeSettingsChanged"
+AfterSettingsChanged = "AfterSettingsChanged"
 
 BeforeMessageProcessed = "BeforeMessageProcessed"
 AfterMessageProcessed = "AfterMessageProcessed"

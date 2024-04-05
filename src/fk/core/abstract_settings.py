@@ -82,8 +82,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                  callback_invoker: Callable,
                  buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
         AbstractEventEmitter.__init__(self, [
-            events.BeforeSettingChanged,
-            events.AfterSettingChanged,
+            events.BeforeSettingsChanged,
+            events.AfterSettingsChanged,
         ], callback_invoker)
 
         self._callback_invoker = callback_invoker
@@ -99,21 +99,24 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
+                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
+                ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org",
-                    "flowkeeper.pro:Flowkeeper.pro",
+                    #"flowkeeper.pro:Flowkeeper.pro",
                     "websocket:Self-hosted server",
+                    "ephemeral:Ephemeral (for testing only)",
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
-                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'basic', [
+                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
                     "basic:Simple username and password",
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
@@ -136,12 +139,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "mixed:Mixed",
                 ], _always_show),
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], _always_show),
-                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _always_show),
-                ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _always_show),
-                ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _always_show),
+                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
+                ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
+                ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _never_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
-                ('Application.eyecandy_type', 'choice', 'Header background', 'default', [
+                ('Application.eyecandy_type', 'choice', 'Header background', 'gradient', [
                     "default:Default",
                     "image:Image",
                     "gradient:Gradient",
@@ -188,7 +191,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
-    def set(self, name: str, value: str) -> str:
+    def set(self, values: dict[str, str]) -> None:
         pass
 
     @abstractmethod
@@ -207,7 +210,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             return self.get('WebsocketEventSource.username')
 
     def is_team_supported(self) -> bool:
-        return self.get('Source.type') != 'local'
+        return self.get('Source.type') != 'local' and self.get('Application.enable_teams') == 'True'
 
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
@@ -236,6 +239,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         ]
 
     def reset_to_defaults(self) -> None:
+        to_set = dict[str, str]()
         for lst in self._definitions.values():
             for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-                self.set(option_id, option_default)
+                to_set[option_id] = option_default
+        self.set(to_set)

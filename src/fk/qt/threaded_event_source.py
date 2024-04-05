@@ -69,8 +69,8 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def get_config_parameter(self, name: str) -> str:
         return self._wrapped.get_config_parameter(name)
 
-    def set_config_parameter(self, name: str, value: str) -> str:
-        return self._wrapped.set_config_parameter(name, value)
+    def set_config_parameters(self, values: dict[str, str]) -> None:
+        return self._wrapped.set_config_parameters(values)
 
     def execute(self,
                 strategy_class:
@@ -118,3 +118,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return self._wrapped.can_connect()
+
+    def repair(self):
+        return self._wrapped.repair()

@@ -1,51 +1,73 @@
-# Flowkeeper Desktop
+# Flowkeeper
 
-This README is work in progress.
+![Pipeline status](https://github.com/flowkeeper-org/fk-desktop/actions/workflows/main.yml/badge.svg?branch=main "Pipeline status")
+[![Coverage Status](https://coveralls.io/repos/github/flowkeeper-org/fk-desktop/badge.svg?branch=main)](https://coveralls.io/github/flowkeeper-org/fk-desktop?branch=main)
+
+Flowkeeper is an independent Pomodoro Technique desktop timer for power users and professional teams. It is a 
+simple tool, which focuses on doing one thing well. It is Free Software with open source. Visit 
+[flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
+
+![Flowkeeper screenshot](fk-simple.png "Flowkeeper screenshot")
 
 ## Building
 
-Flowkeeper has a single dependency -- Qt 6.6, which in turn requires Python 3.11. If you want to
-build it with Ubuntu 20.04 or Debian 11, both of which come with older versions of Python, you
-would have to [compile Python 3.11 first](https://fostips.com/install-python-3-10-debian-11/).
+Flowkeeper has a single major dependency -- Qt 6.6, which in turn requires Python 3.11 or later. 
+If you want to build it with Ubuntu 20.04 or Debian 11, both of which come with older versions 
+of Python, you would have to [compile Python 3.11 first](https://fostips.com/install-python-3-10-debian-11/).
 
-Install dependencies:
+The Websocket backend relies on Qt WebSockets module, which in turn requires OpenSSL 3.0. Note 
+that some legacy OS like Ubuntu 20.04 require manual steps to install OpenSSL v3.
+
+Create a virtual environment and install dependencies:
 
 ```shell
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-run.txt
 ```
 
-The Websocket backend relies on Qt WebSockets module, which in turn
-requires OpenSSL 3.0. Note that some of the legacy OS like Ubuntu 20.04 require 
-manual steps to install OpenSSL v3.
-
-From here you can start coding. If you make any changes to resources
-(files in `/res` directory) you need to rebuild the corresponding Python
-classes:
+Then you need to "generate resources", which means converting data files in `/res` directory into
+the corresponding Python classes. Whenever you make changes to files in `/res` directory, you need
+to rerun this command, too:
 
 ```shell
 ./generate-resource.sh
 ```
 
-Finally, to run Flowkeeper:
+From here you can start coding. If you want to build an installer, refer to the CI/CD pipeline in
+`.github/workflows/build.yml`. For example, if you want to build a DEB file, you'd need to execute 
+`pyinstaller installer/normal-build.spec` and then `./package-deb.sh`. The process is a bit more 
+involved for Windows and macOS. **Note** that you'd also need to install extra requirements from 
+`requirements-build.txt`.
+
+To run Flowkeeper:
 
 ```shell
 PYTHONPATH=src python -m fk.desktop.desktop
 ```
 
-To run unit tests w/test coverage:
+To run unit tests w/test coverage (install requirements from `requirements-test.txt` first):
 
 ```shell
 PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
 python -m coverage html
 ```
 
-To build an installer for your platform (the standalone binary is placed in `dist/desktop`):
+TODO: Explain how to run e2e tests.
 
-```shell
-pyinstaller desktop.spec
-```
+#### Building for Alpine Linux
+
+Flowkeeper's CI pipeline runs PyInstaller on Ubuntu and thus generates binaries which rely on glibc. 
+Alpine is based on musl, so you'd get "symbol not found" errors in runtime if you try to run any of the
+"official" binaries.
+
+You can still use Flowkeeper with Alpine. We tested it with the edge release + Xfce. Instructions:
+
+1. Install `py3-pyside6` package via `apk`. This is the only tricky bit. We couldn't install PySide6 
+via pip from inside the venv, as we'd normally do.
+2. Clone this repo and create a Python Virtual Environment, *which uses system packages*:
+`python3 -m venv venv --system-site-packages`
+3. The rest of the steps are the same as for any other Linux OS
 
 ## Technical details
 
@@ -91,7 +113,7 @@ to subclass `AbstractEventSource`. All UI updates should be based on those event
   - `PongReceived(uid: str)`
 
 - AbstractSettings
-  - `BeforeSettingChanged(name: str, old_value: str, new_value: str)`, `AfterSettingChanged(--//--)`
+  - `BeforeSettingsChanged(old_values: dict[str, str], new_values: dict[str, str])`, `AfterSettingsChanged(--//--)`
 
 - AbstractTableView
   - `BeforeSelectionChanged(before: AbstractDataItem, after: AbstractDataItem)`, `AfterSelectionChanged(--//--)`

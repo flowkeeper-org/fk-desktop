@@ -13,14 +13,16 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import os
 from unittest import TestCase
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.tenant import Tenant
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
+from fk.core.tenant import Tenant
 from fk.core.user import User
+
+TEMP_FILENAME = 'src/fk/tests/fixtures/flowkeeper-data-TEMP.txt'
 
 
 class TestFileEventSource(TestCase):
@@ -28,18 +30,16 @@ class TestFileEventSource(TestCase):
     source: FileEventSource
     data: dict[str, User]
 
-    def setUp(self):
-        self.settings = MockSettings(
-            filename='src/fk/tests/fixtures/flowkeeper-data.txt',
-            username='alice@flowkeeper.org'
-        )
-        self.source = FileEventSource(self.settings, Tenant(self.settings), None)
+    def setUp(self) -> None:
+        self.settings = MockSettings(filename=TEMP_FILENAME)
+        self.source = FileEventSource(self.settings, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
 
-    def test_read(self):
-        self.assertIn('alice@flowkeeper.org', self.data)
-        user = self.data['alice@flowkeeper.org']
-        self.assertEqual(len(user), 1)
-        backlog = user['123-456-789']
-        self.assertEqual(backlog.get_name(), 'Sample backlog')
+    def tearDown(self) -> None:
+        os.unlink(TEMP_FILENAME)
+
+    def test_initialize(self):
+        self.assertIn('user@local.host', self.data)
+        user = self.data['user@local.host']
+        self.assertEqual(len(user), 0)

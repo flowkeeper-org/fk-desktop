@@ -123,10 +123,12 @@ class SettingsDialog(QDialog):
         self._buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(is_enabled)
 
     def _save_settings(self):
+        to_set = dict[str, str]()
         for name in self._widgets_value:
             value = self._widgets_value[name]()
             if self._data.get(name) != value:
-                self._data.set(name, value)
+                to_set[name] = value
+        self._data.set(to_set)
         self._set_buttons_state(False)
 
     @staticmethod
@@ -143,7 +145,8 @@ class SettingsDialog(QDialog):
                         option_id: str,
                         option_type: str,
                         option_value: str,
-                        option_options: list[any]) -> list[QWidget]:
+                        option_options: list[any],
+                        option_display: str) -> list[QWidget]:
         if option_type == 'email' or option_type == 'str':
             ed1 = QLineEdit(parent)
             ed1.setText(option_value)
@@ -173,7 +176,7 @@ class SettingsDialog(QDialog):
             return [widget]
         elif option_type == 'button':
             sequence_edit = QPushButton(parent)
-            sequence_edit.setText('Execute...')
+            sequence_edit.setText(option_display)
             sequence_edit.clicked.connect(lambda: self._handle_button_click(option_id))
             self._widgets_value[option_id] = lambda: ""
             return [sequence_edit]
@@ -275,8 +278,8 @@ class SettingsDialog(QDialog):
         res.setLayout(layout)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
-            widgets = self._display_option(res, option_id, option_type, option_value, option_options)
-            label = QLabel(option_display, res)
+            widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)
+            label = QLabel('' if option_type == 'button' else option_display, res)
             label.setObjectName(f'label-{option_id}')
             self._widgets_visibility[label] = option_visible
             if len(widgets) == 0:

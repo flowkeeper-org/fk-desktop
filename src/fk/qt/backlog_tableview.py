@@ -52,10 +52,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._init_menu(actions)
         #application.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source)
-        self.on(AfterSelectionChanged, lambda event, before, after: self._source.set_config_parameter(
-            'Application.last_selected_backlog',
-            after.get_uid() if after is not None else ''
-        ))
+        self.on(AfterSelectionChanged, lambda event, before, after: self._source.set_config_parameters({
+            'Application.last_selected_backlog': after.get_uid() if after is not None else ''
+        }))
         self._application = application
 
         heartbeat = application.get_heartbeat()

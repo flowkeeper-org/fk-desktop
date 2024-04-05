@@ -15,13 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient
+from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.events import AfterWorkitemComplete, AfterSettingChanged
+from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -59,14 +59,6 @@ class FocusWidget(QWidget):
         self._pixmap = None
 
         self.setObjectName('focus')
-        sp1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sp1.setHorizontalStretch(0)
-        sp1.setVerticalStretch(0)
-        self.setSizePolicy(sp1)
-        self.setMinimumHeight(80)
-        self.setMinimumWidth(0)
-        self.setMaximumHeight(16777215)
-        self.setMaximumWidth(16777215)
 
         layout = QHBoxLayout()
         layout.setObjectName("focus_layout")
@@ -84,10 +76,6 @@ class FocusWidget(QWidget):
         header_text = QLabel(self)
         header_text.setObjectName('headerText')
         text_layout.addWidget(header_text)
-        sp2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sp2.setHorizontalStretch(0)
-        sp2.setVerticalStretch(0)
-        header_text.setSizePolicy(sp2)
         header_text.setText("Idle")
         header_text.setFont(application.get_header_font())
         application.on(AfterFontsChanged, lambda header_font, **kwargs: header_text.setFont(header_font))
@@ -144,7 +132,7 @@ class FocusWidget(QWidget):
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
-        settings.on(AfterSettingChanged, self._on_setting_changed)
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -185,6 +173,7 @@ class FocusWidget(QWidget):
                 self._header_text.setText('Idle')
                 self._header_subtext.setText("It's time for the next Pomodoro.")
             self._buttons['focus.voidPomodoro'].hide()
+            self._actions['focus.voidPomodoro'].setDisabled(True)
             self._timer_display.set_values(0, None, "")
             self._timer_display.hide()
         elif self._timer.is_working() or self._timer.is_resting():
@@ -196,6 +185,7 @@ class FocusWidget(QWidget):
             self._header_text.setText(f'{txt} left')
             self._header_subtext.setText(running_workitem.get_name())
             self._buttons['focus.voidPomodoro'].show()
+            self._actions['focus.voidPomodoro'].setDisabled(False)
             self._buttons['focus.nextPomodoro'].hide()
             self._buttons['focus.completeItem'].hide()
             self._timer_display.set_values(
@@ -236,11 +226,17 @@ class FocusWidget(QWidget):
         elif eyecandy_type == 'gradient':
             painter = QPainter(self)
             gradient = self._settings.get('Application.eyecandy_gradient')
-            painter.fillRect(self.rect(), QGradient.Preset[gradient])
+            try:
+                painter.fillRect(self.rect(), QGradient.Preset[gradient])
+            except Exception as e:
+                print('ERROR while updating the gradient -- ignoring it', e)
+                painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
 
-    def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
-        if name.startswith('Application.eyecandy'):
-            self.eye_candy()
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        for name in new_values.keys():
+            if name.startswith('Application.eyecandy'):
+                self.eye_candy()
+                return
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source.backlogs():

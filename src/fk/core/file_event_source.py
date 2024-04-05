@@ -76,7 +76,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                     self._last_seq = seq
                     # print(f" - {strategy}")
-                    self._execute_prepared_strategy(strategy)
+                    self.execute_prepared_strategy(strategy)
         self.auto_seal()
 
     def _get_filename(self) -> str:
@@ -114,7 +114,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 if seq != self._last_seq + 1:
                     self._sequence_error(self._last_seq, seq)
             self._last_seq = seq
-            self._execute_prepared_strategy(strategy)
+            self.execute_prepared_strategy(strategy)
         self.auto_seal()
         self.unmute()
         self._emit(events.SourceMessagesProcessed, dict())
@@ -148,7 +148,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
-                self._execute_prepared_strategy(strategy)
+                self.execute_prepared_strategy(strategy)
         self.auto_seal()
 
         if mute_events:

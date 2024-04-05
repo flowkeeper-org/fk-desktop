@@ -24,22 +24,20 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-test.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
       - name: Test coverage
         run: |
-          PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
-          python -m coverage html
-      - name: Archive code coverage results 
-        uses: actions/upload-artifact@v3
-        with:
-          name: code-coverage-report
-          path: htmlcov
+          PYTHONPATH=src coverage run -m unittest discover -v fk.tests
+      - name: Upload code coverage to coveralls.io
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   package-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: run-tests
     steps:
       - name: Checkout repository
@@ -54,19 +52,41 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
-          mv dist/desktop dist/flowkeeper-linux
-      - name: Release
-        uses: softprops/action-gh-release@v1
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+      - name: Archive portable build
+        uses: actions/upload-artifact@v3
         with:
-          files: |
-            dist/flowkeeper-linux
+          name: dist-linux-standalone
+          path: |
+            dist/Flowkeeper
+      - name: Archive one-folder build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-one-folder
+          path: |
+            dist/flowkeeper
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-deb
+          path: |
+            dist/flowkeeper.deb
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-deb
+          path: |
+            dist/flowkeeper.deb
           
   package-windows:
     runs-on: windows-latest
@@ -80,7 +100,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           cd res
@@ -100,10 +120,16 @@ jobs:
           pyside6-rcc --project -o theme-mixed.qrc
           pyside6-rcc -g python theme-mixed.qrc -o "../../src/fk/desktop/theme_mixed.py"
           cd ..
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
-          move dist\desktop.exe dist\Flowkeeper.exe
+          pyinstaller installer\portable-build.spec
+          pyinstaller installer\normal-build.spec
+      - name: Archive portable build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows-standalone
+          path: |
+            dist/Flowkeeper.exe
       - name: Download innosetup installer
         run: |
           Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
@@ -116,14 +142,14 @@ jobs:
         run: |
           set /p FIRST_LINE=< res\common\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
-          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
-          move Output\mysetup.exe dist\setup.exe
-      - name: Release
-        uses: softprops/action-gh-release@v1
+          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
+          move installer\Output\mysetup.exe dist\setup.exe
+      - name: Archive installer
+        uses: actions/upload-artifact@v3
         with:
-          files: |
-            dist/Flowkeeper.exe
-            dist/setup.exe
+          name: dist-windows-setup
+          path: |
+            dist\setup.exe
 
   package-macOS:
     runs-on: macOS-latest
@@ -141,18 +167,19 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
           brew install create-dmg
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
+          # There's no portable executables in macOS as such
+          # pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
       - name: Create DMG installer
         run: |
-          rm dist/desktop
-          mv dist/desktop.app dist/Flowkeeper.app
+          rm -rf dist/flowkeeper
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
@@ -164,8 +191,9 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper.dmg" \
             "dist/"
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Archive DMG installer
+        uses: actions/upload-artifact@v3
         with:
-          files: |
+          name: dist-macOS-dmg
+          path: |
             Flowkeeper.dmg

@@ -14,7 +14,7 @@ on:
           - macOS
 jobs:
   package-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if:  ${{ inputs.OS == 'linux' }} 
     steps:
       - name: Checkout repository
@@ -29,19 +29,41 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
-      - name: Archive the build 
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+      - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
           name: dist-linux-standalone
           path: |
-            dist/desktop
+            dist/Flowkeeper
+      - name: Archive one-folder build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-one-folder
+          path: |
+            dist/flowkeeper
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-deb
+          path: |
+            dist/flowkeeper.deb
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-deb
+          path: |
+            dist/flowkeeper.deb
 
   package-windows:
     runs-on: windows-latest
@@ -55,7 +77,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           cd res
@@ -75,11 +97,11 @@ jobs:
           pyside6-rcc --project -o theme-mixed.qrc
           pyside6-rcc -g python theme-mixed.qrc -o "../../src/fk/desktop/theme_mixed.py"
           cd ..
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
-          move dist\desktop.exe dist\Flowkeeper.exe
-      - name: Archive the build 
+          pyinstaller installer\portable-build.spec
+          pyinstaller installer\normal-build.spec
+      - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
           name: dist-windows-standalone
@@ -97,8 +119,8 @@ jobs:
         run: |
           set /p FIRST_LINE=< res\common\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
-          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" desktop.iss
-          move Output\mysetup.exe dist\setup.exe
+          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
+          move installer\Output\mysetup.exe dist\setup.exe
       - name: Archive installer
         uses: actions/upload-artifact@v3
         with:
@@ -122,18 +144,19 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-build.txt
           brew install create-dmg
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Package the build
+      - name: Package builds
         run: |
-          pyinstaller desktop.spec
+          # There's no portable executables in macOS as such
+          # pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
       - name: Create DMG installer
         run: |
-          rm dist/desktop
-          mv dist/desktop.app dist/Flowkeeper.app
+          rm -rf dist/flowkeeper
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
@@ -145,7 +168,7 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper.dmg" \
             "dist/"
-      - name: Archive the build 
+      - name: Archive DMG installer
         uses: actions/upload-artifact@v3
         with:
           name: dist-macOS-dmg

@@ -36,16 +36,21 @@ class MockSettings(AbstractSettings):
         else:
             return self._defaults[name]
 
-    def set(self, name: str, value: str) -> str:
+    def set(self, values: dict[str, str]) -> None:
+        old_values: dict[str, str] = dict()
+        for name in values.keys():
+            old_value = self.get(name) if name in self._settings else None
+            if old_value != values[name]:
+                old_values[name] = old_value
         params = {
-            'name': name,
-            'old_value': self.get(name) if name in self._settings else None,
-            'new_value': value,
+            'old_values': old_values,
+            'new_values': values,
         }
-        self._emit(events.BeforeSettingChanged, params)
-        self._settings[name] = value
-        self._emit(events.AfterSettingChanged, params)
-        return value
+        self._emit(events.BeforeSettingsChanged, params)
+        for name in old_values.keys():  # This is not a typo, we've just filtered this list
+            # to only contain settings which actually changed.
+            self._settings[name] = values[name]
+        self._emit(events.AfterSettingsChanged, params)
 
     def location(self) -> str:
         return "N/A"

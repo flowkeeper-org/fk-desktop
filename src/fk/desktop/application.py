@@ -30,7 +30,8 @@ from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.events import AfterSettingChanged
+from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.events import AfterSettingsChanged
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.desktop.export_wizard import ExportWizard
@@ -46,6 +47,7 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
+from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 AfterFontsChanged = "AfterFontsChanged"
@@ -61,6 +63,7 @@ class Application(QApplication, AbstractEventEmitter):
     _source: AbstractEventSource | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
+    _tutorial_timer: QtTimer
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -74,7 +77,7 @@ class Application(QApplication, AbstractEventEmitter):
         # has been constructed, as it uses default QFont and other
         # OS-specific values
         self._settings = QtSettings()
-        self._settings.on(AfterSettingChanged, self._on_setting_changed)
+        self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close
         quit_on_close = (self._settings.get('Application.quit_on_close') == 'True')
@@ -91,6 +94,11 @@ class Application(QApplication, AbstractEventEmitter):
         self.on(NewReleaseAvailable, self.on_new_version)
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
+
+        # Tutorial
+        self._tutorial_timer = QtTimer('Tutorial')
+        if self._settings.get('Application.show_tutorial') == 'True':
+            self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
         self._source = None
         self._recreate_source()
@@ -110,6 +118,9 @@ class Application(QApplication, AbstractEventEmitter):
         source: AbstractEventSource
         if source_type == 'local':
             inner_source = FileEventSource(self._settings, root, QtFilesystemWatcher())
+            source = ThreadedEventSource(inner_source)
+        elif source_type == 'ephemeral':
+            inner_source = EphemeralEventSource(self._settings, root)
             source = ThreadedEventSource(inner_source)
         elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
             source = WebsocketEventSource(self._settings, self, root)
@@ -183,7 +194,7 @@ class Application(QApplication, AbstractEventEmitter):
         # Save it to Settings, so that we can use this value when
         # calculating display hints for the Pomodoro Delegate.
         # As of now, this requires app restart to apply.
-        self._settings.set('Application.table_row_height', str(h))
+        self._settings.set({'Application.table_row_height': str(h)})
         return h
 
     def restart_warning(self) -> None:
@@ -219,23 +230,25 @@ class Application(QApplication, AbstractEventEmitter):
     def get_row_height(self):
         return self._row_height
 
-    def _on_setting_changed(self, event: str, name: str, old_value: str, new_value: str):
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         # print(f'Setting {name} changed from {old_value} to {new_value}')
-        if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
+        show_restart_warning = False
+        for name in new_values.keys():
+            if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
+                show_restart_warning = True
+            elif name == 'Application.quit_on_close':
+                self.setQuitOnLastWindowClosed(new_values[name] == 'True')
+            elif 'Application.font_' in name:
+                self._initialize_fonts()
+            elif name == 'Application.theme':
+                show_restart_warning = True
+                # app.set_theme(new_value)
+            elif name == 'Application.check_updates':
+                if new_values[name] == 'True':
+                    self._version_timer.schedule(1000, self.check_version, None, True)
+
+        if show_restart_warning:
             self.restart_warning()
-            # This is not safe yet:
-            # self._recreate_source()
-            # self._source.start()
-        elif name == 'Application.quit_on_close':
-            self.setQuitOnLastWindowClosed(new_value == 'True')
-        elif 'Application.font_' in name:
-            self._initialize_fonts()
-        elif name == 'Application.theme':
-            self.restart_warning()
-            # app.set_theme(new_value)
-        elif name == 'Application.check_updates':
-            if new_value == 'True':
-                self._version_timer.schedule(1000, self.check_version, None, True)
 
         # TODO: Subscribe to sound settings
         # TODO: Subscribe the sources to the settings they use
@@ -275,15 +288,19 @@ class Application(QApplication, AbstractEventEmitter):
                                           "\n".join(log))
 
     def generate_gradient(self, _):
-        chosen = random.choice(list(QGradient.Preset))
-        self._settings.set('Application.eyecandy_gradient', chosen.name)
+        preset_names = [preset.name for preset in QGradient.Preset]
+        if 'NumPresets' in preset_names:
+            preset_names.remove('NumPresets')
+        chosen = random.choice(preset_names)
+        self._settings.set({'Application.eyecandy_gradient': chosen})
 
     def sign_in(self, _):
         def save(auth: AuthenticationRecord):
-            # TODO: Set multiple settings in a single event
-            self._settings.set('WebsocketEventSource.auth_type', 'google')
-            self._settings.set('WebsocketEventSource.username', auth.email)
-            self._settings.set('WebsocketEventSource.refresh_token', auth.refresh_token)
+            self._settings.set({
+                'WebsocketEventSource.auth_type': 'google',
+                'WebsocketEventSource.username': auth.email,
+                'WebsocketEventSource.refresh_token': auth.refresh_token,
+            })
 
         if QMessageBox().warning(self.activeWindow(),
                                  "Known bug",
@@ -301,6 +318,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
         actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
         actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
+        actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
 
     def quit_local(self):
@@ -337,6 +355,9 @@ class Application(QApplication, AbstractEventEmitter):
         print('Will check GitHub releases for the latest version')
         get_latest_version(self, on_version)
 
+    def show_tutorial(self, event: str = None) -> None:
+        TutorialWindow(self.activeWindow(), self._settings).show()
+
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
         latest_str = str(latest)
@@ -355,6 +376,6 @@ class Application(QApplication, AbstractEventEmitter):
         res = msg.exec()
         if check.isChecked():
             ignored.append(latest_str)
-            self._settings.set('Application.ignored_updates', ','.join(ignored))
+            self._settings.set({'Application.ignored_updates': ','.join(ignored)})
         if res == QMessageBox.StandardButton.Yes:
             webbrowser.open(f"https://flowkeeper.org/#download")
