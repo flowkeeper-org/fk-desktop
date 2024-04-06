@@ -27,7 +27,6 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
-from fk.e2e.backlog_e2e import test_backlog_loaded
 from fk.e2e.e2e_test import E2eTest
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
@@ -356,8 +355,12 @@ if __name__ == "__main__":
         if 'e2e' in app.arguments():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
+            from fk.e2e.backlog_e2e import test_backlog_loaded
             tt = E2eTest(app, test_backlog_loaded)
             QtAsyncio.run()
+        elif 'reset' in app.arguments():
+            # This might be useful on Windows or macOS, which store their settings in some obscure locations
+            settings.reset_to_defaults()
         else:
             # This would work on any Qt 6.6.x
             sys.exit(app.exec())
