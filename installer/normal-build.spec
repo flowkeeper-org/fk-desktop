@@ -43,7 +43,7 @@ coll = COLLECT(
     name='flowkeeper',
 )
 app = BUNDLE(
-    exe,
+    coll,
     name='Flowkeeper.app',
     icon='../res/flowkeeper.icns',
     bundle_identifier=None,
