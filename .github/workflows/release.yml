@@ -60,34 +60,21 @@ jobs:
         run: |
           pyinstaller installer/portable-build.spec
           pyinstaller installer/normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-standalone
-          path: |
-            dist/Flowkeeper
-      - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-one-folder
-          path: |
-            dist/flowkeeper
+          mv dist/Flowkeeper dist/flowkeeper
+          cd dist
+          tar -czf flowkeeper.tar.gz flowkeeper
+          cd ..
       - name: Create DEB installer
         run: |
           ./package-deb.sh
-      - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: dist-linux-deb
-          path: |
+          files: |
+            dist/flowkeeper
             dist/flowkeeper.deb
-      - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-deb
-          path: |
-            dist/flowkeeper.deb
-          
+            dist/flowkeeper.tar.gz
+
   package-windows:
     runs-on: windows-latest
     needs: run-tests
@@ -124,12 +111,6 @@ jobs:
         run: |
           pyinstaller installer\portable-build.spec
           pyinstaller installer\normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-windows-standalone
-          path: |
-            dist/Flowkeeper.exe
       - name: Download innosetup installer
         run: |
           Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
@@ -144,12 +125,12 @@ jobs:
           set FK_VERSION=%FIRST_LINE:* =%
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
           move installer\Output\mysetup.exe dist\setup.exe
-      - name: Archive installer
-        uses: actions/upload-artifact@v3
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: dist-windows-setup
-          path: |
-            dist\setup.exe
+          files: |
+            dist/Flowkeeper.exe
+            dist/setup.exe
 
   package-macOS:
     runs-on: macOS-latest
@@ -191,9 +172,8 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper.dmg" \
             "dist/"
-      - name: Archive DMG installer
-        uses: actions/upload-artifact@v3
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: dist-macOS-dmg
-          path: |
+          files: |
             Flowkeeper.dmg
