@@ -18,6 +18,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+set -e
+
 source venv/bin/activate
 PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
 python -m coverage html

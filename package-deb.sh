@@ -18,6 +18,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+set -e
+
 # In the next version(s) think of installing it in /opt/Flowkeeper instead
 
 # 1. Get the version
