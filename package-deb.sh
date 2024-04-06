@@ -21,7 +21,7 @@
 # In the next version(s) think of installing it in /opt/Flowkeeper instead
 
 # 1. Get the version
-VERSION_REGEX='^### v(.+?) .*$'
+VERSION_REGEX='^### v(.+) \(.*$'
 VERSION_LINE=$(head --lines=1 res/common/CHANGELOG.txt)
 if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
 	export FK_VERSION="${BASH_REMATCH[1]}"

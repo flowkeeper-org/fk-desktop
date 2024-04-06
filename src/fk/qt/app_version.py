@@ -21,7 +21,7 @@ from PySide6.QtCore import QFile, QObject
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from semantic_version import Version
 
-CHANGELOG_REGEX = re.compile(r'### v(.+?) .*')
+CHANGELOG_REGEX = re.compile(r'### v(.+) \(.*')
 GITHUB_TAG_REGEX = re.compile(r'v(.+)')
 
 
