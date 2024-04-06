@@ -60,7 +60,6 @@ jobs:
         run: |
           pyinstaller installer/portable-build.spec
           pyinstaller installer/normal-build.spec
-          mv dist/Flowkeeper dist/flowkeeper
           cd dist
           tar -czf flowkeeper.tar.gz flowkeeper
           cd ..
@@ -71,7 +70,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/flowkeeper
+            dist/Flowkeeper
             dist/flowkeeper.deb
             dist/flowkeeper.tar.gz
 
