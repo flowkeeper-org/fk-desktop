@@ -1,26 +1,38 @@
 import asyncio
+import inspect
+from abc import ABC
 from typing import Callable, Self
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
 
+from fk.desktop.application import Application
 
-class E2eTest:
+
+class AbstractE2eTest(ABC):
     _timer: QTimer
-    _seq: Callable
+    _seq: list[Callable]
     _app: QApplication
     _initialized: bool
 
-    def __init__(self, app: QApplication, seq: Callable[[Self], None]):
-        self._seq = seq
+    def __init__(self, app: Application):
         self._app = app
+        app.get_settings().set(self.custom_settings())
         self._initialized = False
+        self._seq = self._get_test_cases()
         self._timer = QTimer()
         self._timer.timeout.connect(lambda: asyncio.ensure_future(
             self._run()
         ))
-        self._timer.start(1)
+
+    def _get_test_cases(self):
+        methods = inspect.getmembers(self.__class__, predicate=inspect.isfunction)
+        res = list()
+        for m in methods:
+            if m[0].startswith('test_'):
+                res.append(m[1])
+        return res
 
     async def _run(self):
         if not self._initialized:
@@ -30,7 +42,8 @@ class E2eTest:
             if window:
                 self._timer.stop()
                 try:
-                    await self._seq(self)
+                    for method in self._seq:
+                        await method(self)
                 except Exception as e:
                     print(f'Error (RECORD ME): {e}')
 
@@ -108,3 +121,9 @@ class E2eTest:
 
     def window(self) -> QWidget:
         return self._app.activeWindow()
+
+    def custom_settings(self) -> dict[str, str]:
+        return dict()
+
+    def start(self) -> None:
+        self._timer.start(1)

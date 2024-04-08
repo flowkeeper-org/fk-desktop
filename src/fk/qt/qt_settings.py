@@ -25,10 +25,10 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
 
-    def __init__(self):
+    def __init__(self, app_name: str = 'desktop-client'):
         font = QFont()
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
-        self._settings = QtCore.QSettings("flowkeeper", "desktop-client")
+        self._settings = QtCore.QSettings("flowkeeper", app_name)
 
     def set(self, values: dict[str, str]) -> None:
         old_values: dict[str, str] = dict()
@@ -51,3 +51,6 @@ class QtSettings(AbstractSettings):
 
     def location(self) -> str:
         return self._settings.fileName()
+
+    def clear(self) -> None:
+        self._settings.clear()

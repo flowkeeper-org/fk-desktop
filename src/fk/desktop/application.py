@@ -69,14 +69,20 @@ class Application(QApplication, AbstractEventEmitter):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, AfterSourceChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
-
         self._heartbeat = None
         sys.excepthook = self.on_exception
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
         # OS-specific values
-        self._settings = QtSettings()
+        if self.is_e2e_mode():
+            self._settings = QtSettings('desktop-client-e2e')
+            self._settings.reset_to_defaults()
+            from fk.e2e.backlog_e2e import BacklogE2eTest
+            test = BacklogE2eTest(self)
+            test.start()
+        else:
+            self._settings = QtSettings()
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close
@@ -102,6 +108,9 @@ class Application(QApplication, AbstractEventEmitter):
 
         self._source = None
         self._recreate_source()
+
+    def is_e2e_mode(self):
+        return 'e2e' in self.arguments()
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
         # TODO -- lock the UI

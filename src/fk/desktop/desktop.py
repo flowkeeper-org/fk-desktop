@@ -13,13 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import asyncio
 import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
-from PySide6.QtAsyncio import QAsyncioEventLoop
-from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -27,7 +24,6 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
-from fk.e2e.e2e_test import E2eTest
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -352,11 +348,9 @@ if __name__ == "__main__":
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
-        if 'e2e' in app.arguments():
+        if app.is_e2e_mode():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
-            from fk.e2e.backlog_e2e import test_backlog_loaded
-            tt = E2eTest(app, test_backlog_loaded)
             QtAsyncio.run()
         elif 'reset' in app.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations

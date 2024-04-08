@@ -200,6 +200,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     @abstractmethod
+    def clear(self) -> None:
+        # Note that there's no default value -- we can get it from self._defaults
+        pass
+
+    @abstractmethod
     def location(self) -> str:
         pass
 
@@ -243,4 +248,5 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         for lst in self._definitions.values():
             for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
                 to_set[option_id] = option_default
+        self.clear()
         self.set(to_set)
