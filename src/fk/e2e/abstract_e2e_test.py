@@ -1,5 +1,8 @@
 import asyncio
+import atexit
 import inspect
+import os
+import sys
 from abc import ABC
 from typing import Callable, Self
 
@@ -8,12 +11,16 @@ from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
 
 from fk.desktop.application import Application
+from fk.qt.actions import Actions
+
+
+INSTANT_DURATION = 0.01  # seconds
 
 
 class AbstractE2eTest(ABC):
     _timer: QTimer
     _seq: list[Callable]
-    _app: QApplication
+    _app: Application
     _initialized: bool
 
     def __init__(self, app: Application):
@@ -42,6 +49,8 @@ class AbstractE2eTest(ABC):
             if window:
                 self._timer.stop()
                 try:
+                    self.setup()
+                    atexit.register(self.teardown)
                     for method in self._seq:
                         await method(self)
                 except Exception as e:
@@ -102,19 +111,22 @@ class AbstractE2eTest(ABC):
         self.do(lambda: button.click())
 
     def keypress(self, key: int, ctrl: bool = False):
-        self._app.postEvent(self.window(), QKeyEvent(
+        self._app.postEvent(self.get_focused(), QKeyEvent(
             QEvent.Type.KeyPress,
             key,
             Qt.KeyboardModifier.ControlModifier if ctrl else Qt.KeyboardModifier.NoModifier,
         ))
 
-    def get_focused(self):
-        w = self._app.focusWidget()
-        print('Focus widget', w)
-        w = self._app.focusWindow()
-        print('Focus window', w)
-        w = self._app.focusObject()
-        print('Focus object', w)
+    def type_text(self, text: str):
+        self._app.postEvent(self.get_focused(), QKeyEvent(
+            QEvent.Type.KeyPress,
+            Qt.Key.Key_No,
+            Qt.KeyboardModifier.NoModifier,
+            text,
+        ))
+
+    def get_focused(self) -> QWidget:
+        return self._app.focusWidget()
 
     def get_application(self) -> QApplication:
         return self._app
@@ -122,8 +134,26 @@ class AbstractE2eTest(ABC):
     def window(self) -> QWidget:
         return self._app.activeWindow()
 
+    def execute_action(self, name: str):
+        Actions.ALL[name].trigger()
+
     def custom_settings(self) -> dict[str, str]:
         return dict()
 
     def start(self) -> None:
-        self._timer.start(1)
+        self._timer.start(INSTANT_DURATION * 1000)
+
+    def restart(self) -> None:
+        # TODO: This needs to be tested
+        os.execv(__file__, sys.argv)
+        # or
+        os.execv(sys.executable, ['python'] + sys.argv)
+
+    def setup(self) -> None:
+        pass
+
+    def teardown(self) -> None:
+        pass
+
+    async def instant_pause(self) -> None:
+        await asyncio.sleep(INSTANT_DURATION)

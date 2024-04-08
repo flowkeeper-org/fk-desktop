@@ -1,10 +1,14 @@
-import asyncio
+import os
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 from assertpy import assert_that
 
 from fk.e2e.abstract_e2e_test import AbstractE2eTest
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.workitem_tableview import WorkitemTableView
+
+TEMP_FILENAME = './backlog-e2e.txt'
 
 
 class BacklogE2eTest(AbstractE2eTest):
@@ -13,34 +17,71 @@ class BacklogE2eTest(AbstractE2eTest):
 
     def custom_settings(self) -> dict[str, str]:
         return {
-            'FileEventSource.filename': './backlog-e2e.txt',
+            'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
         }
 
+    def teardown(self) -> None:
+        print('Deleting', TEMP_FILENAME)
+        os.unlink(TEMP_FILENAME)
+
+    async def _new_backlog(self, name: str) -> None:
+        self.keypress(Qt.Key.Key_N, True)   # self.execute_action('backlogs_table.newBacklog')
+        await self.instant_pause()
+        self.type_text(name)
+        self.keypress(Qt.Key.Key_Enter)
+        await self.instant_pause()
+
+    async def _new_workitem(self, name: str, pomodoros: int = 0) -> None:
+        self.keypress(Qt.Key.Key_Insert)   # self.execute_action('workitems_table.newItem')
+        await self.instant_pause()
+        self.type_text(name)
+        self.keypress(Qt.Key.Key_Enter)
+        await self.instant_pause()
+        for p in range(pomodoros):
+            self.keypress(Qt.Key.Key_Plus, True)  # self.execute_action('workitems_table.addPomodoro')
+            await self.instant_pause()
+
     async def test_backlog_loaded(self):
-        print('DEBUG: Entered test')
-        await asyncio.sleep(0.5)
+        main_window = self.window()
+        assert_that(main_window.windowTitle()).is_equal_to('Flowkeeper')
 
-        w = self.window()
-        print(f'DEBUG: Main window: {w}')
-        assert_that(w.windowTitle()).is_equal_to('Flowkeeper')
+        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        backlogs_model = backlogs_table.model()
+        assert_that(backlogs_model.rowCount()).is_equal_to(0)
 
-        table: BacklogTableView = w.findChild(BacklogTableView, "backlogs_table")
-        print(f'DEBUG: Table: {table}')
-        model = table.model()
-        count = model.rowCount()
-        print(f'DEBUG: Rows: {count}')
-        assert_that(count).is_equal_to(10)
-        assert_that(model.index(0, 0).data()).is_equal_to('2024-03-31, Sunday')
-        assert_that(model.index(1, 0).data()).is_equal_to('27/10/23')
-        assert_that(model.index(2, 0).data()).is_equal_to('Flowkeeper')
+        workitems_table: BacklogTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        workitems_table = workitems_table.model()
+        assert_that(workitems_table.rowCount()).is_equal_to(0)
 
-        self.mouse_click_row(table, 6)
-        print(f'DEBUG: Clicked on a random backlog')
+        ################################################################
+        # Create a bunch of test backlogs and fill them with workitems #
+        ################################################################
+        await self._new_backlog('Backlog 1')
+        await self._new_workitem('Workitem 11')
+        await self._new_workitem('Workitem 12', 1)
+        await self._new_workitem('Workitem 13', 3)
+        assert_that(workitems_table.rowCount()).is_equal_to(3)
+        await self._new_backlog('Backlog 2')
+        await self._new_workitem('Workitem 21')
+        await self._new_workitem('Workitem 22', 1)
+        await self._new_workitem('Workitem 23', 3)
+        assert_that(backlogs_model.rowCount()).is_equal_to(2)
+        assert_that(workitems_table.rowCount()).is_equal_to(3)
 
-        await asyncio.sleep(0.1)
-        #t.keypress(Qt.Key.Key_N, True)
-        #print('DEBUG: Typed')
-        self.get_focused()
-        #await asyncio.sleep(0.1)
-        #t.keypress(Qt.Key.Key_Enter)
+
+
+        # assert_that(count).is_equal_to(10)
+        # assert_that(model.index(0, 0).data()).is_equal_to('2024-03-31, Sunday')
+        # assert_that(model.index(1, 0).data()).is_equal_to('27/10/23')
+        # assert_that(model.index(2, 0).data()).is_equal_to('Flowkeeper')
+        #
+        # self.mouse_click_row(table, 6)
+        # print(f'DEBUG: Clicked on a random backlog')
+        #
+        # await asyncio.sleep(0.1)
+        # #t.keypress(Qt.Key.Key_N, True)
+        # #print('DEBUG: Typed')
+        # self.get_focused()
+        # #await asyncio.sleep(0.1)
+        # #t.keypress(Qt.Key.Key_Enter)
