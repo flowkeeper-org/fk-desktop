@@ -42,6 +42,16 @@ class BacklogE2eTest(AbstractE2eTest):
             self.keypress(Qt.Key.Key_Plus, True)  # self.execute_action('workitems_table.addPomodoro')
             await self.instant_pause()
 
+    async def _find_workitem(self, name: str) -> None:
+        self.keypress(Qt.Key.Key_F, True)   # self.execute_action('window.showSearch')
+        await self.instant_pause()
+        self.type_text(name)
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Down)  # TODO: This doesn't work
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Enter)
+        await self.instant_pause()
+
     async def test_backlog_loaded(self):
         main_window = self.window()
         assert_that(main_window.windowTitle()).is_equal_to('Flowkeeper')
@@ -57,18 +67,49 @@ class BacklogE2eTest(AbstractE2eTest):
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
         ################################################################
-        await self._new_backlog('Backlog 1')
+        await self._new_backlog('Trip to Italy')
         await self._new_workitem('Workitem 11')
         await self._new_workitem('Workitem 12', 1)
         await self._new_workitem('Workitem 13', 3)
         assert_that(workitems_table.rowCount()).is_equal_to(3)
-        await self._new_backlog('Backlog 2')
+
+        await self._new_backlog('House renovation')
         await self._new_workitem('Workitem 21')
         await self._new_workitem('Workitem 22', 1)
         await self._new_workitem('Workitem 23', 3)
-        assert_that(backlogs_model.rowCount()).is_equal_to(2)
         assert_that(workitems_table.rowCount()).is_equal_to(3)
 
+        await self._new_backlog('Long-term stuff')
+        await self._new_workitem('Workitem 21')
+        await self._new_workitem('Workitem 22', 1)
+        await self._new_workitem('Workitem 23', 3)
+        assert_that(workitems_table.rowCount()).is_equal_to(3)
+
+        await self._new_backlog('2024-03-12, Tuesday')
+        await self._new_workitem('Workitem 21')
+        await self._new_workitem('Workitem 22', 1)
+        await self._new_workitem('Workitem 23', 3)
+        assert_that(workitems_table.rowCount()).is_equal_to(3)
+
+        await self._new_backlog('2024-03-13, Wednesday')
+        await self._new_workitem('Workitem 21')
+        await self._new_workitem('Workitem 22', 1)
+        await self._new_workitem('Workitem 23', 3)
+        assert_that(workitems_table.rowCount()).is_equal_to(3)
+
+        await self._new_backlog('2024-03-14, Thursday')
+        await self._new_workitem('Generate new screenshots', 2)
+        await self._new_workitem('Reply to Peter', 1)
+        await self._new_workitem('Slides for the demo', 3)
+        await self._new_workitem('Deprecate StartRest strategy', 2)
+        await self._new_workitem('Auto-seal in the web frontend', 2)
+        await self._new_workitem('Order coffee capsules')
+        await self._new_workitem('Call Alex in the afternoon')
+        assert_that(workitems_table.rowCount()).is_equal_to(7)
+
+        assert_that(backlogs_model.rowCount()).is_equal_to(6)
+
+        await self._find_workitem('Reply to Peter')
 
 
         # assert_that(count).is_equal_to(10)
