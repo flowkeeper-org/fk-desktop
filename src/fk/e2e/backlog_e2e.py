@@ -2,23 +2,26 @@ import asyncio
 import os
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
 from assertpy import assert_that
 
 from fk.core.workitem import Workitem
+from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
 TEMP_FILENAME = './backlog-e2e.txt'
-POMODORO_WORK_DURATION = 0.1  # seconds
-POMODORO_REST_DURATION = 0.1  # seconds
+POMODORO_WORK_DURATION = 0.25  # seconds
+POMODORO_REST_DURATION = 0.25  # seconds
 
 
 class BacklogE2eTest(AbstractE2eTest):
-    def __init__(self, app: QApplication):
+    _application: Application
+
+    def __init__(self, app: Application):
         super().__init__(app)
+        self._application = app
 
     def custom_settings(self) -> dict[str, str]:
         return {
@@ -87,6 +90,7 @@ class BacklogE2eTest(AbstractE2eTest):
         await self.instant_pause()
         self.type_text(name)
         await self.instant_pause()
+        # noinspection PyTypeChecker
         search: SearchBar = self.window().findChild(SearchBar, "search")
         completer = search.completer()
         popup = completer.popup()
@@ -94,15 +98,25 @@ class BacklogE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Enter, False, popup)
         await self.instant_pause()
 
-    async def _select_backlog(self, name: str) -> None:
+    async def _select_backlog(self, name: str) -> int:
         main_window = self.window()
+        # noinspection PyTypeChecker
         backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         backlogs_model = backlogs_table.model()
         for i in range(backlogs_model.rowCount()):
             if backlogs_model.index(i, 0).data() == name:
                 self.mouse_click_row(backlogs_table, i)
                 await self.instant_pause()
-                return
+                return i
+        return -1
+
+    def assert_actions_enabled(self, names: list[str]) -> None:
+        for name in names:
+            assert_that(self.is_action_enabled(name), f'Action {name} should be enabled').is_true()
+
+    def assert_actions_disabled(self, names: list[str]) -> None:
+        for name in names:
+            assert_that(self.is_action_enabled(name), f'Action {name} should be disabled').is_false()
 
     async def test_01_create_backlogs(self):
         ##################
@@ -112,11 +126,13 @@ class BacklogE2eTest(AbstractE2eTest):
         main_window = self.window()
         assert_that(main_window.windowTitle()).is_equal_to('Flowkeeper')
 
+        # noinspection PyTypeChecker
         backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         backlogs_model = backlogs_table.model()
         assert_that(backlogs_model.rowCount()).is_equal_to(0)
 
-        workitems_table: BacklogTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        # noinspection PyTypeChecker
+        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
         workitems_model = workitems_table.model()
         assert_that(workitems_model.rowCount()).is_equal_to(0)
 
@@ -203,19 +219,10 @@ class BacklogE2eTest(AbstractE2eTest):
         await self._find_workitem('Call Alex in the afternoon')
         await self._complete_workitem()
 
-        # assert_that(model.index(0, 0).data()).is_equal_to('2024-03-31, Sunday')
-
-    def assert_actions_enabled(self, names: list[str]) -> None:
-        for name in names:
-            assert_that(self.is_action_enabled(name), f'Action {name} should be enabled').is_true()
-
-    def assert_actions_disabled(self, names: list[str]) -> None:
-        for name in names:
-            assert_that(self.is_action_enabled(name), f'Action {name} should be disabled').is_false()
-
     async def test_02_actions_visibility(self):
         main_window = self.window()
-        workitems_table: BacklogTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        # noinspection PyTypeChecker
+        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
 
         ############################################################
         # Check actions on a new workitem with available pomodoros #
@@ -326,11 +333,11 @@ class BacklogE2eTest(AbstractE2eTest):
         workitem = workitems_table.get_current()
         assert_that(workitem.get_name()).is_equal_to('Slides for the demo')
         assert_that(len(workitem)).is_equal_to(3)
-        startable_count = 0
+        can_start = 0
         for p in workitem.values():
             if p.is_startable():
-                startable_count += 1
-        assert_that(startable_count).is_equal_to(1)
+                can_start += 1
+        assert_that(can_start).is_equal_to(1)
 
         assert_backlog_actions_enabled()
         self.assert_actions_enabled([
@@ -349,7 +356,8 @@ class BacklogE2eTest(AbstractE2eTest):
         # Select another backlog to unselect a workitem #
         #################################################
         self.info('Select another backlog to unselect a workitem')
-        await self._select_backlog('Trip to Italy')
+        backlog_index = await self._select_backlog('Trip to Italy')
+        assert_that(backlog_index).is_greater_than(-1)
         workitem = workitems_table.get_current()
         assert_that(workitem, 'Selecting another backlog should deselect workitem').is_none()
 
@@ -363,3 +371,84 @@ class BacklogE2eTest(AbstractE2eTest):
             'workitems_table.startItem',
             'focus.voidPomodoro',
         ])
+
+    async def test_03_renames(self):
+        main_window = self.window()
+        # noinspection PyTypeChecker
+        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        # noinspection PyTypeChecker
+        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+
+        ##################
+        # Rename backlog #
+        ##################
+        self.info('Rename backlog')
+
+        # First try it via Ctrl+R shortcut
+        backlog_index = await self._select_backlog('Long-term stuff')
+        assert_that(backlog_index).is_greater_than(-1)
+        self.keypress(Qt.Key.Key_R, True, backlogs_table)
+        await self.instant_pause()
+        self.type_text('Long-term items')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Enter, False)
+        await self.instant_pause()
+        backlog_index = await self._select_backlog('Long-term items')
+        assert_that(backlog_index, 'Backlog rename via Ctrl+R').is_greater_than(-1)
+
+        # Then via double-clicking
+        self.mouse_doubleclick_row(backlogs_table, backlog_index)
+        await self.instant_pause()
+        self.type_text('Long-term tasks')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Enter, False)
+        await self.instant_pause()
+        backlog_index = await self._select_backlog('Long-term tasks')
+        assert_that(backlog_index, 'Backlog rename via double-click').is_greater_than(-1)
+
+        ###################
+        # Rename workitem #
+        ###################
+        self.info('Rename workitem')
+
+        # First try it via F6 shortcut
+        await self._find_workitem('Workitem 32')
+        self.keypress(Qt.Key.Key_F6, False, workitems_table)
+        await self.instant_pause()
+        self.type_text('Rename 32')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Enter, False)
+        await self.instant_pause()
+        assert_that(workitems_table.get_current().get_name(), 'Workitem rename via F6').is_equal_to('Rename 32')
+
+        # Then via double-clicking
+        self.mouse_doubleclick_row(workitems_table, workitems_table.currentIndex().row(), 1)
+        await self.instant_pause()
+        self.type_text('Update 32')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Enter, False)
+        await self.instant_pause()
+        assert_that(workitems_table.get_current().get_name(), 'Workitem rename via double-click').is_equal_to('Update 32')
+
+    async def test_04_ordering(self):
+        # Workitem order (oldest first)
+        # Backlog order (oldest last)
+        # Backlog order -- moves to the top if a workitem changes
+        pass
+
+    async def test_05_filtering(self):
+        # Check that the "show completed workitems" does what it should
+        pass
+
+    async def test_06_focus(self):
+        # Check that the focus widget displays the way it should
+        # Also check all three focus modes
+        pass
+
+    async def test_07_tray_icon(self):
+        # Check that the tray icon displays what it should
+        pass
+
+    async def test_08_menus(self):
+        # Check that all menus are accessible and contain expected list of actions
+        pass

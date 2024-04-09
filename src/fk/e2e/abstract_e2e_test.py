@@ -7,14 +7,13 @@ from abc import ABC
 from typing import Callable, Self
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
-from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent, QCloseEvent
-from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView, QMessageBox
+from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
+from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
 
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 
-
-INSTANT_DURATION = 0.05  # seconds
+INSTANT_DURATION = 0.1  # seconds
 STARTUP_DURATION = 1  # seconds
 
 
@@ -115,6 +114,7 @@ class AbstractE2eTest(ABC):
         )))
 
     def button_click(self, button_id: str):
+        # noinspection PyTypeChecker
         button: QAbstractButton = self._app.activeWindow().findChild(QAbstractButton, button_id)
         self.do(lambda: button.click())
 

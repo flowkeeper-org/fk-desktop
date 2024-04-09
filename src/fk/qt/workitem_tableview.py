@@ -80,7 +80,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
-        actions.add('workitems_table.renameItem', "Rename Item", 'F2', None, WorkitemTableView.rename_selected_workitem)
+        actions.add('workitems_table.renameItem', "Rename Item", 'F6', None, WorkitemTableView.rename_selected_workitem)
         actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
         actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', None, WorkitemTableView.start_selected_workitem)
         actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', None, WorkitemTableView.complete_selected_workitem)

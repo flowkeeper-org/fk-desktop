@@ -30,7 +30,11 @@ jobs:
           ./generate-resources.sh
       - name: Test coverage
         run: |
-          PYTHONPATH=src coverage run -m unittest discover -v fk.tests
+          PYTHONPATH=src coverage run -m xmlrunner -o test-results discover -v fk.tests
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'test-results/TEST-*.xml'
       - name: Upload code coverage to coveralls.io
         run: coveralls --service=github
         env:

@@ -259,7 +259,7 @@ actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, Backlo
 
 # WorkitemTableView
 actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
-actions.add('workitems_table.renameItem', "Rename Item", 'F2', None, WorkitemTableView.rename_selected_workitem)
+actions.add('workitems_table.renameItem', "Rename Item", 'F6', None, WorkitemTableView.rename_selected_workitem)
 actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
 actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', ':/icons/tool-next.svg', WorkitemTableView.start_selected_workitem)
 actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', ':/icons/tool-complete.svg', WorkitemTableView.complete_selected_workitem)
