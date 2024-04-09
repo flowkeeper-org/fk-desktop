@@ -15,6 +15,7 @@ from fk.qt.actions import Actions
 
 
 INSTANT_DURATION = 0.01  # seconds
+STARTUP_DURATION = 2  # seconds
 
 
 class AbstractE2eTest(ABC):
@@ -110,12 +111,19 @@ class AbstractE2eTest(ABC):
         button: QAbstractButton = self._app.activeWindow().findChild(QAbstractButton, button_id)
         self.do(lambda: button.click())
 
-    def keypress(self, key: int, ctrl: bool = False):
-        self._app.postEvent(self.get_focused(), QKeyEvent(
+    def keypress(self, key: int, ctrl: bool = False, widget: QWidget = None):
+        if widget is None:
+            widget = self.get_focused()
+        self._app.postEvent(widget, QKeyEvent(
             QEvent.Type.KeyPress,
             key,
             Qt.KeyboardModifier.ControlModifier if ctrl else Qt.KeyboardModifier.NoModifier,
         ))
+
+    def close_modal(self):
+        for w in self._app.allWindows():
+            if w.isModal():
+                print('Modal', w)
 
     def type_text(self, text: str):
         self._app.postEvent(self.get_focused(), QKeyEvent(
@@ -141,7 +149,7 @@ class AbstractE2eTest(ABC):
         return dict()
 
     def start(self) -> None:
-        self._timer.start(INSTANT_DURATION * 1000)
+        self._timer.start(STARTUP_DURATION * 1000)
 
     def restart(self) -> None:
         # TODO: This needs to be tested

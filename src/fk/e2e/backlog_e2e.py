@@ -1,11 +1,13 @@
+import asyncio
 import os
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtWidgets import QApplication, QCompleter
 from assertpy import assert_that
 
 from fk.e2e.abstract_e2e_test import AbstractE2eTest
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
 TEMP_FILENAME = './backlog-e2e.txt'
@@ -19,6 +21,9 @@ class BacklogE2eTest(AbstractE2eTest):
         return {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
+            'Application.check_updates': 'False',
+            'Pomodoro.default_work_duration': '1',
+            'Pomodoro.default_rest_duration': '1',
         }
 
     def teardown(self) -> None:
@@ -32,6 +37,28 @@ class BacklogE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Enter)
         await self.instant_pause()
 
+    async def _start_pomodoro(self) -> None:
+        self.keypress(Qt.Key.Key_S, True)   # self.execute_action('workitems_table.startItem')
+        await self.instant_pause()
+
+    async def _complete_workitem(self) -> None:
+        self.keypress(Qt.Key.Key_P, True)   # self.execute_action('workitems_table.completeItem')
+        await self.instant_pause()
+
+    async def _void_pomodoro(self) -> None:
+        self.keypress(Qt.Key.Key_V, True)   # self.execute_action('focus.voidPomodoro')
+        await self.instant_pause()
+        self.close_modal()
+        await self.instant_pause()
+
+    async def _add_pomodoro(self) -> None:
+        self.keypress(Qt.Key.Key_Plus, True)  # self.execute_action('workitems_table.addPomodoro')
+        await self.instant_pause()
+
+    async def _remove_pomodoro(self) -> None:
+        self.keypress(Qt.Key.Key_Minus, True)  # self.execute_action('workitems_table.removePomodoro')
+        await self.instant_pause()
+
     async def _new_workitem(self, name: str, pomodoros: int = 0) -> None:
         self.keypress(Qt.Key.Key_Insert)   # self.execute_action('workitems_table.newItem')
         await self.instant_pause()
@@ -39,17 +66,18 @@ class BacklogE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Enter)
         await self.instant_pause()
         for p in range(pomodoros):
-            self.keypress(Qt.Key.Key_Plus, True)  # self.execute_action('workitems_table.addPomodoro')
-            await self.instant_pause()
+            await self._add_pomodoro()
 
     async def _find_workitem(self, name: str) -> None:
         self.keypress(Qt.Key.Key_F, True)   # self.execute_action('window.showSearch')
         await self.instant_pause()
         self.type_text(name)
         await self.instant_pause()
-        self.keypress(Qt.Key.Key_Down)  # TODO: This doesn't work
-        await self.instant_pause()
-        self.keypress(Qt.Key.Key_Enter)
+        search: SearchBar = self.window().findChild(SearchBar, "search")
+        completer = search.completer()
+        popup = completer.popup()
+        self.keypress(Qt.Key.Key_Down, False, popup)
+        self.keypress(Qt.Key.Key_Enter, False, popup)
         await self.instant_pause()
 
     async def test_backlog_loaded(self):
@@ -109,20 +137,44 @@ class BacklogE2eTest(AbstractE2eTest):
 
         assert_that(backlogs_model.rowCount()).is_equal_to(6)
 
+        ####################################
+        # Complete pomodoros and workitems #
+        ####################################
+        await self._find_workitem('Generate new screenshots')
+        await self._start_pomodoro()
+        await asyncio.sleep(0.5)
+        await self._void_pomodoro()
+        return
+
+        await asyncio.sleep(2.1)
+        await self._start_pomodoro()
+        await asyncio.sleep(2.1)
+        await self._add_pomodoro()
+        await self._start_pomodoro()
+        await asyncio.sleep(2.1)
+
         await self._find_workitem('Reply to Peter')
+        await self._start_pomodoro()
+        await asyncio.sleep(2.1)
+        await self._add_pomodoro()
+        await self._start_pomodoro()
+        await asyncio.sleep(0.5)
+        await self._void_pomodoro()
+        await self._complete_workitem()
 
+        await self._find_workitem('Slides for the demo')
+        await self._start_pomodoro()
+        await asyncio.sleep(0.5)
+        await self._void_pomodoro()
+        await self._start_pomodoro()
+        await asyncio.sleep(0.5)
+        await self._void_pomodoro()
+        await self._complete_workitem()
 
-        # assert_that(count).is_equal_to(10)
+        await self._find_workitem('Order coffee capsules')
+        await self._complete_workitem()
+
+        await self._find_workitem('Call Alex in the afternoon')
+        await self._complete_workitem()
+
         # assert_that(model.index(0, 0).data()).is_equal_to('2024-03-31, Sunday')
-        # assert_that(model.index(1, 0).data()).is_equal_to('27/10/23')
-        # assert_that(model.index(2, 0).data()).is_equal_to('Flowkeeper')
-        #
-        # self.mouse_click_row(table, 6)
-        # print(f'DEBUG: Clicked on a random backlog')
-        #
-        # await asyncio.sleep(0.1)
-        # #t.keypress(Qt.Key.Key_N, True)
-        # #print('DEBUG: Typed')
-        # self.get_focused()
-        # #await asyncio.sleep(0.1)
-        # #t.keypress(Qt.Key.Key_Enter)

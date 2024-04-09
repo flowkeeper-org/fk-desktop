@@ -110,6 +110,7 @@ class Application(QApplication, AbstractEventEmitter):
         self._recreate_source()
 
     def is_e2e_mode(self):
+        print('E2e mode:', 'e2e' in self.arguments())
         return 'e2e' in self.arguments()
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
@@ -304,6 +305,9 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set({'Application.eyecandy_gradient': chosen})
 
     def sign_in(self, _):
+        def check_server(auth: AuthenticationRecord):
+            pass
+
         def save(auth: AuthenticationRecord):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',

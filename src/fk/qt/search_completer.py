@@ -63,6 +63,7 @@ class SearchBar(QtWidgets.QLineEdit):
 
     def show(self) -> None:
         completer = QtWidgets.QCompleter()
+        completer.setObjectName('search_completer')
         completer.activated[QModelIndex].connect(lambda index: self._select(index))
         completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
         completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
