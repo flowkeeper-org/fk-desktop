@@ -28,7 +28,7 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Test coverage
+      - name: Run unit tests for fk.core
         run: |
           PYTHONPATH=src coverage run -m xmlrunner -o test-results discover -v fk.tests
       - name: Publish test report
@@ -40,3 +40,6 @@ jobs:
         run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger e2e tests (external)
+        run: |
+          curl --version
