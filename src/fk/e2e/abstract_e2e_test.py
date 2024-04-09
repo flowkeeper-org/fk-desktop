@@ -7,14 +7,14 @@ from abc import ABC
 from typing import Callable, Self
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
-from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
+from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent, QCloseEvent
+from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView, QMessageBox
 
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 
 
-INSTANT_DURATION = 0.01  # seconds
+INSTANT_DURATION = 0.1  # seconds
 STARTUP_DURATION = 2  # seconds
 
 
@@ -120,10 +120,12 @@ class AbstractE2eTest(ABC):
             Qt.KeyboardModifier.ControlModifier if ctrl else Qt.KeyboardModifier.NoModifier,
         ))
 
-    def close_modal(self):
+    def close_modal(self, ok: bool = True):
         for w in self._app.allWindows():
             if w.isModal():
-                print('Modal', w)
+                if ok:
+                    self.keypress(Qt.Key.Key_Tab, False, w)
+                self.keypress(Qt.Key.Key_Enter, False, w)
 
     def type_text(self, text: str):
         self._app.postEvent(self.get_focused(), QKeyEvent(

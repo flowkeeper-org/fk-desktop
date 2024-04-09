@@ -142,10 +142,6 @@ class BacklogE2eTest(AbstractE2eTest):
         ####################################
         await self._find_workitem('Generate new screenshots')
         await self._start_pomodoro()
-        await asyncio.sleep(0.5)
-        await self._void_pomodoro()
-        return
-
         await asyncio.sleep(2.1)
         await self._start_pomodoro()
         await asyncio.sleep(2.1)
