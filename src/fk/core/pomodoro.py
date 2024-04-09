@@ -22,8 +22,8 @@ from fk.core.abstract_data_item import AbstractDataItem
 class Pomodoro(AbstractDataItem['Workitem']):
     _is_planned: bool
     _state: str
-    _work_duration: int
-    _rest_duration: int
+    _work_duration: float
+    _rest_duration: float
     _date_work_started: datetime.datetime | None
     _date_rest_started: datetime.datetime | None
     _date_completed: datetime.datetime | None
@@ -32,8 +32,8 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def __init__(self,
                  is_planned: bool,
                  state: str,
-                 work_duration: int,
-                 rest_duration: int,
+                 work_duration: float,
+                 rest_duration: float,
                  uid: str,
                  workitem: 'Workitem',
                  create_date: datetime.datetime):
@@ -60,7 +60,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
             raise Exception(f'Invalid pomodoro state: {self._state}')
         return char
 
-    def update_work_duration(self, work_duration: int) -> None:
+    def update_work_duration(self, work_duration: float) -> None:
         if self.is_startable():
             self._work_duration = work_duration
         else:
@@ -69,7 +69,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def get_state(self) -> str:
         return self._state
 
-    def update_rest_duration(self, rest_duration: int) -> None:
+    def update_rest_duration(self, rest_duration: float) -> None:
         if self.is_startable() or self.is_working():
             self._rest_duration = rest_duration
         else:

@@ -31,7 +31,7 @@ from fk.core.workitem import Workitem
 @strategy
 class StartWorkStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
-    _work_duration: int
+    _work_duration: float
 
     def __init__(self,
                  seq: int,
@@ -44,7 +44,7 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
-        self._work_duration = int(params[1])
+        self._work_duration = float(params[1])
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -94,7 +94,7 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
 @strategy
 class StartRestStrategy(AbstractStrategy['Tenant']):
     _workitem_uid: str
-    _rest_duration: int
+    _rest_duration: float
 
     def __init__(self,
                  seq: int,
@@ -107,7 +107,7 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
                  carry: any = None):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
-        self._rest_duration = int(params[1])
+        self._rest_duration = float(params[1])
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -161,8 +161,8 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
         super().__init__(seq, when, user, params, emit, data, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
-        self._default_work_duration = int(settings.get('Pomodoro.default_work_duration'))
-        self._default_rest_duration = int(settings.get('Pomodoro.default_rest_duration'))
+        self._default_work_duration = float(settings.get('Pomodoro.default_work_duration'))
+        self._default_rest_duration = float(settings.get('Pomodoro.default_rest_duration'))
 
     def execute(self) -> (str, any):
         if self._num_pomodoros < 1:

@@ -155,7 +155,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._append([s])
 
     def auto_seal(self) -> None:
-        delta = int(self._settings.get('Pomodoro.auto_seal_after'))
+        delta = float(self._settings.get('Pomodoro.auto_seal_after'))
         auto_seal(self.workitems(),
                   delta,
                   lambda strategy_class, params, persist, when: self.execute(strategy_class,

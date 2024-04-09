@@ -60,8 +60,8 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
 
     def add_pomodoro(self,
                      num_pomodoros: int,
-                     default_work_duration: int,
-                     default_rest_duration: int,
+                     default_work_duration: float,
+                     default_rest_duration: float,
                      when: datetime.datetime) -> None:
         is_planned = not self.is_running()
         for i in range(num_pomodoros):
