@@ -35,4 +35,7 @@ menu = QMenuBar(window)
 menu.addActions(actions.all())
 window.setCentralWidget(menu)
 
+print('All actions:')
+print('\n'.join([action.objectName() for action in actions.all()]))
+
 main_loop()

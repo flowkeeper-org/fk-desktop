@@ -53,9 +53,16 @@ class AbstractE2eTest(ABC):
                     self.setup()
                     atexit.register(self.teardown)
                     for method in self._seq:
+                        self.info(f'Executing {self.__class__.__name__}.{method.__name__}')
                         await method(self)
                 except Exception as e:
-                    print(f'Error (RECORD ME): {e}')
+                    self.error(e)
+
+    def info(self, txt):
+        print(f'INFO: {txt}')
+
+    def error(self, e: Exception):
+        print(f'ERROR: {e}')
 
     def do(self, what: Callable[[], None], delay: int = 1) -> Self:
         self._timer.timeout.disconnect()
@@ -144,8 +151,11 @@ class AbstractE2eTest(ABC):
     def window(self) -> QWidget:
         return self._app.activeWindow()
 
-    def execute_action(self, name: str):
+    def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()
+
+    def is_action_enabled(self, name: str) -> bool:
+        return Actions.ALL[name].isVisible() and Actions.ALL[name].isEnabled()
 
     def custom_settings(self) -> dict[str, str]:
         return dict()
