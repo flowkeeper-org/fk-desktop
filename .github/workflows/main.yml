@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Create Virtual Environment
@@ -35,6 +35,7 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'test-results/TEST-*.xml'
+          include_passed: true
       - name: Upload code coverage to coveralls.io
         run: coveralls --service=github
         env:
