@@ -36,6 +36,7 @@ class BacklogE2eTest(AbstractE2eTest):
         }
 
     def teardown(self) -> None:
+        super().teardown()
         self.info(f'Deleting {TEMP_FILENAME}')
         os.unlink(TEMP_FILENAME)
 
