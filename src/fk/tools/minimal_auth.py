@@ -14,15 +14,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.qt.minimal_common import source, window, app, root, main_loop, actions
-from fk.qt.workitem_tableview import WorkitemTableView
+from PySide6.QtWidgets import QPushButton
 
-window.resize(600, 400)
-WorkitemTableView.define_actions(actions)
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-actions.bind('workitems_table', workitems_table)
-window.setCentralWidget(workitems_table)
+from fk.tools.minimal_common import window, main_loop, app
+from fk.qt.oauth import authenticate
 
-main_loop(lambda: workitems_table.upstream_selected(
-    list(root.get_current_user().values())[0]
-))
+button = QPushButton(window)
+button.setText('Login...')
+button.clicked.connect(lambda: authenticate(app, print))
+window.setCentralWidget(button)
+
+main_loop(start_source=False)

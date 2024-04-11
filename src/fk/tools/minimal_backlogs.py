@@ -14,20 +14,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QPushButton
+from fk.qt.backlog_tableview import BacklogTableView
+from fk.tools.minimal_common import source, window, app, root, main_loop, actions
 
-from fk.core.timer import PomodoroTimer
-from fk.qt.minimal_common import source, window, main_loop, actions
-from fk.qt.qt_timer import QtTimer
-from fk.qt.tray_icon import TrayIcon
+BacklogTableView.define_actions(actions)
+backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
+actions.bind('backlogs_table', backlogs_table)
+window.setCentralWidget(backlogs_table)
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-tray = TrayIcon(window, pomodoro_timer, source, actions)
-
-tray.setVisible(True)
-
-button = QPushButton(window)
-button.setText('See tray icon')
-window.setCentralWidget(button)
-
-main_loop()
+main_loop(lambda: backlogs_table.upstream_selected(root.get_current_user()))

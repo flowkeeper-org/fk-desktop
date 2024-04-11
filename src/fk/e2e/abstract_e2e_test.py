@@ -73,7 +73,6 @@ class AbstractE2eTest(ABC):
                         method_start = datetime.now()
                         try:
                             self._current_method = method.__name__
-                            self.info(f'Executing {self.__class__.__name__}.{self._current_method}')
                             self._update_log_for_method('timestamp', method_start.isoformat())
                             await method(self)
                         except Exception as e:
@@ -93,7 +92,9 @@ class AbstractE2eTest(ABC):
     def _append_to_system_out_for_method(self, line: str):
         if self._log_xml is not None:
             el = self._log_xml.find(f"testcase[@name='{self._current_method}']/system-out")
-            el.text += (line + '\n')
+            if el.text:
+                el.text += '\n'
+            el.text += line
 
     def init_log(self) -> None:
         filename = f"{__name__.replace('.', '/')}.py"

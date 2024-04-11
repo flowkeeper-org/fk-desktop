@@ -14,14 +14,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QTextEdit
+from semantic_version import Version
 
-from fk.qt.minimal_common import window, main_loop, app
-from fk.qt.oauth import authenticate
+from fk.qt.app_version import get_current_version, get_latest_version
+from fk.tools.minimal_common import window, main_loop, app
 
-button = QPushButton(window)
-button.setText('Login...')
-button.clicked.connect(lambda: authenticate(app, print))
-window.setCentralWidget(button)
+txt = QTextEdit(window)
+
+
+def update(latest: Version, changelog: str):
+    txt.setMarkdown(f'Current version: {get_current_version()}\n\nLatest version: {latest}\n\nChangelog: \n\n{changelog}')
+
+
+get_latest_version(app, update)
+window.setCentralWidget(txt)
 
 main_loop(start_source=False)

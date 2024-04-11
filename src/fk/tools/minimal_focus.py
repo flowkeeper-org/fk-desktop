@@ -16,7 +16,7 @@
 
 from fk.core.timer import PomodoroTimer
 from fk.qt.focus_widget import FocusWidget
-from fk.qt.minimal_common import source, window, main_loop, app, actions
+from fk.tools.minimal_common import source, window, main_loop, app, actions
 from fk.qt.qt_timer import QtTimer
 
 pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))

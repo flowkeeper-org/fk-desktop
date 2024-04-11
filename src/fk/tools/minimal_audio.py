@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QPushButton
 
 from fk.core.timer import PomodoroTimer
 from fk.qt.audio_player import AudioPlayer
-from fk.qt.minimal_common import source, window, main_loop
+from fk.tools.minimal_common import source, window, main_loop
 from fk.qt.qt_timer import QtTimer
 
 pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))

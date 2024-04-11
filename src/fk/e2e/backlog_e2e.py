@@ -37,7 +37,6 @@ class BacklogE2eTest(AbstractE2eTest):
 
     def teardown(self) -> None:
         super().teardown()
-        self.info(f'Deleting {TEMP_FILENAME}')
         os.unlink(TEMP_FILENAME)
 
     async def _new_backlog(self, name: str) -> None:
@@ -431,25 +430,37 @@ class BacklogE2eTest(AbstractE2eTest):
         await self.instant_pause()
         assert_that(workitems_table.get_current().get_name(), 'Workitem rename via double-click').is_equal_to('Update 32')
 
-    async def test_04_ordering(self):
-        # Workitem order (oldest first)
-        # Backlog order (oldest last)
-        # Backlog order -- moves to the top if a workitem changes
-        pass
-
-    async def test_05_filtering(self):
-        # Check that the "show completed workitems" does what it should
-        pass
-
-    async def test_06_focus(self):
-        # Check that the focus widget displays the way it should
-        # Also check all three focus modes
-        pass
-
-    async def test_07_tray_icon(self):
-        # Check that the tray icon displays what it should
-        pass
-
-    async def test_08_menus(self):
-        # Check that all menus are accessible and contain expected list of actions
-        pass
+    # async def test_04_ordering(self):
+    #     # Workitem order (oldest first)
+    #     # Backlog order (oldest last)
+    #     # Backlog order -- moves to the top if a workitem changes
+    #     pass
+    #
+    # async def test_05_filtering(self):
+    #     # Check that the "show completed workitems" does what it should
+    #     pass
+    #
+    # async def test_06_focus(self):
+    #     # Check that the focus widget displays the way it should
+    #     # Also check all three focus modes
+    #     # Check "Start another pomodoro?"
+    #     pass
+    #
+    # async def test_07_tray_icon(self):
+    #     # Check that the tray icon displays what it should
+    #     pass
+    #
+    # async def test_08_menus(self):
+    #     # Check that all menus are accessible and contain expected list of actions
+    #     pass
+    #
+    # async def test_09_settings(self):
+    #     # Check that all menus are accessible and contain expected list of actions
+    #     pass
+    #
+    # # Other tests -- audio, websockets, authentication, fonts, reset
+    # # About, Import, Export, Tutorial, updates, connection widget
+    # # Heartbeat, reconnect
+    # # Error handling, auth errors
+    # # FS watcher
+    # # Users
