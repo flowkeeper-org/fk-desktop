@@ -66,9 +66,10 @@ def main_loop(callback=None, start_source=True):
     try:
         if _source is not None:
             _initialized = True
-            if callback is not None:
-                _source.on(SourceMessagesProcessed, lambda event: callback(_source.get_data()))
+            if _callback is not None:
+                _source.on(SourceMessagesProcessed, lambda event: _callback(_source.get_data()))
             if start_source:
+                print('Starting source')
                 _source.start()
     except Exception as ex:
         app.on_exception(type(ex), ex, ex.__traceback__)
@@ -77,3 +78,4 @@ def main_loop(callback=None, start_source=True):
 
 
 app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
+_on_source_changed('', app.get_source_holder().get_source())
