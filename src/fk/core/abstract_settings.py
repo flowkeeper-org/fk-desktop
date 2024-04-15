@@ -201,7 +201,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     @abstractmethod
     def clear(self) -> None:
-        # Note that there's no default value -- we can get it from self._defaults
         pass
 
     @abstractmethod
