@@ -23,6 +23,7 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
 
 font_new = QtGui.QFont()
@@ -55,20 +56,23 @@ class BacklogItem(QtGui.QStandardItem):
 
 
 class BacklogModel(QtGui.QStandardItemModel):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _user: User | None
 
     def __init__(self,
                  parent: QtCore.QObject,
-                 source: AbstractEventSource):
+                 source_holder: EventSourceHolder):
         super().__init__(0, 1, parent)
-        self._source = source
+        self._source_holder = source_holder
         self._user = None
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.itemChanged.connect(lambda item: self._handle_rename(item))
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
         source.on('*', self._sort)
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -77,7 +81,7 @@ class BacklogModel(QtGui.QStandardItemModel):
             new_name = item.text()
             if old_name != new_name:
                 try:
-                    self._source.execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
+                    self._source_holder.get_source().execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
                 except Exception as e:
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(

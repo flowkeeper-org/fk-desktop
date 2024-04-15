@@ -24,6 +24,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
 from fk.desktop.application import Application
@@ -38,7 +39,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source_holder: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -51,7 +52,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          0)
         self._init_menu(actions)
         #application.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder)
+        self._on_source_changed("", source_holder.get_source())
         self.on(AfterSelectionChanged, lambda event, before, after: self._source_holder.set_config_parameters({
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
         }))

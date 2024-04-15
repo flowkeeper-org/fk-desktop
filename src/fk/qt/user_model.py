@@ -19,21 +19,23 @@ from PySide6.QtCore import Qt
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.tenant import Tenant
 from fk.core.user import User
 
 
 class UserModel(QtGui.QStandardItemModel):
-    _source: AbstractEventSource
     _font_normal: QtGui.QFont
     _font_busy: QtGui.QFont
 
-    def __init__(self, parent: QtCore.QObject, source: AbstractEventSource):
+    def __init__(self, parent: QtCore.QObject, source_holder: EventSourceHolder):
         super().__init__(0, 1, parent)
-        self._source = source
         self._font_normal = QtGui.QFont()
         self._font_busy = QtGui.QFont()
         self._font_busy.setBold(True)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(events.AfterUserCreate, self._user_added)
         source.on(events.AfterUserDelete, self._user_removed)
         source.on(events.AfterUserRename, self._user_renamed)

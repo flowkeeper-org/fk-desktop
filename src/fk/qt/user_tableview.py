@@ -17,6 +17,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.core.tenant import Tenant
 from fk.core.user import User
@@ -30,7 +31,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source_holder: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -42,7 +43,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
         #application.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder)
+        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event, source):
         self.selectionModel().clear()

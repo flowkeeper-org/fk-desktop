@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
@@ -36,7 +37,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source_holder: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -49,7 +50,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        self._on_source_changed("", source_holder)
+        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event, source):
         self.selectionModel().clear()

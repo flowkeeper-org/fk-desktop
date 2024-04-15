@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt, QSize
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete
 from fk.core.workitem import Workitem
@@ -26,7 +27,7 @@ from fk.core.workitem_strategies import RenameWorkitemStrategy
 
 
 class WorkitemModel(QtGui.QStandardItemModel):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
@@ -34,24 +35,27 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _row_height: int
     _show_completed: bool
 
-    def __init__(self, parent: QtWidgets.QWidget, source: AbstractEventSource):
+    def __init__(self, parent: QtWidgets.QWidget, source_holder: EventSourceHolder):
         super().__init__(0, 3, parent)
-        self._source = source
+        self._source_holder = source_holder
         self._font_new = QtGui.QFont()
         self._font_running = QtGui.QFont()
         self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
-        self._show_completed = (source.get_config_parameter('Application.show_completed') == 'True')
+        self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
+        self.itemChanged.connect(lambda item: self._handle_rename(item))
+        self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._pomodoro_changed)
         source.on(AfterWorkitemComplete, self._pomodoro_changed)
         source.on(AfterWorkitemStart, self._pomodoro_changed)
         source.on('AfterPomodoro*', self._pomodoro_changed)
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
-        self._row_height = int(source.get_config_parameter('Application.table_row_height'))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -60,7 +64,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
             new_name = item.text()
             if old_name != new_name:
                 try:
-                    self._source.execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
+                    self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
                 except Exception as e:
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
