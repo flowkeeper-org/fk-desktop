@@ -24,7 +24,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
-from fk.core.event_source_holder import EventSourceHolder
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
 from fk.desktop.application import Application
@@ -51,7 +51,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
                          0)
         self._init_menu(actions)
-        #application.on(AfterSourceChanged, self._on_source_changed)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source_holder.get_source())
         self.on(AfterSelectionChanged, lambda event, before, after: self._source_holder.set_config_parameters({
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
@@ -70,8 +70,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.update_actions(self.get_current())
 
     def _on_source_changed(self, event, source):
-        #self.setModel(BacklogModel(self.parent(), source))
+        self.selectionModel().clear()
         super()._on_source_changed(event, source)
+        self.upstream_selected(None)
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
 
@@ -163,6 +164,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def _on_messages(self, event):
         user = self._source_holder.get_data().get_current_user()
         self.upstream_selected(user)
-        last_selected_oid = self._source_holder.get_config_parameter('Application.last_selected_backlog')
+        last_selected_oid = self._source_holder.get_settings().get('Application.last_selected_backlog')
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
             self.select(user[last_selected_oid])

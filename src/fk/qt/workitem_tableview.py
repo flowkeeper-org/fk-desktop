@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.event_source_holder import EventSourceHolder
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
@@ -50,6 +50,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
         self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event, source):
@@ -163,7 +164,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             raise Exception("Trying to start a workitem, while there's none selected")
         self._source_holder.execute(StartWorkStrategy, [
             selected.get_uid(),
-            self._source_holder.get_config_parameter('Pomodoro.default_work_duration')
+            self._source_holder.get_settings.get('Pomodoro.default_work_duration')
         ])
 
     def complete_selected_workitem(self) -> None:

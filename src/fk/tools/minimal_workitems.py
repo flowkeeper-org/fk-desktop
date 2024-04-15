@@ -14,15 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.tools.minimal_common import source, window, app, root, main_loop, actions
 from fk.qt.workitem_tableview import WorkitemTableView
+from fk.tools.minimal_common import window, app, main_loop, actions
 
 window.resize(600, 400)
 WorkitemTableView.define_actions(actions)
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
+workitems_table: WorkitemTableView = WorkitemTableView(window, app, app.get_source_holder(), actions)
 actions.bind('workitems_table', workitems_table)
 window.setCentralWidget(workitems_table)
 
-main_loop(lambda: workitems_table.upstream_selected(
+main_loop(lambda root: workitems_table.upstream_selected(
     list(root.get_current_user().values())[0]
 ))

@@ -72,7 +72,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._editable_column = editable_column
         self.setModel(model)
 
-        self._row_height = int(source_holder.get_config_parameter('Application.table_row_height'))
+        self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
         self.setObjectName(name)
         self.setTabKeyNavigation(False)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)

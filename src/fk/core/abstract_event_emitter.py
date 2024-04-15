@@ -48,6 +48,7 @@ class AbstractEventEmitter:
                 self._connections[event].clear()
 
     def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
+        print(__name__ + '._emit(' + event + ')')
         if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event

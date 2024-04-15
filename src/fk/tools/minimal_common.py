@@ -39,15 +39,17 @@ _initialized: bool = False
 _callback: Callable = None
 _start_source: bool = False
 
+
 def _on_source_changed(event: str, source: AbstractEventSource):
     global _source
     global _initialized
     global _callback
+    print('_on_source_changed', source)
     _source = source
     if not _initialized:
         _initialized = True
         if _callback is not None:
-            _source.on(SourceMessagesProcessed, lambda event: _callback())
+            _source.on(SourceMessagesProcessed, lambda event: _callback(_source.get_data()))
         if _start_source:
             _source.start()
 
@@ -65,7 +67,7 @@ def main_loop(callback=None, start_source=True):
         if _source is not None:
             _initialized = True
             if callback is not None:
-                _source.on(SourceMessagesProcessed, lambda event: callback())
+                _source.on(SourceMessagesProcessed, lambda event: callback(_source.get_data()))
             if start_source:
                 _source.start()
     except Exception as ex:

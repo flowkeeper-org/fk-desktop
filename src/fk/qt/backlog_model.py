@@ -66,9 +66,11 @@ class BacklogModel(QtGui.QStandardItemModel):
         self._source_holder = source_holder
         self._user = None
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source_holder.get_source())
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self.load(None)
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
