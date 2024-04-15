@@ -121,12 +121,11 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
         if workitem is None:
             raise Exception(f'Workitem "{self._workitem_uid}" not found')
 
-        void_running_pomodoro(self, workitem)
-
         params = {
             'workitem': workitem
         }
         self._emit(events.BeforeWorkitemDelete, params)
+        void_running_pomodoro(self, workitem)
         workitem.item_updated(self._when)   # Update Backlog
         del workitem.get_parent()[self._workitem_uid]
         self._emit(events.AfterWorkitemDelete, params)
@@ -220,14 +219,16 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
         if workitem.is_sealed():
             raise Exception(f'Cannot complete already sealed workitem "{self._workitem_uid}"')
 
-        void_running_pomodoro(self, workitem)
-
-        # Now complete the workitem itself
         params = {
             'workitem': workitem,
             'target_state': self._target_state,
         }
         self._emit(events.BeforeWorkitemComplete, params)
+
+        # First void pomodoros if needed
+        void_running_pomodoro(self, workitem)
+
+        # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
         self._emit(events.AfterWorkitemComplete, params)

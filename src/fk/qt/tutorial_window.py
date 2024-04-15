@@ -43,7 +43,7 @@ class TutorialWindow(QObject):
         self._previous_button.clicked.connect(self._on_previous)
         self._next_button = self._tutorial_window.findChild(QPushButton, "next")
         self._next_button.clicked.connect(self._on_next)
-        self._count = len(self._pages.findChildren(QWidget, QRegularExpression('page[\d]*')))
+        self._count = len(self._pages.findChildren(QWidget, QRegularExpression('page.+')))
 
     def _update_page(self, new_index: int):
         self._pages.setCurrentIndex(new_index)
