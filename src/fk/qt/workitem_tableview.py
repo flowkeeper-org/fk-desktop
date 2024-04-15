@@ -164,7 +164,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             raise Exception("Trying to start a workitem, while there's none selected")
         self._source_holder.execute(StartWorkStrategy, [
             selected.get_uid(),
-            self._source_holder.get_settings.get('Pomodoro.default_work_duration')
+            self._source_holder.get_settings().get('Pomodoro.default_work_duration')
         ])
 
     def complete_selected_workitem(self) -> None:
