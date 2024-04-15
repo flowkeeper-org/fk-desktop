@@ -20,10 +20,11 @@ from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.desktop.application import Application
+from fk.desktop.application import Application, AfterSourceChanged
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -184,10 +185,13 @@ if __name__ == "__main__":
         print('UI thread:', threading.get_ident())
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
-        source = app.get_source()
-        source.on(SourceMessagesProcessed, on_messages)
+        def on_source_changed(event: str, source: AbstractEventSource):
+            source.on(SourceMessagesProcessed, on_messages)
+            pass
 
-        pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
+        app.on(AfterSourceChanged, on_source_changed)
+
+        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
         pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
         pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
 

@@ -18,13 +18,14 @@ import datetime
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.timer import AbstractTimer
 from fk.qt.qt_timer import QtTimer
 
 
 class Heartbeat(AbstractEventEmitter):
     _timer: AbstractTimer
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _state: str
     _last_sent_uid: str
     _last_received_uid: str
@@ -34,11 +35,11 @@ class Heartbeat(AbstractEventEmitter):
     _every_ms: int
     _last_ping_ms: int
 
-    def __init__(self, source: AbstractEventSource, every_ms: int, threshold_ms: int):
+    def __init__(self, source_holder: EventSourceHolder, every_ms: int, threshold_ms: int):
         AbstractEventEmitter.__init__(self,
                                       [events.WentOnline, events.WentOffline],
-                                      source.get_settings().invoke_callback)
-        self._source = source
+                                      source_holder.get_settings().invoke_callback)
+        self._source_holder = source_holder
         self._timer = QtTimer('Heartbeat')
         self._state = 'unknown'
         self._last_sent_uid = ''
@@ -48,6 +49,9 @@ class Heartbeat(AbstractEventEmitter):
         self._every_ms = every_ms
         self._threshold_ms = threshold_ms
         self._last_ping_ms = -1
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(events.PongReceived, self._on_pong)
         source.on(events.SourceMessagesRequested, self.start)
 
@@ -68,7 +72,7 @@ class Heartbeat(AbstractEventEmitter):
                     'after': diff_ms,
                     'last_received': self._last_received_time,
                 })
-        self._last_sent_uid = self._source.send_ping()
+        self._last_sent_uid = self._source_holder.get_source().send_ping()
         # print(f' -> Ping {self._last_sent_uid}')
         self._last_sent_time = now
 

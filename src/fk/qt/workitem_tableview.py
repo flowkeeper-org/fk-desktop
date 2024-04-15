@@ -36,11 +36,11 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source: AbstractEventSource,
+                 source_holder: AbstractEventSource,
                  actions: Actions):
         super().__init__(parent,
-                         source,
-                         WorkitemModel(parent, source),
+                         source_holder,
+                         WorkitemModel(parent, source_holder),
                          'workitems_table',
                          actions,
                          'Loading, please wait...',
@@ -49,7 +49,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        self._on_source_changed("", source)
+        self._on_source_changed("", source_holder)
 
     def _on_source_changed(self, event, source):
         self.selectionModel().clear()
@@ -121,9 +121,9 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         if backlog is None:
             raise Exception("Trying to create a workitem while there's no backlog selected")
         new_name = generate_unique_name("Do something", backlog.names())
-        self._source.execute(CreateWorkitemStrategy,
-                             [generate_uid(), backlog.get_uid(), new_name],
-                             carry="edit")
+        self._source_holder.execute(CreateWorkitemStrategy,
+                                    [generate_uid(), backlog.get_uid(), new_name],
+                                    carry="edit")
 
         # A simpler, more efficient, but a bit uglier single-step alternative
         # (new_name, ok) = QInputDialog.getText(self,
@@ -154,15 +154,15 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                                  QMessageBox.StandardButton.Ok,
                                  QMessageBox.StandardButton.Cancel
                                  ) == QMessageBox.StandardButton.Ok:
-            self._source.execute(DeleteWorkitemStrategy, [selected.get_uid()])
+            self._source_holder.execute(DeleteWorkitemStrategy, [selected.get_uid()])
 
     def start_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to start a workitem, while there's none selected")
-        self._source.execute(StartWorkStrategy, [
+        self._source_holder.execute(StartWorkStrategy, [
             selected.get_uid(),
-            self._source.get_config_parameter('Pomodoro.default_work_duration')
+            self._source_holder.get_config_parameter('Pomodoro.default_work_duration')
         ])
 
     def complete_selected_workitem(self) -> None:
@@ -176,13 +176,13 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                 QMessageBox.StandardButton.Ok,
                 QMessageBox.StandardButton.Cancel
                 ) == QMessageBox.StandardButton.Ok:
-            self._source.execute(CompleteWorkitemStrategy, [selected.get_uid(), "finished"])
+            self._source_holder.execute(CompleteWorkitemStrategy, [selected.get_uid(), "finished"])
 
     def add_pomodoro(self) -> None:
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to add pomodoro to a workitem, while there's none selected")
-        self._source.execute(AddPomodoroStrategy, [
+        self._source_holder.execute(AddPomodoroStrategy, [
             selected.get_uid(),
             "1"
         ])
@@ -191,7 +191,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to remove pomodoro from a workitem, while there's none selected")
-        self._source.execute(RemovePomodoroStrategy, [
+        self._source_holder.execute(RemovePomodoroStrategy, [
             selected.get_uid(),
             "1"
         ])
@@ -201,7 +201,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self._source.set_config_parameters({'Application.show_completed': str(checked)})
+        self._source_holder.set_config_parameters({'Application.show_completed': str(checked)})
 
     def _on_messages(self, event):
         self.upstream_selected(None)

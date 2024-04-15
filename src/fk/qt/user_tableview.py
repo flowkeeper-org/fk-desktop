@@ -30,11 +30,11 @@ class UserTableView(AbstractTableView[Tenant, User]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source: AbstractEventSource,
+                 source_holder: AbstractEventSource,
                  actions: Actions):
         super().__init__(parent,
-                         source,
-                         UserModel(parent, source),
+                         source_holder,
+                         UserModel(parent, source_holder),
                          'users_table',
                          actions,
                          'Loading, please wait...',
@@ -42,13 +42,13 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
         #application.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source)
+        self._on_source_changed("", source_holder)
 
     def _on_source_changed(self, event, source):
         self.selectionModel().clear()
         self.upstream_selected(None)
         super()._on_source_changed(event, source)
-        self._source.on(SourceMessagesProcessed, self._on_messages)
+        self._source_holder.on(SourceMessagesProcessed, self._on_messages)
 
     def update_actions(self, selected: User) -> None:
         pass
@@ -62,4 +62,4 @@ class UserTableView(AbstractTableView[Tenant, User]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _on_messages(self, event):
-        self.upstream_selected(self._source.get_data())
+        self.upstream_selected(self._source_holder.get_data())

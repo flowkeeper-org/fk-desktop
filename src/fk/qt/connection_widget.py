@@ -42,7 +42,7 @@ class ConnectionWidget(QLabel):
             heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
 
         app.on(AfterSourceChanged, lambda event, source: self._update_source(source))
-        self._update_source(app.get_source())
+        self._update_source(app.get_source_holder())
 
     def _update_connection_state(self, is_connected: bool) -> None:
         if is_connected:

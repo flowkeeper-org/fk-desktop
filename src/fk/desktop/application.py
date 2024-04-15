@@ -31,9 +31,10 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.event_source_factory import EventSourceFactory
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.file_event_source import FileEventSource
-from fk.core.tenant import Tenant
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -51,7 +52,6 @@ from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 AfterFontsChanged = "AfterFontsChanged"
-AfterSourceChanged = "AfterSourceChanged"
 NewReleaseAvailable = "NewReleaseAvailable"
 
 
@@ -60,15 +60,31 @@ class Application(QApplication, AbstractEventEmitter):
     _font_main: QFont
     _font_header: QFont
     _row_height: int
-    _source: AbstractEventSource | None
+    _source_holder: EventSourceHolder | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
     _tutorial_timer: QtTimer
 
     def __init__(self, args: [str]):
         super().__init__(args,
-                         allowed_events=[AfterFontsChanged, AfterSourceChanged, NewReleaseAvailable],
+                         allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
+        def local_source_producer(settings, root):
+            inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
+            return ThreadedEventSource(inner_source)
+        EventSourceFactory.get_instance().register_producer('local', local_source_producer)
+
+        def ephemeral_source_producer(settings, root):
+            inner_source = EphemeralEventSource(settings, root)
+            return ThreadedEventSource(inner_source)
+        EventSourceFactory.get_instance().register_producer('ephemeral', ephemeral_source_producer)
+
+        def websocket_source_producer(settings, root):
+            return WebsocketEventSource(settings, self, root)
+        EventSourceFactory.get_instance().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_instance().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_instance().register_producer('flowkeeper.pro', websocket_source_producer)
+
         self._heartbeat = None
         sys.excepthook = self.on_exception
 
@@ -106,8 +122,16 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.show_tutorial') == 'True':
             self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
-        self._source = None
-        self._recreate_source()
+        self._source_holder = EventSourceHolder(self._settings)
+        self._source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._source_holder.recreate_source()
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        if self._heartbeat is not None:
+            self._heartbeat.stop()
+        self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
+        self._heartbeat.on(events.WentOffline, self._on_went_offline)
+        self._heartbeat.on(events.WentOnline, self._on_went_online)
 
     def is_e2e_mode(self):
         print('E2e mode:', 'e2e' in self.arguments())
@@ -122,41 +146,11 @@ class Application(QApplication, AbstractEventEmitter):
         # TODO -- unlock the UI
         print(f'We are (back) online with the roundtrip delay of {ping}ms')
 
-    def _recreate_source(self):
-        source_type = self._settings.get('Source.type')
-        root = Tenant(self._settings)
-        source: AbstractEventSource
-        if source_type == 'local':
-            inner_source = FileEventSource(self._settings, root, QtFilesystemWatcher())
-            source = ThreadedEventSource(inner_source)
-        elif source_type == 'ephemeral':
-            inner_source = EphemeralEventSource(self._settings, root)
-            source = ThreadedEventSource(inner_source)
-        elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-            source = WebsocketEventSource(self._settings, self, root)
-            if self._heartbeat is not None:
-                self._heartbeat.stop()
-            self._heartbeat = Heartbeat(source, 3000, 500)
-            self._heartbeat.on(events.WentOffline, self._on_went_offline)
-            self._heartbeat.on(events.WentOnline, self._on_went_online)
-        else:
-            raise Exception(f"Source type {source_type} not supported")
-
-        # Unsubscribe everyone from the orphan source, so that we don't receive double events
-        if self._source is not None:
-            self._source.cancel('*')
-            self._source.disconnect()
-        self._source = source
-
-        self._emit(AfterSourceChanged, {
-            'source': source
-        })
-
     def get_settings(self):
         return self._settings
 
-    def get_source(self):
-        return self._source
+    def get_source_holder(self):
+        return self._source_holder
 
     # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
@@ -245,7 +239,7 @@ class Application(QApplication, AbstractEventEmitter):
         show_restart_warning = False
         for name in new_values.keys():
             if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
-                show_restart_warning = True
+                self._source_holder.recreate_source()
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
             elif 'Application.font_' in name:
@@ -288,7 +282,7 @@ class Application(QApplication, AbstractEventEmitter):
                                  QMessageBox.StandardButton.Ok,
                                  QMessageBox.StandardButton.Cancel) \
                 == QMessageBox.StandardButton.Ok:
-            cast: FileEventSource = self._source
+            cast: FileEventSource = self._source_holder.get_source()
             log = cast.repair()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
@@ -338,11 +332,11 @@ class Application(QApplication, AbstractEventEmitter):
         Application.quit()
 
     def show_import_wizard(self):
-        ImportWizard(self._source,
+        ImportWizard(self._source_holder.get_source(),
                      self.activeWindow()).show()
 
     def show_export_wizard(self):
-        ExportWizard(self._source,
+        ExportWizard(self._source_holder.get_source(),
                      self.activeWindow()).show()
 
     def show_about(self):

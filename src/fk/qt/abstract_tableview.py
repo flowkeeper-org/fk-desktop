@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QTableView, QWidget
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.qt.actions import Actions
 
@@ -35,7 +36,7 @@ TDownstream = TypeVar('TDownstream', bound=AbstractDataItem)
 
 
 class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDownstream]):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _is_data_loaded: bool
     _is_upstream_item_selected: bool
     _actions: Actions
@@ -47,7 +48,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def __init__(self,
                  parent: QWidget,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  model: QStandardItemModel,
                  name: str,
                  actions: Actions,
@@ -60,8 +61,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                              BeforeSelectionChanged,
                              AfterSelectionChanged,
                          ],
-                         callback_invoker=source.get_settings().invoke_callback)
-        self._source = None
+                         callback_invoker=source_holder.get_settings().invoke_callback)
+        self._source_holder = None
         self._actions = actions
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
@@ -71,7 +72,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._editable_column = editable_column
         self.setModel(model)
 
-        self._row_height = int(source.get_config_parameter('Application.table_row_height'))
+        self._row_height = int(source_holder.get_config_parameter('Application.table_row_height'))
         self.setObjectName(name)
         self.setTabKeyNavigation(False)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -83,11 +84,11 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(self._row_height)
 
-        self._on_source_changed("", source)
+        self._on_source_changed("", source_holder)
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
     def _on_source_changed(self, event, source):
-        self._source = source
+        self._source_holder = source
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
         source.on(SourceMessagesProcessed, self._on_data_loaded)

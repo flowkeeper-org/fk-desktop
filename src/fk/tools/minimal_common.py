@@ -15,55 +15,63 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+from typing import Callable
 
 from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.event_source_holder import AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
-from fk.core.file_event_source import FileEventSource
-from fk.core.tenant import Tenant
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
-from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
-from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.websocket_event_source import WebsocketEventSource
 
 app = Application(sys.argv)
 app.setQuitOnLastWindowClosed(True)
 settings = app.get_settings()
-
-source: AbstractEventSource
-source_type = settings.get('Source.type')
-root = Tenant(settings)
-if source_type == 'local':
-    source = ThreadedEventSource(FileEventSource(settings,
-                                                 root,
-                                                 QtFilesystemWatcher()))
-elif source_type == 'ephemeral':
-    source = ThreadedEventSource(EphemeralEventSource(settings,
-                                                 root))
-elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings, app, root)
-else:
-    raise Exception(f"Source type {source_type} not supported")
 
 window = QMainWindow()
 actions = Actions(window, settings)
 Application.define_actions(actions)
 actions.bind('application', app)
 
+_source: AbstractEventSource = None
+_initialized: bool = False
+_callback: Callable = None
+_start_source: bool = False
 
-def main_loop(callback = None, start_source = True):
+def _on_source_changed(event: str, source: AbstractEventSource):
+    global _source
+    global _initialized
+    global _callback
+    _source = source
+    if not _initialized:
+        _initialized = True
+        if _callback is not None:
+            _source.on(SourceMessagesProcessed, lambda event: _callback())
+        if _start_source:
+            _source.start()
+
+
+def main_loop(callback=None, start_source=True):
+    global _initialized
+    global _callback
+    global _start_source
+    _callback = callback
+    _start_source = start_source
     app.setQuitOnLastWindowClosed(True)
     window.show()
 
     try:
-        if callback is not None:
-            source.on(SourceMessagesProcessed, lambda event: callback())
-        if start_source:
-            source.start()
+        if _source is not None:
+            _initialized = True
+            if callback is not None:
+                _source.on(SourceMessagesProcessed, lambda event: callback())
+            if start_source:
+                _source.start()
     except Exception as ex:
         app.on_exception(type(ex), ex, ex.__traceback__)
 
     sys.exit(app.exec())
+
+
+app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
