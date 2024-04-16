@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import traceback
 
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
@@ -235,6 +236,7 @@ class FocusWidget(QWidget):
                 painter.fillRect(self.rect(), QGradient.Preset[gradient])
             except Exception as e:
                 print('ERROR while updating the gradient -- ignoring it', e)
+                print("\n".join(traceback.format_exception(e)))
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):

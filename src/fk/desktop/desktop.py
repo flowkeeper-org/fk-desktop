@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import sys
 import threading
+import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtWidgets import QMessageBox
@@ -185,11 +186,12 @@ if __name__ == "__main__":
         print('UI thread:', threading.get_ident())
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
-        def on_source_changed(event: str, source: AbstractEventSource):
+        def _on_source_changed(event: str, source: AbstractEventSource):
             source.on(SourceMessagesProcessed, on_messages)
-            pass
+            source.on(AfterWorkitemComplete, hide_timer)
 
-        app.on(AfterSourceChanged, on_source_changed)
+        app.on(AfterSourceChanged, _on_source_changed)
+        _on_source_changed('', app.get_source_holder())
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
         pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
@@ -213,7 +215,7 @@ if __name__ == "__main__":
         FocusWidget.define_actions(actions)
         MainWindow.define_actions(actions)
 
-        audio = AudioPlayer(window, source, settings, pomodoro_timer)
+        audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
@@ -234,34 +236,33 @@ if __name__ == "__main__":
         left_toolbar_layout.addWidget(ConnectionWidget(window, app.get_heartbeat(), app))
 
         # Backlogs table
-        backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
+        backlogs_table: BacklogTableView = BacklogTableView(window, app, app.get_source_holder(), actions)
         backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
         backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
         left_layout.addWidget(backlogs_table)
 
         # Users table
-        users_table: UserTableView = UserTableView(window, app, source, actions)
+        users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
         left_layout.addWidget(users_table)
 
         # noinspection PyTypeChecker
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
         # Workitems table
-        workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-        source.on(AfterWorkitemComplete, hide_timer)
+        workitems_table: WorkitemTableView = WorkitemTableView(window, app, app.get_source_holder(), actions)
         right_layout.addWidget(workitems_table)
 
-        progress_widget = ProgressWidget(window, source)
+        progress_widget = ProgressWidget(window, app.get_source_holder())
         right_layout.addWidget(progress_widget)
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, source, actions, backlogs_table, workitems_table)
+        search = SearchBar(window, app.get_source_holder(), actions, backlogs_table, workitems_table)
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus = FocusWidget(window, app, pomodoro_timer, source, settings, actions)
+        focus = FocusWidget(window, app, pomodoro_timer, app.get_source_holder(), settings, actions)
         root_layout.insertWidget(0, focus)
 
         # Layouts
@@ -301,7 +302,7 @@ if __name__ == "__main__":
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, source, actions)
+        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
         tray.setVisible(show_tray_icon)
 
         # Some global variables to support "Next pomodoro" mode
@@ -348,7 +349,7 @@ if __name__ == "__main__":
         window.show()
 
         try:
-            source.start()
+            app.get_source_holder().get_source().start()
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
@@ -365,18 +366,19 @@ if __name__ == "__main__":
 
     except Exception as exc:
         print("FATAL: Exception on startup", exc)
+        print("\n".join(traceback.format_exception(exc)))
         res = QMessageBox().critical(None,
                                      "Startup error",
                                      f"Something unexpected has happened during Flowkeeper startup. It is most likely "
                                      f"due to some wrong setting, which crashes Flowkeeper. \n\nYou can try fixing it "
                                      f"yourself by checking "
                                      f"{settings.location() if settings is not None else 'settings file'}.\n\n"
-                                     f"Alternatively, if you click 'Reset' to restore Flowkeeper settings to their "
+                                     f"Alternatively, if you click 'Restore Defaults' to restore Flowkeeper settings to their "
                                      f"default values. This includes data source and connection settings like your "
                                      f"saved authentication credentials. You will NOT lose your data if you click Reset.",
-                                     QMessageBox.StandardButton.Reset,
+                                     QMessageBox.StandardButton.RestoreDefaults,
                                      QMessageBox.StandardButton.Close)
-        if res == QMessageBox.StandardButton.Reset:
+        if res == QMessageBox.StandardButton.RestoreDefaults:
             QtSettings().reset_to_defaults()
             QMessageBox().information(None,
                                       "Startup error",

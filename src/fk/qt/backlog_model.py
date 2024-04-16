@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import traceback
 from typing import Self
 
 from PySide6 import QtGui, QtWidgets, QtCore
@@ -85,6 +85,7 @@ class BacklogModel(QtGui.QStandardItemModel):
                 try:
                     self._source_holder.get_source().execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
                 except Exception as e:
+                    print("\n".join(traceback.format_exception(e)))
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
                         self.parent(),

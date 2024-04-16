@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import traceback
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
@@ -68,6 +69,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
                 try:
                     self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
                 except Exception as e:
+                    print("\n".join(traceback.format_exception(e)))
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
                         self.parent(),
