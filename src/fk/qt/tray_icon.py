@@ -15,10 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QAction
+from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
@@ -32,7 +33,7 @@ class TrayIcon(QSystemTrayIcon):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _timer_widget: TimerWidget | None
     _timer: PomodoroTimer
 
@@ -42,23 +43,22 @@ class TrayIcon(QSystemTrayIcon):
     def __init__(self,
                  parent: QWidget,
                  timer: PomodoroTimer,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent)
 
         self._default_icon = QIcon(":/icons/logo.png")
         self._next_icon = QIcon(":/icons/tool-next.svg")
         self._actions = actions
-        self._source = source
+        self._source_holder = source_holder
         self._continue_workitem = None
         self._timer = timer
         self._timer_widget = render_for_pixmap()
 
-        source.on(AfterWorkitemComplete, self.reset)
-        source.on(AfterWorkitemComplete, self._update)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source_holder.get_source())
         timer.on("Timer*", self._update)
         timer.on("Timer*Complete", self._show_notification)
-        source.on(SourceMessagesProcessed, self._update)
 
         self.activated.connect(
             lambda reason: (self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None))
@@ -76,14 +76,19 @@ class TrayIcon(QSystemTrayIcon):
 
         self._update()
 
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        source.on(AfterWorkitemComplete, self.reset)
+        source.on(AfterWorkitemComplete, self._update)
+        source.on(SourceMessagesProcessed, self._update)
+
     def reset(self, event: str = None, **kwargs):
         self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None:
-            self._source.execute(StartWorkStrategy, [
+            self._source_holder.get_source().execute(StartWorkStrategy, [
                 self._continue_workitem.get_uid(),
-                self._source.get_config_parameter('Pomodoro.default_work_duration')
+                self._source_holder.get_settings().get('Pomodoro.default_work_duration')
             ])
         else:
             if self.parent().isHidden():

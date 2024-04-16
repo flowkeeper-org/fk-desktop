@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLa
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
@@ -31,7 +32,7 @@ from fk.qt.timer_widget import render_for_widget, TimerWidget
 
 
 class FocusWidget(QWidget):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _settings: AbstractSettings
     _timer: PomodoroTimer
     _header_text: QLabel
@@ -46,11 +47,11 @@ class FocusWidget(QWidget):
                  parent: QWidget,
                  application: Application,
                  timer: PomodoroTimer,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  settings: AbstractSettings,
                  actions: Actions):
         super().__init__(parent)
-        self._source = source
+        self._source_holder = source_holder
         self._settings = settings
         self._timer = timer
         self._actions = actions
@@ -128,11 +129,15 @@ class FocusWidget(QWidget):
 
         self.update_header()
 
-        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source_holder.get_source())
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -239,7 +244,7 @@ class FocusWidget(QWidget):
                 return
 
     def _void_pomodoro(self) -> None:
-        for backlog in self._source.backlogs():
+        for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
                 if QMessageBox().warning(self.parent(),
@@ -248,7 +253,7 @@ class FocusWidget(QWidget):
                                          QMessageBox.StandardButton.Ok,
                                          QMessageBox.StandardButton.Cancel
                                          ) == QMessageBox.StandardButton.Ok:
-                    self._source.execute(VoidPomodoroStrategy, [workitem.get_uid()])
+                    self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
 
     def _next_pomodoro(self) -> None:
         QMessageBox().warning(self.parent(),

@@ -18,11 +18,11 @@ from PySide6.QtWidgets import QPushButton
 
 from fk.core.timer import PomodoroTimer
 from fk.qt.audio_player import AudioPlayer
-from fk.tools.minimal_common import source, window, main_loop
 from fk.qt.qt_timer import QtTimer
+from fk.tools.minimal_common import window, main_loop, app
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-audio = AudioPlayer(window, source, source.get_settings(), pomodoro_timer)
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
+audio = AudioPlayer(window, app.get_source_holder(), app.get_settings(), pomodoro_timer)
 
 button = QPushButton(window)
 button.setText('Audio')

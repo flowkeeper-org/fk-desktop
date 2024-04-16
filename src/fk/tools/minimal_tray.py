@@ -17,12 +17,12 @@
 from PySide6.QtWidgets import QPushButton
 
 from fk.core.timer import PomodoroTimer
-from fk.tools.minimal_common import source, window, main_loop, actions
 from fk.qt.qt_timer import QtTimer
 from fk.qt.tray_icon import TrayIcon
+from fk.tools.minimal_common import window, main_loop, actions, app
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-tray = TrayIcon(window, pomodoro_timer, source, actions)
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
+tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
 
 tray.setVisible(True)
 

@@ -20,29 +20,32 @@ from PySide6.QtWidgets import QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 
 
 class AudioPlayer(QObject):
     _timer: PomodoroTimer
-    _source: AbstractEventSource
     _audio_output: QAudioOutput
     _audio_player: QMediaPlayer
     _settings: AbstractSettings
 
     def __init__(self,
                  parent: QWidget,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  settings: AbstractSettings,
                  timer: PomodoroTimer):
         super().__init__(parent)
         self._timer = timer
-        self._source = source
         self._settings = settings
         self._reset()
         timer.on("Timer*Complete", self._play_audio)
         timer.on("TimerWorkStart", self._start_ticking)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source_holder.get_source())
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(SourceMessagesProcessed, self._on_messages)
 
     def _reset(self):
