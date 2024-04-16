@@ -129,9 +129,10 @@ class Application(QApplication, AbstractEventEmitter):
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         if self._heartbeat is not None:
             self._heartbeat.stop()
-        self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
-        self._heartbeat.on(events.WentOffline, self._on_went_offline)
-        self._heartbeat.on(events.WentOnline, self._on_went_online)
+        if source.can_connect():
+            self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
+            self._heartbeat.on(events.WentOffline, self._on_went_offline)
+            self._heartbeat.on(events.WentOnline, self._on_went_online)
 
     def is_e2e_mode(self):
         print('E2e mode:', 'e2e' in self.arguments())

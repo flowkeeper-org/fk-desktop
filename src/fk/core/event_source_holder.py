@@ -36,6 +36,7 @@ class EventSourceHolder(AbstractEventEmitter):
 
     def recreate_source(self) -> None:
         source_type = self._settings.get('Source.type')
+        print(f'Recreating event source of type {source_type}')
         if not EventSourceFactory.get_instance().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
@@ -49,9 +50,15 @@ class EventSourceHolder(AbstractEventEmitter):
             self._source.cancel('*')
             self._source.disconnect()
 
-        self._source = EventSourceFactory.get_instance().get_producer(source_type)(
+        producer = EventSourceFactory.get_instance().get_producer(source_type)
+        print(f'About to create new source using producer {producer}')
+        self._source = producer(
             self._settings,
             Tenant(self._settings))
+        print(f'Source created')
+
+        self._source.start()
+        print(f'Source started')
 
         self._emit(AfterSourceChanged, {
             'source': self._source

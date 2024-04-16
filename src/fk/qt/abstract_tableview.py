@@ -83,7 +83,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(self._row_height)
 
-        self._on_source_changed("", source_holder.get_source())
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
     def _on_source_changed(self, event, source):
@@ -93,6 +92,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         source.on(SourceMessagesProcessed, self._on_data_loaded)
 
     def _on_data_loaded(self, event):
+        print(f'Data loaded - {self.objectName()}')
         self._is_data_loaded = True
         self.repaint()
 

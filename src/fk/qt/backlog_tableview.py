@@ -69,8 +69,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.update_actions(self.get_current())
 
     def _on_source_changed(self, event, source):
-        self.selectionModel().clear()
         super()._on_source_changed(event, source)
+        self.selectionModel().clear()
         self.upstream_selected(None)
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
@@ -100,12 +100,16 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def update_actions(self, selected: Backlog) -> None:
+        print(f'Backlog table - update_actions({selected})')
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
 
         heartbeat = self._application.get_heartbeat()
         is_online = heartbeat is None or heartbeat.is_online()
+        print(f' - Online: {is_online}')
+        print(f' - Backlog selected: {is_backlog_selected}')
+        print(f' - Heartbeat: {heartbeat}')
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
