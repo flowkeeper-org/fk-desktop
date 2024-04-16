@@ -16,19 +16,17 @@
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 
 
 class ProgressWidget(QWidget):
-    _source: AbstractEventSource
     _label: QLabel
 
     def __init__(self,
                  parent: QWidget,
-                 source: AbstractEventSource):
+                 source_holder: EventSourceHolder):
         super().__init__(parent)
-        self._source = source
         self.setObjectName('progress')
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -37,6 +35,11 @@ class ProgressWidget(QWidget):
         self._label.setObjectName("footerLabel")
         layout.addWidget(self._label)
         self.setVisible(False)
+
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed("", source_holder.get_source())
+
+    def _on_source_changed(self, event, source):
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
         source.on("AfterPomodoro*",

@@ -41,8 +41,8 @@ class ConnectionWidget(QLabel):
             heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
             heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
 
-        app.on(AfterSourceChanged, lambda event, source: self._update_source(source))
-        self._update_source(app.get_source_holder())
+        app.on(AfterSourceChanged, self._on_source_changed)
+        self._on_source_changed('', app.get_source_holder())
 
     def _update_connection_state(self, is_connected: bool) -> None:
         if is_connected:
@@ -54,7 +54,7 @@ class ConnectionWidget(QLabel):
             self.setToolTip('Disconnected')
             self.topLevelWidget().setWindowTitle('Flowkeeper - OFFLINE')
 
-    def _update_source(self, source: AbstractEventSource):
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.setPixmap(self._img_unknown)
         self.setVisible(source and source.can_connect())
         self.setToolTip('Connecting...')

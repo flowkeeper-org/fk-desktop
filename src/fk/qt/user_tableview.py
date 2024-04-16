@@ -13,10 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.core.tenant import Tenant

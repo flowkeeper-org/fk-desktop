@@ -18,7 +18,6 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.user import User

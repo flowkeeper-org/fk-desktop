@@ -16,10 +16,9 @@
 
 from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject, QRegularExpression
-from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow, QStackedWidget, QPushButton
+from PySide6.QtWidgets import QWidget, QMainWindow, QStackedWidget, QPushButton
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.qt.app_version import get_current_version
 
 
 class TutorialWindow(QObject):

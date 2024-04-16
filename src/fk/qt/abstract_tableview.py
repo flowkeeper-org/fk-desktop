@@ -23,7 +23,6 @@ from PySide6.QtWidgets import QTableView, QWidget
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.qt.actions import Actions
@@ -84,7 +83,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(self._row_height)
 
-        self._on_source_changed("", source_holder)
+        self._on_source_changed("", source_holder.get_source())
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
     def _on_source_changed(self, event, source):

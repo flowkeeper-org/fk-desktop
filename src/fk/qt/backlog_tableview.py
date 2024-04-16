@@ -21,7 +21,6 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDi
 
 from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged

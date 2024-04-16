@@ -15,11 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
