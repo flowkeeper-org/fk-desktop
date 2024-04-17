@@ -49,7 +49,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.itemChanged.connect(lambda item: self._handle_rename(item))
         self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
@@ -138,6 +137,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setItem(i, 2, col3)
 
     def load(self, backlog: Backlog) -> None:
+        print(f'WorkitemModel.load({backlog})')
         self.clear()
         self._backlog = backlog
         if backlog is not None:

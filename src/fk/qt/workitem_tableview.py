@@ -20,7 +20,7 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
+from fk.core.events import AfterWorkitemCreate
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
@@ -49,18 +49,16 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event, source):
-        self.selectionModel().clear()
-        self.upstream_selected(None)
         super()._on_source_changed(event, source)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
-        source.on(SourceMessagesProcessed, self._on_messages)
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self.update_actions(workitem))
         source.on("AfterPomodoro*",
                   lambda workitem, **kwargs: self.update_actions(workitem))
+        self.selectionModel().clear()
+        self.upstream_selected(None)
 
     def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
@@ -202,6 +200,3 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self._source.set_config_parameters({'Application.show_completed': str(checked)})
-
-    def _on_messages(self, event):
-        self.upstream_selected(None)

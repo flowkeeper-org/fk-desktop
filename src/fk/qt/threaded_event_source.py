@@ -62,8 +62,8 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def clone(self, new_root: TRoot) -> Self:
         return self._wrapped.clone(new_root)
 
-    def on(self, event_pattern: str, callback: Callable) -> None:
-        self._wrapped.on(event_pattern, callback)
+    def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:
+        self._wrapped.on(event_pattern, callback, last)
 
     def cancel(self, event_pattern: str) -> None:
         self._wrapped.cancel(event_pattern)

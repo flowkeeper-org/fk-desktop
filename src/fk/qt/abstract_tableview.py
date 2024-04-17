@@ -102,6 +102,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         pass
 
     def upstream_selected(self, upstream: TUpstream | None) -> None:
+        print(f'{self.__class__.__name__}.upstream_selected({upstream})')
         if upstream is None:
             self._is_upstream_item_selected = False
         else:

@@ -34,7 +34,6 @@ class UserModel(QtGui.QStandardItemModel):
         self._font_busy = QtGui.QFont()
         self._font_busy.setBold(True)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(source.get_data())
