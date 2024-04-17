@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import inspect
 import re
 from typing import Callable
 
@@ -38,7 +38,12 @@ class AbstractEventEmitter:
             if regex.match(event):
                 # Ordered set semantics
                 if callback not in self._connections[event]:
-                    print(f'{self.__class__.__name__}.on({event}) from {callback}')
+                    display = ''
+                    if inspect.ismethod(callback):
+                        display = f'{callback.__self__.__class__.__name__}.{callback.__name__}'
+                    else:
+                        display = f'Function {callback.__name__}'
+                    print(f' # {display} subscribed to {self.__class__.__name__}.{event}')
                     self._connections[event].append(callback)
 
     def cancel(self, event_pattern: str) -> None:
@@ -48,13 +53,14 @@ class AbstractEventEmitter:
                 self._connections[event].clear()
 
     def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
-        print(__name__ + '._emit(' + event + ')')
         if not self._is_muted():
             for callback in self._connections[event]:
                 params['event'] = event
                 if carry is not None:
                     params['carry'] = carry
+                print(' ! ' + callback.__name__ + '(' + str(params) + ')')
                 self._callback_invoker(callback, **params)
+            print(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
             # print(f'Emitted {self.__class__.__name__} --[{event}]({params})')
 
     def _is_muted(self) -> bool:
