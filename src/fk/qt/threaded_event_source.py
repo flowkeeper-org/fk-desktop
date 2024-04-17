@@ -23,6 +23,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
+from fk.qt.qt_invoker import invoke_in_main_thread
 
 TRoot = TypeVar('TRoot')
 
@@ -30,16 +31,23 @@ TRoot = TypeVar('TRoot')
 class ThreadedEventSource(AbstractEventSource[TRoot]):
     _thread_pool: QThreadPool
     _wrapped: AbstractEventSource[TRoot]
+    _app: 'Application'
 
-    def __init__(self, wrapped: AbstractEventSource[TRoot]):
+    def __init__(self, wrapped: AbstractEventSource[TRoot], app: 'Application'):
         super().__init__(wrapped._settings)
+        self._app = app
         self._thread_pool = QThreadPool()
         self._wrapped = wrapped
 
     def start(self, mute_events=True) -> None:
         @Slot()
         def job():
-            self._wrapped.start(mute_events)
+            try:
+                self._wrapped.start(mute_events)
+            except Exception as e:
+                def fail(ex):
+                    self._app.on_exception(type(ex), ex, ex.__traceback__)
+                invoke_in_main_thread(fail, ex=e)
         self._thread_pool.start(job)
 
     def get_data(self) -> TRoot:

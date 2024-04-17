@@ -30,4 +30,4 @@ def update(latest: Version, changelog: str):
 get_latest_version(app, update)
 window.setCentralWidget(txt)
 
-main_loop(start_source=False)
+main_loop(initialize_source=False)

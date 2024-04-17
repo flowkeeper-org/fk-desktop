@@ -47,7 +47,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
         self.selectionModel().clear()
         self.upstream_selected(None)
         super()._on_source_changed(event, source)
-        self._source_holder.on(SourceMessagesProcessed, self._on_messages)
+        self._source.on(SourceMessagesProcessed, self._on_messages)
 
     def update_actions(self, selected: User) -> None:
         pass
@@ -61,4 +61,4 @@ class UserTableView(AbstractTableView[Tenant, User]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _on_messages(self, event):
-        self.upstream_selected(self._source_holder.get_data())
+        self.upstream_selected(self._source.get_data())

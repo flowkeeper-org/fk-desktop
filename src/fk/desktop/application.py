@@ -69,21 +69,7 @@ class Application(QApplication, AbstractEventEmitter):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
-        def local_source_producer(settings, root):
-            inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
-            return ThreadedEventSource(inner_source)
-        EventSourceFactory.get_instance().register_producer('local', local_source_producer)
-
-        def ephemeral_source_producer(settings, root):
-            inner_source = EphemeralEventSource(settings, root)
-            return ThreadedEventSource(inner_source)
-        EventSourceFactory.get_instance().register_producer('ephemeral', ephemeral_source_producer)
-
-        def websocket_source_producer(settings, root):
-            return WebsocketEventSource(settings, self, root)
-        EventSourceFactory.get_instance().register_producer('websocket', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.org', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.pro', websocket_source_producer)
+        self._register_source_producers()
 
         self._heartbeat = None
         sys.excepthook = self.on_exception
@@ -123,16 +109,46 @@ class Application(QApplication, AbstractEventEmitter):
             self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
         self._source_holder = EventSourceHolder(self._settings)
-        self._source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._source_holder.recreate_source()
+        self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
+
+    def initialize_source(self):
+        self._source_holder.request_new_source()
+
+    def _register_source_producers(self):
+        def local_source_producer(settings, root):
+            inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
+            return ThreadedEventSource(inner_source, self)
+
+        EventSourceFactory.get_instance().register_producer('local', local_source_producer)
+
+        def ephemeral_source_producer(settings, root):
+            inner_source = EphemeralEventSource(settings, root)
+            return ThreadedEventSource(inner_source, self)
+
+        EventSourceFactory.get_instance().register_producer('ephemeral', ephemeral_source_producer)
+
+        def websocket_source_producer(settings, root):
+            return WebsocketEventSource(settings, self, root)
+
+        EventSourceFactory.get_instance().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_instance().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_instance().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        if self._heartbeat is not None:
-            self._heartbeat.stop()
-        if source.can_connect():
-            self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
-            self._heartbeat.on(events.WentOffline, self._on_went_offline)
-            self._heartbeat.on(events.WentOnline, self._on_went_online)
+        try:
+            print(f'Application: Received AfterSourceChanged for {source}')
+            if self._heartbeat is not None:
+                self._heartbeat.stop()
+            if source.can_connect():
+                self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
+                self._heartbeat.on(events.WentOffline, self._on_went_offline)
+                self._heartbeat.on(events.WentOnline, self._on_went_online)
+            print(f'Application: Starting the event source')
+            source.start()
+            print(f'Application: Event source started successfully')
+        except Exception as e:
+            print(f'Application: ERROR {e}')
+            raise e
 
     def is_e2e_mode(self):
         print('E2e mode:', 'e2e' in self.arguments())
@@ -240,7 +256,7 @@ class Application(QApplication, AbstractEventEmitter):
         show_restart_warning = False
         for name in new_values.keys():
             if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
-                self._source_holder.recreate_source()
+                self._source_holder.request_new_source()
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
             elif 'Application.font_' in name:

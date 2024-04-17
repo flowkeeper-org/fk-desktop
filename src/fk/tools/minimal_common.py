@@ -20,62 +20,66 @@ from typing import Callable
 from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 
-app = Application(sys.argv)
-app.setQuitOnLastWindowClosed(True)
-settings = app.get_settings()
 
-window = QMainWindow()
-actions = Actions(window, settings)
-Application.define_actions(actions)
-actions.bind('application', app)
+class MinimalCommon:
+    _app: Application
+    _window: QMainWindow
+    _actions: Actions
+    _source: AbstractEventSource
+    _settings: AbstractSettings
+    _callback: Callable
+    _initialize_source: bool
 
-_source: AbstractEventSource = None
-_initialized: bool = False
-_callback: Callable = None
-_start_source: bool = False
+    def main_loop(self):
+        self._app.setQuitOnLastWindowClosed(True)
+        self._window.show()
 
+        try:
+            print(f'MinimalCommon: Entering main_loop: {self._source} / {self._initialize_source}')
+            if self._initialize_source:
+                print('MinimalCommon: Request source initialization')
+                self._app.initialize_source()
+        except Exception as ex:
+            self._app.on_exception(type(ex), ex, ex.__traceback__)
 
-def _on_source_changed(event: str, source: AbstractEventSource):
-    global _source
-    global _initialized
-    global _callback
-    print('_on_source_changed', source)
-    _source = source
-    if not _initialized:
-        _initialized = True
-        if _callback is not None:
-            _source.on(SourceMessagesProcessed, lambda event: _callback(_source.get_data()))
-        if _start_source:
-            _source.start()
+        sys.exit(self._app.exec())
 
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        print(f'MinimalCommon: _on_source_changed({source})')
+        self._source = source
+        if self._callback is not None:
+            source.on(SourceMessagesProcessed, lambda event: self._callback(source.get_data()))
 
-def main_loop(callback=None, start_source=True):
-    global _initialized
-    global _callback
-    global _start_source
-    _callback = callback
-    _start_source = start_source
-    app.setQuitOnLastWindowClosed(True)
-    window.show()
+    def __init__(self, callback: Callable = None, initialize_source: bool = True):
+        self._source = None
+        self._callback = callback
+        self._initialize_source = initialize_source
+        self._app = Application(sys.argv)
+        self._app.setQuitOnLastWindowClosed(True)
+        self._settings = self._app.get_settings()
+        self._window = QMainWindow()
+        self._actions = Actions(self._window, self._settings)
+        Application.define_actions(self._actions)
+        self._actions.bind('application', self._app)
+        self._app.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
-    try:
-        if _source is not None:
-            _initialized = True
-            if _callback is not None:
-                _source.on(SourceMessagesProcessed, lambda event: _callback(_source.get_data()))
-            if start_source:
-                print('Starting source')
-                _source.start()
-    except Exception as ex:
-        app.on_exception(type(ex), ex, ex.__traceback__)
+    def get_actions(self):
+        return self._actions
 
-    sys.exit(app.exec())
+    def get_app(self):
+        return self._app
 
+    def get_settings(self):
+        return self._settings
 
-app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
-_on_source_changed('', app.get_source_holder().get_source())
+    def get_window(self):
+        return self._window
+
+    def get_source(self):
+        return self._source

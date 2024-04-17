@@ -24,4 +24,4 @@ button.setText('Login...')
 button.clicked.connect(lambda: authenticate(app, print))
 window.setCentralWidget(button)
 
-main_loop(start_source=False)
+main_loop(initialize_source=False)

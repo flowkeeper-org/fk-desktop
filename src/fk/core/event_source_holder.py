@@ -28,15 +28,15 @@ class EventSourceHolder(AbstractEventEmitter):
     _settings: AbstractSettings
     _source: AbstractEventSource | None
 
-    def __init__(self, settings: AbstractSettings, source: AbstractEventSource | None = None):
+    def __init__(self, settings: AbstractSettings):
         super().__init__(allowed_events=[BeforeSourceChanged, AfterSourceChanged],
                          callback_invoker=settings.invoke_callback)
         self._settings = settings
-        self._source = source
+        self._source = None
 
-    def recreate_source(self) -> None:
+    def request_new_source(self) -> None:
         source_type = self._settings.get('Source.type')
-        print(f'Recreating event source of type {source_type}')
+        print(f'EventSourceHolder: Recreating event source of type {source_type}')
         if not EventSourceFactory.get_instance().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
@@ -51,20 +51,17 @@ class EventSourceHolder(AbstractEventEmitter):
             self._source.disconnect()
 
         producer = EventSourceFactory.get_instance().get_producer(source_type)
-        print(f'About to create new source using producer {producer}')
+        print(f'EventSourceHolder: About to create new source using producer {producer}')
         self._source = producer(
             self._settings,
             Tenant(self._settings))
-        print(f'Source created')
-
-        self._source.start()
-        print(f'Source started')
+        print(f'EventSourceHolder: Source object created. You need to start it yourself!')
 
         self._emit(AfterSourceChanged, {
             'source': self._source
         })
 
-    def get_source(self) -> AbstractEventSource:
+    def get_source(self) -> AbstractEventSource | None:
         return self._source
 
     def get_settings(self) -> AbstractSettings:

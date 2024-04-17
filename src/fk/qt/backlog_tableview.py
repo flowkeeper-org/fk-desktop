@@ -51,8 +51,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          0)
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
-        self.on(AfterSelectionChanged, lambda event, before, after: self._source_holder.set_config_parameters({
+        self.on(AfterSelectionChanged, lambda event, before, after: self._application.get_settings().set({
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
         }))
         self._application = application
@@ -120,8 +119,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     def create_backlog(self) -> None:
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source_holder.get_data().get_current_user().names())
-        self._source_holder.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
+        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
+        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
 
         # A simpler, more efficient, but a bit uglier single-step alternative
         # new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
@@ -153,7 +152,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                  QMessageBox.StandardButton.Ok,
                                  QMessageBox.StandardButton.Cancel
                                  ) == QMessageBox.StandardButton.Ok:
-            self._source_holder.execute(DeleteBacklogStrategy, [selected.get_uid()])
+            self._source.execute(DeleteBacklogStrategy, [selected.get_uid()])
 
     def dump_selected_backlog(self) -> None:
         selected: Backlog = self.get_current()
@@ -165,8 +164,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       selected.dump())
 
     def _on_messages(self, event):
-        user = self._source_holder.get_data().get_current_user()
+        user = self._source.get_data().get_current_user()
         self.upstream_selected(user)
-        last_selected_oid = self._source_holder.get_settings().get('Application.last_selected_backlog')
+        last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
             self.select(user[last_selected_oid])

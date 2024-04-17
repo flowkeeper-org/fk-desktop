@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QTableView, QWidget
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.qt.actions import Actions
@@ -35,7 +36,7 @@ TDownstream = TypeVar('TDownstream', bound=AbstractDataItem)
 
 
 class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDownstream]):
-    _source_holder: EventSourceHolder
+    _source: AbstractEventSource
     _is_data_loaded: bool
     _is_upstream_item_selected: bool
     _actions: Actions
@@ -61,7 +62,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                              AfterSelectionChanged,
                          ],
                          callback_invoker=source_holder.get_settings().invoke_callback)
-        self._source_holder = None
+        self._source = None
         self._actions = actions
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
@@ -86,7 +87,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
     def _on_source_changed(self, event, source):
-        self._source_holder = source
+        self._source = source
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
         source.on(SourceMessagesProcessed, self._on_data_loaded)
