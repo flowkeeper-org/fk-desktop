@@ -16,12 +16,14 @@
 
 from PySide6.QtWidgets import QPushButton
 
-from fk.tools.minimal_common import window, main_loop, app
 from fk.qt.oauth import authenticate
+from fk.tools.minimal_common import MinimalCommon
 
-button = QPushButton(window)
+mc = MinimalCommon(initialize_source=False)
+
+button = QPushButton(mc.get_window())
 button.setText('Login...')
-button.clicked.connect(lambda: authenticate(app, print))
-window.setCentralWidget(button)
+button.clicked.connect(lambda: authenticate(mc.get_app(), print))
+mc.get_window().setCentralWidget(button)
 
-main_loop(initialize_source=False)
+mc.main_loop()

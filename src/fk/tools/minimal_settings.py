@@ -15,9 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from fk.desktop.settings import SettingsDialog
-from fk.tools.minimal_common import window, main_loop, settings
+from fk.tools.minimal_common import MinimalCommon
 
-dialog = SettingsDialog(settings)
-window.setCentralWidget(dialog)
+mc = MinimalCommon()
 
-main_loop()
+dialog = SettingsDialog(mc.get_settings())
+mc.get_window().setCentralWidget(dialog)
+
+mc.main_loop()

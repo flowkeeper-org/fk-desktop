@@ -17,12 +17,14 @@
 from fk.core.timer import PomodoroTimer
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.qt_timer import QtTimer
-from fk.tools.minimal_common import window, main_loop, app, actions
+from fk.tools.minimal_common import MinimalCommon
 
-pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-FocusWidget.define_actions(actions)
-focus = FocusWidget(window, app, pomodoro_timer, app.get_source_holder(), app.get_settings(), actions)
-actions.bind('focus', focus)
-window.setCentralWidget(focus)
+mc = MinimalCommon()
 
-main_loop()
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
+FocusWidget.define_actions(mc.get_actions())
+focus = FocusWidget(mc.get_window(), mc.get_app(), pomodoro_timer, mc.get_app().get_source_holder(), mc.get_settings(), mc.get_actions())
+mc.get_actions().bind('focus', focus)
+mc.get_window().setCentralWidget(focus)
+
+mc.main_loop()

@@ -131,7 +131,6 @@ class FocusWidget(QWidget):
         self.update_header()
 
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
@@ -180,7 +179,7 @@ class FocusWidget(QWidget):
                 self._header_subtext.setText("It's time for the next Pomodoro.")
             self._buttons['focus.voidPomodoro'].hide()
             self._actions['focus.voidPomodoro'].setDisabled(True)
-            self._timer_display.set_values(0, None, "")
+            self._timer_display.reset()
             self._timer_display.hide()
         elif self._timer.is_working() or self._timer.is_resting():
             remaining_duration = self._timer.get_remaining_duration()  # This is always >= 0

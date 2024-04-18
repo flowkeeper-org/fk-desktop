@@ -37,13 +37,10 @@ class ProgressWidget(QWidget):
         self.setVisible(False)
 
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event, source):
-        source.on("AfterWorkitem*",
-                  lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
+        source.on("AfterWorkitem*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
+        source.on("AfterPomodoro*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
 
     def update_progress(self, backlog: Backlog) -> None:
         total: int = 0

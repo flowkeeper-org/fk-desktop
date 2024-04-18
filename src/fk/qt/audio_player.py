@@ -43,7 +43,6 @@ class AudioPlayer(QObject):
         timer.on("Timer*Complete", self._play_audio)
         timer.on("TimerWorkStart", self._start_ticking)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(SourceMessagesProcessed, self._on_messages)

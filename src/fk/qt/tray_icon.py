@@ -56,7 +56,6 @@ class TrayIcon(QSystemTrayIcon):
         self._timer_widget = render_for_pixmap()
 
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source_holder.get_source())
         timer.on("Timer*", self._update)
         timer.on("Timer*Complete", self._show_notification)
 

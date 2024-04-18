@@ -15,15 +15,23 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from fk.core.tenant import Tenant
 from fk.qt.user_tableview import UserTableView
-from fk.tools.minimal_common import window, app, main_loop, actions
+from fk.tools.minimal_common import MinimalCommon
+
+
+def on_data(root: Tenant):
+    print('on_data', root)
+    users_table.upstream_selected(root)
+
+
+mc = MinimalCommon(on_data)
+
+app = mc.get_app()
+window = mc.get_window()
+actions = mc.get_actions()
 
 UserTableView.define_actions(actions)
 users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
 actions.bind('users_table', users_table)
 window.setCentralWidget(users_table)
 
-def on_data(root: Tenant):
-    print('on_data', root)
-    users_table.upstream_selected(root)
-
-main_loop(on_data)
+mc.main_loop()
