@@ -1,6 +1,10 @@
-### v0.4.0 (TBD)
+### v0.4.0 (18 April 2024)
 - Changes to data source settings do not require Flowkeeper restart.
-- [Technical] Unit test coverage for `fk.core` module increased to 85%.
+- Some rare and complex bugs are now fixed thanks to improved Event Source handling.
+- [Technical] Rest and work durations are now floating-point numbers.
+- [Technical] Windows dev. environment is now supported and documented.
+- [Technical] First working end-to-end tests providing 61% UI code coverage.
+- [Technical] Unit test coverage for `fk.core` module increased to 68%.
 
 ### v0.3.3 (5 April 2024)
 - Added a tutorial / quickstart wizard.
