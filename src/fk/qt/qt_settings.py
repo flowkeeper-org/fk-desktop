@@ -36,15 +36,16 @@ class QtSettings(AbstractSettings):
             old_value = self.get(name)
             if old_value != values[name]:
                 old_values[name] = old_value
-        params = {
-            'old_values': old_values,
-            'new_values': values,
-        }
-        self._emit(events.BeforeSettingsChanged, params)
-        for name in old_values.keys():  # This is not a typo, we've just filtered this list
-            # to only contain settings which actually changed.
-            self._settings.setValue(name, values[name])
-        self._emit(events.AfterSettingsChanged, params)
+        if len(old_values.keys()) > 0:
+            params = {
+                'old_values': old_values,
+                'new_values': values,
+            }
+            self._emit(events.BeforeSettingsChanged, params)
+            for name in old_values.keys():  # This is not a typo, we've just filtered this list
+                # to only contain settings which actually changed.
+                self._settings.setValue(name, values[name])
+            self._emit(events.AfterSettingsChanged, params)
 
     def get(self, name: str) -> str:
         return str(self._settings.value(name, self._defaults[name]))

@@ -18,16 +18,18 @@ from PySide6.QtWidgets import QTextEdit
 from semantic_version import Version
 
 from fk.qt.app_version import get_current_version, get_latest_version
-from fk.tools.minimal_common import window, main_loop, app
+from fk.tools.minimal_common import MinimalCommon
 
-txt = QTextEdit(window)
+mc = MinimalCommon(initialize_source=False)
+
+txt = QTextEdit(mc.get_window())
 
 
 def update(latest: Version, changelog: str):
     txt.setMarkdown(f'Current version: {get_current_version()}\n\nLatest version: {latest}\n\nChangelog: \n\n{changelog}')
 
 
-get_latest_version(app, update)
-window.setCentralWidget(txt)
+get_latest_version(mc.get_app(), update)
+mc.get_window().setCentralWidget(txt)
 
-main_loop(start_source=False)
+mc.main_loop()

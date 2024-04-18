@@ -1,5 +1,6 @@
 ### v0.4.0 (TBD)
-- TBD
+- Changes to data source settings do not require Flowkeeper restart.
+- [Technical] Unit test coverage for `fk.core` module increased to 85%.
 
 ### v0.3.3 (5 April 2024)
 - Added a tutorial / quickstart wizard.

@@ -19,23 +19,25 @@ from PySide6.QtWidgets import QMenuBar
 from fk.desktop.application import Application
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.focus_widget import FocusWidget
-from fk.tools.minimal_common import window, main_loop, actions, app
 from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
+from fk.tools.minimal_common import MinimalCommon
 
-Application.define_actions(actions)
-BacklogTableView.define_actions(actions)
-UserTableView.define_actions(actions)
-WorkitemTableView.define_actions(actions)
-FocusWidget.define_actions(actions)
+mc = MinimalCommon()
 
-actions.bind('application', app)
+Application.define_actions(mc.get_actions())
+BacklogTableView.define_actions(mc.get_actions())
+UserTableView.define_actions(mc.get_actions())
+WorkitemTableView.define_actions(mc.get_actions())
+FocusWidget.define_actions(mc.get_actions())
 
-menu = QMenuBar(window)
-menu.addActions(actions.all())
-window.setCentralWidget(menu)
+mc.get_actions().bind('application', mc.get_app())
+
+menu = QMenuBar(mc.get_window())
+menu.addActions(mc.get_actions().all())
+mc.get_window().setCentralWidget(menu)
 
 print('All actions:')
-print('\n'.join([action.objectName() for action in actions.all()]))
+print('\n'.join([action.objectName() for action in mc.get_actions().all()]))
 
-main_loop()
+mc.main_loop()

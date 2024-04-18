@@ -13,10 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.core.tenant import Tenant
 from fk.core.user import User
@@ -30,24 +30,23 @@ class UserTableView(AbstractTableView[Tenant, User]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
-                         source,
-                         UserModel(parent, source),
+                         source_holder,
+                         UserModel(parent, source_holder),
                          'users_table',
                          actions,
                          'Loading, please wait...',
                          'Select a tenant.\nYou should never see this message. Please report a bug in GitHub.',
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
-        #application.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
 
-    def _on_source_changed(self, event, source):
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        super()._on_source_changed(event, source)
         self.selectionModel().clear()
         self.upstream_selected(None)
-        super()._on_source_changed(event, source)
         self._source.on(SourceMessagesProcessed, self._on_messages)
 
     def update_actions(self, selected: User) -> None:
@@ -61,5 +60,5 @@ class UserTableView(AbstractTableView[Tenant, User]):
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
-    def _on_messages(self, event):
-        self.upstream_selected(self._source.get_data())
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        self.upstream_selected(source.get_data())

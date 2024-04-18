@@ -18,17 +18,16 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 
 
 class ProgressWidget(QWidget):
-    _source: AbstractEventSource
     _label: QLabel
 
     def __init__(self,
                  parent: QWidget,
-                 source: AbstractEventSource):
+                 source_holder: EventSourceHolder):
         super().__init__(parent)
-        self._source = source
         self.setObjectName('progress')
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -37,19 +36,22 @@ class ProgressWidget(QWidget):
         self._label.setObjectName("footerLabel")
         layout.addWidget(self._label)
         self.setVisible(False)
-        source.on("AfterWorkitem*",
-                  lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
 
-    def update_progress(self, backlog: Backlog) -> None:
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        self.update_progress(None)
+        source.on("AfterWorkitem*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
+        source.on("AfterPomodoro*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
+
+    def update_progress(self, backlog: Backlog | None) -> None:
         total: int = 0
         done: int = 0
-        for wi in backlog.values():
-            for p in wi.values():
-                total += 1
-                if p.is_finished() or p.is_canceled():
-                    done += 1
+        if backlog:
+            for wi in backlog.values():
+                for p in wi.values():
+                    total += 1
+                    if p.is_finished() or p.is_canceled():
+                        done += 1
 
         self.setVisible(total > 0)
         self._label.setVisible(total > 0)

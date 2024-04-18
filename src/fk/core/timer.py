@@ -17,7 +17,9 @@
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartRestStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
@@ -27,7 +29,6 @@ from fk.core.workitem import Workitem
 # TODO: Currently we use source.on() to subscribe to its events
 # See how we can use this class instead, i.e. timer.on()
 class PomodoroTimer(AbstractEventEmitter):
-    _source: AbstractEventSource
     _tick_timer: AbstractTimer
     _transition_timer: AbstractTimer
     _state: str | None
@@ -35,6 +36,7 @@ class PomodoroTimer(AbstractEventEmitter):
     _workitem: Workitem | None
     _planned_duration: float
     _remaining_duration: float
+    _source_holder: EventSourceHolder
 
     # Emitted events
     TimerTick = "TimerTick"
@@ -43,37 +45,39 @@ class PomodoroTimer(AbstractEventEmitter):
     TimerRestComplete = "TimerRestComplete"
 
     def __init__(self,
-                 source: AbstractEventSource,
                  tick_timer: AbstractTimer,
-                 transition_timer: AbstractTimer):
+                 transition_timer: AbstractTimer,
+                 settings: AbstractSettings,
+                 source_holder: EventSourceHolder):
         super().__init__([self.TimerTick, self.TimerWorkStart, self.TimerWorkComplete, self.TimerRestComplete],
-                         source.get_settings().invoke_callback)
+                         settings.invoke_callback)
         print('PomodoroTimer: Initializing')
-        self._source = source
         self._tick_timer = tick_timer
         self._transition_timer = transition_timer
+        self._source_holder = source_holder
+        self._reset()
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        print('PomodoroTimer: Initialized')
 
+    def _reset(self):
         self._state = None
         self._pomodoro = None
         self._workitem = None
         self._planned_duration = 0
         self._remaining_duration = 0
 
-        self._refresh()
-
-        # Start tracking changes and initialize with the latest state
-        print('PomodoroTimer: Connecting')
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self._reset()
         source.on(events.SourceMessagesProcessed, self._refresh)
         source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
         source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
         source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
-        print('PomodoroTimer: Initialized')
 
     def _refresh(self, event: str | None = None, **kwargs) -> None:
         print('PomodoroTimer: Refreshing')
         workitem: Workitem | None = None
         pomodoro: Pomodoro | None = None
-        for backlog in self._source.backlogs():
+        for backlog in self._source_holder.get_source().backlogs():
             w, p = backlog.get_running_workitem()
             if w is not None:
                 workitem = w
@@ -156,16 +160,16 @@ class PomodoroTimer(AbstractEventEmitter):
         if target_state == 'rest':
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
-            rest_duration = self._source.get_config_parameter('Pomodoro.default_rest_duration')
+            rest_duration = self._source_holder.get_settings().get('Pomodoro.default_rest_duration')
             print(f"Will execute StartRestStrategy('{target_workitem.get_name()}', '{rest_duration}')")
-            self._source.execute(
+            self._source_holder.get_source().execute(
                 StartRestStrategy,
                 [target_workitem.get_uid(), rest_duration]
             )
             print(f"PomodoroTimer: Executed StartRestStrategy")
         elif target_state == 'finished':
             print(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
-            self._source.execute(
+            self._source_holder.get_source().execute(
                 FinishPomodoroInternalStrategy,
                 [target_workitem.get_uid()],
                 persist=False

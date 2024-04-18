@@ -15,55 +15,75 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+from typing import Callable
 
 from PySide6.QtWidgets import QMainWindow
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.abstract_settings import AbstractSettings
+from fk.core.event_source_holder import AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
-from fk.core.file_event_source import FileEventSource
-from fk.core.tenant import Tenant
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
-from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
-from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.websocket_event_source import WebsocketEventSource
-
-app = Application(sys.argv)
-app.setQuitOnLastWindowClosed(True)
-settings = app.get_settings()
-
-source: AbstractEventSource
-source_type = settings.get('Source.type')
-root = Tenant(settings)
-if source_type == 'local':
-    source = ThreadedEventSource(FileEventSource(settings,
-                                                 root,
-                                                 QtFilesystemWatcher()))
-elif source_type == 'ephemeral':
-    source = ThreadedEventSource(EphemeralEventSource(settings,
-                                                 root))
-elif source_type in ('websocket', 'flowkeeper.org', 'flowkeeper.pro'):
-    source = WebsocketEventSource(settings, app, root)
-else:
-    raise Exception(f"Source type {source_type} not supported")
-
-window = QMainWindow()
-actions = Actions(window, settings)
-Application.define_actions(actions)
-actions.bind('application', app)
 
 
-def main_loop(callback = None, start_source = True):
-    app.setQuitOnLastWindowClosed(True)
-    window.show()
+class MinimalCommon:
+    _app: Application
+    _window: QMainWindow
+    _actions: Actions
+    _source: AbstractEventSource
+    _settings: AbstractSettings
+    _callback: Callable
+    _initialize_source: bool
 
-    try:
-        if callback is not None:
-            source.on(SourceMessagesProcessed, lambda event: callback())
-        if start_source:
-            source.start()
-    except Exception as ex:
-        app.on_exception(type(ex), ex, ex.__traceback__)
+    def main_loop(self):
+        self._app.setQuitOnLastWindowClosed(True)
+        self._window.show()
 
-    sys.exit(app.exec())
+        try:
+            print(f'MinimalCommon: Entering main_loop: {self._source} / {self._initialize_source}')
+            if self._initialize_source:
+                print('MinimalCommon: Request source initialization')
+                self._app.initialize_source()
+        except Exception as ex:
+            self._app.on_exception(type(ex), ex, ex.__traceback__)
+
+        sys.exit(self._app.exec())
+
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        print(f'MinimalCommon: Will call {self._callback}')
+        self._callback(source.get_data())
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        print(f'MinimalCommon: _on_source_changed({source})')
+        self._source = source
+        if self._callback is not None:
+            source.on(SourceMessagesProcessed, self._on_messages)
+
+    def __init__(self, callback: Callable = None, initialize_source: bool = True):
+        self._source = None
+        self._callback = callback
+        self._initialize_source = initialize_source
+        self._app = Application(sys.argv)
+        self._app.setQuitOnLastWindowClosed(True)
+        self._settings = self._app.get_settings()
+        self._window = QMainWindow()
+        self._actions = Actions(self._window, self._settings)
+        Application.define_actions(self._actions)
+        self._actions.bind('application', self._app)
+        self._app.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
+
+    def get_actions(self):
+        return self._actions
+
+    def get_app(self):
+        return self._app
+
+    def get_settings(self):
+        return self._settings
+
+    def get_window(self):
+        return self._window
+
+    def get_source(self):
+        return self._source
