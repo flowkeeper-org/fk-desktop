@@ -116,7 +116,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.execute_prepared_strategy(strategy)
         self.auto_seal()
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, dict())
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
@@ -156,7 +156,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         if mute_events:
             self.unmute()
-        self._emit(events.SourceMessagesProcessed, dict())
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def repair(self) -> Iterable[str]:
         # This method attempts some basic repairs, trying to save as much

@@ -18,6 +18,7 @@ from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate
@@ -50,7 +51,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
-    def _on_source_changed(self, event, source):
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on("AfterWorkitem*",

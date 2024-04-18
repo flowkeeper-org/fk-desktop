@@ -50,9 +50,9 @@ class MinimalCommon:
 
         sys.exit(self._app.exec())
 
-    def _on_messages(self, event):
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
         print(f'MinimalCommon: Will call {self._callback}')
-        self._callback(self._source.get_data())
+        self._callback(source.get_data())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         print(f'MinimalCommon: _on_source_changed({source})')

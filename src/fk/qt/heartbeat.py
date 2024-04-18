@@ -40,20 +40,26 @@ class Heartbeat(AbstractEventEmitter):
                                       [events.WentOnline, events.WentOffline],
                                       source_holder.get_settings().invoke_callback)
         self._source_holder = source_holder
+        self._every_ms = every_ms
+        self._threshold_ms = threshold_ms
         self._timer = QtTimer('Heartbeat')
+        self._reset()
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _reset(self) -> None:
+        self._timer.cancel()
         self._state = 'unknown'
+        self._last_ping_ms = -1
         self._last_sent_uid = ''
         self._last_received_uid = ''
         self._last_sent_time = None
         self._last_received_time = None
-        self._every_ms = every_ms
-        self._threshold_ms = threshold_ms
-        self._last_ping_ms = -1
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        source.on(events.PongReceived, self._on_pong)
-        source.on(events.SourceMessagesRequested, self.start)
+        self._reset()
+        if source.can_connect():
+            source.on(events.PongReceived, self._on_pong)
+            source.on(events.SourceMessagesRequested, self.start)
 
     def start(self, event) -> None:
         self._send_ping(None)

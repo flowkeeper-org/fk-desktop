@@ -97,7 +97,7 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def on_messages(event) -> None:
+def on_messages(event: str, source: AbstractEventSource) -> None:
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         show_timer_automatically()
 
@@ -187,10 +187,11 @@ if __name__ == "__main__":
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
+            main_window.show_all()
             source.on(SourceMessagesProcessed, on_messages)
             source.on(AfterWorkitemComplete, hide_timer)
 
-        app.on(AfterSourceChanged, _on_source_changed)
+        app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
         pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
@@ -232,7 +233,7 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
-        left_toolbar_layout.addWidget(ConnectionWidget(window, app.get_heartbeat(), app))
+        left_toolbar_layout.addWidget(ConnectionWidget(window, app))
 
         # Backlogs table
         backlogs_table: BacklogTableView = BacklogTableView(window, app, app.get_source_holder(), actions)
@@ -337,13 +338,15 @@ if __name__ == "__main__":
         window.installEventFilter(event_filter)
         window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
+        main_window = MainWindow()
+
         # Bind action domains to widget instances
         actions.bind('application', app)
         actions.bind('backlogs_table', backlogs_table)
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_table)
         actions.bind('focus', focus)
-        actions.bind('window', MainWindow())
+        actions.bind('window', main_window)
 
         window.show()
 

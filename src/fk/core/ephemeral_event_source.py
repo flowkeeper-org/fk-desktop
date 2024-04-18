@@ -46,7 +46,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
         if mute_events:
             self.unmute()
-        self._emit(events.SourceMessagesProcessed, dict())
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:

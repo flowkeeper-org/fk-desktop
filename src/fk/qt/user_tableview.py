@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtWidgets import QWidget, QHeaderView
 
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.core.tenant import Tenant
@@ -42,7 +43,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          0)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
-    def _on_source_changed(self, event, source):
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         self.selectionModel().clear()
         self.upstream_selected(None)
@@ -59,5 +60,5 @@ class UserTableView(AbstractTableView[Tenant, User]):
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
-    def _on_messages(self, event):
-        self.upstream_selected(self._source.get_data())
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        self.upstream_selected(source.get_data())

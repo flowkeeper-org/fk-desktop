@@ -86,13 +86,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
-    def _on_source_changed(self, event, source):
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         self._source = source
         self._is_data_loaded = False
         self._is_upstream_item_selected = False
         source.on(SourceMessagesProcessed, self._on_data_loaded)
 
-    def _on_data_loaded(self, event):
+    def _on_data_loaded(self, event: str, source: AbstractEventSource) -> None:
         print(f'Data loaded - {self.objectName()}')
         self._is_data_loaded = True
         self.repaint()

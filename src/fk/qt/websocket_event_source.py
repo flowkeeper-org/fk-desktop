@@ -146,7 +146,7 @@ class WebsocketEventSource(AbstractEventSource):
         if to_unmute:
             self.unmute()
         if to_emit:
-            self._emit(events.SourceMessagesProcessed, dict())
+            self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _authenticate_with_google_and_replay(self) -> None:
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')

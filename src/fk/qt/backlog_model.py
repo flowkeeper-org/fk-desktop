@@ -57,20 +57,17 @@ class BacklogItem(QtGui.QStandardItem):
 
 class BacklogModel(QtGui.QStandardItemModel):
     _source_holder: EventSourceHolder
-    _user: User | None
 
     def __init__(self,
                  parent: QtCore.QObject,
                  source_holder: EventSourceHolder):
         super().__init__(0, 1, parent)
         self._source_holder = source_holder
-        self._user = None
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        self._user = None
-        self.load(self._user)
+        self.load(None)
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
@@ -113,7 +110,6 @@ class BacklogModel(QtGui.QStandardItemModel):
 
     def load(self, user: User) -> None:
         self.clear()
-        self._user = user
         if user is not None:
             for backlog in user.values():
                 self.appendRow(BacklogItem(backlog))
@@ -122,6 +118,3 @@ class BacklogModel(QtGui.QStandardItemModel):
 
     def _sort(self, event: str = None, **kwargs):
         self.sort(0, Qt.SortOrder.DescendingOrder)
-
-    def get_user(self) -> User | None:
-        return self._user

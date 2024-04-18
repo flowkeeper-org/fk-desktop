@@ -45,6 +45,8 @@ class AudioPlayer(QObject):
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
+        if self._audio_player.isPlaying():
+            self._audio_player.stop()
         source.on(SourceMessagesProcessed, self._on_messages)
 
     def _reset(self):
@@ -100,7 +102,7 @@ class AudioPlayer(QObject):
             self._audio_player.setLoops(1)
             self._audio_player.play()     # This will substitute the bell sound
 
-    def _on_messages(self, event: str = None) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
         if self._timer.is_working():
             self._start_ticking()
         elif self._timer.is_resting():

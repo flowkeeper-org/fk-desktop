@@ -59,8 +59,7 @@ class TrayIcon(QSystemTrayIcon):
         timer.on("Timer*", self._update)
         timer.on("Timer*Complete", self._show_notification)
 
-        self.activated.connect(
-            lambda reason: (self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None))
+        self.activated.connect(self._on_activated)
         menu = QMenu()
         if 'focus.voidPomodoro' in actions:
             menu.addAction(actions['focus.voidPomodoro'])
@@ -75,7 +74,13 @@ class TrayIcon(QSystemTrayIcon):
 
         self._update()
 
+    def _on_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            return self._tray_clicked()
+
     def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self.setToolTip("It's time for the next Pomodoro.")
+        self.reset()
         source.on(AfterWorkitemComplete, self.reset)
         source.on(AfterWorkitemComplete, self._update)
         source.on(SourceMessagesProcessed, self._update)

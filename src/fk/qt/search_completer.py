@@ -18,8 +18,9 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.event_source_holder import EventSourceHolder
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.abstract_tableview import AbstractTableView
@@ -50,6 +51,11 @@ class SearchBar(QtWidgets.QLineEdit):
         self.installEventFilter(self)
         self._actions = actions
         actions['workitems_table.showCompleted'].toggled.connect(self.show_completed)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        if self.isVisible():
+            self.hide()
 
     def _select(self, index: QModelIndex):
         workitem: Workitem = index.data(500)

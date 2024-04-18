@@ -111,6 +111,11 @@ class Application(QApplication, AbstractEventEmitter):
         self._source_holder = EventSourceHolder(self._settings)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
+        # Heartbeat
+        self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
+        self._heartbeat.on(events.WentOffline, self._on_went_offline)
+        self._heartbeat.on(events.WentOnline, self._on_went_online)
+
     def initialize_source(self):
         self._source_holder.request_new_source()
 
@@ -137,12 +142,6 @@ class Application(QApplication, AbstractEventEmitter):
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
             print(f'Application: Received AfterSourceChanged for {source}')
-            if self._heartbeat is not None:
-                self._heartbeat.stop()
-            if source.can_connect():
-                self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
-                self._heartbeat.on(events.WentOffline, self._on_went_offline)
-                self._heartbeat.on(events.WentOnline, self._on_went_online)
             print(f'Application: Starting the event source')
             source.start()
             print(f'Application: Event source started successfully')

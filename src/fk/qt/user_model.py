@@ -36,10 +36,13 @@ class UserModel(QtGui.QStandardItemModel):
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        self.load(source.get_data())
         source.on(events.AfterUserCreate, self._user_added)
         source.on(events.AfterUserDelete, self._user_removed)
         source.on(events.AfterUserRename, self._user_renamed)
+        source.on(events.SourceMessagesProcessed, self._on_messages)
+
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        self.load(source.get_data())
 
     def _user_added(self, event: str, user: User) -> None:
         item = QtGui.QStandardItem('')

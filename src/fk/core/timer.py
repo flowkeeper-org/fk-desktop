@@ -55,16 +55,19 @@ class PomodoroTimer(AbstractEventEmitter):
         self._tick_timer = tick_timer
         self._transition_timer = transition_timer
         self._source_holder = source_holder
+        self._reset()
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        print('PomodoroTimer: Initialized')
+
+    def _reset(self):
         self._state = None
         self._pomodoro = None
         self._workitem = None
         self._planned_duration = 0
         self._remaining_duration = 0
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
-        print('PomodoroTimer: Initialized')
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        self._refresh()
+        self._reset()
         source.on(events.SourceMessagesProcessed, self._refresh)
         source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
         source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
