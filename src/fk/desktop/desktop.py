@@ -191,7 +191,6 @@ if __name__ == "__main__":
             source.on(AfterWorkitemComplete, hide_timer)
 
         app.on(AfterSourceChanged, _on_source_changed)
-        _on_source_changed('', app.get_source_holder())
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
         pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
@@ -349,7 +348,7 @@ if __name__ == "__main__":
         window.show()
 
         try:
-            app.get_source_holder().get_source().start()
+            app.initialize_source()
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
