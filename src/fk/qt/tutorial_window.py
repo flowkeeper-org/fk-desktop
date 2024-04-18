@@ -16,10 +16,9 @@
 
 from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject, QRegularExpression
-from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow, QStackedWidget, QPushButton
+from PySide6.QtWidgets import QWidget, QMainWindow, QStackedWidget, QPushButton
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.qt.app_version import get_current_version
 
 
 class TutorialWindow(QObject):
@@ -43,7 +42,7 @@ class TutorialWindow(QObject):
         self._previous_button.clicked.connect(self._on_previous)
         self._next_button = self._tutorial_window.findChild(QPushButton, "next")
         self._next_button.clicked.connect(self._on_next)
-        self._count = len(self._pages.findChildren(QWidget, QRegularExpression('page[\d]*')))
+        self._count = len(self._pages.findChildren(QWidget, QRegularExpression('page.+')))
 
     def _update_page(self, new_index: int):
         self._pages.setCurrentIndex(new_index)

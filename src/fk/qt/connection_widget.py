@@ -20,16 +20,17 @@ from PySide6.QtWidgets import QWidget, QLabel
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.desktop.application import Application, AfterSourceChanged
-from fk.qt.heartbeat import Heartbeat
 
 
 class ConnectionWidget(QLabel):
+    _application: Application
     _img_unknown: QPixmap
     _img_offline: QPixmap
     _img_online: QPixmap
 
-    def __init__(self, parent: QWidget, heartbeat: Heartbeat, app: Application):
+    def __init__(self, parent: QWidget, application: Application):
         super().__init__(parent)
+        self._application = application
         self.setObjectName('connectionState')
         self.setFixedSize(QSize(32, 32))
 
@@ -37,12 +38,7 @@ class ConnectionWidget(QLabel):
         self._img_offline = QPixmap(':/icons/conn-offline.svg')
         self._img_unknown = QPixmap(':/icons/conn-unknown.svg')
 
-        if heartbeat is not None:
-            heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
-            heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
-
-        app.on(AfterSourceChanged, lambda event, source: self._update_source(source))
-        self._update_source(app.get_source())
+        application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
     def _update_connection_state(self, is_connected: bool) -> None:
         if is_connected:
@@ -54,8 +50,16 @@ class ConnectionWidget(QLabel):
             self.setToolTip('Disconnected')
             self.topLevelWidget().setWindowTitle('Flowkeeper - OFFLINE')
 
-    def _update_source(self, source: AbstractEventSource):
-        self.setPixmap(self._img_unknown)
-        self.setVisible(source and source.can_connect())
-        self.setToolTip('Connecting...')
-        self.topLevelWidget().setWindowTitle('Flowkeeper - Connecting...' if source.can_connect() else 'Flowkeeper')
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self.setVisible(source.can_connect())
+        if source.can_connect():
+            print('ConnectionWidget._on_source_changed: Connectable source')
+            heartbeat = self._application.get_heartbeat()
+            self._update_connection_state(heartbeat.is_online())
+            heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
+            heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
+        else:
+            print('ConnectionWidget._on_source_changed: Offline source')
+            self.setPixmap(self._img_unknown)
+            self.setToolTip('N/A')
+            self.topLevelWidget().setWindowTitle('Flowkeeper')

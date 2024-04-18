@@ -90,9 +90,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
         self._definitions = {
             'General': [
-                ('Pomodoro.default_work_duration', 'int', 'Default work duration (s)', str(25 * 60), [1, 120 * 60], _always_show),
-                ('Pomodoro.default_rest_duration', 'int', 'Default rest duration (s)', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Pomodoro.auto_seal_after', 'int', 'Auto-seal items after (s)', str(5), [1, 120], _always_show),
+                ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
+                ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
+                ('Pomodoro.auto_seal_after', 'duration', 'Auto-seal items after', str(5), [1, 120], _always_show),
                 ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
@@ -200,6 +200,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     @abstractmethod
+    def clear(self) -> None:
+        pass
+
+    @abstractmethod
     def location(self) -> str:
         pass
 
@@ -215,11 +219,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
 
-    def get_work_duration(self) -> int:
-        return int(self.get('Pomodoro.default_work_duration'))
+    def get_work_duration(self) -> float:
+        return float(self.get('Pomodoro.default_work_duration'))
 
-    def get_rest_duration(self) -> int:
-        return int(self.get('Pomodoro.default_rest_duration'))
+    def get_rest_duration(self) -> float:
+        return float(self.get('Pomodoro.default_rest_duration'))
 
     def get_categories(self) -> Iterable[str]:
         return self._definitions.keys()
@@ -243,4 +247,5 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         for lst in self._definitions.values():
             for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
                 to_set[option_id] = option_default
+        self.clear()
         self.set(to_set)

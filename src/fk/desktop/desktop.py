@@ -13,21 +13,19 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import asyncio
 import sys
 import threading
+import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
-from PySide6.QtAsyncio import QAsyncioEventLoop
-from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.desktop.application import Application
-from fk.e2e.e2e_test import E2eTest
+from fk.desktop.application import Application, AfterSourceChanged
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -99,7 +97,7 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def on_messages(event) -> None:
+def on_messages(event: str, source: AbstractEventSource) -> None:
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         show_timer_automatically()
 
@@ -188,10 +186,14 @@ if __name__ == "__main__":
         print('UI thread:', threading.get_ident())
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
-        source = app.get_source()
-        source.on(SourceMessagesProcessed, on_messages)
+        def _on_source_changed(event: str, source: AbstractEventSource):
+            main_window.show_all()
+            source.on(SourceMessagesProcessed, on_messages)
+            source.on(AfterWorkitemComplete, hide_timer)
 
-        pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
+        app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
+
+        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
         pomodoro_timer.on("TimerRestComplete", lambda timer, workitem, pomodoro, event: hide_timer_automatically())
         pomodoro_timer.on("TimerWorkStart", lambda timer, event: show_timer_automatically())
 
@@ -213,7 +215,7 @@ if __name__ == "__main__":
         FocusWidget.define_actions(actions)
         MainWindow.define_actions(actions)
 
-        audio = AudioPlayer(window, source, settings, pomodoro_timer)
+        audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
@@ -231,37 +233,36 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         left_toolbar_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "left_toolbar_layout")
-        left_toolbar_layout.addWidget(ConnectionWidget(window, app.get_heartbeat(), app))
+        left_toolbar_layout.addWidget(ConnectionWidget(window, app))
 
         # Backlogs table
-        backlogs_table: BacklogTableView = BacklogTableView(window, app, source, actions)
+        backlogs_table: BacklogTableView = BacklogTableView(window, app, app.get_source_holder(), actions)
         backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
         backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
         left_layout.addWidget(backlogs_table)
 
         # Users table
-        users_table: UserTableView = UserTableView(window, app, source, actions)
+        users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
         left_layout.addWidget(users_table)
 
         # noinspection PyTypeChecker
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
         # Workitems table
-        workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-        source.on(AfterWorkitemComplete, hide_timer)
+        workitems_table: WorkitemTableView = WorkitemTableView(window, app, app.get_source_holder(), actions)
         right_layout.addWidget(workitems_table)
 
-        progress_widget = ProgressWidget(window, source)
+        progress_widget = ProgressWidget(window, app.get_source_holder())
         right_layout.addWidget(progress_widget)
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, source, actions, backlogs_table, workitems_table)
+        search = SearchBar(window, app.get_source_holder(), actions, backlogs_table, workitems_table)
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus = FocusWidget(window, app, pomodoro_timer, source, settings, actions)
+        focus = FocusWidget(window, app, pomodoro_timer, app.get_source_holder(), settings, actions)
         root_layout.insertWidget(0, focus)
 
         # Layouts
@@ -301,7 +302,7 @@ if __name__ == "__main__":
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, source, actions)
+        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
         tray.setVisible(show_tray_icon)
 
         # Some global variables to support "Next pomodoro" mode
@@ -337,26 +338,26 @@ if __name__ == "__main__":
         window.installEventFilter(event_filter)
         window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
+        main_window = MainWindow()
+
         # Bind action domains to widget instances
         actions.bind('application', app)
         actions.bind('backlogs_table', backlogs_table)
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_table)
         actions.bind('focus', focus)
-        actions.bind('window', MainWindow())
+        actions.bind('window', main_window)
 
         window.show()
 
         try:
-            source.start()
+            app.initialize_source()
         except Exception as ex:
             app.on_exception(type(ex), ex, ex.__traceback__)
 
-        if 'e2e' in app.arguments():
+        if app.is_e2e_mode():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
-            from fk.e2e.backlog_e2e import test_backlog_loaded
-            tt = E2eTest(app, test_backlog_loaded)
             QtAsyncio.run()
         elif 'reset' in app.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
@@ -367,18 +368,19 @@ if __name__ == "__main__":
 
     except Exception as exc:
         print("FATAL: Exception on startup", exc)
+        print("\n".join(traceback.format_exception(exc)))
         res = QMessageBox().critical(None,
                                      "Startup error",
                                      f"Something unexpected has happened during Flowkeeper startup. It is most likely "
                                      f"due to some wrong setting, which crashes Flowkeeper. \n\nYou can try fixing it "
                                      f"yourself by checking "
                                      f"{settings.location() if settings is not None else 'settings file'}.\n\n"
-                                     f"Alternatively, if you click 'Reset' to restore Flowkeeper settings to their "
+                                     f"Alternatively, if you click 'Restore Defaults' to restore Flowkeeper settings to their "
                                      f"default values. This includes data source and connection settings like your "
                                      f"saved authentication credentials. You will NOT lose your data if you click Reset.",
-                                     QMessageBox.StandardButton.Reset,
+                                     QMessageBox.StandardButton.RestoreDefaults,
                                      QMessageBox.StandardButton.Close)
-        if res == QMessageBox.StandardButton.Reset:
+        if res == QMessageBox.StandardButton.RestoreDefaults:
             QtSettings().reset_to_defaults()
             QMessageBox().information(None,
                                       "Startup error",

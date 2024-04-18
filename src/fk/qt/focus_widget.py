@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import traceback
 
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLa
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
@@ -31,7 +33,7 @@ from fk.qt.timer_widget import render_for_widget, TimerWidget
 
 
 class FocusWidget(QWidget):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _settings: AbstractSettings
     _timer: PomodoroTimer
     _header_text: QLabel
@@ -46,11 +48,11 @@ class FocusWidget(QWidget):
                  parent: QWidget,
                  application: Application,
                  timer: PomodoroTimer,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  settings: AbstractSettings,
                  actions: Actions):
         super().__init__(parent)
-        self._source = source
+        self._source_holder = source_holder
         self._settings = settings
         self._timer = timer
         self._actions = actions
@@ -128,11 +130,16 @@ class FocusWidget(QWidget):
 
         self.update_header()
 
-        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
+        # Last because we rely on PomodoroTimer to update the header, and want it to update its state first
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
         timer.on('Timer*', lambda **kwargs: self.update_header())
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource):
+        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
+        self._reset_header()
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -162,20 +169,22 @@ class FocusWidget(QWidget):
             self.parent().mapToGlobal(
                 self._buttons['focus.showFilter'].geometry().center()))
 
+    def _reset_header(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
+        self._header_text.setText(text)
+        self._header_subtext.setText(subtext)
+        self._buttons['focus.voidPomodoro'].hide()
+        self._actions['focus.voidPomodoro'].setDisabled(True)
+        self._timer_display.reset()
+        self._timer_display.hide()
+        self._timer_display.repaint()
+
     def update_header(self, **kwargs) -> None:
-        running_workitem: Workitem = self._timer.get_running_workitem()
         if self._timer.is_idling():
             w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
             if w is not None and w.is_startable():
-                self._header_text.setText('Start another Pomodoro?')
-                self._header_subtext.setText(w.get_name())
+                self._reset_header('Start another Pomodoro?', w.get_name())
             else:
-                self._header_text.setText('Idle')
-                self._header_subtext.setText("It's time for the next Pomodoro.")
-            self._buttons['focus.voidPomodoro'].hide()
-            self._actions['focus.voidPomodoro'].setDisabled(True)
-            self._timer_display.set_values(0, None, "")
-            self._timer_display.hide()
+                self._reset_header()
         elif self._timer.is_working() or self._timer.is_resting():
             remaining_duration = self._timer.get_remaining_duration()  # This is always >= 0
             remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
@@ -183,7 +192,7 @@ class FocusWidget(QWidget):
             state = 'Focus' if self._timer.is_working() else 'Rest'
             txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
             self._header_text.setText(f'{txt} left')
-            self._header_subtext.setText(running_workitem.get_name())
+            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
             self._buttons['focus.voidPomodoro'].show()
             self._actions['focus.voidPomodoro'].setDisabled(False)
             self._buttons['focus.nextPomodoro'].hide()
@@ -194,11 +203,11 @@ class FocusWidget(QWidget):
                 ""  # f'{remaining_minutes}:{remaining_seconds}'
             )
             self._timer_display.show()
+            self._timer_display.repaint()
         elif self._timer.is_initializing():
             print('The timer is still initializing')
         else:
             raise Exception("The timer is in an unexpected state")
-        self._timer_display.repaint()
 
     def eye_candy(self):
         eyecandy_type = self._settings.get('Application.eyecandy_type')
@@ -230,6 +239,7 @@ class FocusWidget(QWidget):
                 painter.fillRect(self.rect(), QGradient.Preset[gradient])
             except Exception as e:
                 print('ERROR while updating the gradient -- ignoring it', e)
+                print("\n".join(traceback.format_exception(e)))
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
@@ -239,7 +249,7 @@ class FocusWidget(QWidget):
                 return
 
     def _void_pomodoro(self) -> None:
-        for backlog in self._source.backlogs():
+        for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
                 if QMessageBox().warning(self.parent(),
@@ -248,7 +258,7 @@ class FocusWidget(QWidget):
                                          QMessageBox.StandardButton.Ok,
                                          QMessageBox.StandardButton.Cancel
                                          ) == QMessageBox.StandardButton.Ok:
-                    self._source.execute(VoidPomodoroStrategy, [workitem.get_uid()])
+                    self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
 
     def _next_pomodoro(self) -> None:
         QMessageBox().warning(self.parent(),

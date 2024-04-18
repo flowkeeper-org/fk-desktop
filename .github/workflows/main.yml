@@ -4,6 +4,13 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+
+permissions:
+  checks: write
+
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -11,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Create Virtual Environment
@@ -24,10 +31,18 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
-      - name: Test coverage
+      - name: Run unit tests for fk.core
         run: |
-          PYTHONPATH=src coverage run -m unittest discover -v fk.tests
+          PYTHONPATH=src coverage run -m xmlrunner -o test-results discover -v fk.tests
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'test-results/TEST-*.xml'
+          include_passed: true
       - name: Upload code coverage to coveralls.io
         run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger e2e tests (external)
+        run: |
+          curl --version

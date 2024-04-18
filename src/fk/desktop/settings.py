@@ -17,11 +17,11 @@ import json
 import sys
 from typing import Callable
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QTime
 from PySide6.QtGui import QFont, QKeySequence
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
@@ -255,6 +255,21 @@ class SettingsDialog(QDialog):
 
             layout.addLayout(hlayout)
             return [widget]
+        elif option_type == 'duration':
+            ed9 = QTimeEdit(parent)
+            ed9.setDisplayFormat('HH:mm:ss')
+            ed9.setCurrentSection(QTimeEdit.Section.SecondSection)
+            ed9.userTimeChanged.connect(lambda v: self._on_value_changed(
+                option_id,
+                str(int(v.msecsSinceStartOfDay() / 1000))
+            ))
+            total_seconds = int(float(option_value))
+            hours = int(total_seconds / 60 / 60)
+            minutes = int(total_seconds / 60) - hours * 60
+            seconds = total_seconds - hours * 60 * 60 - minutes * 60
+            ed9.setTime(QTime(hours, minutes, seconds, 0))
+            self._widgets_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
+            return [ed9]
         else:
             return []
 

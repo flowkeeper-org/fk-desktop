@@ -13,15 +13,25 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from fk.core.tenant import Tenant
+from fk.qt.user_tableview import UserTableView
+from fk.tools.minimal_common import MinimalCommon
 
-from PySide6.QtWidgets import QPushButton
 
-from fk.qt.minimal_common import window, main_loop, app
-from fk.qt.oauth import authenticate
+def on_data(root: Tenant):
+    print('on_data', root)
+    users_table.upstream_selected(root)
 
-button = QPushButton(window)
-button.setText('Login...')
-button.clicked.connect(lambda: authenticate(app, print))
-window.setCentralWidget(button)
 
-main_loop(start_source=False)
+mc = MinimalCommon(on_data)
+
+app = mc.get_app()
+window = mc.get_window()
+actions = mc.get_actions()
+
+UserTableView.define_actions(actions)
+users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
+actions.bind('users_table', users_table)
+window.setCentralWidget(users_table)
+
+mc.main_loop()

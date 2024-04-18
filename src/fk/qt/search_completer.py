@@ -20,6 +20,7 @@ from PySide6.QtGui import QStandardItemModel, QStandardItem
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.abstract_tableview import AbstractTableView
@@ -27,7 +28,7 @@ from fk.qt.actions import Actions
 
 
 class SearchBar(QtWidgets.QLineEdit):
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _backlogs_table: AbstractTableView[User, Backlog]
     _workitems_table: AbstractTableView[Backlog, Workitem]
     _show_completed: bool
@@ -35,13 +36,13 @@ class SearchBar(QtWidgets.QLineEdit):
 
     def __init__(self,
                  parent: QtWidgets.QWidget,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions,
                  backlogs_table: AbstractTableView[User, Backlog],
                  workitems_table: AbstractTableView[Backlog, Workitem]):
         super().__init__(parent)
         self.setObjectName("search")
-        self._source = source
+        self._source_holder = source_holder
         self._backlogs_table = backlogs_table
         self._workitems_table = workitems_table
         self._show_completed = True
@@ -50,6 +51,11 @@ class SearchBar(QtWidgets.QLineEdit):
         self.installEventFilter(self)
         self._actions = actions
         actions['workitems_table.showCompleted'].toggled.connect(self.show_completed)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        if self.isVisible():
+            self.hide()
 
     def _select(self, index: QModelIndex):
         workitem: Workitem = index.data(500)
@@ -57,18 +63,20 @@ class SearchBar(QtWidgets.QLineEdit):
         self._backlogs_table.select(backlog)
         # Queue the second selection step, as AfterSelectionChanged
         # will go through Qt postEvent
-        self._source.get_settings().invoke_callback(lambda w: self._workitems_table.select(w),
-                                                    w=workitem)
+        self._source_holder.get_source().get_settings().invoke_callback(
+            lambda w: self._workitems_table.select(w),
+            w=workitem)
         self.hide()
 
     def show(self) -> None:
         completer = QtWidgets.QCompleter()
+        completer.setObjectName('search_completer')
         completer.activated[QModelIndex].connect(lambda index: self._select(index))
         completer.setFilterMode(QtGui.Qt.MatchFlag.MatchContains)
         completer.setCaseSensitivity(QtGui.Qt.CaseSensitivity.CaseInsensitive)
 
         model = QStandardItemModel()
-        for wi in self._source.workitems():
+        for wi in self._source_holder.get_source().workitems():
             if not self._show_completed and wi.is_sealed():
                 continue
             item = QStandardItem()

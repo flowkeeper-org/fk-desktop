@@ -14,10 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.desktop.settings import SettingsDialog
-from fk.qt.minimal_common import window, main_loop, settings
+from fk.core.timer import PomodoroTimer
+from fk.qt.focus_widget import FocusWidget
+from fk.qt.qt_timer import QtTimer
+from fk.tools.minimal_common import MinimalCommon
 
-dialog = SettingsDialog(settings)
-window.setCentralWidget(dialog)
+mc = MinimalCommon()
 
-main_loop()
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
+FocusWidget.define_actions(mc.get_actions())
+focus = FocusWidget(mc.get_window(), mc.get_app(), pomodoro_timer, mc.get_app().get_source_holder(), mc.get_settings(), mc.get_actions())
+mc.get_actions().bind('focus', focus)
+mc.get_window().setCentralWidget(focus)
+
+mc.main_loop()

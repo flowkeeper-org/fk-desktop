@@ -18,6 +18,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+set -e
+
 # Adapted from https://apple.stackexchange.com/questions/402621/convert-png-image-icon-to-icns-file-macos
 cd res
 mkdir tmp.iconset

@@ -24,6 +24,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
 from fk.desktop.application import Application
@@ -38,11 +39,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
-                         source,
-                         BacklogModel(parent, source),
+                         source_holder,
+                         BacklogModel(parent, source_holder),
                          'backlogs_table',
                          actions,
                          'Loading, please wait...',
@@ -50,17 +51,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
                          0)
         self._init_menu(actions)
-        #application.on(AfterSourceChanged, self._on_source_changed)
-        self._on_source_changed("", source)
-        self.on(AfterSelectionChanged, lambda event, before, after: self._source.set_config_parameters({
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.on(AfterSelectionChanged, lambda event, before, after: self._application.get_settings().set({
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
         }))
         self._application = application
-
-        heartbeat = application.get_heartbeat()
-        if heartbeat is not None:
-            heartbeat.on(events.WentOffline, self._lock_ui)
-            heartbeat.on(events.WentOnline, self._unlock_ui)
 
     def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
         self.update_actions(self.get_current())
@@ -68,11 +63,15 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def _unlock_ui(self, event, ping: int) -> None:
         self.update_actions(self.get_current())
 
-    def _on_source_changed(self, event, source):
-        #self.setModel(BacklogModel(self.parent(), source))
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
+        self.selectionModel().clear()
+        self.upstream_selected(None)
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
+        heartbeat = self._application.get_heartbeat()
+        heartbeat.on(events.WentOffline, self._lock_ui)
+        heartbeat.on(events.WentOnline, self._unlock_ui)
 
     def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
@@ -99,12 +98,17 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def update_actions(self, selected: Backlog) -> None:
+        print(f'Backlog table - update_actions({selected})')
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
 
         heartbeat = self._application.get_heartbeat()
-        is_online = heartbeat is None or heartbeat.is_online()
+        source = self._application.get_source_holder().get_source()
+        is_online = heartbeat.is_online() or source is None or not source.can_connect()
+        print(f' - Online: {is_online}')
+        print(f' - Backlog selected: {is_backlog_selected}')
+        print(f' - Heartbeat: {heartbeat}')
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
@@ -159,9 +163,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Technical information for debug / development purposes",
                                       selected.dump())
 
-    def _on_messages(self, event):
-        user = self._source.get_data().get_current_user()
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        user = source.get_data().get_current_user()
         self.upstream_selected(user)
-        last_selected_oid = self._source.get_config_parameter('Application.last_selected_backlog')
+        last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
             self.select(user[last_selected_oid])

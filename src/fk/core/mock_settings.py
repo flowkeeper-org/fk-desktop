@@ -23,6 +23,8 @@ def invoke_direct(fn, **kwargs):
 
 
 class MockSettings(AbstractSettings):
+    _settings: dict[str, str]
+
     def __init__(self, filename=None, username=None):
         super().__init__('Arial', 10, invoke_direct)
         self._settings = {
@@ -54,3 +56,29 @@ class MockSettings(AbstractSettings):
 
     def location(self) -> str:
         return "N/A"
+
+    def clear(self) -> None:
+        self._settings = {}
+
+    def _recompute_visibility(self, option_id, new_value):
+        computed = dict[str, str]()
+        for name in self._widgets_value:
+            computed[name] = self._widgets_value[name]()
+        computed[option_id] = new_value
+        for widget in self._widgets_visibility:
+            is_visible = self._widgets_visibility[widget](computed)
+            widget.setVisible(is_visible)
+
+    def get_displayed_settings(self) -> list[str]:
+        res = list()
+        for tab_name in self.get_categories():
+            print(f'Category: {tab_name}')
+            settings = self.get_settings(tab_name)
+            values = dict()
+            for s in settings:
+                values[s[0]] = s[3]
+            for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
+                if option_visible(values) and option_type not in ('separator', 'button'):
+                    print(f' - {option_display}: {option_value}')
+                    res.append(option_id)
+        return res

@@ -18,6 +18,8 @@ import datetime
 import re
 from typing import Callable
 
+from PySide6.QtWidgets import QMessageBox
+
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -92,7 +94,17 @@ class ErrorStrategy(AbstractStrategy):
         self._error_message = params[1]
 
     def execute(self) -> (str, any):
-        raise Exception(self._error_message)
+        if self._error_message == 'User consent is required':
+            QMessageBox().warning(
+                None,
+                "IMPORTANT",
+                "Flowkeeper.org is in its BETA testing stage. It lacks end-to-end encryption, which means "
+                "that our engineers have access to your data. DO NOT STORE ANY SENSITIVE INFORMATION IN "
+                "FLOWKEEPER.ORG -- we may read it or it may disappear at any time.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+        else:
+            raise Exception(self._error_message)
 
 
 # Pong("123-456-789-012", "")

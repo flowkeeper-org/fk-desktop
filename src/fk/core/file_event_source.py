@@ -86,7 +86,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
     def start(self, mute_events=True) -> None:
-        print('File event source -- starting')
         if self._existing_strategies is None:
             self._process_from_file(mute_events)
         else:
@@ -117,7 +116,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.execute_prepared_strategy(strategy)
         self.auto_seal()
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, dict())
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
@@ -134,6 +133,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         is_first = True
         seq = 1
+        print(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
@@ -149,11 +149,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
+        print('FileEventSource: Processed file content, will auto-seal now')
+
         self.auto_seal()
+        print('FileEventSource: Sealed, will unmute events now')
 
         if mute_events:
             self.unmute()
-        self._emit(events.SourceMessagesProcessed, dict())
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def repair(self) -> Iterable[str]:
         # This method attempts some basic repairs, trying to save as much

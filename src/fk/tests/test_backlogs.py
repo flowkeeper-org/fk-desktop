@@ -19,10 +19,13 @@ from unittest import TestCase
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.tenant import Tenant
 from fk.core.user import User
+from fk.core.workitem import Workitem
 
 
 class TestBacklogs(TestCase):
@@ -57,6 +60,7 @@ class TestBacklogs(TestCase):
         user = self.data['user@local.host']
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
+        self.source.auto_seal()
         self.assertIn('123-456-789-1', user)
         self.assertIn('123-456-789-2', user)
         backlog1: Backlog = user['123-456-789-1']
@@ -74,30 +78,35 @@ class TestBacklogs(TestCase):
                                   self.data,
                                   self.settings)
         self.source.execute_prepared_strategy(s)
+        self.source.auto_seal()
         self.assertIn('123-456-789-1', user)
         backlog1: Backlog = user['123-456-789-1']
         self._assert_backlog(backlog1, user)
 
     def test_create_duplicate_backlog_failure(self):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog 1'])
+        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog 2']))
 
     def test_rename_nonexistent_backlog_failure(self):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
+        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(RenameBacklogStrategy, ['123-456-789-3', 'Renamed backlog']))
 
     def test_rename_backlog(self):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.execute(RenameBacklogStrategy, ['123-456-789-1', 'Renamed backlog'])
+        self.source.auto_seal()
         user = self.data['user@local.host']
         self.assertEqual(user['123-456-789-1'].get_name(), 'Renamed backlog')
 
     def test_delete_nonexistent_backlog_failure(self):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
+        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(DeleteBacklogStrategy, ['123-456-789-3']))
 
@@ -105,15 +114,7 @@ class TestBacklogs(TestCase):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
         self.source.execute(DeleteBacklogStrategy, ['123-456-789-1'])
-        user = self.data['user@local.host']
-        self.assertNotIn('123-456-789-1', user)
-        self.assertIn('123-456-789-2', user)
-
-    def test_delete_backlog_content(self):
-        # TODO: Recursive delete
-        self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
-        self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
-        self.source.execute(DeleteBacklogStrategy, ['123-456-789-1'])
+        self.source.auto_seal()
         user = self.data['user@local.host']
         self.assertNotIn('123-456-789-1', user)
         self.assertIn('123-456-789-2', user)
@@ -128,5 +129,97 @@ class TestBacklogs(TestCase):
                                   self.data,
                                   self.settings)
         self.source.execute_prepared_strategy(s)
+        self.source.auto_seal()
         backlog = user['123-456-789-1']
         self.assertFalse(backlog.is_today())
+
+    def test_events_create_backlog(self):
+        # Subscribe to all events and check that only required ones fire
+        # Ephemeral event source is synchronous, so it's alright that we don't add any delays here
+        state = 0
+        fired = list()
+        def on_event(event, **kwargs):
+            self.assertNotIn(state, [0, 2])
+            self.assertIn(event, ['BeforeMessageProcessed', 'BeforeBacklogCreate', 'AfterBacklogCreate', 'AfterMessageProcessed'])
+            fired.append(event)
+            if event == 'BeforeMessageProcessed' or event == 'AfterMessageProcessed':
+                self.assertIn('strategy', kwargs)
+                self.assertIn('auto', kwargs)
+                self.assertTrue(type(kwargs['strategy']) is CreateBacklogStrategy)
+            elif event == 'BeforeBacklogCreate':
+                self.assertIn('backlog_owner', kwargs)
+                self.assertIn('backlog_uid', kwargs)
+                self.assertIn('backlog_name', kwargs)
+                self.assertTrue(type(kwargs['backlog_owner']) is User)
+                self.assertEquals(kwargs['backlog_uid'], '123-456-789-1')
+                self.assertEquals(kwargs['backlog_name'], 'First backlog')
+            elif event == 'AfterBacklogCreate':
+                self.assertIn('backlog', kwargs)
+                self.assertTrue(type(kwargs['backlog']) is Backlog)
+        self.source.on('*', on_event)
+        state = 1
+        self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
+        self.source.auto_seal()
+        state = 2
+        self.assertEquals(len(fired), 4)
+
+    def test_events_delete_backlog(self):
+        # Here we shall also test the recursive deletion
+        fired = list()
+        def on_event(event, **kwargs):
+            fired.append(event)
+            if event == 'BeforeBacklogDelete' or event == 'AfterBacklogDelete':
+                self.assertIn('backlog', kwargs)
+                self.assertTrue(type(kwargs['backlog']) is Backlog)
+                self.assertEquals(kwargs['backlog'].get_name(), 'First backlog')
+            elif event == 'BeforeWorkitemDelete' or event == 'AfterWorkitemDelete':
+                self.assertIn('workitem', kwargs)
+                self.assertTrue(type(kwargs['workitem']) is Workitem)
+                self.assertIn(kwargs['workitem'].get_name(), ['First item', 'Second item'])
+        self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
+        self.source.execute(CreateWorkitemStrategy, ['w1', '123-456-789-1', 'First item'])
+        self.source.execute(AddPomodoroStrategy, ['w1', '2'])
+        self.source.execute(CreateWorkitemStrategy, ['w2', '123-456-789-1', 'Second item'])
+        self.source.execute(CreateBacklogStrategy, ['123-456-789-2', 'Second backlog'])
+        self.source.execute(CreateWorkitemStrategy, ['w3', '123-456-789-2', 'Third item'])
+        self.source.auto_seal()
+        self.source.on('*', on_event)  # We only care about delete here
+        self.source.execute(DeleteBacklogStrategy, ['123-456-789-1'])
+        self.source.auto_seal()
+        self.assertEquals(len(fired), 12)  # Note that although we had a cascade delete, only one strategy got executed
+        # The events must arrive in the right order, too
+        self.assertEquals(fired[0], 'BeforeMessageProcessed')
+        self.assertEquals(fired[1], 'BeforeBacklogDelete')
+        self.assertEquals(fired[2], 'BeforeMessageProcessed')  # auto=True
+        self.assertEquals(fired[3], 'BeforeWorkitemDelete')
+        self.assertEquals(fired[4], 'AfterWorkitemDelete')
+        self.assertEquals(fired[5], 'AfterMessageProcessed')  # auto=True
+        self.assertEquals(fired[6], 'BeforeMessageProcessed')  # auto=True
+        self.assertEquals(fired[7], 'BeforeWorkitemDelete')
+        self.assertEquals(fired[8], 'AfterWorkitemDelete')
+        self.assertEquals(fired[9], 'AfterMessageProcessed')  # auto=True
+        self.assertEquals(fired[10], 'AfterBacklogDelete')
+        self.assertEquals(fired[11], 'AfterMessageProcessed')        
+        # Automatic voiding of pomodoros will be tested when we cover the lifecycles
+
+    def test_events_rename_backlog(self):
+        fired = list()
+        def on_event(event, **kwargs):
+            fired.append(event)
+            if event == 'BeforeBacklogRename' or event == 'AfterBacklogRename':
+                self.assertIn('backlog', kwargs)
+                self.assertIn('old_name', kwargs)
+                self.assertIn('new_name', kwargs)
+                self.assertEquals(kwargs['old_name'], 'Before')
+                self.assertEquals(kwargs['new_name'], 'After')
+                self.assertTrue(type(kwargs['backlog']) is Backlog)                    
+        self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'Before'])
+        self.source.auto_seal()
+        self.source.on('*', on_event)
+        self.source.execute(RenameBacklogStrategy, ['123-456-789-1', 'After'])
+        self.source.auto_seal()
+        self.assertEquals(len(fired), 4)
+        self.assertEquals(fired[0], 'BeforeMessageProcessed')
+        self.assertEquals(fired[1], 'BeforeBacklogRename')
+        self.assertEquals(fired[2], 'AfterBacklogRename')
+        self.assertEquals(fired[3], 'AfterMessageProcessed')

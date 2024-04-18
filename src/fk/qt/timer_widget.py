@@ -24,6 +24,7 @@ class TimerWidget(QtCore.QObject):
     _margin: float
     _thickness: float
     _my_value: float | None
+    _is_set: bool
     _team_value: float | None
     _text: str
     _font: QtGui.QFont | None
@@ -49,19 +50,24 @@ class TimerWidget(QtCore.QObject):
         self._bg_pen = bg_pen
         self._margin = margin
         self._thickness = thickness
-        self._my_value = 0
-        self._team_value = None
-        self._text = ''
         self._font = font
         self._font_color = font_color
         self._pen_width = pen_width
         self._hue_from = hue_from
         self._hue_to = hue_to
+        self.reset()
+
+    def reset(self) -> None:
+        self._my_value = 0
+        self._team_value = None
+        self._text = ""
+        self._is_set = False
 
     def set_values(self, my: float | None, team: float | None = None, text: str = "") -> None:
         self._my_value = my
         self._team_value = team
         self._text = text
+        self._is_set = True
 
     def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
         painter.setPen(self._bg_pen)
@@ -69,6 +75,10 @@ class TimerWidget(QtCore.QObject):
         painter.drawEllipse(rect)
 
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
+        if not self._is_set:
+            painter.end()
+            return
+
         rw = rect.width()
         rh = rect.height()
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)

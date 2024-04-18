@@ -13,16 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from fk.core.tenant import Tenant
+from fk.qt.workitem_tableview import WorkitemTableView
+from fk.tools.minimal_common import MinimalCommon
 
-from fk.core.timer import PomodoroTimer
-from fk.qt.focus_widget import FocusWidget
-from fk.qt.minimal_common import source, window, main_loop, app, actions
-from fk.qt.qt_timer import QtTimer
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-FocusWidget.define_actions(actions)
-focus = FocusWidget(window, app, pomodoro_timer, source, source.get_settings(), actions)
-actions.bind('focus', focus)
-window.setCentralWidget(focus)
+def select_first_backlog(data: Tenant):
+    backlogs = list(data.get_current_user().values())
+    print(f'select_first_backlog: {backlogs}')
+    workitems_table.upstream_selected(backlogs[0])
 
-main_loop()
+
+mc = MinimalCommon(select_first_backlog)
+
+mc.get_window().resize(600, 400)
+WorkitemTableView.define_actions(mc.get_actions())
+workitems_table: WorkitemTableView = WorkitemTableView(mc.get_window(), mc.get_app(), mc.get_app().get_source_holder(), mc.get_actions())
+mc.get_actions().bind('workitems_table', workitems_table)
+mc.get_window().setCentralWidget(workitems_table)
+
+mc.main_loop()

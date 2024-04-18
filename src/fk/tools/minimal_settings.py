@@ -14,18 +14,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QPushButton
+from fk.desktop.settings import SettingsDialog
+from fk.tools.minimal_common import MinimalCommon
 
-from fk.core.timer import PomodoroTimer
-from fk.qt.audio_player import AudioPlayer
-from fk.qt.minimal_common import source, window, main_loop
-from fk.qt.qt_timer import QtTimer
+mc = MinimalCommon()
 
-pomodoro_timer = PomodoroTimer(source, QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"))
-audio = AudioPlayer(window, source, source.get_settings(), pomodoro_timer)
+dialog = SettingsDialog(mc.get_settings())
+mc.get_window().setCentralWidget(dialog)
 
-button = QPushButton(window)
-button.setText('Audio')
-window.setCentralWidget(button)
-
-main_loop()
+mc.main_loop()

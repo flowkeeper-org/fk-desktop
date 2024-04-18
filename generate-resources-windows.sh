@@ -20,9 +20,20 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
-python -m coverage html
+PATH=$PATH:$(pwd)/venv/Lib/site-packages/PySide6
 
-# Simple test run
-# PYTHONPATH=src python -m unittest discover -v fk.tests
+generate_resources() {
+  name="$1"
+  qrc="theme-$name.qrc"
+  cd $name
+  rcc --project -o "$qrc"
+  rcc -g python "$qrc" -o "../../src/fk/desktop/theme_$name.py"
+  rm "$qrc"
+  cd ..
+}
+
+cd res
+generate_resources "common"
+generate_resources "light"
+generate_resources "dark"
+generate_resources "mixed"

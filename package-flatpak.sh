@@ -18,6 +18,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+set -e
+
 # IMPORTANT -- Here we assume that we built a DEB before, just for simplicity
 # We can copy the pyinstaller results just as well
 

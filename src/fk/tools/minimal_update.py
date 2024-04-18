@@ -14,15 +14,22 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from fk.qt.minimal_common import source, window, app, root, main_loop, actions
-from fk.qt.workitem_tableview import WorkitemTableView
+from PySide6.QtWidgets import QTextEdit
+from semantic_version import Version
 
-window.resize(600, 400)
-WorkitemTableView.define_actions(actions)
-workitems_table: WorkitemTableView = WorkitemTableView(window, app, source, actions)
-actions.bind('workitems_table', workitems_table)
-window.setCentralWidget(workitems_table)
+from fk.qt.app_version import get_current_version, get_latest_version
+from fk.tools.minimal_common import MinimalCommon
 
-main_loop(lambda: workitems_table.upstream_selected(
-    list(root.get_current_user().values())[0]
-))
+mc = MinimalCommon(initialize_source=False)
+
+txt = QTextEdit(mc.get_window())
+
+
+def update(latest: Version, changelog: str):
+    txt.setMarkdown(f'Current version: {get_current_version()}\n\nLatest version: {latest}\n\nChangelog: \n\n{changelog}')
+
+
+get_latest_version(mc.get_app(), update)
+mc.get_window().setCentralWidget(txt)
+
+mc.main_loop()

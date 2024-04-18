@@ -15,13 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.events import AfterWorkitemCreate, SourceMessagesProcessed
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.events import AfterWorkitemCreate
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
@@ -36,11 +36,11 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def __init__(self,
                  parent: QWidget,
                  application: Application,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent,
-                         source,
-                         WorkitemModel(parent, source),
+                         source_holder,
+                         WorkitemModel(parent, source_holder),
                          'workitems_table',
                          actions,
                          'Loading, please wait...',
@@ -49,18 +49,17 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
-        self._on_source_changed("", source)
+        source_holder.on(AfterSourceChanged, self._on_source_changed)
 
-    def _on_source_changed(self, event, source):
-        self.selectionModel().clear()
-        self.upstream_selected(None)
+    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
-        source.on(SourceMessagesProcessed, self._on_messages)
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self.update_actions(workitem))
         source.on("AfterPomodoro*",
                   lambda workitem, **kwargs: self.update_actions(workitem))
+        self.selectionModel().clear()
+        self.upstream_selected(None)
 
     def _init_menu(self, actions: Actions):
         menu: QMenu = QMenu()
@@ -80,7 +79,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
-        actions.add('workitems_table.renameItem', "Rename Item", 'F2', None, WorkitemTableView.rename_selected_workitem)
+        actions.add('workitems_table.renameItem', "Rename Item", 'F6', None, WorkitemTableView.rename_selected_workitem)
         actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
         actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', None, WorkitemTableView.start_selected_workitem)
         actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', None, WorkitemTableView.complete_selected_workitem)
@@ -162,7 +161,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             raise Exception("Trying to start a workitem, while there's none selected")
         self._source.execute(StartWorkStrategy, [
             selected.get_uid(),
-            self._source.get_config_parameter('Pomodoro.default_work_duration')
+            self._source.get_settings().get('Pomodoro.default_work_duration')
         ])
 
     def complete_selected_workitem(self) -> None:
@@ -202,6 +201,3 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self._source.set_config_parameters({'Application.show_completed': str(checked)})
-
-    def _on_messages(self, event):
-        self.upstream_selected(None)

@@ -14,25 +14,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QMenuBar
+from PySide6.QtWidgets import QPushButton
 
-from fk.desktop.application import Application
-from fk.qt.backlog_tableview import BacklogTableView
-from fk.qt.focus_widget import FocusWidget
-from fk.qt.minimal_common import window, main_loop, actions, app
-from fk.qt.user_tableview import UserTableView
-from fk.qt.workitem_tableview import WorkitemTableView
+from fk.core.timer import PomodoroTimer
+from fk.qt.audio_player import AudioPlayer
+from fk.qt.qt_timer import QtTimer
+from fk.tools.minimal_common import MinimalCommon
 
-Application.define_actions(actions)
-BacklogTableView.define_actions(actions)
-UserTableView.define_actions(actions)
-WorkitemTableView.define_actions(actions)
-FocusWidget.define_actions(actions)
+mc = MinimalCommon()
 
-actions.bind('application', app)
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
+audio = AudioPlayer(mc.get_window(), mc.get_app().get_source_holder(), mc.get_settings(), pomodoro_timer)
 
-menu = QMenuBar(window)
-menu.addActions(actions.all())
-window.setCentralWidget(menu)
+button = QPushButton(mc.get_window())
+button.setText('Audio')
+mc.get_window().setCentralWidget(button)
 
-main_loop()
+mc.main_loop()
