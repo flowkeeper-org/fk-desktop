@@ -33,7 +33,6 @@ from fk.qt.backlog_tableview import BacklogTableView
 class BacklogWidget(QWidget):
     _backlogs_table: BacklogTableView
     _source_holder: EventSourceHolder
-    _edit: QLineEdit
 
     def __init__(self,
                  parent: QWidget,
@@ -52,16 +51,26 @@ class BacklogWidget(QWidget):
         hlayout.setSpacing(0)
         vlayout.addLayout(hlayout)
 
-        self._edit = QLineEdit(self)
-        self._edit.setPlaceholderText("New backlog")
-        self._edit.returnPressed.connect(self._create_backlog_custom)
-        hlayout.addWidget(self._edit)
+        button = QPushButton(self)
+        button.setIcon(QIcon(":/icons/tool-add.svg"))
+        button.clicked.connect(actions['backlogs_table.newBacklog'].trigger)
+        button.setText('Add')
+        #button.setFixedHeight(30)
+        hlayout.addWidget(button)
 
-        add_button = QPushButton(self)
-        add_button.setIcon(QIcon(":/icons/tool-add.svg"))
-        add_button.clicked.connect(self._create_backlog_custom)
-        add_button.setFixedHeight(30)
-        hlayout.addWidget(add_button)
+        button = QPushButton(self)
+        button.setIcon(QIcon(":/icons/tool-delete.svg"))
+        button.clicked.connect(actions['backlogs_table.deleteBacklog'].trigger)
+        button.setText('Delete')
+        #button.setFixedHeight(30)
+        hlayout.addWidget(button)
+
+        button = QPushButton(self)
+        button.setIcon(QIcon(":/icons/tool-rename.svg"))
+        button.clicked.connect(actions['backlogs_table.renameBacklog'].trigger)
+        button.setText('Rename')
+        #button.setFixedHeight(30)
+        hlayout.addWidget(button)
 
         self._backlogs_table = BacklogTableView(self, application, source_holder, actions)
         vlayout.addWidget(self._backlogs_table)
@@ -82,13 +91,6 @@ class BacklogWidget(QWidget):
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
         new_name = generate_unique_name(prefix, self._source_holder.get_source().get_data().get_current_user().names())
         self._source_holder.get_source().execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
-
-    def _create_backlog_custom(self) -> None:
-        new_name = self._edit.text()
-        self._edit.setText('')
-        self._source_holder.get_source().execute(CreateBacklogStrategy,
-                                                 [generate_uid(), new_name],
-                                                 carry='select')
 
     def rename_selected_backlog(self) -> None:
         index: QModelIndex = self._backlogs_table.currentIndex()
