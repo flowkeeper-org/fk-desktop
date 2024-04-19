@@ -16,22 +16,26 @@
 import traceback
 from typing import Self
 
-from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtCore import Qt
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Qt, QSignalBlocker
+from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
 
 from fk.core import events
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import RenameBacklogStrategy
+from fk.core.backlog_strategies import RenameBacklogStrategy, CreateBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
+from fk.qt.add_item import AddItem
 
-font_new = QtGui.QFont()
-font_today = QtGui.QFont()
+font_new = QFont()
+
+font_today = QFont()
 font_today.setBold(True)
 
 
-class BacklogItem(QtGui.QStandardItem):
+class BacklogItem(QStandardItem):
     _backlog: Backlog
 
     def __init__(self, backlog: Backlog):
@@ -52,10 +56,10 @@ class BacklogItem(QtGui.QStandardItem):
         self.setData(font, Qt.FontRole)
 
     def __lt__(self, other: Self):
-        return self._backlog.get_last_modified_date() < other._backlog.get_last_modified_date()
+        return not(isinstance(other, BacklogItem)) or (self._backlog.get_last_modified_date() < other._backlog.get_last_modified_date())
 
 
-class BacklogModel(QtGui.QStandardItemModel):
+class BacklogModel(QStandardItemModel):
     _source_holder: EventSourceHolder
 
     def __init__(self,
@@ -73,8 +77,23 @@ class BacklogModel(QtGui.QStandardItemModel):
         source.on(events.AfterBacklogRename, self._backlog_renamed)
         source.on('After*', self._sort)
 
-    def _handle_rename(self, item: QtGui.QStandardItem) -> None:
-        if item.data(501) == 'title':
+    def _handle_rename(self, item: QStandardItem) -> None:
+        if type(item) is AddItem:
+            new_name = item.text()
+            try:
+                self._source_holder.get_source().execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='select')
+            except Exception as e:
+                print("\n".join(traceback.format_exception(e)))
+                QtWidgets.QMessageBox().warning(
+                    self.parent(),
+                    "Cannot create",
+                    str(e),
+                    QtWidgets.QMessageBox.StandardButton.Ok
+                )
+            finally:
+                with QSignalBlocker(self) as _:
+                    item.setText('New backlog')
+        elif item.data(501) == 'title':
             backlog = item.data(500)
             old_name = backlog.get_name()
             new_name = item.text()
@@ -111,9 +130,10 @@ class BacklogModel(QtGui.QStandardItemModel):
     def load(self, user: User) -> None:
         self.clear()
         if user is not None:
+            self.appendRow(AddItem('backlog', self.parent()))
             for backlog in user.values():
                 self.appendRow(BacklogItem(backlog))
-        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
+        self.setHorizontalHeaderItem(0, QStandardItem(''))
         self._sort()
 
     def _sort(self, event: str = None, **kwargs):

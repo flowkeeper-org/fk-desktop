@@ -45,7 +45,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          actions,
                          'Loading, please wait...',
                          '← Select a backlog.',
-                         'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
+                         'The selected backlog is empty.\nRight-click here or press Ins key to create the first workitem.',
                          1)
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)

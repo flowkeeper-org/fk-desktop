@@ -27,6 +27,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import SourceMessagesProcessed
 from fk.qt.actions import Actions
+from fk.qt.add_item import AddItem
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
@@ -119,9 +120,17 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         pass
 
     def _on_current_changed(self, selected: QModelIndex | None, deselected: QModelIndex | None) -> None:
-        after: TDownstream | None = None
+        after: TDownstream | AddItem | None = None
         if selected is not None:
+            # First, check if it's a "New..." item
             after = selected.data(500)
+            after_type = selected.data(501)
+            if after_type == 'additem':
+                # We can't rename it here, because then _handle_rename won't work
+                # model = self.model()
+                # with QSignalBlocker(model) as _:
+                #     self.model().itemFromIndex(selected).setText(generate_backlog_name(self._source))
+                self.edit(selected)
 
         before: TDownstream | None = None
         if deselected is not None:
@@ -148,7 +157,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             text = self._placeholder_loading
         elif not self._is_upstream_item_selected:
             text = self._placeholder_upstream
-        elif self.model().rowCount() == 0:
+        elif self.model().rowCount() == 1:
             text = self._placeholder_empty
         else:
             return

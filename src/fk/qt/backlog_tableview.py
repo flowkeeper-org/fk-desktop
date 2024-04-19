@@ -20,10 +20,10 @@ from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
-from fk.core.abstract_data_item import generate_unique_name, generate_uid
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
+from fk.core.backlog_strategies import DeleteBacklogStrategy, CreateBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
@@ -31,6 +31,7 @@ from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.backlog_model import BacklogModel
+from fk.qt.core_utils import generate_backlog_name
 
 
 class BacklogTableView(AbstractTableView[User, Backlog]):
@@ -48,7 +49,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          actions,
                          'Loading, please wait...',
                          'No data or connection error.',
-                         "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
+                         "Click above or press Ctrl+N to create the first backlog.",
                          0)
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
@@ -118,23 +119,16 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     # Actions
 
     def create_backlog(self) -> None:
-        prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
-        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
-
-        # A simpler, more efficient, but a bit uglier single-step alternative
-        # new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
-        # (new_name, ok) = QInputDialog.getText(self,
-        #                                       "New backlog",
-        #                                       "Provide a name for the new backlog",
-        #                                       text=new_name)
-        # if ok:
-        #     self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
+        self._source.execute(CreateBacklogStrategy,
+                             [generate_uid(), generate_backlog_name(self._source)],
+                             carry='edit')
 
     def _on_new_backlog(self, backlog: Backlog, carry: any = None, **kwargs):
         if carry == 'edit':
             index: QModelIndex = self.select(backlog)
             self.edit(index)
+        elif carry == 'select':
+            self.select(backlog)
 
     def rename_selected_backlog(self) -> None:
         index: QModelIndex = self.currentIndex()
