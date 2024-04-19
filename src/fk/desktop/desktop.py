@@ -30,6 +30,7 @@ from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
@@ -93,7 +94,7 @@ def update_tables_visibility() -> None:
     users_visible = (settings.get('Application.users_visible') == 'True')
     users_table.setVisible(users_visible)
     backlogs_visible = (settings.get('Application.backlogs_visible') == 'True')
-    backlogs_table.setVisible(backlogs_visible)
+    backlogs_widget.setVisible(backlogs_visible)
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
@@ -209,7 +210,7 @@ if __name__ == "__main__":
         # Collect actions from all widget types
         actions = Actions(window, settings)
         Application.define_actions(actions)
-        BacklogTableView.define_actions(actions)
+        BacklogWidget.define_actions(actions)
         UserTableView.define_actions(actions)
         WorkitemTableView.define_actions(actions)
         FocusWidget.define_actions(actions)
@@ -236,10 +237,10 @@ if __name__ == "__main__":
         left_toolbar_layout.addWidget(ConnectionWidget(window, app))
 
         # Backlogs table
-        backlogs_table: BacklogTableView = BacklogTableView(window, app, app.get_source_holder(), actions)
-        backlogs_table.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
-        backlogs_table.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
-        left_layout.addWidget(backlogs_table)
+        backlogs_widget: BacklogTableView = BacklogWidget(window, app, app.get_source_holder(), actions)
+        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
+        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
+        left_layout.addWidget(backlogs_widget)
 
         # Users table
         users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
@@ -257,7 +258,7 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, app.get_source_holder(), actions, backlogs_table, workitems_table)
+        search = SearchBar(window, app.get_source_holder(), actions, backlogs_widget, workitems_table)
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
@@ -342,7 +343,7 @@ if __name__ == "__main__":
 
         # Bind action domains to widget instances
         actions.bind('application', app)
-        actions.bind('backlogs_table', backlogs_table)
+        actions.bind('backlogs_table', backlogs_widget)
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_table)
         actions.bind('focus', focus)
