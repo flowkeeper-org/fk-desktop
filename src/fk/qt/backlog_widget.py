@@ -26,6 +26,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder
 from fk.desktop.application import Application
+from fk.qt.abstract_tableview import TDownstream
 from fk.qt.actions import Actions
 from fk.qt.backlog_tableview import BacklogTableView
 
@@ -47,21 +48,10 @@ class BacklogWidget(QWidget):
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
 
-        hlayout = QHBoxLayout(self)
-        hlayout.setContentsMargins(0, 0, 0, 0)
-        hlayout.setSpacing(0)
-        vlayout.addLayout(hlayout)
-
         self._edit = QLineEdit(self)
-        self._edit.setPlaceholderText("New backlog")
+        self._edit.setPlaceholderText("New backlog ⏎")
         self._edit.returnPressed.connect(self._create_backlog_custom)
-        hlayout.addWidget(self._edit)
-
-        add_button = QPushButton(self)
-        add_button.setIcon(QIcon(":/icons/tool-add.svg"))
-        add_button.clicked.connect(self._create_backlog_custom)
-        add_button.setFixedHeight(30)
-        hlayout.addWidget(add_button)
+        vlayout.addWidget(self._edit)
 
         self._backlogs_table = BacklogTableView(self, application, source_holder, actions)
         vlayout.addWidget(self._backlogs_table)
@@ -116,3 +106,6 @@ class BacklogWidget(QWidget):
                                       "Backlog dump",
                                       "Technical information for debug / development purposes",
                                       selected.dump())
+
+    def select(self, data: TDownstream) -> QModelIndex:
+        self._backlogs_table.select(data)
