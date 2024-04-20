@@ -44,18 +44,25 @@ QMainWindow {
     border-top: 1px solid #000000;
 }
 
-QTableView {
+QTableView, #backlogs_widget, #workitems_widget {
     selection-color: #ced0d6;
     selection-background-color: #43454a;
     color: #ced0d6;
     border: none;
     border-right: 1px solid #000000;
-    border-top: 1px solid #000000;
     padding: 10px;
 }
 
-#backlogs_table, #users_table {
+#users_table {
+    border-top: 1px solid #000000;
+}
+
+#backlogs_table, #users_table, #backlogs_widget {
     background-color: #2b2d30;
+}
+
+#workitems_widget {
+    background-color: #1e1f22;
 }
 
 #workitems_table {
@@ -71,6 +78,13 @@ QToolButton {
 QToolButton:checked {
     background: #64686C;
     color: #ced0d6;
+}
+
+QToolButton[objectName*="top."] {
+    background: #44484C;
+    padding: 3px;
+    border: 1px solid #000000;
+    border-radius: 5px;
 }
 
 QScrollBar {

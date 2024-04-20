@@ -117,8 +117,6 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
             main_menu.setVisible(new_value == 'True')
         elif name == 'Application.show_status_bar':
             status.setVisible(new_value == 'True')
-        elif name == 'Application.show_toolbar':
-            toolbar.setVisible(new_value == 'True')
         elif name == 'Application.show_left_toolbar':
             left_toolbar.setVisible(new_value == 'True')
         elif name == 'Application.show_tray_icon':
@@ -294,13 +292,6 @@ if __name__ == "__main__":
             show_status_bar = (settings.get('Application.show_status_bar') == 'True')
             status.showMessage('Ready')
             status.setVisible(show_status_bar)
-
-        # Toolbar
-        # noinspection PyTypeChecker
-        toolbar: QtWidgets.QToolBar = window.findChild(QtWidgets.QToolBar, "toolBar")
-        if toolbar is not None:
-            show_toolbar = (settings.get('Application.show_toolbar') == 'True')
-            toolbar.setVisible(show_toolbar)
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')

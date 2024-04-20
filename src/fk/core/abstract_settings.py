@@ -141,7 +141,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], _always_show),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
-                ('Application.show_toolbar', 'bool', 'Show top toolbar', 'False', [], _never_show),
+                ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
                 ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
                 ('Application.eyecandy_type', 'choice', 'Header background', 'gradient', [

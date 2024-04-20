@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QToolButton, QHBoxLayout
 
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
+from fk.core.events import AfterSettingsChanged
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -88,8 +89,15 @@ class WorkitemWidget(QWidget):
         self._workitems_table = WorkitemTableView(self, application, source_holder, actions)
         vlayout.addWidget(self._workitems_table)
 
+        application.get_settings().on(AfterSettingsChanged, self.on_setting_changed)
+
     def get_table(self) -> WorkitemTableView:
         return self._workitems_table
 
     def upstream_selected(self, backlog: Backlog | None) -> None:
         self._workitems_table.upstream_selected(backlog)
+
+    def on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.show_toolbar' in new_values:
+            show = new_values['Application.show_toolbar'] == 'True'
+            print(f'Show workitem toolbar: {show}')
