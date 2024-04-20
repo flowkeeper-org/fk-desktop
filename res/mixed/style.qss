@@ -37,7 +37,7 @@ QMainWindow {
     border: none;
 }
 
-QTableView, #backlogs_widget {
+QTableView, #backlogs_widget, #workitems_widget {
     selection-color: #000000;
     selection-background-color: #cfdefc;
     color: #000000;
@@ -52,6 +52,10 @@ QTableView, #backlogs_widget {
 
 #backlogs_table, #users_table, #backlogs_widget {
     background-color: #f7f8fa;
+}
+
+#workitems_widget {
+    background-color: #ffffff;
 }
 
 #workitems_table {

@@ -41,6 +41,7 @@ from fk.qt.search_completer import SearchBar
 from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
+from fk.qt.workitem_widget import WorkitemWidget
 
 
 def get_timer_ui_mode() -> str:
@@ -238,7 +239,7 @@ if __name__ == "__main__":
 
         # Backlogs table
         backlogs_widget: BacklogTableView = BacklogWidget(window, app, app.get_source_holder(), actions)
-        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: workitems_table.upstream_selected(after))
+        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: workitems_widget.upstream_selected(after))
         backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
         left_layout.addWidget(backlogs_widget)
 
@@ -250,15 +251,15 @@ if __name__ == "__main__":
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
         # Workitems table
-        workitems_table: WorkitemTableView = WorkitemTableView(window, app, app.get_source_holder(), actions)
-        right_layout.addWidget(workitems_table)
+        workitems_widget: WorkitemWidget = WorkitemWidget(window, app, app.get_source_holder(), actions)
+        right_layout.addWidget(workitems_widget)
 
         progress_widget = ProgressWidget(window, app.get_source_holder())
         right_layout.addWidget(progress_widget)
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, app.get_source_holder(), actions, backlogs_widget, workitems_table)
+        search = SearchBar(window, app.get_source_holder(), actions, backlogs_widget, workitems_widget)
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
@@ -345,7 +346,7 @@ if __name__ == "__main__":
         actions.bind('application', app)
         actions.bind('backlogs_table', backlogs_widget)
         actions.bind('users_table', users_table)
-        actions.bind('workitems_table', workitems_table)
+        actions.bind('workitems_table', workitems_widget.get_table())
         actions.bind('focus', focus)
         actions.bind('window', main_window)
 
