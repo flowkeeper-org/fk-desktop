@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QObject
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QtAudio
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
@@ -55,11 +55,17 @@ class AudioPlayer(QObject):
         self._audio_player.setAudioOutput(self._audio_output)
 
     def _set_volume(self, setting: str):
+        try:
+            from PySide6.QtMultimedia import QtAudio
+            Q = QtAudio
+        except Exception:
+            from PySide6.QtMultimedia import QAudio
+            Q = QAudio
         volume = float(self._settings.get(setting)) / 100.0
         # This is what all mixers do
-        volume = QtAudio.convertVolume(volume,
-                                      QtAudio.VolumeScale.LogarithmicVolumeScale,
-                                      QtAudio.VolumeScale.LinearVolumeScale)
+        volume = Q.convertVolume(volume,
+                                 Q.VolumeScale.LogarithmicVolumeScale,
+                                 Q.VolumeScale.LinearVolumeScale)
         self._audio_output.setVolume(volume)
         print(f'Volume is set to {int(volume * 100)}%')
 
