@@ -50,6 +50,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.update_actions(None)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)

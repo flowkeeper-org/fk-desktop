@@ -56,6 +56,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
         }))
         self._application = application
+        self.update_actions(None)
 
     def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
         self.update_actions(self.get_current())
