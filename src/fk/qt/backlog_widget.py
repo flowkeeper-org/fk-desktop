@@ -17,9 +17,8 @@ import datetime
 from typing import Callable
 
 from PySide6.QtCore import QModelIndex
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QWidget, QMessageBox, QInputDialog, QVBoxLayout, QToolButton, QPushButton, QHBoxLayout, \
-    QTextEdit, QLineEdit
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QWidget, QMessageBox, QInputDialog, QVBoxLayout, QToolButton, QHBoxLayout
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.backlog import Backlog
@@ -40,6 +39,9 @@ class BacklogWidget(QWidget):
                  source_holder: EventSourceHolder,
                  actions: Actions):
         super().__init__(parent)
+        self.setObjectName('backlogs_widget')
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+
         self._source_holder = source_holder
         vlayout = QVBoxLayout(self)
         vlayout.setContentsMargins(0, 0, 0, 0)
@@ -47,30 +49,38 @@ class BacklogWidget(QWidget):
         self.setLayout(vlayout)
 
         hlayout = QHBoxLayout(self)
-        hlayout.setContentsMargins(0, 0, 0, 0)
-        hlayout.setSpacing(0)
+        hlayout.setContentsMargins(5, 5, 5, 0)
+        hlayout.setSpacing(5)
         vlayout.addLayout(hlayout)
 
-        button = QPushButton(self)
-        button.setIcon(QIcon(":/icons/tool-add.svg"))
-        button.clicked.connect(actions['backlogs_table.newBacklog'].trigger)
-        button.setText('Add')
-        #button.setFixedHeight(30)
+        button = QToolButton(self)
+        button.setDefaultAction(actions['backlogs_table.newBacklog'])
+        button.setObjectName('top.newBacklog')
+        # button.setIcon(QIcon(":/icons/tool-add.svg"))
+        # button.clicked.connect(actions['backlogs_table.newBacklog'].trigger)
+        # button.setText('Add')
+        # button.setFixedHeight(30)
         hlayout.addWidget(button)
 
-        button = QPushButton(self)
-        button.setIcon(QIcon(":/icons/tool-delete.svg"))
-        button.clicked.connect(actions['backlogs_table.deleteBacklog'].trigger)
-        button.setText('Delete')
-        #button.setFixedHeight(30)
+        button = QToolButton(self)
+        button.setDefaultAction(actions['backlogs_table.deleteBacklog'])
+        button.setObjectName('top.deleteBacklog')
+        # button.setIcon(QIcon(":/icons/tool-delete.svg"))
+        # button.clicked.connect(actions['backlogs_table.deleteBacklog'].trigger)
+        # button.setText('Delete')
+        # button.setFixedHeight(30)
         hlayout.addWidget(button)
 
-        button = QPushButton(self)
-        button.setIcon(QIcon(":/icons/tool-rename.svg"))
-        button.clicked.connect(actions['backlogs_table.renameBacklog'].trigger)
-        button.setText('Rename')
-        #button.setFixedHeight(30)
+        button = QToolButton(self)
+        button.setDefaultAction(actions['backlogs_table.renameBacklog'])
+        button.setObjectName('top.renameBacklog')
+        # button.setIcon(QIcon(":/icons/tool-rename.svg"))
+        # button.clicked.connect(actions['backlogs_table.renameBacklog'].trigger)
+        # button.setText('Rename')
+        # button.setFixedHeight(30)
         hlayout.addWidget(button)
+
+        hlayout.addStretch()
 
         self._backlogs_table = BacklogTableView(self, application, source_holder, actions)
         vlayout.addWidget(self._backlogs_table)
@@ -80,9 +90,9 @@ class BacklogWidget(QWidget):
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', None, BacklogWidget.create_backlog)
-        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', None, BacklogWidget.rename_selected_backlog)
-        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, BacklogWidget.delete_selected_backlog)
+        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', ":/icons/tool-add.svg", BacklogWidget.create_backlog)
+        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', ":/icons/tool-rename.svg", BacklogWidget.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', ":/icons/tool-delete.svg", BacklogWidget.delete_selected_backlog)
         actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogWidget.dump_selected_backlog)
 
     # Actions
