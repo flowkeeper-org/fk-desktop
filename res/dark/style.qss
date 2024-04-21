@@ -98,3 +98,12 @@ QProgressBar::chunk {
 QSplitter::handle {
     background-color: #000000;
 }
+
+InfoOverlay {
+    background-color: #000000;
+    border: 1px solid #64686C;
+}
+
+InfoOverlay #overlay_text {
+    color: #ced0d6;
+}

@@ -81,3 +81,12 @@ QScrollBar {
 QSplitter::handle {
     background-color: #ffffff;
 }
+
+InfoOverlay {
+    background-color: #ffffff;
+    border: 1px solid #d7d8da;
+}
+
+InfoOverlay #overlay_text {
+    color: #000000;
+}

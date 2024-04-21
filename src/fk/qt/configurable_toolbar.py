@@ -14,12 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from PySide6.QtCore import QEvent
-from PySide6.QtGui import Qt, QMouseEvent
+from PySide6.QtCore import QEvent, QPoint
+from PySide6.QtGui import Qt, QMouseEvent, QAction
 from PySide6.QtWidgets import QWidget, QToolBar, QMenu
 
 from fk.core.events import AfterSettingsChanged
 from fk.qt.actions import Actions
+from fk.qt.info_overlay import show_info_overlay
 
 
 class ConfigurableToolBar(QToolBar):
@@ -36,10 +37,21 @@ class ConfigurableToolBar(QToolBar):
         if 'Application.show_toolbar' in new_values:
             self.setVisible(new_values['Application.show_toolbar'] == 'True')
 
+    def _hide(self, pos: QPoint):
+        self._actions.get_settings().set({
+            'Application.show_toolbar': 'False'
+        })
+        show_info_overlay("You can re-enable toolbar in Settings > Appearance",
+                          self.mapToGlobal(pos),
+                          ":/icons/info.png",
+                          5)
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.RightButton:
-            print(f'Right-clicked {event}')
+            act = QAction(self)
+            act.setText("Hide toolbar")
+            act.triggered.connect(lambda: self._hide(event.pos()))
             context_menu = QMenu(self)
-            context_menu.addAction(self._actions['application.toolbar'])
+            context_menu.addAction(act)
             context_menu.exec(
                 self.parentWidget().mapToGlobal(event.pos()))
