@@ -209,7 +209,7 @@ if __name__ == "__main__":
         # Collect actions from all widget types
         actions = Actions(window, settings)
         Application.define_actions(actions)
-        BacklogWidget.define_actions(actions)
+        BacklogTableView.define_actions(actions)
         UserTableView.define_actions(actions)
         WorkitemTableView.define_actions(actions)
         FocusWidget.define_actions(actions)
@@ -236,9 +236,9 @@ if __name__ == "__main__":
         left_toolbar_layout.addWidget(ConnectionWidget(window, app))
 
         # Backlogs table
-        backlogs_widget: BacklogTableView = BacklogWidget(window, app, app.get_source_holder(), actions)
-        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: workitems_widget.upstream_selected(after))
-        backlogs_widget.on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
+        backlogs_widget: BacklogWidget = BacklogWidget(window, app, app.get_source_holder(), actions)
+        backlogs_widget.get_table().on(AfterSelectionChanged, lambda event, before, after: workitems_widget.upstream_selected(after))
+        backlogs_widget.get_table().on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
         left_layout.addWidget(backlogs_widget)
 
         # Users table
@@ -335,7 +335,7 @@ if __name__ == "__main__":
 
         # Bind action domains to widget instances
         actions.bind('application', app)
-        actions.bind('backlogs_table', backlogs_widget)
+        actions.bind('backlogs_table', backlogs_widget.get_table())
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_widget.get_table())
         actions.bind('focus', focus)

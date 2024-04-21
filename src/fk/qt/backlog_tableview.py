@@ -17,11 +17,13 @@
 import datetime
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
+from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.user import User
@@ -120,3 +122,44 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
             self.select(user[last_selected_oid])
+
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', ":/icons/tool-add.svg", BacklogTableView.create_backlog)
+        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', ":/icons/tool-rename.svg", BacklogTableView.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', ":/icons/tool-delete.svg", BacklogTableView.delete_selected_backlog)
+        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
+
+    # Actions
+
+    def create_backlog(self) -> None:
+        prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
+        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
+        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
+
+    def rename_selected_backlog(self) -> None:
+        index: QModelIndex = self.currentIndex()
+        if index is None:
+            raise Exception("Trying to rename a backlog, while there's none selected")
+        self.edit(index)
+
+    def delete_selected_backlog(self) -> None:
+        selected: Backlog = self.get_current()
+        if selected is None:
+            raise Exception("Trying to delete a backlog, while there's none selected")
+        if QMessageBox().warning(self,
+                                 "Confirmation",
+                                 f"Are you sure you want to delete backlog '{selected.get_name()}'?",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel
+                                 ) == QMessageBox.StandardButton.Ok:
+            self._source.execute(DeleteBacklogStrategy, [selected.get_uid()])
+
+    def dump_selected_backlog(self) -> None:
+        selected: Backlog = self.get_current()
+        if selected is None:
+            raise Exception("Trying to dump a backlog, while there's none selected")
+        QInputDialog.getMultiLineText(None,
+                                      "Backlog dump",
+                                      "Technical information for debug / development purposes",
+                                      selected.dump())

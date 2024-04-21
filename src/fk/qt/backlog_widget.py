@@ -13,20 +13,15 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import datetime
-from typing import Callable
 
-from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QWidget, QMessageBox, QInputDialog, QVBoxLayout, QToolButton, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout
 
-from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.configurable_toolbar import ConfigurableToolBar
 
 
 class BacklogWidget(QWidget):
@@ -43,76 +38,19 @@ class BacklogWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         self._source_holder = source_holder
-        vlayout = QVBoxLayout(self)
-        vlayout.setContentsMargins(0, 0, 0, 0)
-        vlayout.setSpacing(0)
-        self.setLayout(vlayout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
 
-        hlayout = QHBoxLayout(self)
-        hlayout.setContentsMargins(5, 5, 5, 0)
-        hlayout.setSpacing(5)
-        vlayout.addLayout(hlayout)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['backlogs_table.newBacklog'])
-        button.setObjectName('top.newBacklog')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['backlogs_table.deleteBacklog'])
-        button.setObjectName('top.deleteBacklog')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['backlogs_table.renameBacklog'])
-        button.setObjectName('top.renameBacklog')
-        hlayout.addWidget(button)
-
-        hlayout.addStretch()
+        tb = ConfigurableToolBar(self, actions)
+        tb.addAction(actions['backlogs_table.newBacklog'])
+        tb.addAction(actions['backlogs_table.deleteBacklog'])
+        tb.addAction(actions['backlogs_table.renameBacklog'])
+        layout.addWidget(tb)
 
         self._backlogs_table = BacklogTableView(self, application, source_holder, actions)
-        vlayout.addWidget(self._backlogs_table)
+        layout.addWidget(self._backlogs_table)
 
-    def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:
-        self._backlogs_table.on(event_pattern, callback, last)
-
-    @staticmethod
-    def define_actions(actions: Actions):
-        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', ":/icons/tool-add.svg", BacklogWidget.create_backlog)
-        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', ":/icons/tool-rename.svg", BacklogWidget.rename_selected_backlog)
-        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', ":/icons/tool-delete.svg", BacklogWidget.delete_selected_backlog)
-        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogWidget.dump_selected_backlog)
-
-    # Actions
-
-    def create_backlog(self) -> None:
-        prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source_holder.get_source().get_data().get_current_user().names())
-        self._source_holder.get_source().execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
-
-    def rename_selected_backlog(self) -> None:
-        index: QModelIndex = self._backlogs_table.currentIndex()
-        if index is None:
-            raise Exception("Trying to rename a backlog, while there's none selected")
-        self._backlogs_table.edit(index)
-
-    def delete_selected_backlog(self) -> None:
-        selected: Backlog = self._backlogs_table.get_current()
-        if selected is None:
-            raise Exception("Trying to delete a backlog, while there's none selected")
-        if QMessageBox().warning(self,
-                                 "Confirmation",
-                                 f"Are you sure you want to delete backlog '{selected.get_name()}'?",
-                                 QMessageBox.StandardButton.Ok,
-                                 QMessageBox.StandardButton.Cancel
-                                 ) == QMessageBox.StandardButton.Ok:
-            self._source_holder.get_source().execute(DeleteBacklogStrategy, [selected.get_uid()])
-
-    def dump_selected_backlog(self) -> None:
-        selected: Backlog = self._backlogs_table.get_current()
-        if selected is None:
-            raise Exception("Trying to dump a backlog, while there's none selected")
-        QInputDialog.getMultiLineText(None,
-                                      "Backlog dump",
-                                      "Technical information for debug / development purposes",
-                                      selected.dump())
+    def get_table(self):
+        return self._backlogs_table

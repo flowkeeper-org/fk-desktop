@@ -15,13 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QToolButton, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
+from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
 
@@ -39,55 +40,23 @@ class WorkitemWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         self._source_holder = source_holder
-        vlayout = QVBoxLayout(self)
-        vlayout.setContentsMargins(0, 0, 0, 0)
-        vlayout.setSpacing(0)
-        self.setLayout(vlayout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
 
-        hlayout = QHBoxLayout(self)
-        hlayout.setContentsMargins(5, 5, 5, 0)
-        hlayout.setSpacing(5)
-        vlayout.addLayout(hlayout)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.newItem'])
-        button.setObjectName('top.newItem')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.deleteItem'])
-        button.setObjectName('top.deleteItem')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.renameItem'])
-        button.setObjectName('top.renameItem')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.startItem'])
-        button.setObjectName('top.startItem')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.completeItem'])
-        button.setObjectName('top.completeItem')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.addPomodoro'])
-        button.setObjectName('top.addPomodoro')
-        hlayout.addWidget(button)
-
-        button = QToolButton(self)
-        button.setDefaultAction(actions['workitems_table.removePomodoro'])
-        button.setObjectName('top.removePomodoro')
-        hlayout.addWidget(button)
-
-        hlayout.addStretch()
+        tb = ConfigurableToolBar(self, actions)
+        tb.addAction(actions['workitems_table.newItem'])
+        tb.addAction(actions['workitems_table.deleteItem'])
+        tb.addAction(actions['workitems_table.renameItem'])
+        tb.addAction(actions['workitems_table.startItem'])
+        tb.addAction(actions['workitems_table.completeItem'])
+        tb.addAction(actions['workitems_table.addPomodoro'])
+        tb.addAction(actions['workitems_table.removePomodoro'])
+        layout.addWidget(tb)
 
         self._workitems_table = WorkitemTableView(self, application, source_holder, actions)
-        vlayout.addWidget(self._workitems_table)
+        layout.addWidget(self._workitems_table)
 
         application.get_settings().on(AfterSettingsChanged, self.on_setting_changed)
 

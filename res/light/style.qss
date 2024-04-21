@@ -75,13 +75,6 @@ QToolButton:checked {
     color: #000000;
 }
 
-QToolButton[objectName*="top."] {
-    background: #ffffff;
-    padding: 3px;
-    border: 1px solid #d7d8da;
-    border-radius: 5px;
-}
-
 QScrollBar {
     height: 0px;
     width: 0px;
