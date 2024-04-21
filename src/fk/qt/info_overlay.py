@@ -33,6 +33,8 @@ class InfoOverlay(QFrame):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
         self.setLayout(layout)
 
         if icon is not None:
