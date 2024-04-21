@@ -25,7 +25,7 @@ jobs:
           python-version: '3.11'
       - name: Install required system libraries
         run: |
-          apt install -y libwayland-client0
+          sudo apt install -y libwayland-client0
       - name: Create Virtual Environment
         run: |
           python3 -m venv venv
