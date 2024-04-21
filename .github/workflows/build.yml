@@ -14,7 +14,7 @@ on:
           - macOS
 jobs:
   package-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if:  ${{ inputs.OS == 'linux' }} 
     steps:
       - name: Checkout repository
@@ -23,9 +23,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install required system libraries
-        run: |
-          sudo apt install -y libwayland-client0
       - name: Create Virtual Environment
         run: |
           python3 -m venv venv
