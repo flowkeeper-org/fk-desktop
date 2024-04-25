@@ -76,7 +76,7 @@ class Application(QApplication, AbstractEventEmitter):
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
             print(f'Flowkeeper v{get_current_version()}')
-            self.exit(0)
+            sys.exit(0)
 
         self._register_source_producers()
         self._heartbeat = None
