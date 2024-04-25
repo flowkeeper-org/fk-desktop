@@ -1,3 +1,7 @@
+### v0.5.0 (TBD)
+- [Bugfix] Fixed workitem search.
+- [Technical] E2e tests handle exceptions correctly now.
+
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.
 - Improved performance of changing the data source when there are large backlogs.
@@ -10,7 +14,7 @@
 
 ### v0.4.0 (18 April 2024)
 - Changes to data source settings do not require Flowkeeper restart.
-- [Bugfix] Some rare and complex bugs are now fixed thanks to improved Event Source handling.
+- Some rare and complex bugs are now fixed thanks to improved Event Source handling.
 - [Technical] Rest and work durations are now floating-point numbers.
 - [Technical] Windows dev. environment is now supported and documented.
 - [Technical] First working end-to-end tests providing 61% UI code coverage.

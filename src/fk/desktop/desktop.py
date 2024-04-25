@@ -257,7 +257,11 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, app.get_source_holder(), actions, backlogs_widget, workitems_widget)
+        search = SearchBar(window,
+                           app.get_source_holder(),
+                           actions,
+                           backlogs_widget.get_table(),
+                           workitems_widget.get_table())
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
