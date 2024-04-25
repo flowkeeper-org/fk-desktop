@@ -100,7 +100,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
-                ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
+                ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'False', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
