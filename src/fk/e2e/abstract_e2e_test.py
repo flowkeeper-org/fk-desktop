@@ -3,6 +3,7 @@ import atexit
 import inspect
 import os
 import sys
+import traceback
 from abc import ABC
 from datetime import datetime
 from typing import Callable, Self
@@ -255,3 +256,7 @@ class AbstractE2eTest(ABC):
 
     async def instant_pause(self) -> None:
         await asyncio.sleep(INSTANT_DURATION)
+
+    def on_exception(self, exc_type, exc_value, exc_trace):
+        to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
+        self.info('Exception: ' + to_log)

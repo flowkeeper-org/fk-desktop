@@ -70,9 +70,7 @@ class Application(QApplication, AbstractEventEmitter):
                          allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
         self._register_source_producers()
-
         self._heartbeat = None
-        sys.excepthook = self.on_exception
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
@@ -82,8 +80,10 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.reset_to_defaults()
             from fk.e2e.backlog_e2e import BacklogE2eTest
             test = BacklogE2eTest(self)
+            sys.excepthook = test.on_exception
             test.start()
         else:
+            sys.excepthook = self.on_exception
             self._settings = QtSettings()
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 

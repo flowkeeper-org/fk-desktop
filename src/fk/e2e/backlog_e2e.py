@@ -17,11 +17,8 @@ POMODORO_REST_DURATION = 0.25  # seconds
 
 
 class BacklogE2eTest(AbstractE2eTest):
-    _application: Application
-
     def __init__(self, app: Application):
         super().__init__(app)
-        self._application = app
 
     def custom_settings(self) -> dict[str, str]:
         return {
