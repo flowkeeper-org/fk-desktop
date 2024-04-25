@@ -343,6 +343,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
         actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
+        actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
 
     def quit_local(self):
         Application.quit()
@@ -357,6 +358,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_about(self):
         AboutWindow(self.activeWindow()).show()
+
+    def toggle_toolbar(self, state: bool):
+        self._settings.set({ 'Application.show_toolbar': str(state) })
 
     def get_heartbeat(self) -> Heartbeat:
         return self._heartbeat

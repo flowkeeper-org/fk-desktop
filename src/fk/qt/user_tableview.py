@@ -42,6 +42,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.update_actions(None)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)

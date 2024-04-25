@@ -1,6 +1,16 @@
+### v0.4.1 (25 April 2024)
+- Added configurable toolbars.
+- Improved performance of changing the data source when there are large backlogs.
+- [Bugfix] Fixed the actions state update.
+- [Bugfix] Fixed binary builds for Wayland-enabled Linux. Now 22.04 is the minimal supported Ubuntu version.
+- [Technical] Started working on the e2e test farm triggered from the GitHub pipeline.
+- [Technical] Added an "info overlay" feature, which can be used for walkthroughs. Disabled the Tutorial by default.
+- [Technical] Upgraded to Qt 6.7.0.
+- [Technical] Release pipeline now runs unit tests.
+
 ### v0.4.0 (18 April 2024)
 - Changes to data source settings do not require Flowkeeper restart.
-- Some rare and complex bugs are now fixed thanks to improved Event Source handling.
+- [Bugfix] Some rare and complex bugs are now fixed thanks to improved Event Source handling.
 - [Technical] Rest and work durations are now floating-point numbers.
 - [Technical] Windows dev. environment is now supported and documented.
 - [Technical] First working end-to-end tests providing 61% UI code coverage.

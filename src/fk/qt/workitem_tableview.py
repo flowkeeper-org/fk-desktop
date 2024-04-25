@@ -50,6 +50,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.setItemDelegateForColumn(2, PomodoroDelegate())
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.update_actions(None)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
@@ -78,17 +79,17 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
-        actions.add('workitems_table.renameItem', "Rename Item", 'F6', None, WorkitemTableView.rename_selected_workitem)
-        actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
-        actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', None, WorkitemTableView.start_selected_workitem)
-        actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', None, WorkitemTableView.complete_selected_workitem)
-        actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', None, WorkitemTableView.add_pomodoro)
-        actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', None, WorkitemTableView.remove_pomodoro)
+        actions.add('workitems_table.newItem', "New Item", 'Ins', ":/icons/tool-add.svg", WorkitemTableView.create_workitem)
+        actions.add('workitems_table.renameItem', "Rename Item", 'F6', ":/icons/tool-rename.svg", WorkitemTableView.rename_selected_workitem)
+        actions.add('workitems_table.deleteItem', "Delete Item", 'Del', ":/icons/tool-delete.svg", WorkitemTableView.delete_selected_workitem)
+        actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', ":/icons/tool-start-item.svg", WorkitemTableView.start_selected_workitem)
+        actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', ":/icons/tool-complete-item.svg", WorkitemTableView.complete_selected_workitem)
+        actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', ":/icons/tool-add-pomodoro.svg", WorkitemTableView.add_pomodoro)
+        actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', ":/icons/tool-remove-pomodoro.svg", WorkitemTableView.remove_pomodoro)
         actions.add('workitems_table.showCompleted',
                     "Show Completed Items",
                     '',
-                    None,
+                    ":/icons/tool-show-completed.svg",
                     WorkitemTableView._toggle_show_completed_workitems,
                     True,
                     actions.get_settings().get('Application.show_completed') == 'True')

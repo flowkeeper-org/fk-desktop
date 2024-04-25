@@ -44,18 +44,25 @@ QMainWindow {
     border-top: 1px solid #000000;
 }
 
-QTableView {
+QTableView, #backlogs_widget, #workitems_widget {
     selection-color: #ced0d6;
     selection-background-color: #43454a;
     color: #ced0d6;
     border: none;
     border-right: 1px solid #000000;
-    border-top: 1px solid #000000;
     padding: 10px;
 }
 
-#backlogs_table, #users_table {
+#users_table {
+    border-top: 1px solid #000000;
+}
+
+#backlogs_table, #users_table, #backlogs_widget {
     background-color: #2b2d30;
+}
+
+#workitems_widget {
+    background-color: #1e1f22;
 }
 
 #workitems_table {
@@ -90,4 +97,13 @@ QProgressBar::chunk {
 
 QSplitter::handle {
     background-color: #000000;
+}
+
+InfoOverlay {
+    background-color: #000000;
+    border: 1px solid #64686C;
+}
+
+InfoOverlay #overlay_text {
+    color: #ced0d6;
 }

@@ -56,6 +56,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
         }))
         self._application = application
+        self.update_actions(None)
 
     def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
         self.update_actions(self.get_current())
@@ -85,13 +86,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
 
-    @staticmethod
-    def define_actions(actions: Actions):
-        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', None, BacklogTableView.create_backlog)
-        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', None, BacklogTableView.rename_selected_backlog)
-        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, BacklogTableView.delete_selected_backlog)
-        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
-
     def upstream_selected(self, user: User) -> None:
         super().upstream_selected(user)
         self._actions['backlogs_table.newBacklog'].setEnabled(user is not None)
@@ -115,26 +109,33 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._actions['backlogs_table.dumpBacklog'].setEnabled(is_backlog_selected)
         # TODO: Double-clicking the backlog name doesn't use those
 
+    def _on_new_backlog(self, backlog: Backlog, carry: any = None, **kwargs):
+        if carry == 'edit':
+            index: QModelIndex = self.select(backlog)
+            self.edit(index)
+        elif carry == 'select':
+            self.select(backlog)
+
+    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+        user = source.get_data().get_current_user()
+        self.upstream_selected(user)
+        last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
+        if user is not None and last_selected_oid != '' and last_selected_oid in user:
+            self.select(user[last_selected_oid])
+
+    @staticmethod
+    def define_actions(actions: Actions):
+        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', ":/icons/tool-add.svg", BacklogTableView.create_backlog)
+        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', ":/icons/tool-rename.svg", BacklogTableView.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', ":/icons/tool-delete.svg", BacklogTableView.delete_selected_backlog)
+        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
+
     # Actions
 
     def create_backlog(self) -> None:
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
         new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
         self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
-
-        # A simpler, more efficient, but a bit uglier single-step alternative
-        # new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
-        # (new_name, ok) = QInputDialog.getText(self,
-        #                                       "New backlog",
-        #                                       "Provide a name for the new backlog",
-        #                                       text=new_name)
-        # if ok:
-        #     self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name])
-
-    def _on_new_backlog(self, backlog: Backlog, carry: any = None, **kwargs):
-        if carry == 'edit':
-            index: QModelIndex = self.select(backlog)
-            self.edit(index)
 
     def rename_selected_backlog(self) -> None:
         index: QModelIndex = self.currentIndex()
@@ -162,10 +163,3 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Backlog dump",
                                       "Technical information for debug / development purposes",
                                       selected.dump())
-
-    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
-        user = source.get_data().get_current_user()
-        self.upstream_selected(user)
-        last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
-        if user is not None and last_selected_oid != '' and last_selected_oid in user:
-            self.select(user[last_selected_oid])
