@@ -41,7 +41,7 @@ def strategy(cls: Type[AbstractStrategy[TRoot]]):
     m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
     if m is not None:
         name = m.group(1)
-        print(f'Registering strategy {name} -> {cls.__name__}')
+        # print(f'Registering strategy {name} -> {cls.__name__}')
         STRATEGIES[name] = cls
         return cls
     else:

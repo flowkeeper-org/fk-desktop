@@ -69,6 +69,15 @@ class Application(QApplication, AbstractEventEmitter):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
+        # It's important to import Common theme very early, because we need it to get app version, etc.
+        # noinspection PyUnresolvedReferences
+        import fk.desktop.theme_common
+
+        if '--version' in self.arguments():
+            # This might be useful on Windows or macOS, which store their settings in some obscure locations
+            print(f'Flowkeeper v{get_current_version()}')
+            exit(0)
+
         self._register_source_producers()
         self._heartbeat = None
 
@@ -150,8 +159,7 @@ class Application(QApplication, AbstractEventEmitter):
             raise e
 
     def is_e2e_mode(self):
-        print('E2e mode:', 'e2e' in self.arguments())
-        return 'e2e' in self.arguments()
+        return '--e2e' in self.arguments()
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
         # TODO -- lock the UI
@@ -171,7 +179,6 @@ class Application(QApplication, AbstractEventEmitter):
     # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
         # Apply CSS
-        import fk.desktop.theme_common
         if theme == 'light':
             import fk.desktop.theme_light
         elif theme == 'dark':
