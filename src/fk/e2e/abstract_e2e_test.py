@@ -101,6 +101,8 @@ class AbstractE2eTest(ABC):
     def init_log(self) -> None:
         filename = f"{__name__.replace('.', '/')}.py"
         test_name = f'{__name__}.{self.__class__.__name__}'
+        if not os.path.exists('test-results'):
+            os.mkdir('test-results')
         self._log_filename = f'test-results/TEST-{test_name}.xml'
         print(f'INFO: Creating a log file {self._log_filename}')
         self._log_xml = ElementTree.Element('testsuite')
