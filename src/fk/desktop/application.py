@@ -186,8 +186,8 @@ class Application(QApplication, AbstractEventEmitter):
         elif theme == 'mixed':
             import fk.desktop.theme_mixed
 
-        # TODO: Can't change this on the fly
-        f = QFile(":/style.qss")
+        # TODO: If filename is the same, we can't change this on the fly -- it loads existing resources
+        f = QFile(f":/style-{theme}.qss")
         f.open(QFile.OpenModeFlag.ReadOnly)
         self.setStyleSheet(f.readAll().toStdString())
         f.close()
@@ -268,8 +268,8 @@ class Application(QApplication, AbstractEventEmitter):
             elif 'Application.font_' in name:
                 self._initialize_fonts()
             elif name == 'Application.theme':
-                show_restart_warning = True
-                # app.set_theme(new_value)
+                #show_restart_warning = True
+                self.set_theme(new_values['Application.theme'])
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
                     self._version_timer.schedule(1000, self.check_version, None, True)
