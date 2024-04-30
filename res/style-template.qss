@@ -1,3 +1,8 @@
+QWidget {
+    font-family: $FONT_MAIN_FAMILY;
+    font-size: $FONT_MAIN_SIZE;
+}
+
 QMainWindow {
     background-color: $FOCUS_BG_COLOR;
     color: $TABLE_TEXT_COLOR;
@@ -5,6 +10,8 @@ QMainWindow {
 
 #headerText {
     color: $FOCUS_TEXT_COLOR;
+    font-family: $FONT_HEADER_FAMILY;
+    font-size: $FONT_HEADER_SIZE;
 }
 
 #headerSubtext {

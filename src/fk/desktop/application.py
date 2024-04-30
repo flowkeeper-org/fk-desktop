@@ -101,10 +101,8 @@ class Application(QApplication, AbstractEventEmitter):
         quit_on_close = (self._settings.get('Application.quit_on_close') == 'True')
         self.setQuitOnLastWindowClosed(quit_on_close)
 
-        self.set_theme(self._settings.get('Application.theme'))
-
         # Fonts, styles, etc.
-        self._initialize_fonts()
+        self.refresh_theme_and_fonts()
         self._row_height = self._auto_resize()
 
         # Version checks
@@ -177,25 +175,33 @@ class Application(QApplication, AbstractEventEmitter):
     def get_source_holder(self):
         return self._source_holder
 
-    def read_theme_variables(self, theme: str):
+    def get_theme_variables(self, theme: str):
         var_file = QFile(f":/style-{theme}.json")
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
+        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size')
+        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
+        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size')
         return variables
 
     def get_icon_theme(self):
         theme = self._settings.get('Application.theme')
-        return self.read_theme_variables(theme)['ICON_THEME']
+        return self.get_theme_variables(theme)['ICON_THEME']
 
     # noinspection PyUnresolvedReferences
-    def set_theme(self, theme: str):
+    def refresh_theme_and_fonts(self):
+        self._initialize_fonts()
+
+        theme = self._settings.get('Application.theme')
+
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
         qss = template_file.readAll().toStdString()
         template_file.close()
 
-        variables = self.read_theme_variables(theme)
+        variables = self.get_theme_variables(theme)
 
         for name in variables:
             value = variables[name]
@@ -211,7 +217,8 @@ class Application(QApplication, AbstractEventEmitter):
                                   int(self._settings.get('Application.font_header_size')))
         if self._font_header is None:
             self._font_header = QFont()
-            self._font_header.setPointSize(int(self._font_header.pointSize() * 24.0 / 9))
+            new_size = int(self._font_header.pointSize() * 24.0 / 9)
+            self._font_header.setPointSize(new_size)
     
         self._font_main = QFont(self._settings.get('Application.font_main_family'),
                                 int(self._settings.get('Application.font_main_size')))
@@ -224,6 +231,8 @@ class Application(QApplication, AbstractEventEmitter):
             'header_font': self._font_header,
             'application': self
         })
+
+        self._auto_resize()
 
     def _auto_resize(self) -> int:
         h: int = QFontMetrics(self._font_main).height() + 8
@@ -277,10 +286,8 @@ class Application(QApplication, AbstractEventEmitter):
                 self._source_holder.request_new_source()
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
-            elif 'Application.font_' in name:
-                self._initialize_fonts()
-            elif name == 'Application.theme':
-                self.set_theme(new_values['Application.theme'])
+            elif name == 'Application.theme' or 'Application.font_' in name:
+                self.refresh_theme_and_fonts()
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
                     self._version_timer.schedule(1000, self.check_version, None, True)

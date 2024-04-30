@@ -17,12 +17,13 @@ import traceback
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QStandardItem
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete
+    AfterWorkitemDelete, AfterSettingsChanged
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy
 
@@ -46,9 +47,26 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
         self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
+        self._update_row_height()
         self.itemChanged.connect(lambda item: self._handle_rename(item))
-        self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.table_row_height' in new_values:
+            self._update_row_height()
+
+    def _update_row_height(self):
+        rh = int(self._source_holder.get_settings().get('Application.table_row_height'))
+        self._row_height = rh
+        # TODO: Updating existing rows doesn't work.
+        #  The right way to do it is by using QStandardItem subclass, like we do for BacklogModel
+        # for i in range(self.rowCount()):
+        #     item: QStandardItem = self.item(i, 2)
+        #     workitem: Workitem = item.data(500)
+        #     item.setData(QSize(len(workitem) * rh, rh), Qt.SizeHintRole)
+        #     self.setItem(i, 2, item)
+        #     print('Updated item', i, rh)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)

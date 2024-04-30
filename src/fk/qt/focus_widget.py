@@ -249,7 +249,7 @@ class FocusWidget(QWidget):
             painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 
     def _set_border_color(self):
-        self._border_color = self._application.read_theme_variables(
+        self._border_color = self._application.get_theme_variables(
             self._settings.get('Application.theme')
         ).get('FOCUS_BORDER_COLOR', '#000000')
 

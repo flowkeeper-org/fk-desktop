@@ -25,7 +25,7 @@ from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
-from fk.core.events import SourceMessagesProcessed
+from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.qt.actions import Actions
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
@@ -72,7 +72,6 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._editable_column = editable_column
         self.setModel(model)
 
-        self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
         self.setObjectName(name)
         self.setTabKeyNavigation(False)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -82,12 +81,22 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
-        self.verticalHeader().setDefaultSectionSize(self._row_height)
+
+        self._update_row_height()
 
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
         # This will remove selection, otherwise backlogs would be removed one by one
         source_holder.on(BeforeSourceChanged, lambda event, source: self.reset())
+        source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.table_row_height' in new_values:
+            self._update_row_height()
+
+    def _update_row_height(self):
+        self._row_height = int(self._actions.get_settings().get('Application.table_row_height'))
+        self.verticalHeader().setDefaultSectionSize(self._row_height)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         self._source = source
