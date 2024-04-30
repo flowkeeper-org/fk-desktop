@@ -226,12 +226,11 @@ class FocusWidget(QWidget):
     def paintEvent(self, event):
         super().paintEvent(event)
         rect = self.rect()
-        line = QLine(rect.bottomLeft(), rect.bottomRight())
-        painter = QPainter(self)
         eyecandy_type = self._settings.get('Application.eyecandy_type')
         if eyecandy_type == 'image':
             if self._pixmap is not None:
                 img = self._pixmap
+                painter = QPainter(self)
                 painter.drawPixmap(
                     QPoint(0, 0),
                     img.scaled(
@@ -239,14 +238,17 @@ class FocusWidget(QWidget):
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
             gradient = self._settings.get('Application.eyecandy_gradient')
+            painter = QPainter(self)
             try:
                 painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
                 print('ERROR while updating the gradient -- ignoring it', e)
                 print("\n".join(traceback.format_exception(e)))
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
-        painter.setPen(self._border_color)
-        painter.drawLine(line)
+        else:
+            painter = QPainter(self)
+            painter.setPen(self._border_color)
+            painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 
     def _set_border_color(self):
         self._border_color = self._application.read_theme_variables(
@@ -254,10 +256,12 @@ class FocusWidget(QWidget):
         ).get('FOCUS_BORDER_COLOR', '#000000')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.eyecandy' in new_values:
-            self.eye_candy()
         if 'Application.theme' in new_values:
             self._set_border_color()
+        if 'Application.eyecandy_type' in new_values or \
+                'Application.eyecandy_gradient' in new_values or \
+                'Application.eyecandy_image' in new_values:
+            self.eye_candy()
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
