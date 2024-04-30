@@ -85,7 +85,13 @@ class AbstractE2eTest(ABC):
                             self._update_log_for_method('time', str(method_duration))
                 finally:
                     self.close_log()
-                sys.exit(0)
+                    print('Do whatever it takes to exit')
+                    window.close()
+                    print(' - Closed the window')
+                    self._app.exit(0)
+                    print(' - Exited Qt')
+                    sys.exit(0)
+                    print(' - Exited Python')
 
     def _update_log_for_method(self, name: str, value: str):
         el = self._log_xml.find(f"testcase[@name='{self._current_method}']")
