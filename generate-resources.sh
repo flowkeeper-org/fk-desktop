@@ -22,18 +22,8 @@ set -e
 
 source venv/bin/activate
 
-generate_resources() {
-  name="$1"
-  qrc="theme-$name.qrc"
-  cd $name
-  pyside6-rcc --project -o "$qrc"
-  pyside6-rcc -g python "$qrc" -o "../../src/fk/desktop/theme_$name.py"
-  rm "$qrc"
-  cd ..
-}
-
 cd res
-generate_resources "common"
-generate_resources "light"
-generate_resources "dark"
-generate_resources "mixed"
+qrc="resources.qrc"
+pyside6-rcc --project -o "$qrc"
+pyside6-rcc -g python "$qrc" -o "../src/fk/desktop/resources.py"
+rm "$qrc"

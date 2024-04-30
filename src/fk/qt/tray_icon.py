@@ -48,7 +48,7 @@ class TrayIcon(QSystemTrayIcon):
         super().__init__(parent)
 
         self._default_icon = QIcon(":/icons/logo.png")
-        self._next_icon = QIcon(":/icons/tool-next.svg")
+        self._next_icon = QIcon("tool-next")
         self._actions = actions
         self._source_holder = source_holder
         self._continue_workitem = None

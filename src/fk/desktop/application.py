@@ -22,7 +22,7 @@ import urllib
 import webbrowser
 
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontMetrics, QGradient
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -71,7 +71,7 @@ class Application(QApplication, AbstractEventEmitter):
                          callback_invoker=invoke_in_main_thread)
         # It's important to import Common theme very early, because we need it to get app version, etc.
         # noinspection PyUnresolvedReferences
-        import fk.desktop.theme_common
+        import fk.desktop.resources
 
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
@@ -178,20 +178,11 @@ class Application(QApplication, AbstractEventEmitter):
 
     # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
-        # Apply CSS
-        if theme == 'light':
-            import fk.desktop.theme_light
-        elif theme == 'dark':
-            import fk.desktop.theme_dark
-        elif theme == 'mixed':
-            import fk.desktop.theme_mixed
-
-        # TODO: If filename is the same, we can't change this on the fly -- it loads existing resources
+        QIcon.setThemeName(theme)
         f = QFile(f":/style-{theme}.qss")
         f.open(QFile.OpenModeFlag.ReadOnly)
         self.setStyleSheet(f.readAll().toStdString())
         f.close()
-
         print('Stylesheet loaded')
 
     def _initialize_fonts(self) -> (QFont, QFont):
@@ -268,7 +259,7 @@ class Application(QApplication, AbstractEventEmitter):
             elif 'Application.font_' in name:
                 self._initialize_fonts()
             elif name == 'Application.theme':
-                #show_restart_warning = True
+                # show_restart_warning = True
                 self.set_theme(new_values['Application.theme'])
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':

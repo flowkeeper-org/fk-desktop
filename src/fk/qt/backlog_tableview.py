@@ -125,9 +125,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', ":/icons/tool-add.svg", BacklogTableView.create_backlog)
-        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', ":/icons/tool-rename.svg", BacklogTableView.rename_selected_backlog)
-        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', ":/icons/tool-delete.svg", BacklogTableView.delete_selected_backlog)
+        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', "tool-add", BacklogTableView.create_backlog)
+        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', "tool-rename", BacklogTableView.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', "tool-delete", BacklogTableView.delete_selected_backlog)
         actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
 
     # Actions

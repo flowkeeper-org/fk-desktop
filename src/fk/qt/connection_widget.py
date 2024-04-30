@@ -34,9 +34,10 @@ class ConnectionWidget(QLabel):
         self.setObjectName('connectionState')
         self.setFixedSize(QSize(32, 32))
 
-        self._img_online = QPixmap(':/icons/conn-online.svg')
-        self._img_offline = QPixmap(':/icons/conn-offline.svg')
-        self._img_unknown = QPixmap(':/icons/conn-unknown.svg')
+        theme = application.get_settings().get('Application.theme')
+        self._img_online = QPixmap(f':/icons/{theme}/24x24/conn-online.svg')
+        self._img_offline = QPixmap(f':/icons/{theme}/24x24/conn-offline.svg')
+        self._img_unknown = QPixmap(f':/icons/{theme}/24x24/conn-unknown.svg')
 
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 

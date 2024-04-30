@@ -148,16 +148,16 @@ class MainWindow:
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
-        actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
-        actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
+        actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
+        actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+        actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
         backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
                     "Backlogs",
                     'Ctrl+B',
-                    ':/icons/tool-backlogs.svg',
+                    'tool-backlogs',
                     MainWindow.toggle_backlogs,
                     True,
                     backlogs_were_visible)
@@ -166,7 +166,7 @@ class MainWindow:
         actions.add('window.showUsers',
                     "Team",
                     'Ctrl+T',
-                    ':/icons/tool-teams.svg',
+                    'tool-teams',
                     MainWindow.toggle_users,
                     True,
                     settings.is_team_supported() and users_were_visible)

@@ -143,10 +143,10 @@ class FocusWidget(QWidget):
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', ":/icons/tool-void.svg", FocusWidget._void_pomodoro)
-        actions.add('focus.nextPomodoro', "Next Pomodoro", None, ":/icons/tool-next.svg", FocusWidget._next_pomodoro)
-        actions.add('focus.completeItem', "Complete Item", None, ":/icons/tool-complete.svg", FocusWidget._complete_item)
-        actions.add('focus.showFilter', "Show Filter", None, ":/icons/tool-filter.svg", FocusWidget._display_filter)
+        actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
+        actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-next", FocusWidget._next_pomodoro)
+        actions.add('focus.completeItem', "Complete Item", None, "tool-complete", FocusWidget._complete_item)
+        actions.add('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
     def _create_button(self,
                        name: str,
