@@ -80,10 +80,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>:/icons/tool-backlogs.svg</normaloff>:/icons/tool-backlogs.svg</iconset>
-              </property>
               <property name="iconSize">
                <size>
                 <width>32</width>
@@ -96,10 +92,6 @@
              <widget class="QToolButton" name="toolTeams">
               <property name="text">
                <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>:/icons/tool-teams.svg</normaloff>:/icons/tool-teams.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -126,10 +118,6 @@
              <widget class="QToolButton" name="toolSettings">
               <property name="text">
                <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>:/icons/tool-settings.svg</normaloff>:/icons/tool-settings.svg</iconset>
               </property>
               <property name="iconSize">
                <size>

@@ -21,7 +21,7 @@ from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterWorkitemCreate
+from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
@@ -33,6 +33,8 @@ from fk.qt.workitem_model import WorkitemModel
 
 
 class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
+    _application: Application
+
     def __init__(self,
                  parent: QWidget,
                  application: Application,
@@ -47,12 +49,21 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          '← Select a backlog.',
                          'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
                          1)
-        self.setItemDelegateForColumn(2,
-                                      PomodoroDelegate(self,
-                                                       application.get_settings().get('Application.theme')))
+        self._application = application
+        self._configure_delegate()
         self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.update_actions(None)
+        application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.theme' in new_values:
+            self._configure_delegate()
+
+    def _configure_delegate(self):
+        self.setItemDelegateForColumn(2,
+                                      PomodoroDelegate(self,
+                                                       self._application.get_settings().get('Application.theme')))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)

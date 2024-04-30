@@ -18,6 +18,7 @@ import threading
 import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -314,16 +315,19 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
+        tool_backlogs.setIcon(QIcon.fromTheme('tool-backlogs'))
         tool_backlogs.setDefaultAction(action_backlogs)
 
         # noinspection PyTypeChecker
         tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
+        tool_teams.setIcon(QIcon.fromTheme('tool-teams'))
         tool_teams.setDefaultAction(action_teams)
         action_teams.setEnabled(settings.is_team_supported())
         tool_teams.setVisible(settings.is_team_supported())
 
         # noinspection PyTypeChecker
         tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
+        tool_settings.setIcon(QIcon.fromTheme('tool-settings'))
         tool_settings.clicked.connect(lambda: menu_file.exec(
             tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
         ))

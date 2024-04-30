@@ -26,7 +26,7 @@ QMainWindow {
     padding-left: 20px;
     padding-top: 3px;
     padding-bottom: 3px;
-    background: no-repeat left url(:/icons/tool-search.svg);
+    background: no-repeat left url(:/icons/mixed/24x24/tool-search.svg);
     color: #000000;
     background-color: #ffffff;
 }

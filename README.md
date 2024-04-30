@@ -261,24 +261,24 @@ actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', None, Backlo
 actions.add('workitems_table.newItem', "New Item", 'Ins', None, WorkitemTableView.create_workitem)
 actions.add('workitems_table.renameItem', "Rename Item", 'F6', None, WorkitemTableView.rename_selected_workitem)
 actions.add('workitems_table.deleteItem', "Delete Item", 'Del', None, WorkitemTableView.delete_selected_workitem)
-actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', ':/icons/tool-next.svg', WorkitemTableView.start_selected_workitem)
-actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', ':/icons/tool-complete.svg', WorkitemTableView.complete_selected_workitem)
+actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', 'tool-next', WorkitemTableView.start_selected_workitem)
+actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', 'tool-complete', WorkitemTableView.complete_selected_workitem)
 actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', None, WorkitemTableView.add_pomodoro)
 actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', None, WorkitemTableView.remove_pomodoro)
 actions.add('workitems_table.showCompleted', "Show Completed Items", '', None, WorkitemTableView._toggle_show_completed_workitems, True, True)
 
 # FocusWidget
-actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', ":/icons/tool-void.svg", FocusWidget._void_pomodoro)
-actions.add('focus.nextPomodoro', "Next Pomodoro", None, ":/icons/tool-next.svg", FocusWidget._next_pomodoro)
-actions.add('focus.completeItem', "Complete Item", None, ":/icons/tool-complete.svg", FocusWidget._complete_item)
-actions.add('focus.showFilter', "Show Filter", None, ":/icons/tool-filter.svg", FocusWidget._display_filter)
+actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
+actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-next", FocusWidget._next_pomodoro)
+actions.add('focus.completeItem', "Complete Item", None, "tool-complete", FocusWidget._complete_item)
+actions.add('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
 # MainWindow
-actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
-actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
-actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
-actions.add('window.showBacklogs', "Backlogs", 'Ctrl+B', ':/icons/tool-backlogs.svg', MainWindow.show_about)
-actions.add('window.showUsers', "Team", 'Ctrl+T', ':/icons/tool-teams.svg', MainWindow.toggle_users)
+actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
+actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
+actions.add('window.showBacklogs', "Backlogs", 'Ctrl+B', 'tool-backlogs', MainWindow.show_about)
+actions.add('window.showUsers', "Team", 'Ctrl+T', 'tool-teams', MainWindow.toggle_users)
 actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 ```
 

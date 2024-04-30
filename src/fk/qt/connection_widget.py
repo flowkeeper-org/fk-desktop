@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QWidget, QLabel
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.events import AfterSettingsChanged
 from fk.desktop.application import Application, AfterSourceChanged
 
 
@@ -27,19 +28,29 @@ class ConnectionWidget(QLabel):
     _img_unknown: QPixmap
     _img_offline: QPixmap
     _img_online: QPixmap
+    _source: AbstractEventSource    # Only used to redraw the icon when the theme changes
 
     def __init__(self, parent: QWidget, application: Application):
         super().__init__(parent)
         self._application = application
+        self._source = None
         self.setObjectName('connectionState')
         self.setFixedSize(QSize(32, 32))
+        application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
+        application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+        self._redraw()
 
-        theme = application.get_settings().get('Application.theme')
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.theme' in new_values:
+            self._redraw()
+
+    def _redraw(self):
+        theme = self._application.get_settings().get('Application.theme')
         self._img_online = QPixmap(f':/icons/{theme}/24x24/conn-online.svg')
         self._img_offline = QPixmap(f':/icons/{theme}/24x24/conn-offline.svg')
         self._img_unknown = QPixmap(f':/icons/{theme}/24x24/conn-unknown.svg')
-
-        application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
+        if self._source is not None:
+            self._on_source_changed('', self._source)
 
     def _update_connection_state(self, is_connected: bool) -> None:
         if is_connected:
@@ -52,6 +63,7 @@ class ConnectionWidget(QLabel):
             self.topLevelWidget().setWindowTitle('Flowkeeper - OFFLINE')
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self._source = source
         self.setVisible(source.can_connect())
         if source.can_connect():
             print('ConnectionWidget._on_source_changed: Connectable source')
