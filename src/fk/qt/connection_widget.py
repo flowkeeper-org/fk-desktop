@@ -45,7 +45,7 @@ class ConnectionWidget(QLabel):
             self._redraw()
 
     def _redraw(self):
-        theme = self._application.get_settings().get('Application.theme')
+        theme = self._application.get_icon_theme()
         self._img_online = QPixmap(f':/icons/{theme}/24x24/conn-online.svg')
         self._img_offline = QPixmap(f':/icons/{theme}/24x24/conn-offline.svg')
         self._img_unknown = QPixmap(f':/icons/{theme}/24x24/conn-unknown.svg')

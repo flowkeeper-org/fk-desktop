@@ -184,10 +184,12 @@ class Application(QApplication, AbstractEventEmitter):
         var_file.close()
         return variables
 
+    def get_icon_theme(self):
+        theme = self._settings.get('Application.theme')
+        return self.read_theme_variables(theme)['ICON_THEME']
+
     # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
-        QIcon.setThemeName(theme)
-
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
         qss = template_file.readAll().toStdString()
@@ -198,6 +200,8 @@ class Application(QApplication, AbstractEventEmitter):
         for name in variables:
             value = variables[name]
             qss = qss.replace(f'${name}', value)
+
+        QIcon.setThemeName(variables['ICON_THEME'])
 
         self.setStyleSheet(qss)
         print('Stylesheet loaded')

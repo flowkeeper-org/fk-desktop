@@ -226,11 +226,11 @@ class FocusWidget(QWidget):
     def paintEvent(self, event):
         super().paintEvent(event)
         rect = self.rect()
+        painter = QPainter(self)
         eyecandy_type = self._settings.get('Application.eyecandy_type')
         if eyecandy_type == 'image':
             if self._pixmap is not None:
                 img = self._pixmap
-                painter = QPainter(self)
                 painter.drawPixmap(
                     QPoint(0, 0),
                     img.scaled(
@@ -238,15 +238,13 @@ class FocusWidget(QWidget):
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
             gradient = self._settings.get('Application.eyecandy_gradient')
-            painter = QPainter(self)
             try:
                 painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
                 print('ERROR while updating the gradient -- ignoring it', e)
                 print("\n".join(traceback.format_exception(e)))
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
-        else:
-            painter = QPainter(self)
+        else:   # Default
             painter.setPen(self._border_color)
             painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 

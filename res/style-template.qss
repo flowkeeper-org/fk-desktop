@@ -26,7 +26,7 @@ QMainWindow {
     padding-left: 20px;
     padding-top: 3px;
     padding-bottom: 3px;
-    background: no-repeat left url(:/icons/$THEME/24x24/tool-search.svg);
+    background: no-repeat left url(:/icons/$ICON_THEME/24x24/tool-search.svg);
     color: $TABLE_TEXT_COLOR;
     background-color: $PRIMARY_BG_COLOR;
 }
@@ -43,16 +43,17 @@ QTableView, #backlogs_widget, #workitems_widget {
     selection-background-color: $SELECTION_BG_COLOR;
     color: $TABLE_TEXT_COLOR;
     border: none;
-    border-right: 1px solid $BORDER_COLOR;
     padding: 10px;
 }
 
 #users_table {
     border-top: 1px solid $BORDER_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
 }
 
 #backlogs_table, #users_table, #backlogs_widget {
     background-color: $SECONDARY_BG_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
 }
 
 #workitems_widget {

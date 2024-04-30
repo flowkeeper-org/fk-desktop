@@ -63,7 +63,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def _configure_delegate(self):
         self.setItemDelegateForColumn(2,
                                       PomodoroDelegate(self,
-                                                       self._application.get_settings().get('Application.theme')))
+                                                       self._application.get_icon_theme()))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
