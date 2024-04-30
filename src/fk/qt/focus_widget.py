@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import traceback
 
-from PySide6.QtCore import QSize, QPoint
+from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
@@ -26,7 +26,6 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.timer import PomodoroTimer
-from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterFontsChanged
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import render_for_widget, TimerWidget
@@ -43,6 +42,7 @@ class FocusWidget(QWidget):
     _buttons: dict[str, QToolButton]
     _application: Application
     _pixmap: QPixmap | None
+    _border_color: QColor
 
     def __init__(self,
                  parent: QWidget,
@@ -59,6 +59,9 @@ class FocusWidget(QWidget):
         self._application = application
         self._buttons = dict()
         self._pixmap = None
+
+        self._border_color = QColor('#000000')
+        self._set_border_color()
 
         self.setObjectName('focus')
 
@@ -222,31 +225,39 @@ class FocusWidget(QWidget):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+        rect = self.rect()
+        line = QLine(rect.bottomLeft(), rect.bottomRight())
+        painter = QPainter(self)
         eyecandy_type = self._settings.get('Application.eyecandy_type')
         if eyecandy_type == 'image':
             if self._pixmap is not None:
                 img = self._pixmap
-                painter = QPainter(self)
                 painter.drawPixmap(
                     QPoint(0, 0),
                     img.scaled(
                         QSize(self.width(), self.width() * img.height() / img.width()),
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
-            painter = QPainter(self)
             gradient = self._settings.get('Application.eyecandy_gradient')
             try:
-                painter.fillRect(self.rect(), QGradient.Preset[gradient])
+                painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
                 print('ERROR while updating the gradient -- ignoring it', e)
                 print("\n".join(traceback.format_exception(e)))
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
+        painter.setPen(self._border_color)
+        painter.drawLine(line)
+
+    def _set_border_color(self):
+        self._border_color = self._application.read_theme_variables(
+            self._settings.get('Application.theme')
+        ).get('FOCUS_BORDER_COLOR', '#000000')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        for name in new_values.keys():
-            if name.startswith('Application.eyecandy'):
-                self.eye_candy()
-                return
+        if 'Application.eyecandy' in new_values:
+            self.eye_candy()
+        if 'Application.theme' in new_values:
+            self._set_border_color()
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

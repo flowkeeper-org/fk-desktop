@@ -1,0 +1,93 @@
+QMainWindow {
+    background-color: $FOCUS_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+}
+
+#headerText {
+    color: $FOCUS_TEXT_COLOR;
+}
+
+#headerSubtext {
+    color: $FOCUS_TEXT_COLOR;
+}
+
+#statusBar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+}
+
+#footerLabel {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 4px;
+}
+
+#search {
+    padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background: no-repeat left url(:/icons/$THEME/24x24/tool-search.svg);
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#left_toolbar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+    border: none;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+QTableView, #backlogs_widget, #workitems_widget {
+    selection-color: $TABLE_TEXT_COLOR;
+    selection-background-color: $SELECTION_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+    border: none;
+    border-right: 1px solid $BORDER_COLOR;
+    padding: 10px;
+}
+
+#users_table {
+    border-top: 1px solid $BORDER_COLOR;
+}
+
+#backlogs_table, #users_table, #backlogs_widget {
+    background-color: $SECONDARY_BG_COLOR;
+}
+
+#workitems_widget {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#workitems_table {
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 10px 10px 10px 8px;
+}
+
+QToolButton {
+    background: none;
+    border-radius: 5px;
+}
+
+QToolButton:checked {
+    background: $TOOLBAR_CHECKED_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+}
+
+QScrollBar {
+    height: 0px;
+    width: 0px;
+}
+
+QSplitter::handle {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+InfoOverlay {
+    background-color: $PRIMARY_BG_COLOR;
+    border: 1px solid $BORDER_COLOR;
+}
+
+InfoOverlay #overlay_text {
+    color: $TABLE_TEXT_COLOR;
+}

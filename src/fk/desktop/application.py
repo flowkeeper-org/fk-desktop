@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import json
 import random
 import sys
 import traceback
@@ -176,13 +177,29 @@ class Application(QApplication, AbstractEventEmitter):
     def get_source_holder(self):
         return self._source_holder
 
+    def read_theme_variables(self, theme: str):
+        var_file = QFile(f":/style-{theme}.json")
+        var_file.open(QFile.OpenModeFlag.ReadOnly)
+        variables = json.loads(var_file.readAll().toStdString())
+        var_file.close()
+        return variables
+
     # noinspection PyUnresolvedReferences
     def set_theme(self, theme: str):
         QIcon.setThemeName(theme)
-        f = QFile(f":/style-{theme}.qss")
-        f.open(QFile.OpenModeFlag.ReadOnly)
-        self.setStyleSheet(f.readAll().toStdString())
-        f.close()
+
+        template_file = QFile(":/style-template.qss")
+        template_file.open(QFile.OpenModeFlag.ReadOnly)
+        qss = template_file.readAll().toStdString()
+        template_file.close()
+
+        variables = self.read_theme_variables(theme)
+
+        for name in variables:
+            value = variables[name]
+            qss = qss.replace(f'${name}', value)
+
+        self.setStyleSheet(qss)
         print('Stylesheet loaded')
 
     def _initialize_fonts(self) -> (QFont, QFont):
@@ -259,7 +276,6 @@ class Application(QApplication, AbstractEventEmitter):
             elif 'Application.font_' in name:
                 self._initialize_fonts()
             elif name == 'Application.theme':
-                # show_restart_warning = True
                 self.set_theme(new_values['Application.theme'])
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':

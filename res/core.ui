@@ -207,9 +207,7 @@
    </property>
   </widget>
  </widget>
- <tabstops>
-  <tabstop>workitems_table</tabstop>
- </tabstops>
+ <tabstops />
  <resources/>
  <connections/>
 </ui>
