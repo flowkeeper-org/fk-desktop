@@ -66,7 +66,7 @@ class AbstractE2eTest(ABC):
                 self._tests = len(self._seq)
                 self._failures = 0
                 self._errors = 0
-                self._skipped = 0
+                self._skipped = len(self._seq)
                 self._start = datetime.now()
                 self.init_log()
                 try:
@@ -79,11 +79,13 @@ class AbstractE2eTest(ABC):
                         except Exception as e:
                             self.error(e)
                         finally:
+                            self._skipped -= 1
                             method_duration = (datetime.now() - method_start).total_seconds()
                             if method_duration < 0.0001:
                                 method_duration = 0.0001    # Otherwise we'd get scientific notation in output
                             self._update_log_for_method('time', str(method_duration))
                 finally:
+                    print(f'*** E2e tests completed {"successfully" if self._errors == 0 and self._skipped == 0 and self._failures == 0 else "with errors" } ***')
                     self.close_log()
                     print('Do whatever it takes to exit')
                     window.close()
