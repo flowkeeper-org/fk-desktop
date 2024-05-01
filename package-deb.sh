@@ -24,7 +24,7 @@ set -e
 
 # 1. Get the version
 VERSION_REGEX='^### v(.+) \(.*$'
-VERSION_LINE=$(head --lines=1 res/common/CHANGELOG.txt)
+VERSION_LINE=$(head --lines=1 res/CHANGELOG.txt)
 if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
 	export FK_VERSION="${BASH_REMATCH[1]}"
 else

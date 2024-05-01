@@ -104,7 +104,7 @@ jobs:
       - name: Create FK installer
         shell: cmd
         run: |
-          set /p FIRST_LINE=< res\common\CHANGELOG.txt
+          set /p FIRST_LINE=< res\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
           move installer\Output\mysetup.exe dist\setup.exe
