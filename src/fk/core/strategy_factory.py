@@ -18,6 +18,7 @@ import datetime
 import re
 from typing import Callable, Type, TypeVar
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.user import User
@@ -62,6 +63,7 @@ def strategy_from_string(s: str,
                          emit: Callable[[str, dict[str, any], any], None],
                          data: TRoot,
                          settings: AbstractSettings,
+                         cryptograph: AbstractCryptograph,
                          replacement_user: User | None = None) -> AbstractStrategy[TRoot] | str:
     # Empty strings and comments are special cases
     if s.strip() == '' or s.startswith('#'):
@@ -82,6 +84,6 @@ def strategy_from_string(s: str,
 
         # TODO: Enable trace
         # print (f"Initializing: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
-        return STRATEGIES[name](seq, when, user, params, emit, data, settings)
+        return STRATEGIES[name](seq, when, user, params, emit, data, settings, cryptograph)
     else:
         raise Exception(f"Bad syntax: {s}")

@@ -21,6 +21,7 @@ from typing import Callable
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
@@ -43,10 +44,18 @@ class AuthenticateStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._username = params[0]
         self._token = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         return None, None
@@ -65,9 +74,17 @@ class ReplayStrategy(AbstractStrategy):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._since_seq = int(params[0])
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         # Send only
@@ -88,10 +105,18 @@ class ErrorStrategy(AbstractStrategy):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._error_message == 'User consent is required':
@@ -120,9 +145,17 @@ class PongStrategy(AbstractStrategy):
                  emit: Callable[[str, dict[str, any]], None],
                  data: 'System',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         # print(f'Received Pong - {self._uid}')
@@ -145,9 +178,17 @@ class PingStrategy(AbstractStrategy):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         # Send only

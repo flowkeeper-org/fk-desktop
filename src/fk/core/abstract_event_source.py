@@ -20,6 +20,7 @@ from os import path
 from typing import Iterable, Self, Callable, TypeVar, Generic
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -36,10 +37,11 @@ TRoot = TypeVar('TRoot')
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     _settings: AbstractSettings
+    _cryptograph: AbstractCryptograph
     _last_seq: int
     _estimated_count: int
 
-    def __init__(self, settings: AbstractSettings):
+    def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
         AbstractEventEmitter.__init__(self, [
             events.BeforeUserCreate,
             events.AfterUserCreate,
@@ -82,6 +84,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         # TODO - Generate client uid for each connection. This will help
         # us do master/slave for strategies.
         self._settings = settings
+        self._cryptograph = cryptograph
         self._last_seq = 0
         self._estimated_count = 0
 
@@ -248,6 +251,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                                     self._emit,
                                                     self.get_data(),
                                                     self._settings,
+                                                    self._cryptograph,
                                                     list(self.get_data().values())[0])
                     i += 1
                     if type(strategy) is str:

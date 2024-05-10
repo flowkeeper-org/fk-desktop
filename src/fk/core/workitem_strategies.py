@@ -18,6 +18,7 @@ import datetime
 from typing import Callable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
@@ -47,11 +48,19 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]
@@ -106,9 +115,17 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -149,10 +166,18 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -200,10 +225,18 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None

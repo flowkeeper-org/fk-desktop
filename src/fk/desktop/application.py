@@ -282,7 +282,10 @@ class Application(QApplication, AbstractEventEmitter):
         # print(f'Setting {name} changed from {old_value} to {new_value}')
         show_restart_warning = False
         for name in new_values.keys():
-            if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
+            if name == 'Source.type' or \
+                    name.startswith('WebsocketEventSource.') or \
+                    name.startswith('FileEventSource.') or \
+                    name.startswith('Source.encryption'):
                 self._source_holder.request_new_source()
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')

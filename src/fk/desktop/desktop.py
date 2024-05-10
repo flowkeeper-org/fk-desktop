@@ -181,6 +181,7 @@ if __name__ == "__main__":
     # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
     # will pass through to Qt data models via Qt-like connect / emit mechanism.
     try:
+        settings = None
         app = Application(sys.argv)
         settings = app.get_settings()
 

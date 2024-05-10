@@ -18,6 +18,7 @@ import datetime
 from typing import Callable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import DeleteBacklogStrategy
@@ -42,10 +43,18 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
         self._user_name = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if not self._user.is_system_user():
@@ -81,9 +90,17 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._user_identity not in self._data:
@@ -127,10 +144,18 @@ class RenameUserStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
         self._new_user_name = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._user_identity not in self._data:

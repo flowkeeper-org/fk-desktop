@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Type, Self, Generic, TypeVar
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
@@ -48,6 +49,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: TRoot,
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
         self._seq = seq
         self._when = when
@@ -57,6 +59,15 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         self._data = data
         self._settings = settings
         self._carry = carry
+
+    @abstractmethod
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    @abstractmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     @staticmethod
     def escape_parameter(value):

@@ -18,10 +18,10 @@ import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime
-from PySide6.QtGui import QFont, QKeySequence
+from PySide6.QtGui import QFont, QKeySequence, QIcon, QPixmap
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
@@ -139,6 +139,46 @@ class SettingsDialog(QDialog):
         if dlg.exec_():
             selected: str = dlg.selectedFiles()[0]
             edit.setText(selected)
+
+    @staticmethod
+    def do_change_key(edit: QLineEdit) -> None:
+        warning_text = "WARNING: Flowkeeper.org requires end-to-end data encryption. This mechanism ensures \n" \
+                       "that nobody (including Flowkeeper developers) can have access to your online data, \n" \
+                       "which is transmitted and stored in encrypted form. To encrypt and decrypt your data \n" \
+                       "Flowkeeper uses a key, which is stored ONLY ON THIS COMPUTER. A default secure random \n" \
+                       "key is generated during Flowkeeper installation.\n\n" \
+                       \
+                       "If you lose this key, nobody in the world will be able to decrypt your existing data, \n" \
+                       "which will be lost forever! Although this key is stored in the settings, which should \n" \
+                       "survive Flowkeeper re-installation on this computer, we HIGHLY recommend you to store a \n" \
+                       "copy of it in a safe place, in case something happens with your disk or operating \n" \
+                       "system.\n\n" \
+                       \
+                       "Alternatively, you can also choose your own key and treat it like a password, just \n" \
+                       "note that you will NOT be able to restore it if you forget it.\n\n" \
+                       \
+                       "Finally, you will have to provide the same key in all your Flowkeeper apps, which \n" \
+                       "connect to this flowkeeper.org account."
+
+        old_key = edit.text()
+        (new_key, ok) = QInputDialog.getText(edit,
+                                             "End-to-end encryption key",
+                                             warning_text,
+                                             text=old_key)
+        if ok and old_key != new_key:
+            if QMessageBox().warning(edit,
+                                     "Confirmation",
+                                     "If you see existing data in this app -- you WILL lose access to it after "
+                                     "clicking 'Yes'! Are you sure?",
+                                     QMessageBox.StandardButton.Yes,
+                                     QMessageBox.StandardButton.Cancel) \
+                    == QMessageBox.StandardButton.Yes:
+                edit.setText(new_key)
+                QMessageBox().information(edit,
+                                          "Info",
+                                          "You still need to click Apply or Save. Also make sure that you use the "
+                                          "same encryption key across all your devices.",
+                                          QMessageBox.StandardButton.Ok)
 
     def _display_option(self,
                         parent: QWidget,
@@ -270,6 +310,24 @@ class SettingsDialog(QDialog):
             ed9.setTime(QTime(hours, minutes, seconds, 0))
             self._widgets_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
             return [ed9]
+        elif option_type == 'key':
+            widget = QWidget(parent)
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(0, 0, 0, 0)
+            ed10 = QLineEdit(parent)
+            ed10.setText(option_value)
+            ed10.setEchoMode(QLineEdit.EchoMode.Password)
+            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
+            self._widgets_value[option_id] = ed10.text
+            ed10.setHidden(True)
+            self._widgets_value[option_id] = ed10.text
+            layout.addWidget(ed10)
+            key_view = QPushButton(parent)
+            key_view.setText('IMPORTANT - READ THIS')
+            key_view.setIcon(QIcon(':/icons/warning.png'))
+            key_view.clicked.connect(lambda: SettingsDialog.do_change_key(ed10))
+            layout.addWidget(key_view)
+            return [widget]
         else:
             return []
 

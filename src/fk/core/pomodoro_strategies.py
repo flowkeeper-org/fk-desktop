@@ -19,6 +19,7 @@ import datetime
 from typing import Callable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro
@@ -41,10 +42,18 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._work_duration = float(params[1])
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -104,10 +113,18 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._rest_duration = float(params[1])
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
@@ -157,12 +174,20 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = float(settings.get('Pomodoro.default_work_duration'))
         self._default_rest_duration = float(settings.get('Pomodoro.default_rest_duration'))
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._num_pomodoros < 1:
@@ -244,9 +269,17 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]
@@ -266,9 +299,17 @@ class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]
@@ -290,12 +331,20 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         if params[1] == 'canceled':
             self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
         else:
             self._another = None
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._another:
@@ -317,10 +366,18 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         if self._num_pomodoros < 1:

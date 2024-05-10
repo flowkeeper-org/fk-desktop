@@ -34,7 +34,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     _app: 'Application'
 
     def __init__(self, wrapped: AbstractEventSource[TRoot], app: 'Application'):
-        super().__init__(wrapped._settings)
+        super().__init__(wrapped._settings, wrapped._cryptograph)
         self._app = app
         self._thread_pool = QThreadPool()
         self._wrapped = wrapped

@@ -18,6 +18,7 @@ import datetime
 from typing import Callable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
@@ -43,10 +44,18 @@ class CreateBacklogStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._backlog_uid = params[0]
         self._backlog_name = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]
@@ -83,9 +92,17 @@ class DeleteBacklogStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._backlog_uid = params[0]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return self._params
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]
@@ -129,10 +146,18 @@ class RenameBacklogStrategy(AbstractStrategy['Tenant']):
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
         self._backlog_uid = params[0]
         self._backlog_new_name = params[1]
+
+    def get_encrypted_parameters(self) -> list[str]:
+        return [self._params[0], self._params[1]]
+
+    @staticmethod
+    def decrypt_parameters(params: list[str]) -> list[str]:
+        return params
 
     def execute(self) -> (str, any):
         user = self._data[self._user.get_identity()]

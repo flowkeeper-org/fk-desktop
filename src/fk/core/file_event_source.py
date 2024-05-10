@@ -20,6 +20,7 @@ from os import path
 from typing import Self, TypeVar, Iterable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
@@ -43,10 +44,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def __init__(self,
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  root: TRoot,
                  filesystem_watcher: AbstractFilesystemWatcher = None,
                  existing_strategies: Iterable[AbstractStrategy] | None = None):
-        super().__init__(settings)
+        super().__init__(settings, cryptograph)
         self._data = root
         self._watcher = None
         self._existing_strategies = existing_strategies
@@ -66,7 +68,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: Check file locks here?
         with open(filename, encoding='UTF-8') as file:
             for line in file:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
                 if type(strategy) is str:
                     continue
                 self._last_strategy = strategy
@@ -136,7 +138,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         print(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
                 if type(strategy) is str:
                     continue
                 self._last_strategy = strategy
@@ -185,7 +187,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 try:
-                    s = strategy_from_string(line, self._emit, self._data, self._settings)
+                    s = strategy_from_string(line, self._emit, self._data, self._settings, self._cryptograph)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {s}')
                     changes += 1
@@ -342,7 +344,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return FileEventSource(self._settings, new_root, self._watcher, existing_strategies)
+        return FileEventSource(self._settings, self._cryptograph, new_root, self._watcher, existing_strategies)
 
     def disconnect(self):
         if self._watcher is not None:

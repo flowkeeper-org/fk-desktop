@@ -23,6 +23,7 @@ from PySide6.QtNetwork import QAbstractSocket
 from PySide6.QtWidgets import QApplication
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -50,9 +51,10 @@ class WebsocketEventSource(AbstractEventSource):
 
     def __init__(self,
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  application: QApplication,
                  root: TRoot):
-        super().__init__(settings)
+        super().__init__(settings, cryptograph)
         self._data = root
         self._application = application
         self._mute_requested = True
@@ -119,7 +121,7 @@ class WebsocketEventSource(AbstractEventSource):
                         to_unmute = True
                     to_emit = True
                     break
-                s = strategy_from_string(line, self._emit, self.get_data(), self._settings)
+                s = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
                 if type(s) is str:
                     continue
                 elif type(s) is ErrorStrategy:
@@ -209,7 +211,7 @@ class WebsocketEventSource(AbstractEventSource):
         return self._data
 
     def clone(self, new_root: TRoot) -> Self:
-        return WebsocketEventSource(self._settings, self._application, new_root)
+        return WebsocketEventSource(self._settings, self._cryptograph, self._application, new_root)
 
     def disconnect(self):
         self._ws.disconnected.disconnect()

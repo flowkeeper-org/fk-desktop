@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Callable
@@ -44,6 +43,15 @@ def _show_for_file_source(values: dict[str, str]) -> bool:
 
 def _show_for_websocket_source(values: dict[str, str]) -> bool:
     return values['Source.type'] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
+
+
+def _show_when_encryption_is_enabled(values: dict[str, str]) -> bool:
+    return values['Source.type'] in ('flowkeeper.org', 'flowkeeper.pro') \
+        or values['Source.encryption_enabled'] == 'True'
+
+
+def _show_when_encryption_is_optional(values: dict[str, str]) -> bool:
+    return values['Source.type'] in ('websocket', 'local', 'ephemeral')
 
 
 def _show_for_custom_websocket_source(values: dict[str, str]) -> bool:
@@ -126,6 +134,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
+                ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
+                ('Source.encryption_key', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [

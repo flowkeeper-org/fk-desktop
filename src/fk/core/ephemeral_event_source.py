@@ -16,6 +16,7 @@
 from typing import Self, TypeVar, Iterable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -29,8 +30,9 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
     def __init__(self,
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  root: TRoot):
-        super().__init__(settings)
+        super().__init__(settings, cryptograph)
         self._data = root
         self._content = list()
 
@@ -59,7 +61,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         return self._data
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return EphemeralEventSource(self._settings, new_root, existing_strategies)
+        return EphemeralEventSource(self._settings, self._cryptograph, new_root, existing_strategies)
 
     def disconnect(self):
         self._content.clear()
