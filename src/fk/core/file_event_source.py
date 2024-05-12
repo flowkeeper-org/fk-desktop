@@ -71,8 +71,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: Check file locks here?
         with open(filename, encoding='UTF-8') as file:
             for line in file:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
-                if type(strategy) is str:
+                strategy = self._serializer.deserialize(line)
+                if strategy is None:
                     continue
                 self._last_strategy = strategy
                 seq = strategy.get_sequence()
@@ -104,11 +104,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
         is_first = True
         seq = 1
         for strategy in self._existing_strategies:
-            strategy._data = self._data
-            strategy._settings = self._settings
-            strategy._emit_func = self._emit
-            if type(strategy) is str:
+            if strategy is None:
                 continue
+            strategy._settings = self._settings
             self._last_strategy = strategy
 
             if is_first:
@@ -121,11 +119,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.execute_prepared_strategy(strategy)
         self.auto_seal()
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self})
+        self._emit(events.SourceMessagesProcessed, {'source': self}, None)
 
     def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
-        self._emit(events.SourceMessagesRequested, dict())
+        self._emit(events.SourceMessagesRequested, dict(), None)
         if mute_events:
             self.mute()
 
@@ -347,7 +345,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return FileEventSource(self._settings, self._cryptograph, new_root, self._watcher, existing_strategies)
+        return FileEventSource[TRoot](self._settings, self._cryptograph, new_root, self._watcher, existing_strategies)
 
     def disconnect(self):
         if self._watcher is not None:

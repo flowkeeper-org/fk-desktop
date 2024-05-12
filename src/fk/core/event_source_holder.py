@@ -40,7 +40,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
     def request_new_source(self) -> None:
         source_type = self._settings.get('Source.type')
         print(f'EventSourceHolder: Recreating event source of type {source_type}')
-        if not EventSourceFactory.get_instance().is_valid(source_type):
+        if not get_event_source_factory().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
 

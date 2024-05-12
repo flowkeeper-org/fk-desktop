@@ -64,7 +64,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         return self._data
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy[TRoot]] | None = None) -> Self:
-        return EphemeralEventSource(self._settings, self._cryptograph, new_root)
+        return EphemeralEventSource[TRoot](self._settings, self._cryptograph, new_root)
 
     def disconnect(self):
         self._content.clear()

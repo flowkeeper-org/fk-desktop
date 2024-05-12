@@ -32,7 +32,7 @@ class TestFileEventSource(TestCase):
 
     def setUp(self) -> None:
         self.settings = MockSettings(filename=TEMP_FILENAME)
-        self.source = FileEventSource(self.settings, Tenant(self.settings))
+        self.source = FileEventSource[Tenant](self.settings, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
 

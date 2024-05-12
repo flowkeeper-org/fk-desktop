@@ -23,6 +23,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import DeleteBacklogStrategy
 from fk.core.strategy_factory import strategy
+from fk.core.tenant import Tenant
 from fk.core.user import User
 
 
@@ -38,37 +39,29 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._user_identity = params[0]
         self._user_name = params[1]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if not self._user_identity.is_system_user():
             raise Exception(f'A non-System user "{self._user_identity}" tries to create user "{self._user_identity}"')
         if self._user_identity in self._data:
             raise Exception(f'User "{self._user_identity}" already exists')
-        self._emit(events.BeforeUserCreate, {
+        emit(events.BeforeUserCreate, {
             'user_identity': self._user_identity,
             'user_name': self._user_name,
         })
         user = User(self._data, self._user_identity, self._user_name, self._when, False)
         self._data[self._user_identity] = user
         user.item_updated(self._when)   # This will also update the Tenant
-        self._emit(events.AfterUserCreate, {
+        emit(events.AfterUserCreate, {
             'user': user
         })
         return None, None
@@ -85,24 +78,16 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._user_identity = params[0]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._user_identity not in self._data:
             raise Exception(f'User "{self._user_identity}" not found')
         if self._data[self._user_identity].is_system_user():
@@ -110,11 +95,11 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
         if not self._user_identity.is_system_user():
             raise Exception(f'A non-System user "{self._user_identity}" tries to delete user "{self._user_identity}"')
 
-        user = self._data[self._user_identity]
+        user: User = data[self._user_identity]
         params = {
             'user': user
         }
-        self._emit(events.BeforeUserDelete, params)
+        emit(events.BeforeUserDelete, params)
 
         # Cascade delete all backlogs first
         for backlog in user.values():
@@ -123,7 +108,7 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
 
         # Now delete the user
         del self._data[self._user_identity]
-        self._emit(events.AfterUserDelete, params)
+        emit(events.AfterUserDelete, params)
         return None, None
 
 
@@ -139,25 +124,17 @@ class RenameUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._user_identity = params[0]
         self._new_user_name = params[1]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._user_identity not in self._data:
             raise Exception(f'User "{self._user_identity}" not found')
         if self._data[self._user_identity].is_system_user():
@@ -165,15 +142,15 @@ class RenameUserStrategy(AbstractStrategy['Tenant']):
         if not self._user_identity.is_system_user():
             raise Exception(f'A non-System user "{self._user_identity}" tries to rename user "{self._user_identity}"')
 
-        user = self._data[self._user_identity]
+        user: User = data[self._user_identity]
         old_name = user.get_name()
         params = {
             'user': user,
             'old_name': old_name,
             'new_name': self._new_user_name,
         }
-        self._emit(events.BeforeUserRename, params)
+        emit(events.BeforeUserRename, params)
         user._name = self._new_user_name
         user.item_updated(self._when)
-        self._emit(events.AfterUserRename, params)
+        emit(events.AfterUserRename, params)
         return None, None

@@ -16,9 +16,11 @@
 import datetime
 from unittest import TestCase
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
@@ -30,12 +32,14 @@ from fk.core.workitem import Workitem
 
 class TestBacklogs(TestCase):
     settings: AbstractSettings
+    cryptograph: AbstractCryptograph
     source: EphemeralEventSource
     data: dict[str, User]
 
     def setUp(self) -> None:
         self.settings = MockSettings()
-        self.source = EphemeralEventSource(self.settings, Tenant(self.settings))
+        self.cryptograph = FernetCryptograph(self.settings)
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
 

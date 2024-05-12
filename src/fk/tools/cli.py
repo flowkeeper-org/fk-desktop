@@ -22,6 +22,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
+from fk.core.tenant import Tenant
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     mode = sys.argv[1] if len(sys.argv) == 2 else 'view'
 
     #s = FileEventSource(MockSettings(), None)
-    s = WebsocketEventSource(MockSettings(filename='/home/w/flowkeeper-data-new.txt'), None, None)
+    s = WebsocketEventSource[Tenant](MockSettings(filename='/home/w/flowkeeper-data-new.txt'), None, None)
 
     if mode == 'view':
         view(s)

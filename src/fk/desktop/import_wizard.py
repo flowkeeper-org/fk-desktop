@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QW
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.file_event_source import FileEventSource
+from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.qt_settings import QtSettings
 
@@ -149,7 +150,7 @@ class ImportWizard(QWizard):
 
 if __name__ == '__main__':
     app = QApplication([])
-    src = FileEventSource(QtSettings())
+    src = FileEventSource[Tenant](QtSettings())
     src.start()
     wizard = ImportWizard(src, None)
     wizard.show()

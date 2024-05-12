@@ -32,10 +32,11 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import EventSourceFactory
+from fk.core.event_source_factory import EventSourceFactory, get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.file_event_source import FileEventSource
+from fk.core.tenant import Tenant
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -129,23 +130,23 @@ class Application(QApplication, AbstractEventEmitter):
 
     def _register_source_producers(self):
         def local_source_producer(settings, root):
-            inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
+            inner_source = FileEventSource[Tenant](settings, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
-        EventSourceFactory.get_instance().register_producer('local', local_source_producer)
+        get_event_source_factory().register_producer('local', local_source_producer)
 
         def ephemeral_source_producer(settings, root):
-            inner_source = EphemeralEventSource(settings, root)
+            inner_source = EphemeralEventSource[Tenant](settings, root)
             return ThreadedEventSource(inner_source, self)
 
-        EventSourceFactory.get_instance().register_producer('ephemeral', ephemeral_source_producer)
+        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings, root):
-            return WebsocketEventSource(settings, self, root)
+            return WebsocketEventSource[Tenant](settings, self, root)
 
-        EventSourceFactory.get_instance().register_producer('websocket', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.org', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.pro', websocket_source_producer)
+        get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:

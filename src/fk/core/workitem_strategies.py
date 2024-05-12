@@ -23,6 +23,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
+from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
@@ -43,27 +44,19 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
-        user = self._data[self._user_identity.get_identity()]
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
@@ -71,7 +64,7 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         if self._workitem_uid in backlog:
             raise Exception(f'Workitem "{self._workitem_uid}" already exists')
 
-        self._emit(events.BeforeWorkitemCreate, {
+        emit(events.BeforeWorkitemCreate, {
             'backlog_uid': self._backlog_uid,
             'workitem_uid': self._workitem_uid,
             'workitem_name': self._workitem_name,
@@ -84,7 +77,7 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         )
         backlog[self._workitem_uid] = workitem
         workitem.item_updated(self._when)   # This will also update the Backlog
-        self._emit(events.AfterWorkitemCreate, {
+        emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
             'carry': None,
         })
@@ -110,26 +103,18 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -141,11 +126,11 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
         params = {
             'workitem': workitem
         }
-        self._emit(events.BeforeWorkitemDelete, params)
+        emit(events.BeforeWorkitemDelete, params)
         void_running_pomodoro(self, workitem)
         workitem.item_updated(self._when)   # Update Backlog
         del workitem.get_parent()[self._workitem_uid]
-        self._emit(events.AfterWorkitemDelete, params)
+        emit(events.AfterWorkitemDelete, params)
         return None, None
 
 
@@ -161,27 +146,19 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -202,10 +179,10 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
             'old_name': workitem.get_name(),
             'new_name': self._new_workitem_name,
         }
-        self._emit(events.BeforeWorkitemRename, params)
+        emit(events.BeforeWorkitemRename, params)
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
-        self._emit(events.AfterWorkitemRename, params)
+        emit(events.AfterWorkitemRename, params)
 
 
 # CompleteWorkitem("123-456-789", "canceled")
@@ -220,27 +197,19 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -256,7 +225,7 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
             'workitem': workitem,
             'target_state': self._target_state,
         }
-        self._emit(events.BeforeWorkitemComplete, params)
+        emit(events.BeforeWorkitemComplete, params)
 
         # First void pomodoros if needed
         void_running_pomodoro(self, workitem)
@@ -264,5 +233,5 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
-        self._emit(events.AfterWorkitemComplete, params)
+        emit(events.AfterWorkitemComplete, params)
         return None, None

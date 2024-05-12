@@ -19,46 +19,38 @@ import datetime
 from typing import Callable
 
 from fk.core import events
-from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro
 from fk.core.strategy_factory import strategy
+from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
 # StartWork("123-456-789", "1500")
 @strategy
-class StartWorkStrategy(AbstractStrategy['Tenant']):
+class StartWorkStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _work_duration: float
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._work_duration = float(params[1])
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
         running: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -85,14 +77,14 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
                     'work_duration': work_duration,
                 }
                 if not workitem.is_running():
-                    self._emit(events.BeforeWorkitemStart, params)
+                    emit(events.BeforeWorkitemStart, params, None)
                     workitem.start(self._when)
-                    self._emit(events.AfterWorkitemStart, params)
-                self._emit(events.BeforePomodoroWorkStart, params)
+                    emit(events.AfterWorkitemStart, params, None)
+                emit(events.BeforePomodoroWorkStart, params, None)
                 pomodoro.update_work_duration(work_duration)
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
-                self._emit(events.AfterPomodoroWorkStart, params)
+                emit(events.AfterPomodoroWorkStart, params, None)
                 return None, None
 
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
@@ -108,27 +100,19 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._rest_duration = float(params[1])
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -150,11 +134,11 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
                     'workitem': workitem,
                     'rest_duration': rest_duration,
                 }
-                self._emit(events.BeforePomodoroRestStart, params)
+                emit(events.BeforePomodoroRestStart, params, None)
                 pomodoro.update_rest_duration(rest_duration)
                 pomodoro.start_rest(self._when)
                 pomodoro.item_updated(self._when)
-                self._emit(events.AfterPomodoroRestStart, params)
+                emit(events.AfterPomodoroRestStart, params, None)
                 return None, None
 
         raise Exception(f'No in-work pomodoro in "{self._workitem_uid}"')
@@ -169,32 +153,24 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = float(settings.get('Pomodoro.default_work_duration'))
         self._default_rest_duration = float(settings.get('Pomodoro.default_rest_duration'))
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -210,14 +186,14 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
             'workitem': workitem,
             'num_pomodoros': self._num_pomodoros,
         }
-        self._emit(events.BeforePomodoroAdd, params)
+        emit(events.BeforePomodoroAdd, params, None)
         workitem.add_pomodoro(
             self._num_pomodoros,
             self._default_work_duration,
             self._default_rest_duration,
             self._when)
         workitem.item_updated(self._when)
-        self._emit(events.AfterPomodoroAdd, params)
+        emit(events.AfterPomodoroAdd, params, None)
         return None, None
 
 
@@ -247,10 +223,10 @@ def _complete_pomodoro(user: User,
                 'pomodoro': pomodoro,
                 'target_state': target_state,
             }
-            emit(events.BeforePomodoroComplete, params)
+            emit(events.BeforePomodoroComplete, params, None)
             pomodoro.seal(target_state, when)
             pomodoro.item_updated(when)
-            emit(events.AfterPomodoroComplete, params)
+            emit(events.AfterPomodoroComplete, params, None)
             return
 
     raise Exception(f'No running pomodoros in "{workitem_uid}"')
@@ -264,26 +240,18 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
-        user = self._data[self._user_identity.get_identity()]
-        _complete_pomodoro(user, self._workitem_uid, 'canceled', self._emit, self._when)
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._when)
         return None, None
 
 
@@ -294,26 +262,18 @@ class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
-        user = self._data[self._user_identity.get_identity()]
-        _complete_pomodoro(user, self._workitem_uid, 'finished', self._emit, self._when)
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._when)
         return None, None
 
 
@@ -326,27 +286,19 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         if params[1] == 'canceled':
-            self._another = VoidPomodoroStrategy(seq, when, user_identity, [params[0]], emit, data, settings, carry)
+            self._another = VoidPomodoroStrategy(seq, when, user_identity, [params[0]], settings, carry)
         else:
             self._another = None
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._another:
             return self._another.execute()
         else:
@@ -361,30 +313,22 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
 
-    def get_encrypted_parameters(self) -> list[str]:
-        return self._params
-
-    @staticmethod
-    def decrypt_parameters(params: list[str]) -> list[str]:
-        return params
-
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user_identity.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -411,9 +355,9 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
             'num_pomodoros': self._num_pomodoros,
             'pomodoros': to_remove
         }
-        self._emit(events.BeforePomodoroRemove, params)
+        emit(events.BeforePomodoroRemove, params, None)
         for p in to_remove:
             workitem.remove_pomodoro(p)
         workitem.item_updated(self._when)
-        self._emit(events.AfterPomodoroRemove, params)
+        emit(events.AfterPomodoroRemove, params, None)
         return None, None

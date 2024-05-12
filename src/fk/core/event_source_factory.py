@@ -18,6 +18,7 @@ from typing import Callable, Self, TypeVar, Generic
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.tenant import Tenant
 
 TRoot = TypeVar('TRoot')
 
@@ -41,7 +42,7 @@ class EventSourceFactory(Generic[TRoot]):
         self._source_producers[name] = producer
 
 
-def get_event_source_factory() -> EventSourceFactory[TRoot]:
+def get_event_source_factory() -> EventSourceFactory[Tenant]:
     if EventSourceFactory._instance is None:
-        EventSourceFactory._instance = EventSourceFactory[TRoot]()
+        EventSourceFactory._instance = EventSourceFactory[Tenant]()
     return EventSourceFactory._instance

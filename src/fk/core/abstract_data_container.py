@@ -19,8 +19,8 @@ from typing import Iterable, Generic, TypeVar
 
 from fk.core.abstract_data_item import AbstractDataItem
 
-TParent = TypeVar('TParent', bound=AbstractDataItem)
 TChild = TypeVar('TChild', bound=AbstractDataItem)
+TParent = TypeVar('TParent', bound=AbstractDataItem)
 
 
 class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent]):

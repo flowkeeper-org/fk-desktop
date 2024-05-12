@@ -166,7 +166,7 @@ class ExportWizard(QWizard):
 
 if __name__ == '__main__':
     app = QApplication([])
-    src = FileEventSource(QtSettings())
+    src = FileEventSource[Tenant](QtSettings())
     src.start()
     wizard = ExportWizard(src, None)
     wizard.show()

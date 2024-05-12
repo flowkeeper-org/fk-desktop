@@ -49,7 +49,7 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        user = data[self._user_identity]
+        user: User = data[self._user_identity]
         if self._backlog_uid in user:
             raise Exception(f'Backlog "{self._backlog_uid}" already exists')
 
@@ -88,7 +88,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        user = data[self._user_identity]
+        user: User = data[self._user_identity]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
@@ -136,7 +136,7 @@ class RenameBacklogStrategy(AbstractStrategy['Tenant']):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        user = data[self._user_identity]
+        user: User = data[self._user_identity]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
