@@ -93,7 +93,7 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 @strategy
-class StartRestStrategy(AbstractStrategy['Tenant']):
+class StartRestStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _rest_duration: float
 
@@ -146,7 +146,7 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
 
 # AddPomodoro("123-456-789", "1")
 @strategy
-class AddPomodoroStrategy(AbstractStrategy['Tenant']):
+class AddPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
 
@@ -234,7 +234,7 @@ def _complete_pomodoro(user: User,
 
 # VoidPomodoro("123-456-789")
 @strategy
-class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
+class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def __init__(self,
@@ -256,7 +256,7 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
 
 
 # Not available externally, not registered as a strategy
-class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
+class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def __init__(self,
@@ -280,7 +280,7 @@ class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
 # CompletePomodoro("123-456-789", "finished")
 # Legacy, for compatibility purposes only. To be removed in the future.
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
+class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
     _another: VoidPomodoroStrategy | None
 
     def __init__(self,
@@ -306,7 +306,7 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
-class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
+class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
 

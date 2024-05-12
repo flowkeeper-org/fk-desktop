@@ -32,7 +32,7 @@ def is_system_user(user_identity: str):
 
 # CreateUser("alice@example.com", "Alice Cooper")
 @strategy
-class CreateUserStrategy(AbstractStrategy['Tenant']):
+class CreateUserStrategy(AbstractStrategy[Tenant]):
     _target_user_identity: str
     _user_name: str
 
@@ -72,7 +72,7 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
 
 # DeleteUser("alice@example.com", "")
 @strategy
-class DeleteUserStrategy(AbstractStrategy['Tenant']):
+class DeleteUserStrategy(AbstractStrategy[Tenant]):
     _target_user_identity: str
 
     def get_target_user_identity(self) -> str:
@@ -118,7 +118,7 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
 
 # RenameUser("alice@example.com", "Alice Cooper")
 @strategy
-class RenameUserStrategy(AbstractStrategy['Tenant']):
+class RenameUserStrategy(AbstractStrategy[Tenant]):
     _target_user_identity: str
     _new_user_name: str
 

@@ -116,7 +116,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
 
 # RenameBacklog("123-456-789", "New name")
 @strategy
-class RenameBacklogStrategy(AbstractStrategy['Tenant']):
+class RenameBacklogStrategy(AbstractStrategy[Tenant]):
     _backlog_uid: str
     _backlog_new_name: str
 

@@ -29,7 +29,7 @@ from fk.core.workitem import Workitem
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
 @strategy
-class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
+class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
@@ -97,7 +97,7 @@ def void_running_pomodoro(strategy_: AbstractStrategy,
 
 # DeleteWorkitem("123-456-789")
 @strategy
-class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
+class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def get_workitem_uid(self) -> str:
@@ -139,7 +139,7 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
 
 # RenameWorkitem("123-456-789", "Wake up")
 @strategy
-class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
+class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _new_workitem_name: str
 
@@ -190,7 +190,7 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
 
 # CompleteWorkitem("123-456-789", "canceled")
 @strategy
-class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
+class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _target_state: str
 
