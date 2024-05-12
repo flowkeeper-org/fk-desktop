@@ -21,18 +21,17 @@ from typing import Callable
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
-from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
-from fk.core.user import User
+from fk.core.tenant import Tenant
 
 EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 
 # Authenticate("alice@example.com", "secret")
 @strategy
-class AuthenticateStrategy(AbstractStrategy['Tenant']):
+class AuthenticateStrategy(AbstractStrategy[Tenant]):
     _username: str
     _token: str
 
@@ -116,12 +115,9 @@ class PongStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user_identity: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'System',
                  settings: AbstractSettings,
-                 cryptograph: AbstractCryptograph,
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
@@ -130,9 +126,9 @@ class PongStrategy(AbstractStrategy):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         # print(f'Received Pong - {self._uid}')
-        self._emit(events.PongReceived, {
+        emit(events.PongReceived, {
             'uid': self._uid
-        })
+        }, None)
         return None, None
 
 

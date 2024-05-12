@@ -30,7 +30,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
-from fk.core.strategy_factory import strategy_from_string
+from fk.core.tenant import ADMIN_USER
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
     PingStrategy
 from fk.qt.oauth import get_id_token, AuthenticationRecord
@@ -39,7 +39,7 @@ from fk.qt.qt_timer import QtTimer
 TRoot = TypeVar('TRoot')
 
 
-class WebsocketEventSource(AbstractEventSource):
+class WebsocketEventSource(AbstractEventSource[TRoot]):
     _data: TRoot
     _ws: QtWebSockets.QWebSocket
     _mute_requested: bool
@@ -124,12 +124,12 @@ class WebsocketEventSource(AbstractEventSource):
                         to_unmute = True
                     to_emit = True
                     break
-                s = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
-                if type(s) is str:
+                s = self._serializer.deserialize(line)
+                if s is None:
                     continue
                 elif type(s) is ErrorStrategy:
                     self._received_error = True
-                    s.execute()  # This will throw an exception
+                    s.execute(self._emit, self._data)  # This will throw an exception
                 elif type(s) is PongStrategy:
                     # A special case where we want to ignore the sequence
                     self.execute_prepared_strategy(s)
@@ -161,24 +161,23 @@ class WebsocketEventSource(AbstractEventSource):
         print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
         auth_strategy = AuthenticateStrategy(1,
-                                    now,
-                                    self._data.get_admin_user(),
-                                    [auth.email, f'{auth.type}|{auth.id_token}', 'false'],
-                                    self._emit,
-                                    self._data,
-                                    self._settings)
-        # print(f'Sending auth strategy: {auth_strategy}')
-        self._ws.sendTextMessage(str(auth_strategy))
+                                             now,
+                                             ADMIN_USER,
+                                             [auth.email, f'{auth.type}|{auth.id_token}', 'false'],
+                                             self._settings)
+        st = self._serializer.serialize(auth_strategy)
+        print(f'Sending auth strategy: {st}')
+        self._ws.sendTextMessage(st)
 
         print(f'Requesting replay starting from #{self._last_seq}')
         replay = ReplayStrategy(2,
                                 now,
-                                self._data.get_admin_user(),
+                                ADMIN_USER,
                                 [str(self._last_seq)],
-                                self._emit,
-                                self._data,
                                 self._settings)
-        self._ws.sendTextMessage(str(replay))
+        rt = self._serializer.serialize(replay)
+        print(f'Sending replay strategy: {rt}')
+        self._ws.sendTextMessage(rt)
 
         self._emit(events.SourceMessagesRequested, dict())
         if self._mute_requested:
@@ -204,8 +203,9 @@ class WebsocketEventSource(AbstractEventSource):
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
-            # print('Sending', str(s))
-            self._ws.sendTextMessage(str(s))
+            to_send = self._serializer.serialize(s)
+            print('Sending', to_send)
+            self._ws.sendTextMessage(to_send)
 
     def get_name(self) -> str:
         return "Websocket"
@@ -225,12 +225,12 @@ class WebsocketEventSource(AbstractEventSource):
         uid = generate_uid()
         ping = PingStrategy(1,
                             now,
-                            self._data.get_admin_user(),
+                            ADMIN_USER,
                             [uid],
-                            self._emit,
-                            self._data,
                             self._settings)
-        self._ws.sendTextMessage(str(ping))
+        ps = self._serializer.serialize(ping)
+        print(f'Sending ping strategy: {ps}')
+        self._ws.sendTextMessage(ps)
         return uid
 
     def can_connect(self):

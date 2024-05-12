@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import TypeVar, Generic
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -29,12 +30,14 @@ TRoot = TypeVar('TRoot')
 
 class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
     _settings: AbstractSettings
+    _cryptograph: AbstractCryptograph
     _source: AbstractEventSource[TRoot] | None
 
-    def __init__(self, settings: AbstractSettings):
+    def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
         super().__init__(allowed_events=[BeforeSourceChanged, AfterSourceChanged],
                          callback_invoker=settings.invoke_callback)
         self._settings = settings
+        self._cryptograph = cryptograph
         self._source = None
 
     def request_new_source(self) -> None:
@@ -57,6 +60,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         print(f'EventSourceHolder: About to create new source using producer {producer}')
         self._source = producer(
             self._settings,
+            self._cryptograph,
             Tenant(self._settings))
         print(f'EventSourceHolder: Source object created. You need to start it yourself!')
 

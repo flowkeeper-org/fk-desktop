@@ -16,6 +16,7 @@
 
 from typing import Callable, Self, TypeVar, Generic
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.tenant import Tenant
@@ -24,7 +25,7 @@ TRoot = TypeVar('TRoot')
 
 
 class EventSourceFactory(Generic[TRoot]):
-    _source_producers: dict[str, Callable[[AbstractSettings, object], AbstractEventSource[TRoot]]]
+    _source_producers: dict[str, Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]]
     _instance: Self = None
 
     def __init__(self):
@@ -33,12 +34,12 @@ class EventSourceFactory(Generic[TRoot]):
     def is_valid(self, name: str) -> bool:
         return name in self._source_producers
 
-    def get_producer(self, name: str) -> Callable[[AbstractSettings, object], AbstractEventSource[TRoot]]:
+    def get_producer(self, name: str) -> Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]:
         return self._source_producers.get(name)
 
     def register_producer(self,
                           name: str,
-                          producer: Callable[[AbstractSettings, object], AbstractEventSource[TRoot]]) -> None:
+                          producer: Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]) -> None:
         self._source_producers[name] = producer
 
 

@@ -28,6 +28,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -35,6 +36,7 @@ from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory, get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.desktop.export_wizard import ExportWizard
@@ -59,6 +61,7 @@ NewReleaseAvailable = "NewReleaseAvailable"
 
 class Application(QApplication, AbstractEventEmitter):
     _settings: AbstractSettings
+    _cryptograph: AbstractCryptograph
     _font_main: QFont
     _font_header: QFont
     _row_height: int
@@ -89,6 +92,7 @@ class Application(QApplication, AbstractEventEmitter):
         if self.is_e2e_mode():
             self._settings = QtSettings('desktop-client-e2e')
             self._settings.reset_to_defaults()
+            self._cryptograph = FernetCryptograph(self._settings)
             from fk.e2e.backlog_e2e import BacklogE2eTest
             test = BacklogE2eTest(self)
             sys.excepthook = test.on_exception
@@ -96,6 +100,7 @@ class Application(QApplication, AbstractEventEmitter):
         else:
             sys.excepthook = self.on_exception
             self._settings = QtSettings()
+            self._cryptograph = FernetCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close
@@ -117,7 +122,7 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.show_tutorial') == 'True':
             self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
-        self._source_holder = EventSourceHolder(self._settings)
+        self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
         # Heartbeat
@@ -129,20 +134,20 @@ class Application(QApplication, AbstractEventEmitter):
         self._source_holder.request_new_source()
 
     def _register_source_producers(self):
-        def local_source_producer(settings, root):
-            inner_source = FileEventSource[Tenant](settings, root, QtFilesystemWatcher())
+        def local_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            inner_source = FileEventSource[Tenant](settings, cryptograph, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
         get_event_source_factory().register_producer('local', local_source_producer)
 
-        def ephemeral_source_producer(settings, root):
-            inner_source = EphemeralEventSource[Tenant](settings, root)
+        def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
             return ThreadedEventSource(inner_source, self)
 
         get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
-        def websocket_source_producer(settings, root):
-            return WebsocketEventSource[Tenant](settings, self, root)
+        def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
 
         get_event_source_factory().register_producer('websocket', websocket_source_producer)
         get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)

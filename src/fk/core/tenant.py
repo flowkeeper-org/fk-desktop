@@ -49,8 +49,5 @@ class Tenant(AbstractDataContainer[User, None]):
     def get_user(self, identity: str) -> User:
         return self[identity]
 
-    def get_admin_user(self) -> User:
-        return self[ADMIN_USER]
-
     def get_current_user(self) -> User:
         return self[self._settings.get_username()]
