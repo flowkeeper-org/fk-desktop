@@ -17,7 +17,7 @@ from fk.desktop.application import Application
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.1  # seconds
-STARTUP_DURATION = 1  # seconds
+STARTUP_DURATION = 2  # seconds
 
 
 class AbstractE2eTest(ABC):

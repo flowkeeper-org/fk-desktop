@@ -60,13 +60,13 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
         emit(events.BeforeUserCreate, {
             'user_identity': self._target_user_identity,
             'user_name': self._user_name,
-        }, None)
+        }, self._carry)
         user = User(data, self._target_user_identity, self._user_name, self._when, False)
         data[self._target_user_identity] = user
         user.item_updated(self._when)   # This will also update the Tenant
         emit(events.AfterUserCreate, {
             'user': user
-        }, None)
+        }, self._carry)
         return None, None
 
 
@@ -103,7 +103,7 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
         params = {
             'user': user
         }
-        emit(events.BeforeUserDelete, params, None)
+        emit(events.BeforeUserDelete, params, self._carry)
 
         # Cascade delete all backlogs first
         for backlog in user.values():
@@ -112,7 +112,7 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
 
         # Now delete the user
         del data[self._target_user_identity]
-        emit(events.AfterUserDelete, params, None)
+        emit(events.AfterUserDelete, params, self._carry)
         return None, None
 
 
@@ -154,8 +154,8 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
             'old_name': old_name,
             'new_name': self._new_user_name,
         }
-        emit(events.BeforeUserRename, params, None)
+        emit(events.BeforeUserRename, params, self._carry)
         user._name = self._new_user_name
         user.item_updated(self._when)
-        emit(events.AfterUserRename, params, None)
+        emit(events.AfterUserRename, params, self._carry)
         return None, None

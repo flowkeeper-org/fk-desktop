@@ -67,7 +67,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
             'backlog_uid': self._backlog_uid,
             'workitem_uid': self._workitem_uid,
             'workitem_name': self._workitem_name,
-        }, None)
+        }, self._carry)
         workitem = Workitem(
             self._workitem_name,
             self._workitem_uid,
@@ -78,8 +78,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         workitem.item_updated(self._when)   # This will also update the Backlog
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
-            'carry': None,
-        }, None)
+        }, self._carry)
         return None, None
 
 
@@ -129,11 +128,11 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         params = {
             'workitem': workitem
         }
-        emit(events.BeforeWorkitemDelete, params, None)
+        emit(events.BeforeWorkitemDelete, params, self._carry)
         void_running_pomodoro(self, emit, data, workitem)
         workitem.item_updated(self._when)   # Update Backlog
         del workitem.get_parent()[self._workitem_uid]
-        emit(events.AfterWorkitemDelete, params, None)
+        emit(events.AfterWorkitemDelete, params, self._carry)
         return None, None
 
 
@@ -182,10 +181,10 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
             'old_name': workitem.get_name(),
             'new_name': self._new_workitem_name,
         }
-        emit(events.BeforeWorkitemRename, params, None)
+        emit(events.BeforeWorkitemRename, params, self._carry)
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
-        emit(events.AfterWorkitemRename, params, None)
+        emit(events.AfterWorkitemRename, params, self._carry)
 
 
 # CompleteWorkitem("123-456-789", "canceled")
@@ -228,7 +227,7 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
             'workitem': workitem,
             'target_state': self._target_state,
         }
-        emit(events.BeforeWorkitemComplete, params, None)
+        emit(events.BeforeWorkitemComplete, params, self._carry)
 
         # First void pomodoros if needed
         void_running_pomodoro(self, emit, data, workitem)
@@ -236,5 +235,5 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
-        emit(events.AfterWorkitemComplete, params, None)
+        emit(events.AfterWorkitemComplete, params, self._carry)
         return None, None

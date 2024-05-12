@@ -58,13 +58,13 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
             'backlog_name': self._backlog_name,
             'backlog_owner': user,
             'backlog_uid': self._backlog_uid,
-        }, None)
+        }, self._carry)
         backlog = Backlog(self._backlog_name, user, self._backlog_uid, self._when)
         user[self._backlog_uid] = backlog
         backlog.item_updated(self._when)    # This will also update the User
         emit(events.AfterBacklogCreate, {
             'backlog': backlog
-        }, None)
+        }, self._carry)
         return None, None
 
 
@@ -97,7 +97,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
         params = {
             'backlog': backlog
         }
-        emit(events.BeforeBacklogDelete, params, None)
+        emit(events.BeforeBacklogDelete, params, self._carry)
 
         # First delete all workitems recursively
         for workitem in list(backlog.values()):
@@ -110,7 +110,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
         # Now we can delete the backlog itself
         del user[self._backlog_uid]
 
-        emit(events.AfterBacklogDelete, params, None)
+        emit(events.AfterBacklogDelete, params, self._carry)
         return None, None
 
 
@@ -147,8 +147,8 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
             'old_name': backlog.get_name(),
             'new_name': self._backlog_new_name,
         }
-        emit(events.BeforeBacklogRename, params, None)
+        emit(events.BeforeBacklogRename, params, self._carry)
         backlog.set_name(self._backlog_new_name)
         backlog.item_updated(self._when)
-        emit(events.AfterBacklogRename, params, None)
+        emit(events.AfterBacklogRename, params, self._carry)
         return None, None

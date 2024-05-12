@@ -77,14 +77,14 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
                     'work_duration': work_duration,
                 }
                 if not workitem.is_running():
-                    emit(events.BeforeWorkitemStart, params, None)
+                    emit(events.BeforeWorkitemStart, params, self._carry)
                     workitem.start(self._when)
-                    emit(events.AfterWorkitemStart, params, None)
-                emit(events.BeforePomodoroWorkStart, params, None)
+                    emit(events.AfterWorkitemStart, params, self._carry)
+                emit(events.BeforePomodoroWorkStart, params, self._carry)
                 pomodoro.update_work_duration(work_duration)
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
-                emit(events.AfterPomodoroWorkStart, params, None)
+                emit(events.AfterPomodoroWorkStart, params, self._carry)
                 return None, None
 
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
@@ -134,11 +134,11 @@ class StartRestStrategy(AbstractStrategy[Tenant]):
                     'workitem': workitem,
                     'rest_duration': rest_duration,
                 }
-                emit(events.BeforePomodoroRestStart, params, None)
+                emit(events.BeforePomodoroRestStart, params, self._carry)
                 pomodoro.update_rest_duration(rest_duration)
                 pomodoro.start_rest(self._when)
                 pomodoro.item_updated(self._when)
-                emit(events.AfterPomodoroRestStart, params, None)
+                emit(events.AfterPomodoroRestStart, params, self._carry)
                 return None, None
 
         raise Exception(f'No in-work pomodoro in "{self._workitem_uid}"')
@@ -186,14 +186,14 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
             'workitem': workitem,
             'num_pomodoros': self._num_pomodoros,
         }
-        emit(events.BeforePomodoroAdd, params, None)
+        emit(events.BeforePomodoroAdd, params, self._carry)
         workitem.add_pomodoro(
             self._num_pomodoros,
             self._default_work_duration,
             self._default_rest_duration,
             self._when)
         workitem.item_updated(self._when)
-        emit(events.AfterPomodoroAdd, params, None)
+        emit(events.AfterPomodoroAdd, params, self._carry)
         return None, None
 
 
@@ -201,6 +201,7 @@ def _complete_pomodoro(user: User,
                        workitem_uid: str,
                        target_state: str,
                        emit: Callable[[str, dict[str, any], any], None],
+                       carry: any,
                        when: datetime.datetime) -> None:
     workitem: Workitem | None = None
     for backlog in user.values():
@@ -223,10 +224,10 @@ def _complete_pomodoro(user: User,
                 'pomodoro': pomodoro,
                 'target_state': target_state,
             }
-            emit(events.BeforePomodoroComplete, params, None)
+            emit(events.BeforePomodoroComplete, params, carry)
             pomodoro.seal(target_state, when)
             pomodoro.item_updated(when)
-            emit(events.AfterPomodoroComplete, params, None)
+            emit(events.AfterPomodoroComplete, params, carry)
             return
 
     raise Exception(f'No running pomodoros in "{workitem_uid}"')
@@ -251,7 +252,7 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._when)
+        _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._carry, self._when)
         return None, None
 
 
@@ -273,7 +274,7 @@ class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._when)
+        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._carry, self._when)
         return None, None
 
 
@@ -355,9 +356,9 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
             'num_pomodoros': self._num_pomodoros,
             'pomodoros': to_remove
         }
-        emit(events.BeforePomodoroRemove, params, None)
+        emit(events.BeforePomodoroRemove, params, self._carry)
         for p in to_remove:
             workitem.remove_pomodoro(p)
         workitem.item_updated(self._when)
-        emit(events.AfterPomodoroRemove, params, None)
+        emit(events.AfterPomodoroRemove, params, self._carry)
         return None, None

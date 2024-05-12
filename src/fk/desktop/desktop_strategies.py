@@ -128,7 +128,7 @@ class PongStrategy(AbstractStrategy):
         # print(f'Received Pong - {self._uid}')
         emit(events.PongReceived, {
             'uid': self._uid
-        }, None)
+        }, self._carry)
         return None, None
 
 

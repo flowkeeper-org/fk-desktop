@@ -154,8 +154,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._settings.get_username(),
             params,
             self._settings,
-            carry
-        )
+            carry)
         self.execute_prepared_strategy(s, auto)
 
         if persist:
