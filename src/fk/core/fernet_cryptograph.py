@@ -38,21 +38,25 @@ class FernetCryptograph(AbstractCryptograph):
             salt=b'e1a7a49b5bad75ec81fcb8cded4bbc0c',
             iterations=480000,
         )
-        key = base64.urlsafe_b64encode(kdf.derive(self.key))
-        self._fernet = Fernet(key)
+        key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
+        return Fernet(key)
 
     def _on_key_changed(self) -> None:
         if self.enabled:
-            self._fernet = self._create_fernet(self.key)
+            self._fernet = self._create_fernet()
         else:
             self._fernet = None
 
     def encrypt(self, s: str) -> str:
+        if self._fernet is None:
+            return s
         return self._fernet.encrypt(
             bytes(s, encoding='utf-8')
         ).decode('utf-8')
 
     def decrypt(self, s: str) -> str:
+        if self._fernet is None:
+            return s
         return self._fernet.decrypt(
             s.encode('utf-8')
         ).decode('utf-8')

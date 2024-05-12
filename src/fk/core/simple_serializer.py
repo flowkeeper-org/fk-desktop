@@ -36,6 +36,7 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
                        r'"((?:[^"\\]|\\"|\\\\)*)"\s*)*\)')
 
     def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
+        print(f'SimpleSerializer.__init__({settings}, {cryptograph})')
         super().__init__(settings, cryptograph)
 
     @staticmethod
@@ -50,14 +51,17 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
         if len(escaped) < 2:
             escaped.append("")
         params = '"' + '", "'.join(escaped) + '"'
-        return f'{s.get_sequence()}, {s.get_when()}, {s.get_user_identity()}: {s.get_name()}({params})'
+        plaintext = f'{s.get_sequence()}, {s.get_when()}, {s.get_user_identity()}: {s.get_name()}({params})'
+        return self._cryptograph.encrypt(plaintext)
 
     def deserialize(self, t: str) -> AbstractStrategy[TRoot] | None:
+        plaintext = self._cryptograph.decrypt(t)
+
         # Empty strings and comments are special cases
-        if t.strip() == '' or t.startswith('#'):
+        if plaintext.strip() == '' or plaintext.startswith('#'):
             return None
 
-        m = self.REGEX.search(t)
+        m = self.REGEX.search(plaintext)
         if m is not None:
             name = m.group(4)
             if name not in STRATEGIES:
@@ -73,4 +77,7 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
             # print (f"Initializing: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
             return STRATEGIES[name](seq, when, user, params, self._settings, self._cryptograph)
         else:
-            raise Exception(f"Bad syntax: {t}")
+            raise Exception(f"Bad syntax: {plaintext}")
+
+    def __str__(self):
+        return f'SimpleSerializer with settings {self._settings} and cryptograph {self._cryptograph}'

@@ -57,7 +57,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
             self._source.disconnect()
 
         producer = get_event_source_factory().get_producer(source_type)
-        print(f'EventSourceHolder: About to create new source using producer {producer}')
+        print(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
         self._source = producer(
             self._settings,
             self._cryptograph,

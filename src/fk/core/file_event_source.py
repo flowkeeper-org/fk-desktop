@@ -51,6 +51,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         super().__init__(SimpleSerializer(settings, cryptograph),
                          settings,
                          cryptograph)
+        print(f'Created FileEventSource with serializer {self._serializer}')
         self._data = root
         self._watcher = None
         self._existing_strategies = existing_strategies
