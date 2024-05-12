@@ -13,25 +13,29 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from abc import ABC, abstractmethod
+from typing import TypeVar, Generic
 
-import re
-from typing import Type, TypeVar
-
+from fk.core.abstract_cryptograph import AbstractCryptograph
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 
-STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
-
-STRATEGIES = dict()
-
+T = TypeVar('T')
 TRoot = TypeVar('TRoot')
 
 
-def strategy(cls: Type[AbstractStrategy[TRoot]]):
-    m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
-    if m is not None:
-        name = m.group(1)
-        # print(f'Registering strategy {name} -> {cls.__name__}')
-        STRATEGIES[name] = cls
-        return cls
-    else:
-        raise Exception(f"Invalid strategy class name: {cls.__name__}")
+class AbstractSerializer(ABC, Generic[T, TRoot]):
+    _settings: AbstractSettings
+    _cryptograph: AbstractCryptograph
+
+    def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
+        self._settings = settings
+        self._cryptograph = cryptograph
+
+    @abstractmethod
+    def serialize(self, s: AbstractStrategy[TRoot]) -> T:
+        pass
+
+    @abstractmethod
+    def deserialize(self, t: T) -> AbstractStrategy[TRoot] | None:
+        pass

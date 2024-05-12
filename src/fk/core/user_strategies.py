@@ -38,14 +38,14 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
         self._user_name = params[1]
 
@@ -57,8 +57,8 @@ class CreateUserStrategy(AbstractStrategy['Tenant']):
         return params
 
     def execute(self) -> (str, any):
-        if not self._user.is_system_user():
-            raise Exception(f'A non-System user "{self._user}" tries to create user "{self._user_identity}"')
+        if not self._user_identity.is_system_user():
+            raise Exception(f'A non-System user "{self._user_identity}" tries to create user "{self._user_identity}"')
         if self._user_identity in self._data:
             raise Exception(f'User "{self._user_identity}" already exists')
         self._emit(events.BeforeUserCreate, {
@@ -85,14 +85,14 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -107,8 +107,8 @@ class DeleteUserStrategy(AbstractStrategy['Tenant']):
             raise Exception(f'User "{self._user_identity}" not found')
         if self._data[self._user_identity].is_system_user():
             raise Exception(f'Not allowed to delete System user')
-        if not self._user.is_system_user():
-            raise Exception(f'A non-System user "{self._user}" tries to delete user "{self._user_identity}"')
+        if not self._user_identity.is_system_user():
+            raise Exception(f'A non-System user "{self._user_identity}" tries to delete user "{self._user_identity}"')
 
         user = self._data[self._user_identity]
         params = {
@@ -139,14 +139,14 @@ class RenameUserStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._user_identity = params[0]
         self._new_user_name = params[1]
 
@@ -162,8 +162,8 @@ class RenameUserStrategy(AbstractStrategy['Tenant']):
             raise Exception(f'User "{self._user_identity}" not found')
         if self._data[self._user_identity].is_system_user():
             raise Exception(f'Not allowed to rename System user')
-        if not self._user.is_system_user():
-            raise Exception(f'A non-System user "{self._user}" tries to rename user "{self._user_identity}"')
+        if not self._user_identity.is_system_user():
+            raise Exception(f'A non-System user "{self._user_identity}" tries to rename user "{self._user_identity}"')
 
         user = self._data[self._user_identity]
         old_name = user.get_name()

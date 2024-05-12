@@ -39,14 +39,14 @@ class AuthenticateStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._username = params[0]
         self._token = params[1]
 
@@ -69,14 +69,14 @@ class ReplayStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._since_seq = int(params[0])
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -100,14 +100,14 @@ class ErrorStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
 
@@ -140,14 +140,14 @@ class PongStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any]], None],
                  data: 'System',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._uid = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -173,14 +173,14 @@ class PingStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._uid = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:

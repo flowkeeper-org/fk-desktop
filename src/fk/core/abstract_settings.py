@@ -87,8 +87,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
-                 callback_invoker: Callable,
-                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
+                 callback_invoker: Callable):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingsChanged,
             events.AfterSettingsChanged,

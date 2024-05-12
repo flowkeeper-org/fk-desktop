@@ -43,14 +43,14 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
@@ -63,7 +63,7 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         return params
 
     def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
@@ -110,14 +110,14 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -129,7 +129,7 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -161,14 +161,14 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
@@ -181,7 +181,7 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -220,14 +220,14 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
@@ -240,7 +240,7 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]

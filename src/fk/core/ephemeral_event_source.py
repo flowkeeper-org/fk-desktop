@@ -20,6 +20,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.simple_serializer import SimpleSerializer
 
 TRoot = TypeVar('TRoot')
 
@@ -32,7 +33,9 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  root: TRoot):
-        super().__init__(settings, cryptograph)
+        super().__init__(SimpleSerializer(settings, cryptograph),
+                         settings,
+                         cryptograph)
         self._data = root
         self._content = list()
 
@@ -42,7 +45,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         if mute_events:
             self.mute()
 
-        strategy = self.get_data().get_init_strategy(self._emit)
+        strategy = self.get_init_strategy(self._emit)
         self._content.append(f'{strategy}')
         self.execute_prepared_strategy(strategy)
 
@@ -50,7 +53,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
-    def _append(self, strategies: list[AbstractStrategy]) -> None:
+    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         for s in strategies:
             self._content.append(str(s))
 
@@ -60,8 +63,8 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
     def get_data(self) -> TRoot:
         return self._data
 
-    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return EphemeralEventSource(self._settings, self._cryptograph, new_root, existing_strategies)
+    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy[TRoot]] | None = None) -> Self:
+        return EphemeralEventSource(self._settings, self._cryptograph, new_root)
 
     def disconnect(self):
         self._content.clear()

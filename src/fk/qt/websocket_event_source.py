@@ -29,6 +29,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
+from fk.core.simple_serializer import SimpleSerializer
 from fk.core.strategy_factory import strategy_from_string
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
     PingStrategy
@@ -54,7 +55,9 @@ class WebsocketEventSource(AbstractEventSource):
                  cryptograph: AbstractCryptograph,
                  application: QApplication,
                  root: TRoot):
-        super().__init__(settings, cryptograph)
+        super().__init__(SimpleSerializer(settings, cryptograph),
+                         settings,
+                         cryptograph)
         self._data = root
         self._application = application
         self._mute_requested = True

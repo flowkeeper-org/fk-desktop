@@ -36,9 +36,9 @@ class AbstractCryptograph(ABC):
 
     def _generate_key(self) -> None:
         key = ''.join(
-            secrets.choice(string.ascii_letters + string.digits) for i in range(20)
+            secrets.choice(string.ascii_letters + string.digits) for _ in range(20)
         )
-        self.set({'Source.encryption_key': key})
+        self._settings.set({'Source.encryption_key': key})
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         fire = False
@@ -62,4 +62,3 @@ class AbstractCryptograph(ABC):
     @abstractmethod
     def decrypt(self, s: str) -> str:
         pass
-

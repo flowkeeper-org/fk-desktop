@@ -37,14 +37,14 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._work_duration = float(params[1])
 
@@ -58,7 +58,7 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
         running: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -108,14 +108,14 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._rest_duration = float(params[1])
 
@@ -128,7 +128,7 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
 
     def execute(self) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -169,14 +169,14 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = float(settings.get('Pomodoro.default_work_duration'))
@@ -194,7 +194,7 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -264,14 +264,14 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -282,7 +282,7 @@ class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
         return params
 
     def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         _complete_pomodoro(user, self._workitem_uid, 'canceled', self._emit, self._when)
         return None, None
 
@@ -294,14 +294,14 @@ class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
 
     def get_encrypted_parameters(self) -> list[str]:
@@ -312,7 +312,7 @@ class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
         return params
 
     def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         _complete_pomodoro(user, self._workitem_uid, 'finished', self._emit, self._when)
         return None, None
 
@@ -326,16 +326,16 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         if params[1] == 'canceled':
-            self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
+            self._another = VoidPomodoroStrategy(seq, when, user_identity, [params[0]], emit, data, settings, carry)
         else:
             self._another = None
 
@@ -361,14 +361,14 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: User,
                  params: list[str],
                  emit: Callable[[str, dict[str, any], any], None],
                  data: 'Tenant',
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, cryptograph, carry)
+        super().__init__(seq, when, user_identity, params, emit, data, settings, cryptograph, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
 
@@ -384,7 +384,7 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user = self._data[self._user_identity.get_identity()]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]

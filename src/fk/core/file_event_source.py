@@ -26,9 +26,10 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
+from fk.core.simple_serializer import SimpleSerializer
 from fk.core.strategy_factory import strategy_from_string
+from fk.core.tenant import Tenant
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy
@@ -48,7 +49,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
                  root: TRoot,
                  filesystem_watcher: AbstractFilesystemWatcher = None,
                  existing_strategies: Iterable[AbstractStrategy] | None = None):
-        super().__init__(settings, cryptograph)
+        super().__init__(SimpleSerializer(settings, cryptograph),
+                         settings,
+                         cryptograph)
         self._data = root
         self._watcher = None
         self._existing_strategies = existing_strategies
@@ -129,7 +132,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         filename = self._get_filename()
         if not path.isfile(filename):
             with open(filename, 'w', encoding='UTF-8') as f:
-                s = self.get_data().get_init_strategy(self._emit)
+                s = self.get_init_strategy(self._emit)
                 f.write(f'{s}\n')
                 print(f'Created empty data file {filename}')
 
@@ -208,7 +211,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if uid not in all_users:
                         strategies.append(CreateUserStrategy(1,
                                                              s._when,
-                                                             s._user,
+                                                             s._user_identity,
                                                              [uid, f"[Repaired] {uid}"],
                                                              self._emit,
                                                              self._data,
@@ -230,12 +233,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     uid = cast.get_backlog_uid()
                     if uid not in all_backlogs:
                         strategies.append(CreateBacklogStrategy(1,
-                                                             s._when,
-                                                             s._user,
-                                                             [uid, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
-                                                             self._settings))
+                                                                s._when,
+                                                                s._user_identity,
+                                                                [uid, f"[Repaired] {uid}"],
+                                                                self._emit,
+                                                                self._data,
+                                                                self._settings))
                         all_backlogs.add(uid)
                         log.append(f'Created missing backlog on first reference: {s}')
                         changes += 1
@@ -256,7 +259,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             repaired_backlog = generate_uid()
                             strategies.append(CreateBacklogStrategy(1,
                                                                     s._when,
-                                                                    s._user,
+                                                                    s._user_identity,
                                                                     [repaired_backlog, '[Repaired] Orphan workitems'],
                                                                     self._emit,
                                                                     self._data,
@@ -265,12 +268,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             log.append(f'Created a backlog for orphan workitems: {repaired_backlog}')
                             changes += 1
                         strategies.append(CreateWorkitemStrategy(1,
-                                                             s._when,
-                                                             s._user,
-                                                             [uid, repaired_backlog, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
-                                                             self._settings))
+                                                                 s._when,
+                                                                 s._user_identity,
+                                                                 [uid, repaired_backlog, f"[Repaired] {uid}"],
+                                                                 self._emit,
+                                                                 self._data,
+                                                                 self._settings))
                         all_workitems.add(uid)
                         log.append(f'Created missing workitem on first reference: {s}')
                         changes += 1

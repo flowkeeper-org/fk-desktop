@@ -1,10 +1,12 @@
 ### v0.5.0 (TBD)
+- Support for end-to-end encryption (mandatory for flowkeeper.org).
 - Now we can change appearance theme on the fly.
 - Added a bunch of new color themes.
 - New fonts can now be applied without application restart.
 - [Bugfix] Fixed workitem search.
 - [Technical] E2e tests handle exceptions correctly now.
 - [Technical] Restructured the resources, icons and colors.
+- [Technical] Sharing timer state with teammates (no support in the UI yet).
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.
