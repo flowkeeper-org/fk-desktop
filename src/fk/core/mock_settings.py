@@ -48,26 +48,17 @@ class MockSettings(AbstractSettings):
             'old_values': old_values,
             'new_values': values,
         }
-        self._emit(events.BeforeSettingsChanged, params)
+        self._emit(events.BeforeSettingsChanged, params, None)
         for name in old_values.keys():  # This is not a typo, we've just filtered this list
             # to only contain settings which actually changed.
             self._settings[name] = values[name]
-        self._emit(events.AfterSettingsChanged, params)
+        self._emit(events.AfterSettingsChanged, params, None)
 
     def location(self) -> str:
         return "N/A"
 
     def clear(self) -> None:
         self._settings = {}
-
-    def _recompute_visibility(self, option_id, new_value):
-        computed = dict[str, str]()
-        for name in self._widgets_value:
-            computed[name] = self._widgets_value[name]()
-        computed[option_id] = new_value
-        for widget in self._widgets_visibility:
-            is_visible = self._widgets_visibility[widget](computed)
-            widget.setVisible(is_visible)
 
     def get_displayed_settings(self) -> list[str]:
         res = list()

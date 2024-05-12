@@ -28,7 +28,6 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.simple_serializer import SimpleSerializer
-from fk.core.strategy_factory import strategy_from_string
 from fk.core.tenant import Tenant
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
@@ -131,7 +130,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if not path.isfile(filename):
             with open(filename, 'w', encoding='UTF-8') as f:
                 s = self.get_init_strategy(self._emit)
-                f.write(f'{s}\n')
+                f.write(f'{self._serializer.serialize(s)}\n')
                 print(f'Created empty data file {filename}')
 
         is_first = True
@@ -139,8 +138,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
         print(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings, self._cryptograph)
-                if type(strategy) is str:
+                strategy = self._serializer.deserialize(line)
+                if strategy is None:
                     continue
                 self._last_strategy = strategy
 
@@ -184,11 +183,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         all_users: set[str] = set()
         all_backlogs: set[str] = set()
         all_workitems: set[str] = set()
-        repaired_backlog: str = None
+        repaired_backlog: str | None = None
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 try:
-                    s = strategy_from_string(line, self._emit, self._data, self._settings, self._cryptograph)
+                    s = self._serializer.deserialize(line)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {s}')
                     changes += 1
@@ -282,7 +281,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Renumber strategies
             seq = strategies[0].get_sequence()
             for s in strategies:
-                if type(s) is str:
+                if s is None:
                     continue
                 if s.get_sequence() != seq:
                     s._seq = seq
@@ -314,7 +313,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Write it back
             with open(filename, 'w', encoding='UTF-8') as f:
                 for s in strategies:
-                    f.write(str(s) + '\n')
+                    f.write(self._serializer.serialize(s) + '\n')
             log.append(f'Overwritten original file {filename}')
         else:
             log.append(f'No changes were made')
@@ -327,7 +326,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # then append to both files at the same time.
         with open(self._get_filename(), 'a', encoding='UTF-8') as f:
             for s in strategies:
-                f.write(str(s) + '\n')
+                f.write(self._serializer.serialize(s) + '\n')
 
     def get_name(self) -> str:
         return "File"

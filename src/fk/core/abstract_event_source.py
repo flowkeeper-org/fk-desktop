@@ -296,8 +296,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
         return CreateUserStrategy(1,
                                   datetime.datetime.now(datetime.timezone.utc),
-                                  self[ADMIN_USER],
+                                  ADMIN_USER,
                                   [self._settings.get_username(), self._settings.get_fullname()],
-                                  emit,
-                                  self,
                                   self._settings)

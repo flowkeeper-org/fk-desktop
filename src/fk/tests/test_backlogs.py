@@ -76,10 +76,8 @@ class TestBacklogs(TestCase):
         user = self.data['user@local.host']
         s = CreateBacklogStrategy(2,
                                   datetime.datetime.now(datetime.timezone.utc),
-                                  user,
+                                  user.get_identity(),
                                   ['123-456-789-1', 'First backlog'],
-                                  self.source._emit,
-                                  self.data,
                                   self.settings)
         self.source.execute_prepared_strategy(s)
         self.source.auto_seal()
@@ -127,10 +125,8 @@ class TestBacklogs(TestCase):
         user = self.data['user@local.host']
         s = CreateBacklogStrategy(2,
                                   datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=14),
-                                  user,
+                                  user.get_identity(),
                                   ['123-456-789-1', 'First backlog'],
-                                  self.source._emit,
-                                  self.data,
                                   self.settings)
         self.source.execute_prepared_strategy(s)
         self.source.auto_seal()

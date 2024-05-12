@@ -20,10 +20,8 @@ from typing import Type, TypeVar
 from fk.core.abstract_strategy import AbstractStrategy
 
 STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
-
-STRATEGIES = dict()
-
 TRoot = TypeVar('TRoot')
+STRATEGIES = dict[str, Type[AbstractStrategy[TRoot]]]()
 
 
 def strategy(cls: Type[AbstractStrategy[TRoot]]):

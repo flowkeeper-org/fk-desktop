@@ -23,6 +23,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
+from fk.core.user import User
 from fk.core.workitem_strategies import DeleteWorkitemStrategy
 
 

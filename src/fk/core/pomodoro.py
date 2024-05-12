@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import datetime
 
 from fk.core.abstract_data_item import AbstractDataItem
@@ -119,10 +121,10 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def is_canceled(self) -> bool:
         return self._state == 'canceled'
 
-    def get_work_duration(self) -> int:
+    def get_work_duration(self) -> float:
         return self._work_duration
 
-    def get_rest_duration(self) -> int:
+    def get_rest_duration(self) -> float:
         return self._rest_duration
 
     def total_remaining_time(self) -> float:
@@ -153,7 +155,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
         else:
             return f"{round(m)} minutes"
 
-    def planned_time_in_current_state(self) -> int:
+    def planned_time_in_current_state(self) -> float:
         # Planned time in the current state in seconds. Will be 0 if this pomodoro is
         # sealed or hasn't started yet.
         if self.is_resting():
@@ -169,7 +171,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def planned_end_of_rest(self) -> datetime.datetime:
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
 
-    def total_planned_time(self) -> int:
+    def total_planned_time(self) -> float:
         # Total planned time in seconds. Can be None, if this pomodoro is sealed or hasn't started yet.
         planned_in_current = self.planned_time_in_current_state()
         if self.is_working():

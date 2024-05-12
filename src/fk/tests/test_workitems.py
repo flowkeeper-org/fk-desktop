@@ -18,18 +18,17 @@ from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.fernet_cryptograph import FernetCryptograph
-from fk.core.workitem import Workitem
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
-from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
-    CompleteWorkitemStrategy
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
+    CompleteWorkitemStrategy
 
 
 class TestWorkitems(TestCase):
@@ -83,10 +82,8 @@ class TestWorkitems(TestCase):
         user, backlog = self._standard_backlog()
         s = CreateWorkitemStrategy(2,
                                   datetime.datetime.now(datetime.timezone.utc),
-                                  user,
+                                  user.get_identity(),
                                   ['w11', 'b1', 'First workitem'],
-                                  self.source._emit,
-                                  self.data,
                                   self.settings)
         self.source.execute_prepared_strategy(s)
         self.source.auto_seal()

@@ -300,7 +300,7 @@ class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         if self._another:
-            return self._another.execute()
+            return self._another.execute(emit, data)
         else:
             return None, None   # Since version 0.3.1 we always complete pomodoros implicitly
 

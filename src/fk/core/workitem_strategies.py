@@ -18,7 +18,6 @@ import datetime
 from typing import Callable
 
 from fk.core import events
-from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
@@ -68,7 +67,7 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
             'backlog_uid': self._backlog_uid,
             'workitem_uid': self._workitem_uid,
             'workitem_name': self._workitem_name,
-        })
+        }, None)
         workitem = Workitem(
             self._workitem_name,
             self._workitem_uid,
@@ -80,16 +79,20 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
             'carry': None,
-        })
+        }, None)
         return None, None
 
 
-def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> None:
+def void_running_pomodoro(strategy_: AbstractStrategy,
+                          emit: Callable[[str, dict[str, any], any], None],
+                          data: Tenant,
+                          workitem: Workitem) -> None:
     for pomodoro in workitem.values():
         if pomodoro.is_running():
-            strategy.execute_another(VoidPomodoroStrategy, [
-                workitem.get_uid(),
-            ])
+            strategy_.execute_another(emit,
+                                      data,
+                                      VoidPomodoroStrategy,
+                                      [workitem.get_uid()])
 
 
 # DeleteWorkitem("123-456-789")
@@ -126,11 +129,11 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
         params = {
             'workitem': workitem
         }
-        emit(events.BeforeWorkitemDelete, params)
-        void_running_pomodoro(self, workitem)
+        emit(events.BeforeWorkitemDelete, params, None)
+        void_running_pomodoro(self, emit, data, workitem)
         workitem.item_updated(self._when)   # Update Backlog
         del workitem.get_parent()[self._workitem_uid]
-        emit(events.AfterWorkitemDelete, params)
+        emit(events.AfterWorkitemDelete, params, None)
         return None, None
 
 
@@ -179,10 +182,10 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
             'old_name': workitem.get_name(),
             'new_name': self._new_workitem_name,
         }
-        emit(events.BeforeWorkitemRename, params)
+        emit(events.BeforeWorkitemRename, params, None)
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
-        emit(events.AfterWorkitemRename, params)
+        emit(events.AfterWorkitemRename, params, None)
 
 
 # CompleteWorkitem("123-456-789", "canceled")
@@ -225,13 +228,13 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
             'workitem': workitem,
             'target_state': self._target_state,
         }
-        emit(events.BeforeWorkitemComplete, params)
+        emit(events.BeforeWorkitemComplete, params, None)
 
         # First void pomodoros if needed
-        void_running_pomodoro(self, workitem)
+        void_running_pomodoro(self, emit, data, workitem)
 
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
-        emit(events.AfterWorkitemComplete, params)
+        emit(events.AfterWorkitemComplete, params, None)
         return None, None

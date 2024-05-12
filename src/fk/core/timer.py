@@ -133,7 +133,7 @@ class PomodoroTimer(AbstractEventEmitter):
             # Only tick if there's something running
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': self,
-            })
+            }, None)
 
     def _schedule_transition(self,
                              ms: float,
@@ -164,16 +164,14 @@ class PomodoroTimer(AbstractEventEmitter):
             print(f"Will execute StartRestStrategy('{target_workitem.get_name()}', '{rest_duration}')")
             self._source_holder.get_source().execute(
                 StartRestStrategy,
-                [target_workitem.get_uid(), rest_duration]
-            )
+                [target_workitem.get_uid(), rest_duration])
             print(f"PomodoroTimer: Executed StartRestStrategy")
         elif target_state == 'finished':
             print(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
             self._source_holder.get_source().execute(
                 FinishPomodoroInternalStrategy,
                 [target_workitem.get_uid()],
-                persist=False
-            )
+                persist=False)
             print(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
         else:
             raise Exception(f"Unexpected scheduled transition state: {target_state}")
@@ -215,7 +213,7 @@ class PomodoroTimer(AbstractEventEmitter):
         print(f'PomodoroTimer: Before emitting TimerWorkComplete')
         self._emit(PomodoroTimer.TimerWorkComplete, {
             'timer': self,
-        })
+        }, None)
         print(f'PomodoroTimer: Before scheduling transition to finished')
         self._schedule_transition(rest_duration * 1000, pomodoro, workitem, 'finished')
         print(f'PomodoroTimer: Done - Handling rest start')
@@ -241,7 +239,7 @@ class PomodoroTimer(AbstractEventEmitter):
             'timer': self,
             'pomodoro': last_pomodoro,
             'workitem': last_workitem,
-        })
+        }, None)
         # It might look better to just check for the terminal conditions directly in the handlers instead
         # of canceling timers here. We are going the latter path to account for scenarios when stuff gets
         # void because of cascading deletes. For instance, if we delete a Workitem with a running pomodoro,
