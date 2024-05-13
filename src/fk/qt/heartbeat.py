@@ -82,7 +82,7 @@ class Heartbeat(AbstractEventEmitter):
         # print(f' -> Ping {self._last_sent_uid}')
         self._last_sent_time = now
 
-    def _on_pong(self, event, uid) -> None:
+    def _on_pong(self, event, uid, carry) -> None:
         now = datetime.datetime.now(datetime.timezone.utc)
         if self._last_sent_uid == uid:
             diff_ms = (now - self._last_sent_time).total_seconds() * 1000
