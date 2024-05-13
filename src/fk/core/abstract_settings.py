@@ -266,3 +266,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 to_set[option_id] = option_default
         self.clear()
         self.set(to_set)
+
+    def is_e2e_encryption_enabled(self) -> bool:
+        return _show_when_encryption_is_enabled({
+            'Source.encryption_enabled': self.get('Source.encryption_enabled'),
+            'Source.type': self.get('Source.type')
+        })

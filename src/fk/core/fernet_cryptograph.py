@@ -42,21 +42,14 @@ class FernetCryptograph(AbstractCryptograph):
         return Fernet(key)
 
     def _on_key_changed(self) -> None:
-        if self.enabled:
-            self._fernet = self._create_fernet()
-        else:
-            self._fernet = None
+        self._fernet = self._create_fernet()
 
     def encrypt(self, s: str) -> str:
-        if self._fernet is None:
-            return s
         return self._fernet.encrypt(
             bytes(s, encoding='utf-8')
         ).decode('utf-8')
 
     def decrypt(self, s: str) -> str:
-        if self._fernet is None:
-            return s
         return self._fernet.decrypt(
             s.encode('utf-8')
         ).decode('utf-8')

@@ -52,10 +52,16 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
             escaped.append("")
         params = '"' + '", "'.join(escaped) + '"'
         plaintext = f'{s.get_sequence()}, {s.get_when()}, {s.get_user_identity()}: {s.get_name()}({params})'
-        return self._cryptograph.encrypt(plaintext)
+        if self._cryptograph.enabled:
+            return '+' + self._cryptograph.encrypt(plaintext)
+        else:
+            return plaintext
 
     def deserialize(self, t: str) -> AbstractStrategy[TRoot] | None:
-        plaintext = self._cryptograph.decrypt(t)
+        if t.startswith('+'):
+            plaintext = self._cryptograph.decrypt(t[1:])
+        else:
+            plaintext = t
 
         # Empty strings and comments are special cases
         if plaintext.strip() == '' or plaintext.startswith('#'):
