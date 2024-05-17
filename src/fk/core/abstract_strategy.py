@@ -67,6 +67,9 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     def get_sequence(self) -> int:
         return self._seq
 
+    def encryptable(self) -> bool:
+        return True
+
     @abstractmethod
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],

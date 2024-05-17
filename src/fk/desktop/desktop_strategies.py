@@ -46,6 +46,9 @@ class AuthenticateStrategy(AbstractStrategy[Tenant]):
         self._username = params[0]
         self._token = params[1]
 
+    def encryptable(self) -> bool:
+        return False
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
@@ -66,6 +69,9 @@ class ReplayStrategy(AbstractStrategy):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._since_seq = int(params[0])
+
+    def encryptable(self) -> bool:
+        return False
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -90,6 +96,9 @@ class ErrorStrategy(AbstractStrategy):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
+
+    def encryptable(self) -> bool:
+        return False
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -122,6 +131,9 @@ class PongStrategy(AbstractStrategy):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
 
+    def encryptable(self) -> bool:
+        return False
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
@@ -146,6 +158,9 @@ class PingStrategy(AbstractStrategy):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
+
+    def encryptable(self) -> bool:
+        return False
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],

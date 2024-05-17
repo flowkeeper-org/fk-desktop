@@ -52,7 +52,7 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
             escaped.append("")
         params = '"' + '", "'.join(escaped) + '"'
         plaintext = f'{s.get_sequence()}, {s.get_when()}, {s.get_user_identity()}: {s.get_name()}({params})'
-        if self._cryptograph.enabled:
+        if self._cryptograph.enabled and s.encryptable():
             return '+' + self._cryptograph.encrypt(plaintext)
         else:
             return plaintext

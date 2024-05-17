@@ -1,5 +1,6 @@
 ### v0.5.0 (TBD)
-- Support for end-to-end encryption (mandatory for flowkeeper.org).
+- Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
+- Encrypted content can be mixed with plaintext.
 - Now we can change appearance theme on the fly.
 - Added a bunch of new color themes.
 - New fonts can now be applied without application restart.
@@ -7,6 +8,7 @@
 - [Technical] E2e tests handle exceptions correctly now.
 - [Technical] Restructured the resources, icons and colors.
 - [Technical] Sharing timer state with teammates (no support in the UI yet).
+- [Technical] Introduced Serializer and Cryptograph facilities.
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.
