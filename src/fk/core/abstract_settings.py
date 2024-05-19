@@ -113,10 +113,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
-                    "flowkeeper.org:Flowkeeper.org",
+                    "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
                     #"flowkeeper.pro:Flowkeeper.pro",
-                    "websocket:Self-hosted server",
-                    "ephemeral:Ephemeral (for testing only)",
+                    "websocket:Self-hosted server (EXPERIMENTAL)",
+                    "ephemeral:Ephemeral (in-memory, for testing purposes)",
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
@@ -135,6 +135,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 ('Source.encryption_key', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
+                ('Source.encryption_key_cache', 'str', 'Encryption key cache', '', [], _never_show),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
