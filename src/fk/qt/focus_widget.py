@@ -127,6 +127,7 @@ class FocusWidget(QWidget):
 
         self._buttons['focus.nextPomodoro'].hide()
         self._buttons['focus.completeItem'].hide()
+        self._buttons['focus.voidPomodoro'].hide()
 
         self._timer_display = render_for_widget(
             parent.palette(),
