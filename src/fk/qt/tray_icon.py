@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
+from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -56,36 +57,36 @@ class TrayIcon(QSystemTrayIcon):
         self._timer_widget = render_for_pixmap()
 
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        timer.on("Timer*", self._update)
-        timer.on("Timer*Complete", self._show_notification)
 
-        self.activated.connect(self._on_activated)
+        timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
+        timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
+        timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
+        timer.on(PomodoroTimer.TimerTick, self._on_tick)
+
+        self.activated.connect(lambda reason:
+                               self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None)
+
+        self._initialize_menu()
+        self.reset()
+
+    def _initialize_menu(self):
         menu = QMenu()
-        if 'focus.voidPomodoro' in actions:
-            menu.addAction(actions['focus.voidPomodoro'])
+        if 'focus.voidPomodoro' in self._actions:
+            menu.addAction(self._actions['focus.voidPomodoro'])
         menu.addSeparator()
-        if 'window.showMainWindow' in actions:
-            menu.addAction(actions['window.showMainWindow'])
-        if 'application.settings' in actions:
-            menu.addAction(actions['application.settings'])
-        if 'application.quit' in actions:
-            menu.addAction(actions['application.quit'])
+        if 'window.showMainWindow' in self._actions:
+            menu.addAction(self._actions['window.showMainWindow'])
+        if 'application.settings' in self._actions:
+            menu.addAction(self._actions['application.settings'])
+        if 'application.quit' in self._actions:
+            menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
 
-        self._update()
-
-    def _on_activated(self, reason):
-        if reason == QSystemTrayIcon.ActivationReason.Trigger:
-            return self._tray_clicked()
-
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        self.setToolTip("It's time for the next Pomodoro.")
         self.reset()
-        source.on(AfterWorkitemComplete, self.reset)
-        source.on(AfterWorkitemComplete, self._update)
-        source.on(SourceMessagesProcessed, self._update)
 
-    def reset(self, event: str = None, **kwargs):
+    def reset(self, **kwargs):
+        self.setToolTip("It's time for the next Pomodoro.")
         self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
@@ -109,40 +110,27 @@ class TrayIcon(QSystemTrayIcon):
         self._timer_widget.repaint(painter, QRect(0, 0, tray_width, tray_height))
         self.setIcon(pixmap)
 
-    def _update(self, event: str = None, **kwargs) -> None:
-        running_workitem: Workitem = self._timer.get_running_workitem()
-        if self._timer.is_idling():
-            w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
-            if w is not None and w.is_startable():
-                self.setToolTip(f'Start another Pomodoro? ({w.get_name()})')
-            else:
-                self.setToolTip("It's time for the next Pomodoro.")
-            self.reset()
-        elif self._timer.is_working() or self._timer.is_resting():
-            remaining_duration = self._timer.get_remaining_duration()     # This is always >= 0
-            remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
-            remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
-            state = 'Focus' if self._timer.is_working() else 'Rest'
-            txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
-            self.setToolTip(f"{txt} left ({running_workitem.get_name()})")
-            self._timer_widget.set_values(
-                remaining_duration / self._timer.get_planned_duration(),
-                None,
-                ""  # f'{remaining_minutes}:{remaining_seconds}'
-            )
-            self._paint_timer()
-        elif self._timer.is_initializing():
-            print('The timer is still initializing')
-            self.reset()
-        else:
-            raise Exception("The timer is in an unexpected state")
+    def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
+        state = 'Focus' if self._timer.is_working() else 'Rest'
+        txt = f'{state}: {self._timer.format_remaining_duration()}'
+        self.setToolTip(f"{txt} left ({pomodoro.get_parent().get_name()})")
 
-    def _show_notification(self, event: str, **kwargs) -> None:
-        if event == 'TimerWorkComplete':
-            self.showMessage("Work is done", "Have some rest", self._default_icon)
-        elif event == 'TimerRestComplete':
-            icon = self._default_icon
-            w = kwargs.get('workitem')
-            if w is not None and w.is_startable():
-                icon = self._next_icon
-            self.showMessage("Ready", "Start a new pomodoro", icon)
+        self._timer_widget.set_values(
+            self._timer.get_completion(),
+            None,
+            "")
+        self._paint_timer()
+
+    def _on_work_start(self, **kwargs) -> None:
+        self._on_tick(self._timer.get_running_pomodoro())
+
+    def _on_work_complete(self, **kwargs) -> None:
+        self.showMessage("Work is done", "Have some rest", self._default_icon)
+        self._on_tick(self._timer.get_running_pomodoro())
+
+    def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
+        if workitem.is_startable():
+            self.setToolTip(f'Start another Pomodoro? ({workitem.get_name()})')
+            self.showMessage("Ready", "Start new pomodoro", self._next_icon)
+        else:
+            self.reset()
