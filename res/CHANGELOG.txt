@@ -1,10 +1,12 @@
 ### v0.5.0 (TBD)
 - Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
-- The users can now register in flowkeeper.org from the desktop app.
+- Users can now sign up to flowkeeper.org from the desktop app.
 - Encrypted content can be mixed with plaintext.
 - Now we can change appearance theme on the fly.
 - Added a bunch of new color themes.
 - New fonts can now be applied without application restart.
+- It is now possible to start another pomodoro by clicking the lime "play" icon in the system tray.
+- Added a Focus-mode button to complete the current item while it's running.
 - [Bugfix] Fixed workitem search.
 - [Bugfix] Fixed "Start new pomodoro?" logic.
 - [Technical] Restructured the resources, icons and colors.
