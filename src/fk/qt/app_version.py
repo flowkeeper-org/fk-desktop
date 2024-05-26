@@ -13,7 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import json
+import logging
 import re
 from typing import Callable
 
@@ -21,6 +23,7 @@ from PySide6.QtCore import QFile, QObject
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from semantic_version import Version
 
+logger = logging.getLogger(__name__)
 CHANGELOG_REGEX = re.compile(r'### v(.+) \(.*')
 GITHUB_TAG_REGEX = re.compile(r'v(.+)')
 
@@ -48,7 +51,7 @@ def _success(reply: QNetworkReply, callback: Callable[[Version, str], None]) -> 
 
 
 def _error(err: QNetworkReply.NetworkError, callback: Callable[[Version, str], None]) -> None:
-    print('Warning -- cannot get the latest Flowkeeper version info from GitHub:', err)
+    logger.warning('Warning -- cannot get the latest Flowkeeper version info from GitHub:', exc_info=err)
     callback(None, None)
 
 

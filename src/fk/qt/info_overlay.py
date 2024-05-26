@@ -65,7 +65,7 @@ class InfoOverlay(QFrame):
     def close(self):
         if self._timer is not None:
             self._timer.stop()
-        print('TODO: Save its state in settings')
+        # TODO: Save its state in settings
         super().close()
 
 

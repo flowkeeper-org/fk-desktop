@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import logging
 from abc import ABC, abstractmethod
 from os import path
 from typing import Iterable, Self, Callable, TypeVar, Generic
@@ -33,6 +34,7 @@ from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -199,7 +201,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         export_file.write(f'{self._export_serializer.serialize(strategy)}\n')
         if another._estimated_count % every == 0:
             progress_callback(another._estimated_count, self._estimated_count)
-            # print(f' - {another._estimated_count} out of {self._estimated_count}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f' - {another._estimated_count} out of {self._estimated_count}')
 
     @staticmethod
     def _export_completed(another: 'AbstractEventSource',
@@ -265,7 +268,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                         progress_callback(i, total)
                 except Exception as e:
                     if ignore_errors:
-                        print('Warning', e)
+                        logger.warning('Ignored an error while importing', exc_info=e)
                     else:
                         raise e
 

@@ -14,6 +14,7 @@
 - [Technical] Introduced Serializer and Cryptograph facilities.
 - [Technical] Simplified tray icon and Focus view implementation.
 - [Technical] E2e tests handle exceptions correctly now.
+- [Technical] Introduced a configurable logger.
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.

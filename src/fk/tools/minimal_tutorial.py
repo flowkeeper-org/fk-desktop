@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from PySide6.QtWidgets import QPushButton, QWidget, QFrame
 
 from fk.qt.info_overlay import InfoOverlay, show_info_overlay
@@ -27,7 +28,8 @@ def show_popup_once(widget: QWidget):
 
 
 def reset():
-    print('Reset settings here')
+    # TODO: Reset settings here
+    pass
 
 
 mc = MinimalCommon(initialize_source=False)

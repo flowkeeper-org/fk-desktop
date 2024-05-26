@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 import traceback
 
 from PySide6 import QtGui, QtWidgets
@@ -26,6 +28,8 @@ from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWork
     AfterWorkitemDelete, AfterSettingsChanged
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy
+
+logger = logging.getLogger(__name__)
 
 
 class WorkitemModel(QtGui.QStandardItemModel):
@@ -66,7 +70,6 @@ class WorkitemModel(QtGui.QStandardItemModel):
         #     workitem: Workitem = item.data(500)
         #     item.setData(QSize(len(workitem) * rh, rh), Qt.SizeHintRole)
         #     self.setItem(i, 2, item)
-        #     print('Updated item', i, rh)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
@@ -86,7 +89,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
                 try:
                     self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
                 except Exception as e:
-                    print("\n".join(traceback.format_exception(e)))
+                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
                         self.parent(),
@@ -155,7 +158,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setItem(i, 2, col3)
 
     def load(self, backlog: Backlog) -> None:
-        print(f'WorkitemModel.load({backlog})')
+        logger.debug(f'WorkitemModel.load({backlog})')
         self.clear()
         self._backlog = backlog
         if backlog is not None:

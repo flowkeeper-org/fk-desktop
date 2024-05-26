@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 from typing import Self, TypeVar, Iterable
 
 from fk.core import events
@@ -22,6 +24,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.simple_serializer import SimpleSerializer
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -40,7 +43,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         self._content = list()
 
     def start(self, mute_events=True) -> None:
-        print('Ephemeral event source -- starting')
+        logger.debug(f'Ephemeral event source -- starting. Muting events -- {mute_events}')
         self._emit(events.SourceMessagesRequested, dict())
         if mute_events:
             self.mute()
@@ -77,4 +80,4 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
     def dump(self):
         for s in self._content:
-            print(s)
+            logger.debug(s)

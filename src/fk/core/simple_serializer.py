@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 import re
 from datetime import datetime
 from typing import TypeVar
@@ -23,6 +25,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import STRATEGIES
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -36,7 +39,6 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
                        r'"((?:[^"\\]|\\"|\\\\)*)"\s*)*\)')
 
     def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
-        print(f'SimpleSerializer.__init__({settings}, {cryptograph})')
         super().__init__(settings, cryptograph)
 
     @staticmethod
@@ -79,8 +81,9 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
             params = list(filter(lambda p: p is not None, m.groups()[4:]))
             params = [p.replace('\\"', '"').replace('\\\\', '\\') for p in params]
 
-            # TODO: Enable trace
-            # print (f"Initializing: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Deserialized string to strategy: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
+
             return STRATEGIES[name](seq, when, user, params, self._settings, self._cryptograph)
         else:
             raise Exception(f"Bad syntax: {plaintext}")

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
@@ -27,6 +28,8 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.qt.actions import Actions
+
+logger = logging.getLogger(__name__)
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
@@ -105,7 +108,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         source.on(SourceMessagesProcessed, self._on_data_loaded)
 
     def _on_data_loaded(self, event: str, source: AbstractEventSource) -> None:
-        print(f'Data loaded - {self.objectName()}')
+        logger.debug(f'Data loaded - {self.objectName()}')
         self._is_data_loaded = True
         self.repaint()
 
@@ -114,7 +117,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         pass
 
     def upstream_selected(self, upstream: TUpstream | None) -> None:
-        print(f'{self.__class__.__name__}.upstream_selected({upstream})')
+        logger.debug(f'{self.__class__.__name__}.upstream_selected({upstream})')
         if upstream is None:
             self._is_upstream_item_selected = False
         else:

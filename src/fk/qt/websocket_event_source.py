@@ -16,6 +16,7 @@
 
 import datetime
 import enum
+import logging
 from typing import Self, TypeVar
 
 from PySide6 import QtWebSockets, QtCore
@@ -36,6 +37,7 @@ from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, 
 from fk.qt.oauth import get_id_token, AuthenticationRecord
 from fk.qt.qt_timer import QtTimer
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -85,9 +87,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def _connection_lost(self) -> None:
         next_reconnect = min(max(500, int(pow(1.5, self._connection_attempt))), 30000)
         if self._received_error:
-            print(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
+            logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
         else:
-            print(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
+            logger.warning(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
             self._reconnect_timer.schedule(next_reconnect, self._connect, None, True)
 
     def _connect(self, params: dict | None = None) -> None:
@@ -101,7 +103,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             url = 'wss://app.flowkeeper.pro/ws'
         else:
             raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
-        print(f'Connecting to {url}, attempt {self._connection_attempt}')
+        logger.debug(f'Connecting to {url}, attempt {self._connection_attempt}')
         self._ws.open(QtCore.QUrl(url))
 
     def start(self, mute_events=True) -> None:
@@ -112,11 +114,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def _on_message(self, message: str) -> None:
         self._received_error = False
         lines = message.split('\n')
-        # print(f'Received {len(lines)}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Received {len(lines)} messages')
         i = 0
         to_unmute = False   # It's important to unmute / emit AFTER auto_seal
         to_emit = False
         for line in lines:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f" - {line}")
             try:
                 # TODO: Check for strategy class type here instead
                 if line == 'ReplayCompleted()':
@@ -137,14 +142,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
-                    # print(f" - {s}")
                     self.execute_prepared_strategy(s)
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
                     QApplication.processEvents()
             except Exception as ex:
                 if self._ignore_errors and not self._received_error:
-                    print(f'Error processing {line}: {ex}')
+                    logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                 else:
                     raise ex
         self.auto_seal()
@@ -158,7 +162,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
-        print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
+        logger.debug(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
         consent_given = 'true' if self.get_config_parameter('WebsocketEventSource.consent') == 'True' else 'false'
         auth_strategy = AuthenticateStrategy(1,
@@ -167,17 +171,17 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                                              [auth.email, f'{auth.type}|{auth.id_token}', consent_given],
                                              self._settings)
         st = self._serializer.serialize(auth_strategy)
-        print(f'Sending auth strategy: {st}')
+        logger.debug(f'Sending auth strategy: {st}')
         self._ws.sendTextMessage(st)
 
-        print(f'Requesting replay starting from #{self._last_seq}')
+        logger.debug(f'Requesting replay starting from #{self._last_seq}')
         replay = ReplayStrategy(2,
                                 now,
                                 ADMIN_USER,
                                 [str(self._last_seq)],
                                 self._settings)
         rt = self._serializer.serialize(replay)
-        print(f'Sending replay strategy: {rt}')
+        logger.debug(f'Sending replay strategy: {rt}')
         self._ws.sendTextMessage(rt)
 
         self._emit(events.SourceMessagesRequested, dict())
@@ -189,7 +193,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._received_error = False
 
         auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
-        print(f'Connected. Authenticating with {auth_type}')
+        logger.debug(f'Connected. Authenticating with {auth_type}')
 
         if auth_type == 'basic':
             auth = AuthenticationRecord()
@@ -205,7 +209,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
             to_send = self._serializer.serialize(s)
-            print('Sending strategy', to_send)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'Sending strategy {to_send}')
             self._ws.sendTextMessage(to_send)
 
     def get_name(self) -> str:
@@ -230,7 +235,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                             [uid],
                             self._settings)
         ps = self._serializer.serialize(ping)
-        print(f'Sending ping strategy: {ps}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Sending ping strategy: {ps}')
         self._ws.sendTextMessage(ps)
         return uid
 

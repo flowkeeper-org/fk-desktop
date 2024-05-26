@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import base64
+import logging
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -22,6 +23,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
+
+logger = logging.getLogger(__name__)
 
 
 class FernetCryptograph(AbstractCryptograph):
@@ -44,7 +47,7 @@ class FernetCryptograph(AbstractCryptograph):
             self._settings.set({'Source.encryption_key_cache': key.decode('utf-8')})
         else:
             key = cached_key.encode('utf-8')
-        print(f'Key: {key}')
+        logger.debug(f'Fernet encryption key: {key}')
         return Fernet(key)
 
     def _on_key_changed(self) -> None:

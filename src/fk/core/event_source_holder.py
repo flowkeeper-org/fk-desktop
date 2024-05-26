@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 from typing import TypeVar, Generic
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -25,6 +27,7 @@ from fk.core.tenant import Tenant
 BeforeSourceChanged = "BeforeSourceChanged"
 AfterSourceChanged = "AfterSourceChanged"
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -42,7 +45,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
 
     def request_new_source(self) -> None:
         source_type = self._settings.get('Source.type')
-        print(f'EventSourceHolder: Recreating event source of type {source_type}')
+        logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
         if not get_event_source_factory().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
@@ -57,12 +60,12 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
             self._source.disconnect()
 
         producer = get_event_source_factory().get_producer(source_type)
-        print(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
+        logger.debug(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
         self._source = producer(
             self._settings,
             self._cryptograph,
             Tenant(self._settings))
-        print(f'EventSourceHolder: Source object created. You need to start it yourself!')
+        logger.debug(f'EventSourceHolder: Source object created. You need to start it yourself!')
 
         self._emit(AfterSourceChanged, {
             'source': self._source

@@ -13,7 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import traceback
+
+import logging
 
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
@@ -21,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLa
     QMessageBox, QMenu
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy
@@ -31,6 +32,8 @@ from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import render_for_widget, TimerWidget
+
+logger = logging.getLogger(__name__)
 
 
 class FocusWidget(QWidget):
@@ -218,8 +221,7 @@ class FocusWidget(QWidget):
             try:
                 painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
-                print('ERROR while updating the gradient -- ignoring it', e)
-                print("\n".join(traceback.format_exception(e)))
+                logger.error(f'ERROR while updating the gradient to {gradient} -- ignoring it', exc_info=e)
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
         else:   # Default
             painter.setPen(self._border_color)

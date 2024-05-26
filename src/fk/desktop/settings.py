@@ -13,7 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import json
+import logging
 import sys
 from typing import Callable
 
@@ -26,6 +28,8 @@ from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLa
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsDialog(QDialog):
@@ -98,8 +102,7 @@ class SettingsDialog(QDialog):
 
     def _on_value_changed(self, option_id, new_value):
         old_value = self._data.get(option_id)
-        # Uncomment to debug
-        # print(f"Changed {option_id} from {old_value} to {new_value}")
+        logger.debug(f"Changed {option_id} from {old_value} to {new_value}")
         # Enable / disable "save" buttons
         self._set_buttons_state(old_value != new_value)
         self._recompute_visibility(option_id, new_value)
@@ -115,8 +118,7 @@ class SettingsDialog(QDialog):
         for widget in self._widgets_visibility:
             is_visible = self._widgets_visibility[widget](computed)
             widget.setVisible(is_visible)
-            # Uncomment to debug
-            # print(f" - {widget.objectName()}: {is_visible}")
+            logger.debug(f" - {widget.objectName()}: {is_visible}")
 
     def _set_buttons_state(self, is_enabled: bool):
         self._buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(is_enabled)

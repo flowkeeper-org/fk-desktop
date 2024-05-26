@@ -40,7 +40,6 @@ def predefined_uid(n: int) -> str:
 
 def noop_emit(event: str, params: dict[str, any], carry: any) -> None:
     pass
-    # print('Emit trace', event, params)
 
 
 def test_user(n: int) -> User:

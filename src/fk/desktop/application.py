@@ -16,6 +16,7 @@
 
 import datetime
 import json
+import logging
 import random
 import sys
 import traceback
@@ -55,6 +56,8 @@ from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
+logger = logging.getLogger(__name__)
+
 AfterFontsChanged = "AfterFontsChanged"
 NewReleaseAvailable = "NewReleaseAvailable"
 
@@ -92,6 +95,7 @@ class Application(QApplication, AbstractEventEmitter):
         if self.is_e2e_mode():
             self._settings = QtSettings('desktop-client-e2e')
             self._settings.reset_to_defaults()
+            self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
             from fk.e2e.backlog_e2e import BacklogE2eTest
             test = BacklogE2eTest(self)
@@ -100,6 +104,7 @@ class Application(QApplication, AbstractEventEmitter):
         else:
             sys.excepthook = self.on_exception
             self._settings = QtSettings()
+            self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -130,6 +135,10 @@ class Application(QApplication, AbstractEventEmitter):
         self._heartbeat.on(events.WentOffline, self._on_went_offline)
         self._heartbeat.on(events.WentOnline, self._on_went_online)
 
+    def _initialize_logger(self):
+        logging.basicConfig(filename=self._settings.get('Logger.filename'),
+                            level=self._settings.get('Logger.level'))
+
     def initialize_source(self):
         self._source_holder.request_new_source()
 
@@ -155,12 +164,12 @@ class Application(QApplication, AbstractEventEmitter):
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
-            print(f'Application: Received AfterSourceChanged for {source}')
-            print(f'Application: Starting the event source')
+            logger.debug(f'Application: Received AfterSourceChanged for {source}')
+            logger.debug(f'Application: Starting the event source')
             source.start()
-            print(f'Application: Event source started successfully')
+            logger.debug(f'Application: Event source started successfully')
         except Exception as e:
-            print(f'Application: ERROR {e}')
+            logger.error(f'Application: Error on source change', exc_info=e)
             raise e
 
     def is_e2e_mode(self):
@@ -168,12 +177,12 @@ class Application(QApplication, AbstractEventEmitter):
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
         # TODO -- lock the UI
-        print(f'WARNING - We detected that the client went offline after {after}ms')
-        print(f'          Last time we heard from the server was {last_received}')
+        logger.warning(f'WARNING - We detected that the client went offline after {after}ms. Last '
+                       f'time we heard from the server was {last_received}')
 
     def _on_went_online(self, event, ping: int) -> None:
         # TODO -- unlock the UI
-        print(f'We are (back) online with the roundtrip delay of {ping}ms')
+        logger.info(f'We are (back) online with the roundtrip delay of {ping}ms')
 
     def get_settings(self):
         return self._settings
@@ -216,7 +225,7 @@ class Application(QApplication, AbstractEventEmitter):
         QIcon.setThemeName(variables['ICON_THEME'])
 
         self.setStyleSheet(qss)
-        print('Stylesheet loaded')
+        logger.debug('Stylesheet loaded')
 
     def _initialize_fonts(self) -> (QFont, QFont):
         self._font_header = QFont(self._settings.get('Application.font_header_family'),
@@ -251,17 +260,9 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set({'Application.table_row_height': str(h)})
         return h
 
-    def restart_warning(self) -> None:
-        if QMessageBox().warning(self.activeWindow(),
-                                 "Restart required",
-                                 f"To apply new settings Flowkeeper needs a restart. "
-                                 f"Please run it again after pressing OK. We apologize for this inconvenience.",
-                                 QMessageBox.StandardButton.Ok) == QMessageBox.StandardButton.Ok:
-            self.exit(0)
-
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
-        print("Exception", to_log)
+        logger.error(f"Global exception handler. Full log: {to_log}")
         if (QMessageBox().critical(self.activeWindow(),
                                    "Unexpected error",
                                    f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
@@ -285,29 +286,36 @@ class Application(QApplication, AbstractEventEmitter):
         return self._row_height
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        # print(f'Setting {name} changed from {old_value} to {new_value}')
-        show_restart_warning = False
+        logger.debug(f'Settings changed from {old_values} to {new_values}')
+
+        request_ui_refresh = False
+        request_new_source = False
+        request_logger_change = False
+
         for name in new_values.keys():
             if name == 'Source.type' or \
                     name.startswith('WebsocketEventSource.') or \
                     name.startswith('FileEventSource.') or \
                     name.startswith('Source.encryption'):
-                self._source_holder.request_new_source()
+                request_new_source = True
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
             elif name == 'Application.theme' or 'Application.font_' in name:
-                self.refresh_theme_and_fonts()
+                request_ui_refresh = True
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
                     self._version_timer.schedule(1000, self.check_version, None, True)
+            elif name.startswith('Logger.'):
+                request_logger_change = True
 
-        if show_restart_warning:
-            self.restart_warning()
+        if request_ui_refresh:
+            self.refresh_theme_and_fonts()
 
-        # TODO: Subscribe to sound settings
-        # TODO: Subscribe the sources to the settings they use
-        # TODO: Reload the app when the source changes
-        # TODO: Recreate the source
+        if request_new_source:
+            self._source_holder.request_new_source()
+
+        if request_logger_change:
+            self._initialize_logger()
 
     def show_settings_dialog(self):
         SettingsDialog(self._settings, {
@@ -399,10 +407,10 @@ class Application(QApplication, AbstractEventEmitter):
                         'changelog': changelog,
                     })
                 else:
-                    print(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+                    logger.debug(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
             else:
-                print("Warning: Couldn't get the latest release info from GitHub")
-        print('Will check GitHub releases for the latest version')
+                logger.warning("Couldn't get the latest release info from GitHub")
+        logger.debug('Will check GitHub releases for the latest version')
         get_latest_version(self, on_version)
 
     def show_tutorial(self, event: str = None) -> None:
@@ -412,7 +420,7 @@ class Application(QApplication, AbstractEventEmitter):
         ignored = self._settings.get('Application.ignored_updates').split(',')
         latest_str = str(latest)
         if latest_str in ignored:
-            print(f'An updated version {latest_str} is available, but the user chose to ignore it')
+            logger.debug(f'An updated version {latest_str} is available, but the user chose to ignore it')
             return
         msg = QMessageBox(QMessageBox.Icon.Information,
                           "An update is available",

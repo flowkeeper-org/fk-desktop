@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 import os
 import time
 from collections import deque
@@ -33,6 +35,7 @@ from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, Rena
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -51,7 +54,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         super().__init__(SimpleSerializer(settings, cryptograph),
                          settings,
                          cryptograph)
-        print(f'Created FileEventSource with serializer {self._serializer}')
+        logger.debug(f'Created FileEventSource with serializer {self._serializer}')
         self._data = root
         self._watcher = None
         self._existing_strategies = existing_strategies
@@ -65,7 +68,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
-        print(f'Data file content changed: {filename}')
+        logger.debug(f'Data file content changed: {filename}')
 
         # When we execute strategies here, events are emitted.
         # TODO: Check file locks here?
@@ -80,7 +83,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                     self._last_seq = seq
-                    # print(f" - {strategy}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f" - {strategy}")
                     self.execute_prepared_strategy(strategy)
         self.auto_seal()
 
@@ -132,11 +136,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
             with open(filename, 'w', encoding='UTF-8') as f:
                 s = self.get_init_strategy(self._emit)
                 f.write(f'{self._serializer.serialize(s)}\n')
-                print(f'Created empty data file {filename}')
+                logger.info(f'Created empty data file {filename}')
 
         is_first = True
         seq = 1
-        print(f'FileEventSource: Reading file {filename}')
+        logger.info(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 strategy = self._serializer.deserialize(line)
@@ -152,10 +156,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
-        print('FileEventSource: Processed file content, will auto-seal now')
+        logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
         self.auto_seal()
-        print('FileEventSource: Sealed, will unmute events now')
+        logger.debug('FileEventSource: Sealed, will unmute events now')
 
         if mute_events:
             self.unmute()

@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import logging
 
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
@@ -31,6 +32,8 @@ from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.backlog_model import BacklogModel
+
+logger = logging.getLogger(__name__)
 
 
 class BacklogTableView(AbstractTableView[User, Backlog]):
@@ -92,7 +95,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def update_actions(self, selected: Backlog) -> None:
-        print(f'Backlog table - update_actions({selected})')
+        logger.debug(f'Backlog table - update_actions({selected})')
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
@@ -100,9 +103,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         heartbeat = self._application.get_heartbeat()
         source = self._application.get_source_holder().get_source()
         is_online = heartbeat.is_online() or source is None or not source.can_connect()
-        print(f' - Online: {is_online}')
-        print(f' - Backlog selected: {is_backlog_selected}')
-        print(f' - Heartbeat: {heartbeat}')
+        logger.debug(f' - Online: {is_online}')
+        logger.debug(f' - Backlog selected: {is_backlog_selected}')
+        logger.debug(f' - Heartbeat: {heartbeat}')
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)

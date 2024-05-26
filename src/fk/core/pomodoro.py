@@ -17,8 +17,11 @@
 from __future__ import annotations
 
 import datetime
+import logging
 
 from fk.core.abstract_data_item import AbstractDataItem
+
+logger = logging.getLogger(__name__)
 
 
 class Pomodoro(AbstractDataItem['Workitem']):
@@ -88,8 +91,8 @@ class Pomodoro(AbstractDataItem['Workitem']):
             # We can work around this situation reliably if the Finish happened "after" the work + rest
             # should've finished (take into account some little margin for error, just a few seconds).
             if when > self.planned_end_of_rest() - datetime.timedelta(seconds=5):
-                print("Warning - skipped rest for a pomodoro, but still authorized its completion "
-                      "(transition happened when the client was offline)")
+                logger.debug(f"Warning - skipped rest for a pomodoro on {self.get_parent().get_name()}, but still "
+                             "authorized its completion (transition happened when the client was offline)")
                 self._state = target_state
                 self._date_completed = when
         else:

@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from fk.core.tenant import Tenant
 from fk.qt.workitem_tableview import WorkitemTableView
 from fk.tools.minimal_common import MinimalCommon
@@ -20,7 +21,6 @@ from fk.tools.minimal_common import MinimalCommon
 
 def select_first_backlog(data: Tenant):
     backlogs = list(data.get_current_user().values())
-    print(f'select_first_backlog: {backlogs}')
     workitems_table.upstream_selected(backlogs[0])
 
 

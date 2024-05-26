@@ -13,11 +13,16 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
+import threading
 from typing import Callable
 
 from PySide6.QtCore import QEvent, QCoreApplication, QTimer
 
 from fk.core.timer import AbstractTimer
+
+logger = logging.getLogger(__name__)
 
 
 class QExtendedTimer(QTimer):
@@ -25,11 +30,11 @@ class QExtendedTimer(QTimer):
         super().__init__()
 
     def customEvent(self, event: QEvent) -> None:
-        # print('QExtendedTimer:Starting', threading.get_ident(), self.objectName())
+        logger.debug(f'QExtendedTimer - customEvent, {threading.get_ident()}, {self.objectName()}')
         self.start(int(event.ms))
 
     def schedule_start(self, ms: float) -> None:
-        # print('QExtendedTimer:Scheduling', threading.get_ident(), self.objectName())
+        logger.debug(f'QExtendedTimer - scheduling, {threading.get_ident()}, {self.objectName()}')
         # We need to be careful -- this function might be called
         # from a non-GUI thread. We should decouple it via Slots.
         e = QEvent(QEvent.Type.User)
@@ -46,7 +51,7 @@ class QtTimer(AbstractTimer):
 
     def __init__(self, name: str):
         self._name = name
-        # print('Creating timer', name)
+        logger.debug(f'Creating timer {name}')
         self._timer = QExtendedTimer()
         self._timer.setObjectName(name)
         self._timer.timeout.connect(lambda: self._call())
@@ -54,7 +59,8 @@ class QtTimer(AbstractTimer):
     def _call(self) -> None:
         if self._once:
             self._timer.stop()
-        # print('QtTimer:callback', threading.get_ident(), self._name)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'QtTimer - callback, {threading.get_ident()}, {self._name}')
         self._callback(self._params)
 
     def schedule(self,
@@ -67,8 +73,8 @@ class QtTimer(AbstractTimer):
         self._callback = callback
         self._params = params
         self._once = once
-        #self._timer.schedule_start(ms)
-        self._timer.start(ms)
+        # self._timer.schedule_start(ms)
+        self._timer.start(int(ms))
 
     def cancel(self):
         self._timer.stop()

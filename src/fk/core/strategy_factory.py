@@ -14,13 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import re
 from typing import Type, TypeVar
 
 from fk.core.abstract_strategy import AbstractStrategy
 
-STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
+STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
 STRATEGIES = dict[str, Type[AbstractStrategy[TRoot]]]()
 
 
@@ -28,7 +30,7 @@ def strategy(cls: Type[AbstractStrategy[TRoot]]):
     m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
     if m is not None:
         name = m.group(1)
-        # print(f'Registering strategy {name} -> {cls.__name__}')
+        logger.debug(f'Registering strategy {name} -> {cls.__name__}')
         STRATEGIES[name] = cls
         return cls
     else:

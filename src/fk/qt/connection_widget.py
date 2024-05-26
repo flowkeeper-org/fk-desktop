@@ -13,6 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
+
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget, QLabel
@@ -21,6 +24,8 @@ from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import AfterSettingsChanged
 from fk.desktop.application import Application, AfterSourceChanged
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionWidget(QLabel):
@@ -66,13 +71,13 @@ class ConnectionWidget(QLabel):
         self._source = source
         self.setVisible(source.can_connect())
         if source.can_connect():
-            print('ConnectionWidget._on_source_changed: Connectable source')
+            logger.debug('ConnectionWidget._on_source_changed: Connectable source')
             heartbeat = self._application.get_heartbeat()
             self._update_connection_state(heartbeat.is_online())
             heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
             heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
         else:
-            print('ConnectionWidget._on_source_changed: Offline source')
+            logger.debug('ConnectionWidget._on_source_changed: Offline source')
             self.setPixmap(self._img_unknown)
             self.setToolTip('N/A')
             self.topLevelWidget().setWindowTitle('Flowkeeper')

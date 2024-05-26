@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import logging
 import re
 from typing import Callable
 
@@ -26,6 +27,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
 
+logger = logging.getLogger(__name__)
 EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 
@@ -124,7 +126,7 @@ class ErrorStrategy(AbstractStrategy):
                 "delete your account, please send an email to contact@flowkeeper.org.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             ) == QMessageBox.StandardButton.Yes:
-                print('Obtained consent for Flowkeeper Server, will re-authenticate')
+                logger.debug('Obtained consent for Flowkeeper Server, will re-authenticate')
                 # TODO: Recreate the source. This will trigger re-authentication, this time with
                 #  "true" parameter, meaning that the user has already given their consent.
                 self._settings.set({
@@ -155,7 +157,8 @@ class PongStrategy(AbstractStrategy):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        # print(f'Received Pong - {self._uid}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Received Pong - {self._uid}')
         emit(events.PongReceived, {
             'uid': self._uid
         }, self._carry)

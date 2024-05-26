@@ -13,12 +13,16 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+
+logger = logging.getLogger(__name__)
 
 
 def _always_show(_) -> bool:
@@ -109,6 +113,13 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'False', [], _never_show),
+                ('', 'separator', '', '', [], _always_show),
+                ('Logger.level', 'choice', 'Log level', 'WARNING', [
+                    "ERROR:Errors only",
+                    "WARNING:Errors and warnings",
+                    "DEBUG:Verbose (use it for troubleshooting)",
+                ], _always_show),
+                ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
@@ -204,7 +215,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         for lst in self._definitions.values():
             for s in lst:
                 self._defaults[s[0]] = s[3]
-        # print('Filled defaults', self._defaults)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('Filled defaults', self._defaults)
 
     def invoke_callback(self, fn: Callable, **kwargs) -> None:
         self._callback_invoker(fn, **kwargs)

@@ -13,9 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 import sys
 import threading
-import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtGui import QIcon
@@ -43,6 +44,8 @@ from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
 from fk.qt.workitem_widget import WorkitemWidget
+
+logger = logging.getLogger(__name__)
 
 
 def get_timer_ui_mode() -> str:
@@ -106,7 +109,8 @@ def on_messages(event: str, source: AbstractEventSource) -> None:
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
-    # print(f'Setting {name} changed from {old_value} to {new_value}')
+    logger.debug(f'Settings changed from {old_values} to {new_values}')
+
     status.showMessage('Settings changed')
     for name in new_values.keys():
         new_value = new_values[name]
@@ -185,7 +189,7 @@ if __name__ == "__main__":
         app = Application(sys.argv)
         settings = app.get_settings()
 
-        print('UI thread:', threading.get_ident())
+        logger.debug(f'UI thread: {threading.get_ident()}')
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
@@ -369,8 +373,7 @@ if __name__ == "__main__":
             sys.exit(app.exec())
 
     except Exception as exc:
-        print("FATAL: Exception on startup", exc)
-        print("\n".join(traceback.format_exception(exc)))
+        logger.error("FATAL: Exception on startup", exc_info=exc)
         res = QMessageBox().critical(None,
                                      "Startup error",
                                      f"Something unexpected has happened during Flowkeeper startup. It is most likely "
@@ -389,5 +392,5 @@ if __name__ == "__main__":
                                       f"To finish resetting its configuration, Flowkeeper will now close.",
                                       QMessageBox.StandardButton.Ok)
 
-        print('Exiting')
+        logger.debug('Exiting')
         sys.exit(2)
