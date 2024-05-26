@@ -160,14 +160,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         print(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
+        consent_given = 'true' if self.get_config_parameter('WebsocketEventSource.consent') == 'True' else 'false'
         auth_strategy = AuthenticateStrategy(1,
                                              now,
                                              ADMIN_USER,
-                                             [auth.email, f'{auth.type}|{auth.id_token}', 'false'],
+                                             [auth.email, f'{auth.type}|{auth.id_token}', consent_given],
                                              self._settings)
-        auth_strategy.execute(self._emit, self._data)
         st = self._serializer.serialize(auth_strategy)
-        # print(f'Sending auth strategy: {st}')
+        print(f'Sending auth strategy: {st}')
         self._ws.sendTextMessage(st)
 
         print(f'Requesting replay starting from #{self._last_seq}')
@@ -177,7 +177,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                                 [str(self._last_seq)],
                                 self._settings)
         rt = self._serializer.serialize(replay)
-        # print(f'Sending replay strategy: {rt}')
+        print(f'Sending replay strategy: {rt}')
         self._ws.sendTextMessage(rt)
 
         self._emit(events.SourceMessagesRequested, dict())
@@ -205,7 +205,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         for s in strategies:
             to_send = self._serializer.serialize(s)
-            # print('Sending strategy', to_send)
+            print('Sending strategy', to_send)
             self._ws.sendTextMessage(to_send)
 
     def get_name(self) -> str:
@@ -230,7 +230,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                             [uid],
                             self._settings)
         ps = self._serializer.serialize(ping)
-        # print(f'Sending ping strategy: {ps}')
+        print(f'Sending ping strategy: {ps}')
         self._ws.sendTextMessage(ps)
         return uid
 

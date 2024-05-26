@@ -349,25 +349,14 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set({'Application.eyecandy_gradient': chosen})
 
     def sign_in(self, _):
-        def check_server(auth: AuthenticationRecord):
-            pass
-
         def save(auth: AuthenticationRecord):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
+                'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token': auth.refresh_token,
             })
-
-        if QMessageBox().warning(self.activeWindow(),
-                                 "Known bug",
-                                 f"After you login the app may crash. It will remember your credentials, so you just "
-                                 f"need to restart it. This is due to a bug in Qt6 OAuth module, for which we are "
-                                 f"implementing a workaround. In the meantime we apologize for the inconvenience.",
-                                 QMessageBox.StandardButton.Ok,
-                                 QMessageBox.StandardButton.Cancel
-                                 ) == QMessageBox.StandardButton.Ok:
-            authenticate(self, save)
+        authenticate(self, save)
 
     @staticmethod
     def define_actions(actions: Actions):

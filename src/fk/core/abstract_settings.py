@@ -95,6 +95,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
         self._callback_invoker = callback_invoker
 
+
         self._definitions = {
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
@@ -128,6 +129,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
+                ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
@@ -198,7 +200,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
-
         self._defaults = dict()
         for lst in self._definitions.values():
             for s in lst:

@@ -32,9 +32,6 @@ EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 # Authenticate("alice@example.com", "google|token123", "false")
 @strategy
 class AuthenticateStrategy(AbstractStrategy[Tenant]):
-    last_username: str = ''
-    last_token: str = ''
-
     _username: str
     _token: str
 
@@ -55,9 +52,6 @@ class AuthenticateStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        # Those are used in the scenario when the server requests user's consent before creating new account
-        AuthenticateStrategy.last_username = self._username
-        AuthenticateStrategy.last_token = self._token
         return None, None
 
 
@@ -110,23 +104,32 @@ class ErrorStrategy(AbstractStrategy):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         if self._error_message == 'User consent is required':
+            # TODO: Transfer this message from the server
             if QMessageBox().warning(
                 None,
-                "IMPORTANT",
-                "Support for Flowkeeper Server is experimental. We host Flowkeeper.org on best-effort basis and "
-                "we cannot guarantee 24/7 reliable uptime. We may accidentally lose your data or terminate our"
-                "service without warning. Your data is encrypted and decrypted on your computer, so we don't "
-                "have access to its content. If you click Yes, we will automatically create an account for the"
-                "email you provided, and won't show this message again. If you'd like to delete your account, "
-                "please send an email to contact@flowkeeper.org.",
+                "Do you want to create an account?",
+                "PLEASE READ IT: Support for Flowkeeper Server is experimental. We host Flowkeeper.org on "
+                "best-effort basis and deploy updates frequently, all of which means that in general we cannot "
+                "provide reliable 24/7 service. Unplanned downtime should be expected and WILL happen. \n\n"
+                "RELIABILITY: Although we take regular backups and handle your data as carefully as we can, we "
+                "cannot guarantee that your data will be stored forever. We may accidentally lose it or simply "
+                "terminate our service without warning. We recommend you to export your data to a local backup "
+                "file from time to time. \n\n"
+                "SECURITY: Your data is encrypted and decrypted on your computer using Fernet algorithm, "
+                "which is based on AES cypher. The server deals with encrypted content only, and we don't "
+                "have any means of decrypting it, so as long as you keep your encryption key private, your "
+                "personal data should be safe.\n\n"
+                "If you click Yes, we will automatically create an account for the "
+                "email you provided, and won't show this message again. If you'd like to "
+                "delete your account, please send an email to contact@flowkeeper.org.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             ) == QMessageBox.StandardButton.Yes:
-                print('Will execute Authenticate with true')
-
-                self.execute_another(emit,
-                                     data,
-                                     AuthenticateStrategy,
-                                     [AuthenticateStrategy.last_username, AuthenticateStrategy.last_token, 'true'])
+                print('Obtained consent for Flowkeeper Server, will re-authenticate')
+                # TODO: Recreate the source. This will trigger re-authentication, this time with
+                #  "true" parameter, meaning that the user has already given their consent.
+                self._settings.set({
+                    'WebsocketEventSource.consent': 'True',
+                })
         else:
             raise Exception(self._error_message)
 
