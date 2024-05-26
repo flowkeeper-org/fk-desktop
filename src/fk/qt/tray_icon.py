@@ -36,8 +36,6 @@ class TrayIcon(QSystemTrayIcon):
     _source_holder: EventSourceHolder
     _timer_widget: TimerWidget | None
     _timer: PomodoroTimer
-
-    # TODO: Set it correctly in some event handler (finish pomodoro?)
     _continue_workitem: Workitem | None
 
     def __init__(self,
@@ -55,12 +53,11 @@ class TrayIcon(QSystemTrayIcon):
         self._timer = timer
         self._timer_widget = render_for_pixmap()
 
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
-
         timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
         timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
         timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
         timer.on(PomodoroTimer.TimerTick, self._on_tick)
+        timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
 
         self.activated.connect(lambda reason:
                                self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None)
@@ -81,8 +78,11 @@ class TrayIcon(QSystemTrayIcon):
             menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
 
-    def _on_source_changed(self, event: str, source: AbstractEventSource):
-        self.reset()
+    def _on_timer_initialized(self, event: str, timer: PomodoroTimer) -> None:
+        if timer.is_resting() or timer.is_working():
+            self._on_work_start()
+        else:
+            self.reset()
 
     def reset(self, **kwargs):
         self.setToolTip("It's time for the next Pomodoro.")

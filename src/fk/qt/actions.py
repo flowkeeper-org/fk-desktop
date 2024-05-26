@@ -47,7 +47,7 @@ class Actions:
     def add(self,
             name: str,
             text: str,
-            shortcut: str,
+            shortcut: str | None,
             icon: str | None,
             member: Callable,
             is_toggle: bool = False,
