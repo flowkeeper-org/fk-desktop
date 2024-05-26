@@ -29,9 +29,12 @@ from fk.core.tenant import Tenant
 EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 
-# Authenticate("alice@example.com", "secret")
+# Authenticate("alice@example.com", "google|token123", "false")
 @strategy
 class AuthenticateStrategy(AbstractStrategy[Tenant]):
+    last_username: str = ''
+    last_token: str = ''
+
     _username: str
     _token: str
 
@@ -52,6 +55,9 @@ class AuthenticateStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
+        # Those are used in the scenario when the server requests user's consent before creating new account
+        AuthenticateStrategy.last_username = self._username
+        AuthenticateStrategy.last_token = self._token
         return None, None
 
 
@@ -104,14 +110,23 @@ class ErrorStrategy(AbstractStrategy):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         if self._error_message == 'User consent is required':
-            QMessageBox().warning(
+            if QMessageBox().warning(
                 None,
                 "IMPORTANT",
-                "Flowkeeper.org is in its BETA testing stage. It lacks end-to-end encryption, which means "
-                "that our engineers have access to your data. DO NOT STORE ANY SENSITIVE INFORMATION IN "
-                "FLOWKEEPER.ORG -- we may read it or it may disappear at any time.",
+                "Support for Flowkeeper Server is experimental. We host Flowkeeper.org on best-effort basis and "
+                "we cannot guarantee 24/7 reliable uptime. We may accidentally lose your data or terminate our"
+                "service without warning. Your data is encrypted and decrypted on your computer, so we don't "
+                "have access to its content. If you click Yes, we will automatically create an account for the"
+                "email you provided, and won't show this message again. If you'd like to delete your account, "
+                "please send an email to contact@flowkeeper.org.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
+            ) == QMessageBox.StandardButton.Yes:
+                print('Will execute Authenticate with true')
+
+                self.execute_another(emit,
+                                     data,
+                                     AuthenticateStrategy,
+                                     [AuthenticateStrategy.last_username, AuthenticateStrategy.last_token, 'true'])
         else:
             raise Exception(self._error_message)
 

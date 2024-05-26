@@ -165,6 +165,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                                              ADMIN_USER,
                                              [auth.email, f'{auth.type}|{auth.id_token}', 'false'],
                                              self._settings)
+        auth_strategy.execute(self._emit, self._data)
         st = self._serializer.serialize(auth_strategy)
         # print(f'Sending auth strategy: {st}')
         self._ws.sendTextMessage(st)
