@@ -20,7 +20,6 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
@@ -49,7 +48,7 @@ class TrayIcon(QSystemTrayIcon):
         super().__init__(parent)
 
         self._default_icon = QIcon(":/icons/logo.png")
-        self._next_icon = QIcon("tool-next")
+        self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._source_holder = source_holder
         self._continue_workitem = None
@@ -90,10 +89,10 @@ class TrayIcon(QSystemTrayIcon):
         self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
-        if self._continue_workitem is not None:
+        if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
             self._source_holder.get_source().execute(StartWorkStrategy, [
                 self._continue_workitem.get_uid(),
-                self._source_holder.get_settings().get('Pomodoro.default_work_duration')
+                self._source_holder.get_settings().get('Pomodoro.default_work_duration'),
             ])
         else:
             if self.parent().isHidden():
@@ -122,6 +121,7 @@ class TrayIcon(QSystemTrayIcon):
         self._paint_timer()
 
     def _on_work_start(self, **kwargs) -> None:
+        self._continue_workitem = self._timer.get_running_workitem()
         self._on_tick(self._timer.get_running_pomodoro())
 
     def _on_work_complete(self, **kwargs) -> None:
@@ -131,6 +131,8 @@ class TrayIcon(QSystemTrayIcon):
     def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
         if workitem.is_startable():
             self.setToolTip(f'Start another Pomodoro? ({workitem.get_name()})')
-            self.showMessage("Ready", "Start new pomodoro", self._next_icon)
+            self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
+            self.setIcon(self._next_icon)
         else:
+            self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
             self.reset()
