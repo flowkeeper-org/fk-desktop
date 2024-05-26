@@ -133,6 +133,7 @@ class PomodoroTimer(AbstractEventEmitter):
             # Only tick if there's something running
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': self,
+                'pomodoro': self._pomodoro,
             }, None)
 
     def _schedule_transition(self,
@@ -274,3 +275,13 @@ class PomodoroTimer(AbstractEventEmitter):
 
     def get_remaining_duration(self) -> float:
         return self._remaining_duration
+
+    def format_remaining_duration(self) -> str:
+        remaining_duration = self.get_remaining_duration()     # This is always >= 0
+        remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
+        remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
+        return f'{remaining_minutes}:{remaining_seconds}'
+
+    def get_completion(self) -> float:
+        planned = self.get_planned_duration()
+        return self.get_remaining_duration() / planned if planned > 0 else 0

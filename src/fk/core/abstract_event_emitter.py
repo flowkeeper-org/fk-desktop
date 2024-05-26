@@ -68,10 +68,10 @@ class AbstractEventEmitter:
                     params['event'] = event
                     if carry is not None:
                         params['carry'] = carry
-                    # print(f' ! {_callback_display(callback)}(' + str(params) + ')')
+                    print(f' ! {_callback_display(callback)}(' + str(params) + ')')
                     self._callback_invoker(callback, **params)
                 if not first:
-                    # print(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
+                    print(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
                     return
                 first = False
 
