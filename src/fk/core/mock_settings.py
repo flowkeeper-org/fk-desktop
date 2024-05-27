@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 

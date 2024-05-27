@@ -17,8 +17,8 @@
 import datetime
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.tenant import Tenant
 from fk.core.mock_settings import MockSettings
+from fk.core.tenant import Tenant
 from fk.core.user import User
 
 PREDEFINED_TIMESTAMP = [1632408308, 1666626369, 1700938030]

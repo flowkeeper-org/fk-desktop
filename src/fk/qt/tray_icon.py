@@ -18,8 +18,7 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
-from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer

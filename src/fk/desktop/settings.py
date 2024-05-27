@@ -20,7 +20,7 @@ import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime
-from PySide6.QtGui import QFont, QKeySequence, QIcon, QPixmap
+from PySide6.QtGui import QFont, QKeySequence, QIcon
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog

@@ -15,11 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import traceback
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QStandardItem
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog

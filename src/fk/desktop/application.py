@@ -34,7 +34,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import EventSourceFactory, get_event_source_factory
+from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph

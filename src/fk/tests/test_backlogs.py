@@ -20,14 +20,14 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
-from fk.core.fernet_cryptograph import FernetCryptograph
-from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy
-from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CreateWorkitemStrategy
 
 
 class TestBacklogs(TestCase):

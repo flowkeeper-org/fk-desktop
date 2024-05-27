@@ -22,8 +22,8 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QW
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.tenant import Tenant
 from fk.core.file_event_source import FileEventSource
+from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.qt_settings import QtSettings
 
