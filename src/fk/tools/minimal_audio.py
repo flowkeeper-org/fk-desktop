@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from PySide6.QtWidgets import QPushButton
 
 from fk.core.timer import PomodoroTimer

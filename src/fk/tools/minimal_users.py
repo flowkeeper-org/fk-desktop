@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from fk.core.tenant import Tenant
 from fk.qt.user_tableview import UserTableView
 from fk.tools.minimal_common import MinimalCommon

@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu

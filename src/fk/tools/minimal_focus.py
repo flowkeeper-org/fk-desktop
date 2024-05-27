@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from fk.core.timer import PomodoroTimer
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.qt_timer import QtTimer
