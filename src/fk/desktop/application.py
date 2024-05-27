@@ -136,8 +136,28 @@ class Application(QApplication, AbstractEventEmitter):
         self._heartbeat.on(events.WentOnline, self._on_went_online)
 
     def _initialize_logger(self):
-        logging.basicConfig(filename=self._settings.get('Logger.filename'),
-                            level=self._settings.get('Logger.level'))
+        log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        root = logging.getLogger()
+
+        # 0. Set the overall log level that would apply to ALL handlers
+        root.setLevel(self._settings.get('Logger.level'))
+
+        # 1. Remove existing handlers, if any
+        for existing_handle in root.handlers:
+            existing_handle.close()
+        root.handlers.clear()
+
+        # 2. Add FILE handler for whatever the user configured
+        file_handler = logging.FileHandler(filename=self._settings.get('Logger.filename'))
+        file_handler.setFormatter(log_format)
+        file_handler.setLevel(self._settings.get('Logger.level'))
+        root.handlers.append(file_handler)
+
+        # 3. Add STDIO handler for warnings and errors
+        stdio_handler = logging.StreamHandler(sys.stdout)
+        stdio_handler.setFormatter(log_format)
+        stdio_handler.setLevel(logging.WARNING)
+        root.handlers.append(stdio_handler)
 
     def initialize_source(self):
         self._source_holder.request_new_source()
