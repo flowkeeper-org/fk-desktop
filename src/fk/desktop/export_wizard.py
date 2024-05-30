@@ -22,6 +22,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QW
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
@@ -55,7 +56,7 @@ class PageExportSettings(QWizardPage):
     def isComplete(self):
         return len(self.export_location.text().strip()) > 0
 
-    def __init__(self):
+    def __init__(self, settings: AbstractSettings):
         super().__init__()
         #self.setTitle("Export settings")
         self.layout_v = QVBoxLayout()
@@ -73,11 +74,17 @@ class PageExportSettings(QWizardPage):
         self.export_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.export_location))
         self.layout_h.addWidget(self.export_location_browse)
         self.layout_v.addLayout(self.layout_h)
-        self.export_compress = QCheckBox('Compress data')
+        self.export_compress = QCheckBox('Compress data (delete detailed history)')
         self.export_compress.setDisabled(True)
         self.layout_v.addWidget(self.export_compress)
-        self.export_encrypt = QCheckBox('Encrypt')
-        self.export_encrypt.setDisabled(True)
+        self.export_encrypt = QCheckBox('Export in plain text (decrypted)')
+        if settings.is_e2e_encryption_enabled():
+            self.export_encrypt.setEnabled(True)
+        else:
+            self.export_encrypt.setChecked(True)
+            self.export_encrypt.setDisabled(True)
+        # noinspection PyUnresolvedReferences
+        self.export_encrypt.stateChanged.connect(lambda v: self.wizard().set_encrypted(v != 2))
         self.layout_v.addWidget(self.export_encrypt)
         self.setLayout(self.layout_v)
         self.setCommitPage(True)
@@ -132,6 +139,7 @@ class PageExportProgress(QWizardPage):
         self._filename = self.wizard().option_filename
         self._source.export(self._filename,
                             Tenant(self._source._settings),
+                            self.wizard().option_encrypted,
                             lambda total: self.progress.setMaximum(total),
                             lambda value, total: self.progress.setValue(value),
                             lambda total: self.finish())
@@ -151,17 +159,20 @@ class ExportWizard(QWizard):
         self._source = source
         self.setWindowTitle("Export")
         self.page_intro = PageExportIntro()
-        self.page_settings = PageExportSettings()
+        self.page_settings = PageExportSettings(source.get_settings())
         self.page_progress = PageExportProgress(source)
         self.addPage(self.page_intro)
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)
         self.option_filename = None
         self.option_compressed = False
-        self.option_encrypted = False
+        self.option_encrypted = source.get_settings().is_e2e_encryption_enabled()
 
     def set_filename(self, filename):
         self.option_filename = filename
+
+    def set_encrypted(self, encrypted):
+        self.option_encrypted = encrypted
 
 
 if __name__ == '__main__':

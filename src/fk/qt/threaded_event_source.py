@@ -105,10 +105,16 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def export(self,
                filename: str,
                new_root: Self,
+               encrypt: bool,
                start_callback: Callable[[int], None],
                progress_callback: Callable[[int, int], None],
                completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.export(filename, new_root, start_callback, progress_callback, completion_callback)
+        self._wrapped.export(filename,
+                             new_root,
+                             encrypt,
+                             start_callback,
+                             progress_callback,
+                             completion_callback)
 
     def import_(self,
                 filename: str,

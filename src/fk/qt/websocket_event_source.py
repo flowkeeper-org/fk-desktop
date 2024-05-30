@@ -219,7 +219,10 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         return self._data
 
     def clone(self, new_root: TRoot) -> Self:
-        return WebsocketEventSource[TRoot](self._settings, self._cryptograph, self._application, new_root)
+        return WebsocketEventSource[TRoot](self._settings,
+                                           self._cryptograph,
+                                           self._application,
+                                           new_root)
 
     def disconnect(self):
         self._ws.disconnected.disconnect()

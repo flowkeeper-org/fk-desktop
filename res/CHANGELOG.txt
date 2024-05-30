@@ -1,6 +1,7 @@
 ### v0.5.0 (TBD)
 - Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
 - Encrypted content can be mixed with plaintext.
+- Support for encryption in Export (optional).
 - You can now sign up to flowkeeper.org from the desktop app.
 - You can now change appearance theme on the fly.
 - New color themes.

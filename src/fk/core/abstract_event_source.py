@@ -27,6 +27,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
+from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro import Pomodoro
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
@@ -40,7 +41,6 @@ TRoot = TypeVar('TRoot')
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     _serializer: AbstractSerializer
-    _export_serializer: SimpleSerializer
     _settings: AbstractSettings
     _cryptograph: AbstractCryptograph
     _last_seq: int
@@ -95,7 +95,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._last_seq = 0
         self._estimated_count = 0
-        self._export_serializer = SimpleSerializer(settings, cryptograph)
 
     # Override
     @abstractmethod
@@ -196,8 +195,10 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                   export_file,
                                   progress_callback: Callable[[int, int], None],
                                   every: int,
-                                  strategy: AbstractStrategy[TRoot]) -> None:
-        export_file.write(f'{self._export_serializer.serialize(strategy)}\n')
+                                  strategy: AbstractStrategy[TRoot],
+                                  export_serializer: AbstractSerializer) -> None:
+        serialized = export_serializer.serialize(strategy)
+        export_file.write(f'{serialized}\n')
         if another._estimated_count % every == 0:
             progress_callback(another._estimated_count, self._estimated_count)
             if logger.isEnabledFor(logging.DEBUG):
@@ -213,24 +214,33 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def export(self,
                filename: str,
                new_root: TRoot,
+               encrypt: bool,
                start_callback: Callable[[int], None],
                progress_callback: Callable[[int, int], None],
                completion_callback: Callable[[int], None]) -> None:
+        export_serializer = self.create_export_serializer(encrypt)
         another = self.clone(new_root)
         every = max(int(self._estimated_count / 100), 1)
         export_file = open(filename, 'w', encoding='UTF-8')
         another.on(events.AfterMessageProcessed,
                    lambda strategy, auto, **kwargs: self._export_message_processed(another,
-                                                                                export_file,
-                                                                                progress_callback,
-                                                                                every,
-                                                                                strategy) if not auto else None)
+                                                                                   export_file,
+                                                                                   progress_callback,
+                                                                                   every,
+                                                                                   strategy,
+                                                                                   export_serializer) if not auto else None)
         another.on(events.SourceMessagesProcessed,
                    lambda **kwargs: AbstractEventSource._export_completed(another,
                                                                        export_file,
                                                                        completion_callback))
         start_callback(self._estimated_count)
         another.start(mute_events=False)
+
+    def create_export_serializer(self, encrypt=False) -> AbstractSerializer:
+        if encrypt:
+            return SimpleSerializer(self._settings, self._cryptograph)
+        else:
+            return SimpleSerializer(self._settings, NoCryptograph(self._settings))
 
     def import_(self,
                 filename: str,
@@ -251,11 +261,14 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
         user_identity = self._settings.get_username()
 
+        # With encrypt=True it will try to deserialize as much as possible
+        export_serializer = self.create_export_serializer(True)
+
         i = 0
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 try:
-                    strategy = self._export_serializer.deserialize(line)
+                    strategy = export_serializer.deserialize(line)
                     strategy.replace_user_identity(user_identity)
                     i += 1
                     if strategy is None:

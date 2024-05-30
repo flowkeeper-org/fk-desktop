@@ -117,6 +117,7 @@ class Application(QApplication, AbstractEventEmitter):
                     'Application.play_tick_sound': 'False',
                     'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
                     'Logger.level': 'DEBUG',
+                    'Source.encryption_key': 'test key',
                 })
             else:
                 self._settings = QtSettings()

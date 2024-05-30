@@ -348,7 +348,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return FileEventSource[TRoot](self._settings, self._cryptograph, new_root, self._watcher, existing_strategies)
+        return FileEventSource[TRoot](self._settings,
+                                      self._cryptograph,
+                                      new_root,
+                                      self._watcher,
+                                      existing_strategies)
 
     def disconnect(self):
         if self._watcher is not None:
