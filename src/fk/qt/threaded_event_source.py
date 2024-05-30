@@ -125,10 +125,16 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def import_(self,
                 filename: str,
                 ignore_errors: bool,
+                merge: bool,
                 start_callback: Callable[[int], None],
                 progress_callback: Callable[[int, int], None],
                 completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.import_(filename, ignore_errors, start_callback, progress_callback, completion_callback)
+        self._wrapped.import_(filename,
+                              ignore_errors,
+                              merge,
+                              start_callback,
+                              progress_callback,
+                              completion_callback)
 
     def disconnect(self):
         self._wrapped.disconnect()

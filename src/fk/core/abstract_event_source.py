@@ -27,16 +27,16 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, StartRestStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
-from fk.core.user_strategies import CreateUserStrategy
+from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy, RenameWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -219,7 +219,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         export_file.close()
         completion_callback(another._estimated_count)
 
-    def strategies(self) -> Iterable[AbstractStrategy]:
+    def compressed_strategies(self) -> Iterable[AbstractStrategy]:
+        """The minimal list of strategies required to get the same end result"""
+
         seq = 1
         for user in self.get_data().values():
             if user.is_system_user():
@@ -267,13 +269,83 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                                        self._settings)
                         seq += 1
 
+    def merge_strategies(self, data: TRoot) -> Iterable[AbstractStrategy]:
+        """The list of strategies required to merge self with another, used in import"""
+
+        # Prepare maps to speed up imports, otherwise we'll have to loop a lot
+        existing_backlogs = dict[str, Backlog]()
+        for backlog in self.backlogs():
+            existing_backlogs[backlog.get_uid()] = backlog
+        existing_workitems = dict[str, Workitem]()
+        for workitem in self.workitems():
+            existing_workitems[workitem.get_uid()] = workitem
+
+        seq = self._last_seq + 1
+        for user in data.values():
+            if user.is_system_user():
+                continue
+            if user.get_identity() not in self.get_data():
+                yield CreateUserStrategy(seq, user.get_create_date(), ADMIN_USER,
+                                         [user.get_identity(), user.get_name()],
+                                         self._settings)
+                seq += 1
+            else:
+                # Check if it was renamed
+                existing_user: User = self.get_data()[user.get_identity()]
+                if user.get_name() != existing_user.get_name():
+                    if user.get_last_modified_date() > existing_user.get_last_modified_date():
+                        yield RenameUserStrategy(seq, user.get_last_modified_date(), ADMIN_USER,
+                                                 [user.get_identity(), user.get_name()],
+                                                 self._settings)
+                        seq += 1
+
+            for backlog in user.values():
+                if backlog.get_uid() not in existing_backlogs:
+                    yield CreateBacklogStrategy(seq, backlog.get_create_date(), user.get_identity(),
+                                                [backlog.get_uid(), backlog.get_name()],
+                                                self._settings)
+                    seq += 1
+                else:
+                    # Check if it was renamed
+                    existing_backlog = existing_backlogs[backlog.get_uid()]
+                    if backlog.get_name() != existing_backlog.get_name():
+                        if backlog.get_last_modified_date() > existing_backlog.get_last_modified_date():
+                            yield RenameBacklogStrategy(seq, backlog.get_last_modified_date(), user.get_identity(),
+                                                        [backlog.get_uid(), backlog.get_name()],
+                                                        self._settings)
+                            seq += 1
+
+                for workitem in backlog.values():
+                    existing_workitem = None
+                    if workitem.get_uid() not in existing_workitems:
+                        yield CreateWorkitemStrategy(seq, workitem.get_create_date(), user.get_identity(),
+                                                     [workitem.get_uid(), backlog.get_uid(), workitem.get_name()],
+                                                     self._settings)
+                        seq += 1
+                    else:
+                        # Check if it was renamed
+                        existing_workitem = existing_workitems[workitem.get_uid()]
+                        if workitem.get_name() != existing_workitem.get_name():
+                            if workitem.get_last_modified_date() > existing_workitem.get_last_modified_date():
+                                yield RenameWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
+                                                             [workitem.get_uid(), workitem.get_name()],
+                                                             self._settings)
+                                seq += 1
+
+                    # TODO: Merge pomodoros here
+
+                    if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):
+                        yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
+                                                       [workitem.get_uid(), 'finished'],
+                                                       self._settings)
+                        seq += 1
+
     def _export_compressed(self,
                            another: Self,
                            export_file,
                            completion_callback: Callable[[int], None],
                            export_serializer: AbstractSerializer) -> None:
-        # Convert Flowkeeper data structure into a list of strategies
-        for strategy in self.strategies():
+        for strategy in self.compressed_strategies():
             serialized = export_serializer.serialize(strategy)
             export_file.write(f'{serialized}\n')
         self._export_completed(another, export_file, completion_callback)
@@ -322,9 +394,24 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def import_(self,
                 filename: str,
                 ignore_errors: bool,
+                merge: bool,
                 start_callback: Callable[[int], None],
                 progress_callback: Callable[[int, int], None],
                 completion_callback: Callable[[int], None]) -> None:
+        if merge:
+            # 1. Read import file
+            # 2. Execute the "merge" sequence of strategies obtained via self.merge_strategies()
+            # TODO: See how to make it work with import cycles
+            pass
+        else:
+            self.import_classic(filename, ignore_errors, start_callback, progress_callback, completion_callback)
+
+    def import_classic(self,
+                       filename: str,
+                       ignore_errors: bool,
+                       start_callback: Callable[[int], None],
+                       progress_callback: Callable[[int, int], None],
+                       completion_callback: Callable[[int], None]) -> None:
         # Note that this method ignores sequences and will import even "broken" files
         if not path.isfile(filename):
             raise Exception(f'File {filename} not found')

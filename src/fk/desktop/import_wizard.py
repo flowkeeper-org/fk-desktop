@@ -116,6 +116,7 @@ class PageImportProgress(QWizardPage):
         self._filename = self.wizard().option_filename
         self._source.import_(self._filename,
                              self._ignore_errors.isChecked(),
+                             True,
                              lambda total: self.progress.setMaximum(total),
                              lambda value, total: self.progress.setValue(value),
                              lambda total: self.finish())
