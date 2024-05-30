@@ -274,3 +274,15 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         else:
             self.reset()
             self._buttons['focus.nextPomodoro'].hide()
+
+    def mode_changed(self, old_mode: str, new_mode: str) -> None:
+        if new_mode == 'undefined':
+            pass
+        elif new_mode == 'idle':
+            pass
+        elif new_mode == 'working':
+            pass
+        elif new_mode == 'resting':
+            pass
+        elif new_mode == 'ready':
+            pass

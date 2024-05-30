@@ -97,17 +97,15 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._timer_widget.set_values(completion, None, "")
         self._paint_timer()
 
-    def work_complete(self) -> None:
-        self.showMessage("Work is done", "Have some rest", self._default_icon)
-
-    def rest_complete(self, workitem: Workitem) -> None:
-        if workitem.is_startable():
-            self.setToolTip(f'Start another Pomodoro? ({workitem.get_name()})')
-            self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
-            self.setIcon(self._next_icon)
-        else:
-            self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
-            self.reset()
-
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         print(f'Timer display mode changed from {old_mode} to {new_mode}')
+        if new_mode == 'undefined' or new_mode == 'idle':
+            self.reset()
+            if old_mode == 'working' or old_mode == 'resting':
+                self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
+        elif new_mode == 'resting' and old_mode == 'working':
+            self.showMessage("Work is done", "Have some rest", self._default_icon)
+        elif new_mode == 'ready':
+            self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
+            self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
+            self.setIcon(self._next_icon)
