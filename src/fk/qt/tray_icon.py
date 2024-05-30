@@ -108,3 +108,6 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         else:
             self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
             self.reset()
+
+    def mode_changed(self, old_mode: str, new_mode: str) -> None:
+        print(f'Timer display mode changed from {old_mode} to {new_mode}')

@@ -15,15 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterWorkitemDelete, AfterWorkitemComplete, AfterWorkitemRename, AfterPomodoroRemove, \
-    SourceMessagesProcessed
+from fk.core.events import AfterWorkitemDelete, AfterWorkitemComplete, AfterPomodoroRemove
 from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 
 
 class AbstractTimerDisplay:
-    """A timer can be in one of the five modes -- undefined, idle, working, resting and standby AKA
+    """A timer can be in one of the five modes -- undefined, idle, working, resting and ready AKA
     "Ready to start another Pomodoro?" mode."""
 
     _source_holder: EventSourceHolder
@@ -37,11 +36,11 @@ class AbstractTimerDisplay:
         self._source_holder = source_holder
         self._timer = timer
         self._continue_workitem = None
-        self._mode = "undefined"
+        self._mode = 'undefined'
 
         timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
         timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
-        timer.on(PomodoroTimer.TimerRestComplete, lambda workitem, **kwargs: self.rest_complete(workitem))
+        timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
         timer.on(PomodoroTimer.TimerTick, self._on_tick)
         timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
 
@@ -54,29 +53,21 @@ class AbstractTimerDisplay:
             self.mode_changed(old_mode, mode)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
-        source.on(AfterWorkitemDelete,
-                  lambda workitem, **kwargs: self.reset() if workitem == self._continue_workitem else None)
-        source.on(AfterWorkitemComplete,
-                  lambda workitem, **kwargs: self.reset() if workitem == self._continue_workitem else None)
+        self._continue_workitem = None
+        self._set_mode('undefined')
 
-        # Not sure how to handle it best here
-        # TODO: Another bug -- "Start another" shows if we complete a workitem while it's running
-        # TODO: Another bug -- "Start another" shows if we delete a workitem while it's running
-        source.on(AfterWorkitemRename,
-                  lambda workitem, **kwargs: None)
-        source.on(AfterPomodoroRemove,
-                  lambda workitem, **kwargs: None)
+        source.on(AfterWorkitemComplete, self._on_workitem_complete_or_delete)
+        source.on(AfterWorkitemDelete, self._on_workitem_complete_or_delete)
+        source.on(AfterPomodoroRemove, self._on_pomodoro_remove)
 
     def _on_timer_initialized(self, event: str, timer: PomodoroTimer) -> None:
         if timer.is_resting():
-            self._set_mode('resting')
-            self._on_work_start()
+            self._on_work_complete()
         elif timer.is_working():
-            self._set_mode('working')
             self._on_work_start()
         else:
+            self._continue_workitem = None
             self._set_mode('idle')
-            self.reset()
 
     def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
         state = 'Focus' if self._timer.is_working() else 'Rest'
@@ -85,30 +76,34 @@ class AbstractTimerDisplay:
 
     def _on_work_start(self, **kwargs) -> None:
         self._continue_workitem = self._timer.get_running_workitem()
-        self._on_tick(self._timer.get_running_pomodoro())
-        self.work_start(self._continue_workitem)
+        self._set_mode('working')
 
     def _on_work_complete(self, **kwargs) -> None:
-        self._on_tick(self._timer.get_running_pomodoro())
-        self.work_complete()
-        if self._mode != 'resting':
-            self.mode_changed(self._mode, 'resting')
+        self._continue_workitem = self._timer.get_running_workitem()
+        self._set_mode('resting')
+
+    def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
+        if self._continue_workitem is not None and workitem.is_startable():
+            self._set_mode('ready')
+        else:
+            self._continue_workitem = None
+            self._set_mode('idle')
+
+    def _on_workitem_complete_or_delete(self, workitem: Workitem, **kwargs) -> None:
+        if workitem == self._continue_workitem:
+            self._continue_workitem = None
+            self._set_mode('idle')
+
+    def _on_pomodoro_remove(self, workitem: Workitem, **kwargs) -> None:
+        if workitem == self._continue_workitem \
+                and self._timer.is_idling() \
+                and not workitem.is_startable():
+            self._continue_workitem = None
+            self._set_mode('idle')
 
     # Override those in the child widgets
 
-    def reset(self, **kwargs):
-        pass
-
     def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
-        pass
-
-    def work_start(self, item: Workitem) -> None:
-        pass
-
-    def work_complete(self) -> None:
-        pass
-
-    def rest_complete(self, workitem: Workitem) -> None:
         pass
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
