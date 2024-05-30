@@ -13,16 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import sys
 
-from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QWizard, QCheckBox, QLineEdit, \
+from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.file_event_source import FileEventSource
-from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
-from fk.qt.qt_settings import QtSettings
 
 
 class PageImportIntro(QWizardPage):
@@ -146,12 +142,3 @@ class ImportWizard(QWizard):
 
     def set_filename(self, filename):
         self.option_filename = filename
-
-
-if __name__ == '__main__':
-    app = QApplication([])
-    src = FileEventSource[Tenant](QtSettings())
-    src.start()
-    wizard = ImportWizard(src, None)
-    wizard.show()
-    sys.exit(app.exec())

@@ -27,12 +27,16 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, StartRestStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
+from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -171,6 +175,10 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                                                              when=when,
                                                                              auto=True))
 
+    def users(self) -> Iterable[User]:
+        for user in self.get_data().values():
+            yield user
+
     def backlogs(self) -> Iterable[Backlog]:
         for user in self.get_data().values():
             for backlog in user.values():
@@ -204,17 +212,77 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f' - {another._estimated_count} out of {self._estimated_count}')
 
-    @staticmethod
-    def _export_completed(another: 'AbstractEventSource',
+    def _export_completed(self,
+                          another: Self,
                           export_file,
                           completion_callback: Callable[[int], None]) -> None:
         export_file.close()
         completion_callback(another._estimated_count)
 
+    def strategies(self) -> Iterable[AbstractStrategy]:
+        seq = 1
+        for user in self.get_data().values():
+            if user.is_system_user():
+                continue
+            yield CreateUserStrategy(seq, user.get_create_date(), ADMIN_USER,
+                                     [user.get_identity(), user.get_name()],
+                                     self._settings)
+            seq += 1
+            for backlog in user.values():
+                yield CreateBacklogStrategy(seq, backlog.get_create_date(), user.get_identity(),
+                                            [backlog.get_uid(), backlog.get_name()],
+                                            self._settings)
+                seq += 1
+                for workitem in backlog.values():
+                    yield CreateWorkitemStrategy(seq, workitem.get_create_date(), user.get_identity(),
+                                                 [workitem.get_uid(), backlog.get_uid(), workitem.get_name()],
+                                                 self._settings)
+                    seq += 1
+                    for pomodoro in workitem.values():
+                        # We could create all at once, but then we'd lose the information about unplanned pomodoros
+                        yield AddPomodoroStrategy(seq, workitem.get_create_date(), user.get_identity(),
+                                                  [workitem.get_uid(), '1'],
+                                                  self._settings)
+                        seq += 1
+                        if pomodoro.is_canceled() or pomodoro.is_finished():
+                            yield StartWorkStrategy(seq,
+                                                    pomodoro.get_last_modified_date() - datetime.timedelta(seconds=1),
+                                                    user.get_identity(),
+                                                    [workitem.get_uid(), '1'],
+                                                    self._settings)
+                            seq += 1
+                        if pomodoro.is_canceled():
+                            yield VoidPomodoroStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
+                                                       [workitem.get_uid()],
+                                                       self._settings)
+                            seq += 1
+                        elif pomodoro.is_finished():
+                            yield StartRestStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
+                                                    [workitem.get_uid(), '1'],
+                                                    self._settings)
+                            seq += 1
+                    if workitem.is_sealed():
+                        yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
+                                                       [workitem.get_uid(), 'finished'],
+                                                       self._settings)
+                        seq += 1
+
+    def _export_compressed(self,
+                           another: Self,
+                           export_file,
+                           completion_callback: Callable[[int], None],
+                           export_serializer: AbstractSerializer) -> None:
+        # Convert Flowkeeper data structure into a list of strategies
+        for strategy in self.strategies():
+            serialized = export_serializer.serialize(strategy)
+            export_file.write(f'{serialized}\n')
+        self._export_completed(another, export_file, completion_callback)
+
     def export(self,
                filename: str,
                new_root: TRoot,
                encrypt: bool,
+               compress: bool,
                start_callback: Callable[[int], None],
                progress_callback: Callable[[int, int], None],
                completion_callback: Callable[[int], None]) -> None:
@@ -222,17 +290,26 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         another = self.clone(new_root)
         every = max(int(self._estimated_count / 100), 1)
         export_file = open(filename, 'w', encoding='UTF-8')
-        another.on(events.AfterMessageProcessed,
-                   lambda strategy, auto, **kwargs: self._export_message_processed(another,
-                                                                                   export_file,
-                                                                                   progress_callback,
-                                                                                   every,
-                                                                                   strategy,
-                                                                                   export_serializer) if not auto else None)
-        another.on(events.SourceMessagesProcessed,
-                   lambda **kwargs: AbstractEventSource._export_completed(another,
-                                                                       export_file,
-                                                                       completion_callback))
+
+        if compress:
+            another.on(events.SourceMessagesProcessed,
+                       lambda **kwargs: self._export_compressed(another,
+                                                                export_file,
+                                                                completion_callback,
+                                                                export_serializer))
+        else:
+            another.on(events.AfterMessageProcessed,
+                       lambda strategy, auto, **kwargs: None if auto else self._export_message_processed(another,
+                                                                                                         export_file,
+                                                                                                         progress_callback,
+                                                                                                         every,
+                                                                                                         strategy,
+                                                                                                         export_serializer))
+            another.on(events.SourceMessagesProcessed,
+                       lambda **kwargs: self._export_completed(another,
+                                                               export_file,
+                                                               completion_callback))
+
         start_callback(self._estimated_count)
         another.start(mute_events=False)
 

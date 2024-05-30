@@ -75,7 +75,7 @@ class PageExportSettings(QWizardPage):
         self.layout_h.addWidget(self.export_location_browse)
         self.layout_v.addLayout(self.layout_h)
         self.export_compress = QCheckBox('Compress data (delete detailed history)')
-        self.export_compress.setDisabled(True)
+        self.export_compress.stateChanged.connect(lambda v: self.wizard().set_compressed(v == 2))
         self.layout_v.addWidget(self.export_compress)
         self.export_encrypt = QCheckBox('Export in plain text (decrypted)')
         if settings.is_e2e_encryption_enabled():
@@ -138,8 +138,9 @@ class PageExportProgress(QWizardPage):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
         self._source.export(self._filename,
-                            Tenant(self._source._settings),
+                            Tenant(self._source.get_settings()),
                             self.wizard().option_encrypted,
+                            self.wizard().option_compressed,
                             lambda total: self.progress.setMaximum(total),
                             lambda value, total: self.progress.setValue(value),
                             lambda total: self.finish())
@@ -173,6 +174,9 @@ class ExportWizard(QWizard):
 
     def set_encrypted(self, encrypted):
         self.option_encrypted = encrypted
+
+    def set_compressed(self, compressed):
+        self.option_compressed = compressed
 
 
 if __name__ == '__main__':

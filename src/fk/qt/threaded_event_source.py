@@ -22,6 +22,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.qt_invoker import invoke_in_main_thread
 
@@ -93,6 +94,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def auto_seal(self) -> None:
         self._wrapped.auto_seal()
 
+    def users(self) -> Iterable[User]:
+        return self._wrapped.users()
+
     def backlogs(self) -> Iterable[Backlog]:
         return self._wrapped.backlogs()
 
@@ -106,12 +110,14 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                filename: str,
                new_root: Self,
                encrypt: bool,
+               compress: bool,
                start_callback: Callable[[int], None],
                progress_callback: Callable[[int, int], None],
                completion_callback: Callable[[int], None]) -> None:
         self._wrapped.export(filename,
                              new_root,
                              encrypt,
+                             compress,
                              start_callback,
                              progress_callback,
                              completion_callback)

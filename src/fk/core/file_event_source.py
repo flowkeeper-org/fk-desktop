@@ -214,8 +214,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                              s._when,
                                                              s._user_identity,
                                                              [uid, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
                                                              self._settings))
                         all_users.add(uid)
                         log.append(f'Created missing user on first reference: {s}')
@@ -237,8 +235,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                 s._when,
                                                                 s._user_identity,
                                                                 [uid, f"[Repaired] {uid}"],
-                                                                self._emit,
-                                                                self._data,
                                                                 self._settings))
                         all_backlogs.add(uid)
                         log.append(f'Created missing backlog on first reference: {s}')
@@ -262,8 +258,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                     s._when,
                                                                     s._user_identity,
                                                                     [repaired_backlog, '[Repaired] Orphan workitems'],
-                                                                    self._emit,
-                                                                    self._data,
                                                                     self._settings))
                             all_backlogs.add(repaired_backlog)
                             log.append(f'Created a backlog for orphan workitems: {repaired_backlog}')
@@ -272,8 +266,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                  s._when,
                                                                  s._user_identity,
                                                                  [uid, repaired_backlog, f"[Repaired] {uid}"],
-                                                                 self._emit,
-                                                                 self._data,
                                                                  self._settings))
                         all_workitems.add(uid)
                         log.append(f'Created missing workitem on first reference: {s}')
