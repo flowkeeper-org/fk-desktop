@@ -364,10 +364,9 @@ if __name__ == "__main__":
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
             QtAsyncio.run()
-        elif '--reset' in app.arguments():
-            # This might be useful on Windows or macOS, which store their settings in some obscure locations
-            settings.reset_to_defaults()
         else:
+            if '--reset' in app.arguments():
+                settings.reset_to_defaults()
             # This would work on any Qt 6.6.x
             sys.exit(app.exec())
 

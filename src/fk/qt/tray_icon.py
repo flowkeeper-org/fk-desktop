@@ -22,18 +22,17 @@ from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
+from fk.qt.abstract_timer_display import AbstractTimerDisplay
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget, render_for_pixmap
 
 
-class TrayIcon(QSystemTrayIcon):
+class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _about_window: QMainWindow
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _source_holder: EventSourceHolder
     _timer_widget: TimerWidget | None
-    _timer: PomodoroTimer
     _continue_workitem: Workitem | None
 
     def __init__(self,
@@ -41,21 +40,13 @@ class TrayIcon(QSystemTrayIcon):
                  timer: PomodoroTimer,
                  source_holder: EventSourceHolder,
                  actions: Actions):
-        super().__init__(parent)
+        super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._default_icon = QIcon(":/icons/logo.png")
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
-        self._source_holder = source_holder
         self._continue_workitem = None
-        self._timer = timer
         self._timer_widget = render_for_pixmap()
-
-        timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
-        timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
-        timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
-        timer.on(PomodoroTimer.TimerTick, self._on_tick)
-        timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
 
         self.activated.connect(lambda reason:
                                self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None)
@@ -76,13 +67,7 @@ class TrayIcon(QSystemTrayIcon):
             menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
 
-    def _on_timer_initialized(self, event: str, timer: PomodoroTimer) -> None:
-        if timer.is_resting() or timer.is_working():
-            self._on_work_start()
-        else:
-            self.reset()
-
-    def reset(self, **kwargs):
+    def reset(self):
         self.setToolTip("It's time for the next Pomodoro.")
         self.setIcon(self._default_icon)
 
@@ -107,26 +92,15 @@ class TrayIcon(QSystemTrayIcon):
         self._timer_widget.repaint(painter, QRect(0, 0, tray_width, tray_height))
         self.setIcon(pixmap)
 
-    def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
-        state = 'Focus' if self._timer.is_working() else 'Rest'
-        txt = f'{state}: {self._timer.format_remaining_duration()}'
-        self.setToolTip(f"{txt} left ({pomodoro.get_parent().get_name()})")
-
-        self._timer_widget.set_values(
-            self._timer.get_completion(),
-            None,
-            "")
+    def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
+        self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
+        self._timer_widget.set_values(completion, None, "")
         self._paint_timer()
 
-    def _on_work_start(self, **kwargs) -> None:
-        self._continue_workitem = self._timer.get_running_workitem()
-        self._on_tick(self._timer.get_running_pomodoro())
-
-    def _on_work_complete(self, **kwargs) -> None:
+    def work_complete(self) -> None:
         self.showMessage("Work is done", "Have some rest", self._default_icon)
-        self._on_tick(self._timer.get_running_pomodoro())
 
-    def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
+    def rest_complete(self, workitem: Workitem) -> None:
         if workitem.is_startable():
             self.setToolTip(f'Start another Pomodoro? ({workitem.get_name()})')
             self.showMessage("Ready", "Start another pomodoro?", self._next_icon)

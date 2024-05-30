@@ -195,7 +195,8 @@ class PomodoroTimer(AbstractEventEmitter):
                                     event: str,
                                     pomodoro: Pomodoro,
                                     workitem: Workitem,
-                                    work_duration: float) -> None:
+                                    work_duration: float,
+                                    **kwargs) -> None:
         logger.debug(f'Handling work start')
         self._pomodoro = pomodoro
         self._workitem = workitem
@@ -213,7 +214,8 @@ class PomodoroTimer(AbstractEventEmitter):
                                     event: str,
                                     pomodoro: Pomodoro,
                                     workitem: Workitem,
-                                    rest_duration: float) -> None:
+                                    rest_duration: float,
+                                    **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling rest start')
         if pomodoro != self._pomodoro:
             logger.warning("PomodoroTimer: Warning - Timer detected start of an unexpected pomodoro")
@@ -236,7 +238,8 @@ class PomodoroTimer(AbstractEventEmitter):
                                   event: str,
                                   pomodoro: Pomodoro,
                                   workitem: Workitem,
-                                  target_state: str) -> None:
+                                  target_state: str,
+                                  **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling pomodoro complete')
         if pomodoro != self._pomodoro:
             logger.warning("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")

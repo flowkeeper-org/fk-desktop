@@ -21,6 +21,7 @@ import sys
 import traceback
 import urllib
 import webbrowser
+from pathlib import Path
 
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
@@ -102,7 +103,23 @@ class Application(QApplication, AbstractEventEmitter):
             test.start()
         else:
             sys.excepthook = self.on_exception
-            self._settings = QtSettings()
+            if self.is_testing_mode():
+                self._settings = QtSettings('desktop-client-testing')
+                self._settings.reset_to_defaults()
+                self._settings.set({
+                    'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
+                    'Application.show_tutorial': 'False',
+                    'Application.check_updates': 'False',
+                    'Pomodoro.default_work_duration': '5',
+                    'Pomodoro.default_rest_duration': '5',
+                    'Application.play_alarm_sound': 'False',
+                    'Application.play_rest_sound': 'False',
+                    'Application.play_tick_sound': 'False',
+                    'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
+                    'Logger.level': 'DEBUG',
+                })
+            else:
+                self._settings = QtSettings()
             self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -193,6 +210,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def is_e2e_mode(self):
         return '--e2e' in self.arguments()
+
+    def is_testing_mode(self):
+        return '--testing' in self.arguments()
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
         # TODO -- lock the UI

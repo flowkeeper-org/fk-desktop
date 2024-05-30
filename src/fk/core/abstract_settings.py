@@ -131,7 +131,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
-                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
+                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
