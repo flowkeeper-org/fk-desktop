@@ -94,11 +94,10 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
-        self._timer_widget.set_values(completion, None, "")
+        self._timer_widget.set_values(completion)
         self._paint_timer()
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
-        print(f'Timer display mode changed from {old_mode} to {new_mode}')
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
             if old_mode == 'working' or old_mode == 'resting':

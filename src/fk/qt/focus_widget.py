@@ -256,33 +256,20 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
         self._header_text.setText(state_txt)
-        self._timer_display.set_values(completion, None, "")
+        self._timer_display.set_values(completion)
         self._timer_display.repaint()
 
-    def work_start(self, item: Workitem) -> None:
-        self._header_subtext.setText(item.get_name())
-        self._timer_display.show()
-        self._buttons['focus.voidPomodoro'].show()
-        self._actions['focus.voidPomodoro'].setDisabled(False)
-        self._buttons['focus.nextPomodoro'].hide()
-        self._buttons['focus.completeItem'].show()
-
-    def rest_complete(self, workitem: Workitem) -> None:
-        if workitem.is_startable():
-            self.reset('Start another Pomodoro?', workitem.get_name())
-            self._buttons['focus.nextPomodoro'].show()
-        else:
+    def mode_changed(self, old_mode: str, new_mode: str) -> None:
+        if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
             self._buttons['focus.nextPomodoro'].hide()
-
-    def mode_changed(self, old_mode: str, new_mode: str) -> None:
-        if new_mode == 'undefined':
-            pass
-        elif new_mode == 'idle':
-            pass
-        elif new_mode == 'working':
-            pass
-        elif new_mode == 'resting':
-            pass
+        elif new_mode == 'working' or new_mode == 'resting':
+            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
+            self._timer_display.show()
+            self._actions['focus.voidPomodoro'].setDisabled(False)
+            self._buttons['focus.voidPomodoro'].show()
+            self._buttons['focus.nextPomodoro'].hide()
+            self._buttons['focus.completeItem'].show()
         elif new_mode == 'ready':
-            pass
+            self.reset('Start another Pomodoro?', self._continue_workitem.get_name())
+            self._buttons['focus.nextPomodoro'].show()

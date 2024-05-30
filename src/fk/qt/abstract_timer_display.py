@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemDelete, AfterWorkitemComplete, AfterPomodoroRemove
@@ -20,6 +22,7 @@ from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 
+logger = logging.getLogger(__name__)
 
 class AbstractTimerDisplay:
     """A timer can be in one of the five modes -- undefined, idle, working, resting and ready AKA
@@ -51,6 +54,9 @@ class AbstractTimerDisplay:
         if old_mode != mode:
             self._mode = mode
             self.mode_changed(old_mode, mode)
+            logger.debug(f'Timer display mode changed from {old_mode} to {mode}')
+            if mode == 'working' or mode == 'resting':
+                self._on_tick(self._timer.get_running_pomodoro())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         self._continue_workitem = None

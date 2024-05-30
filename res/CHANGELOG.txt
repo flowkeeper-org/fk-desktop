@@ -8,13 +8,14 @@
 - You can now start another pomodoro by clicking the lime "play" icon in the system tray.
 - New Focus-mode button to complete the current item while it's running.
 - [Bugfix] Fixed workitem search.
-- [Bugfix] Fixed "Start new pomodoro?" logic.
+- [Bugfix] Fixed "Start another pomodoro?" logic.
 - [Technical] Restructured the resources, icons and colors.
 - [Technical] Sharing timer state with teammates (no support in the UI yet).
 - [Technical] Introduced Serializer and Cryptograph facilities.
 - [Technical] Simplified tray icon and Focus view implementation.
 - [Technical] E2e tests handle exceptions correctly now.
 - [Technical] Introduced a configurable logger.
+- [Technical] New facility for creating timer displays - AbstractTimerDisplay.
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.
