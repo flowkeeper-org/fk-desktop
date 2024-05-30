@@ -22,7 +22,7 @@ from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.qt.abstract_timer_display import AbstractTimerDisplay
+from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget, render_for_pixmap
 

@@ -335,7 +335,8 @@ class Application(QApplication, AbstractEventEmitter):
             if name == 'Source.type' or \
                     name.startswith('WebsocketEventSource.') or \
                     name.startswith('FileEventSource.') or \
-                    name.startswith('Source.encryption'):
+                    name == 'Source.encryption_enabled' or \
+                    name == 'Source.encryption_key':
                 request_new_source = True
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
@@ -348,12 +349,15 @@ class Application(QApplication, AbstractEventEmitter):
                 request_logger_change = True
 
         if request_ui_refresh:
+            logger.debug(f'Refreshing theme and fonts because of a setting change')
             self.refresh_theme_and_fonts()
 
         if request_new_source:
+            logger.debug(f'Requesting new source because of a setting change')
             self._source_holder.request_new_source()
 
         if request_logger_change:
+            logger.debug(f'Reinitializing the logger because of a setting change')
             self._initialize_logger()
 
     def show_settings_dialog(self):

@@ -24,6 +24,7 @@ from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
 
+
 class AbstractTimerDisplay:
     """A timer can be in one of the five modes -- undefined, idle, working, resting and ready AKA
     "Ready to start another Pomodoro?" mode."""
@@ -52,6 +53,14 @@ class AbstractTimerDisplay:
     def _set_mode(self, mode):
         old_mode = self._mode
         if old_mode != mode:
+            # Check forbidden mode transitions
+            if (old_mode == 'resting' and mode == 'working') or \
+                    (old_mode == 'idle' and mode == 'resting') or \
+                    (old_mode == 'idle' and mode == 'ready') or \
+                    (old_mode == 'undefined' and mode == 'working') or \
+                    (old_mode == 'undefined' and mode == 'resting') or \
+                    (old_mode == 'undefined' and mode == 'ready'):
+                raise Exception(f'Encountered impossible timer mode change from {old_mode} to {mode}')
             self._mode = mode
             self.mode_changed(old_mode, mode)
             logger.debug(f'Timer display mode changed from {old_mode} to {mode}')

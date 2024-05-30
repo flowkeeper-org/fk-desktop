@@ -31,10 +31,10 @@ class FernetCryptograph(AbstractCryptograph):
 
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
-        self._fernet = self._create_fernet()
-
-    def _create_fernet(self) -> Fernet:
         cached_key = self._settings.get('Source.encryption_key_cache')
+        self._fernet = self._create_fernet(cached_key)
+
+    def _create_fernet(self, cached_key) -> Fernet:
         if cached_key == '':
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
@@ -50,8 +50,7 @@ class FernetCryptograph(AbstractCryptograph):
         return Fernet(key)
 
     def _on_key_changed(self) -> None:
-        self._settings.set({'Source.encryption_key_cache': ''})
-        self._fernet = self._create_fernet()
+        self._fernet = self._create_fernet('')
 
     def encrypt(self, s: str) -> str:
         return self._fernet.encrypt(
