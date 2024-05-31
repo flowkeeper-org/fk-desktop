@@ -24,15 +24,12 @@ from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy
-from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder
-from fk.core.events import SourceMessagesProcessed
-from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, StartRestStrategy
 from fk.core.simple_serializer import SimpleSerializer
-from fk.core.tenant import ADMIN_USER, Tenant
+from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem import Workitem
@@ -181,6 +178,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                             seq += 1
 
                 # TODO: Merge pomodoros here
+                # Can we preserve timings?
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):
                     yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
@@ -308,7 +306,13 @@ def import_classic(source: AbstractEventSource[TRoot],
                                       ADMIN_USER,
                                       [user_identity, source.get_settings().get_fullname()],
                                       source.get_settings())
-        source.execute_prepared_strategy(strategy, False, True)
+        try:
+            source.execute_prepared_strategy(strategy, False, True)
+        except Exception as e:
+            if ignore_errors:
+                logger.warning('Ignored an error while importing', exc_info=e)
+            else:
+                raise e
 
     # With encrypt=True it will try to deserialize as much as possible
     export_serializer = create_export_serializer(source, True)

@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
-    QHBoxLayout, QPushButton, QProgressBar, QWidget
+    QHBoxLayout, QPushButton, QProgressBar, QWidget, QComboBox, QRadioButton
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.import_export import import_
@@ -69,6 +69,11 @@ class PageImportSettings(QWizardPage):
         self.import_ignore_errors = QCheckBox('Ignore errors and continue')
         self.import_ignore_errors.setDisabled(False)
         self.layout_v.addWidget(self.import_ignore_errors)
+        self.import_type_smart = QRadioButton("Smart import - safe option, data is appended or renamed", self)
+        self.import_type_smart.setChecked(True)
+        self.layout_v.addWidget(self.import_type_smart)
+        self.import_type_replay = QRadioButton("Replay imported history - can result in duplicates or deletions", self)
+        self.layout_v.addWidget(self.import_type_replay)
         self.setLayout(self.layout_v)
         self.setCommitPage(True)
         self.setButtonText(QWizard.WizardButton.CommitButton, 'Start')
@@ -82,16 +87,21 @@ class PageImportProgress(QWizardPage):
     _import_complete: bool
     _filename: str | None
     _ignore_errors: QCheckBox
+    _import_type_smart: QRadioButton
 
     def isComplete(self):
         return self._import_complete
 
-    def __init__(self, source: AbstractEventSource, ignore_errors: QCheckBox):
+    def __init__(self,
+                 source: AbstractEventSource,
+                 ignore_errors: QCheckBox,
+                 import_type_smart: QRadioButton):
         super().__init__()
         self._import_complete = False
         self._source = source
         self._filename = None
         self._ignore_errors = ignore_errors
+        self._import_type_smart = import_type_smart
         #self.setTitle("Importing...")
         self.layout_v = QVBoxLayout()
         self.label = QLabel("Data import is in progress. Please do not close this window until it completes.")
@@ -118,7 +128,7 @@ class PageImportProgress(QWizardPage):
         import_(self._source,
                 self._filename,
                 self._ignore_errors.isChecked(),
-                True,
+                self._import_type_smart.isChecked(),
                 lambda total: self.progress.setMaximum(total),
                 lambda value, total: self.progress.setValue(value),
                 lambda total: self.finish())
@@ -137,7 +147,9 @@ class ImportWizard(QWizard):
         self.setWindowTitle("Import")
         self.page_intro = PageImportIntro()
         self.page_settings = PageImportSettings()
-        self.page_progress = PageImportProgress(source, self.page_settings.import_ignore_errors)
+        self.page_progress = PageImportProgress(source,
+                                                self.page_settings.import_ignore_errors,
+                                                self.page_settings.import_type_smart)
         self.addPage(self.page_intro)
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)
