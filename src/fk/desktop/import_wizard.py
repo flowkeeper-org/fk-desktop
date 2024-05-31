@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckB
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.import_export import import_
 from fk.desktop.settings import SettingsDialog
 
 
@@ -114,12 +115,13 @@ class PageImportProgress(QWizardPage):
     def start(self):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
-        self._source.import_(self._filename,
-                             self._ignore_errors.isChecked(),
-                             True,
-                             lambda total: self.progress.setMaximum(total),
-                             lambda value, total: self.progress.setValue(value),
-                             lambda total: self.finish())
+        import_(self._source,
+                self._filename,
+                self._ignore_errors.isChecked(),
+                True,
+                lambda total: self.progress.setMaximum(total),
+                lambda value, total: self.progress.setValue(value),
+                lambda total: self.finish())
 
 
 class ImportWizard(QWizard):

@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QW
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.file_event_source import FileEventSource
+from fk.core.import_export import export
 from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.qt_settings import QtSettings
@@ -137,13 +138,14 @@ class PageExportProgress(QWizardPage):
     def start(self):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
-        self._source.export(self._filename,
-                            Tenant(self._source.get_settings()),
-                            self.wizard().option_encrypted,
-                            self.wizard().option_compressed,
-                            lambda total: self.progress.setMaximum(total),
-                            lambda value, total: self.progress.setValue(value),
-                            lambda total: self.finish())
+        export(self._source,
+               self._filename,
+               Tenant(self._source.get_settings()),
+               self.wizard().option_encrypted,
+               self.wizard().option_compressed,
+               lambda total: self.progress.setMaximum(total),
+               lambda value, total: self.progress.setValue(value),
+               lambda total: self.finish())
 
 
 class ExportWizard(QWizard):

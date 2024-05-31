@@ -106,36 +106,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def pomodoros(self) -> Iterable[Pomodoro]:
         return self._wrapped.pomodoros()
 
-    def export(self,
-               filename: str,
-               new_root: Self,
-               encrypt: bool,
-               compress: bool,
-               start_callback: Callable[[int], None],
-               progress_callback: Callable[[int, int], None],
-               completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.export(filename,
-                             new_root,
-                             encrypt,
-                             compress,
-                             start_callback,
-                             progress_callback,
-                             completion_callback)
-
-    def import_(self,
-                filename: str,
-                ignore_errors: bool,
-                merge: bool,
-                start_callback: Callable[[int], None],
-                progress_callback: Callable[[int, int], None],
-                completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.import_(filename,
-                              ignore_errors,
-                              merge,
-                              start_callback,
-                              progress_callback,
-                              completion_callback)
-
     def disconnect(self):
         self._wrapped.disconnect()
 
