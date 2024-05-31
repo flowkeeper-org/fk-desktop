@@ -24,10 +24,15 @@ from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy
+from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_holder import EventSourceHolder
+from fk.core.events import SourceMessagesProcessed
+from fk.core.file_event_source import FileEventSource
+from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, StartRestStrategy
 from fk.core.simple_serializer import SimpleSerializer
-from fk.core.tenant import ADMIN_USER
+from fk.core.tenant import ADMIN_USER, Tenant
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem import Workitem
@@ -123,7 +128,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
     for workitem in source.workitems():
         existing_workitems[workitem.get_uid()] = workitem
 
-    seq = source._last_seq + 1
+    seq = source.get_last_sequence() + 1
     for user in data.values():
         if user.is_system_user():
             continue
@@ -249,16 +254,31 @@ def import_(source: AbstractEventSource[TRoot],
             progress_callback: Callable[[int, int], None],
             completion_callback: Callable[[int], None]) -> None:
     if merge:
-        # 1. Read import file
-        # To do that, create a new ephemeral source and run import_classic() on it.
-        # Or just do the same via a good old FileEventSource.
-
-        # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
-
-        # TODO: See how to make it work with import cycles
-        pass
+        # 1. Read import file by doing a classic import on an ephemeral source
+        settings = MockSettings(username=source.get_settings().get_username(),
+                                source_type='ephemeral')
+        new_source = EventSourceHolder(settings, NoCryptograph(settings)).request_new_source()
+        import_classic(new_source,
+                       filename,
+                       ignore_errors,
+                       start_callback,
+                       progress_callback,
+                       lambda total: _merge_sources(source, new_source, completion_callback))  # Step 2 is done there
     else:
         import_classic(source, filename, ignore_errors, start_callback, progress_callback, completion_callback)
+
+
+def _merge_sources(existing_source,
+                   new_source,
+                   completion_callback: Callable[[int], None]) -> None:
+    # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
+    count = 0
+    existing_source.mute()
+    for strategy in merge_strategies(existing_source, new_source.get_data()):
+        existing_source.execute_prepared_strategy(strategy, False, True)
+        count += 1
+    existing_source.unmute()
+    completion_callback(count)
 
 
 def import_classic(source: AbstractEventSource[TRoot],
@@ -279,22 +299,29 @@ def import_classic(source: AbstractEventSource[TRoot],
     source.mute()
 
     user_identity = source.get_settings().get_username()
+    i = 0
+
+    if user_identity not in source.users():
+        i += 1
+        strategy = CreateUserStrategy(i,
+                                      datetime.datetime.now(datetime.timezone.utc),
+                                      ADMIN_USER,
+                                      [user_identity, source.get_settings().get_fullname()],
+                                      source.get_settings())
+        source.execute_prepared_strategy(strategy, False, True)
 
     # With encrypt=True it will try to deserialize as much as possible
     export_serializer = create_export_serializer(source, True)
 
-    i = 0
     with open(filename, encoding='UTF-8') as f:
         for line in f:
             try:
                 strategy = export_serializer.deserialize(line)
                 strategy.replace_user_identity(user_identity)
+                if strategy is None or type(strategy) is CreateUserStrategy:
+                    continue
                 i += 1
-                if strategy is None:
-                    continue
-                if type(strategy) is CreateUserStrategy:
-                    continue
-                source.execute(type(strategy), strategy.get_params())
+                source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)
             except Exception as e:

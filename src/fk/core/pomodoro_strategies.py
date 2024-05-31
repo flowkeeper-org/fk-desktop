@@ -282,7 +282,8 @@ class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
 # Legacy, for compatibility purposes only. To be removed in the future.
 @strategy
 class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
-    _another: VoidPomodoroStrategy | None
+    _uid: str
+    _state: str
 
     def __init__(self,
                  seq: int,
@@ -292,16 +293,20 @@ class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
-        if params[1] == 'canceled':
-            self._another = VoidPomodoroStrategy(seq, when, user_identity, [params[0]], settings, carry)
-        else:
-            self._another = None
+        self._uid = params[0]
+        self._state = params[1]
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        if self._another:
-            return self._another.execute(emit, data)
+        if self._state == 'canceled':
+            another = VoidPomodoroStrategy(self.get_sequence(),
+                                           self.get_when(),
+                                           self.get_user_identity(),
+                                           [self._uid],
+                                           self._settings,
+                                           self._carry)
+            return another.execute(emit, data)
         else:
             return None, None   # Since version 0.3.1 we always complete pomodoros implicitly
 

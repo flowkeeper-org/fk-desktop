@@ -28,9 +28,10 @@ def invoke_direct(fn, **kwargs):
 class MockSettings(AbstractSettings):
     _settings: dict[str, str]
 
-    def __init__(self, filename=None, username=None):
+    def __init__(self, filename=None, username=None, source_type="local"):
         super().__init__('Arial', 10, invoke_direct)
         self._settings = {
+            'Source.type': source_type,
             'FileEventSource.filename': filename,
             'WebsocketEventSource.username': username,
             'Source.encryption_enabled': 'False',

@@ -121,7 +121,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events=True) -> None:
         pass
 
-    def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False) -> None:
+    def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
         res = strategy.execute(self._emit, self.get_data())
@@ -133,6 +133,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             if res is not None and res[0] == 'auto-seal':
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
+        if persist:
+            self._last_seq = strategy.get_sequence()   # Only save it if all went well
+            self._append([strategy])
 
     def execute(self,
                 strategy_class: type[AbstractStrategy[TRoot]],
@@ -153,11 +156,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             params,
             self._settings,
             carry)
-        self.execute_prepared_strategy(s, auto)
-
-        if persist:
-            self._last_seq = new_sequence   # Only save it if all went well
-            self._append([s])
+        self.execute_prepared_strategy(s, auto, persist)
 
     def auto_seal(self) -> None:
         delta = float(self._settings.get('Pomodoro.auto_seal_after'))
@@ -218,3 +217,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                   ADMIN_USER,
                                   [self._settings.get_username(), self._settings.get_fullname()],
                                   self._settings)
+
+    def get_last_sequence(self):
+        return self._last_seq

@@ -91,6 +91,12 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                 carry: any = None) -> None:
         self._wrapped.execute(strategy_class, params, persist, when, auto, carry)
 
+    def execute_prepared_strategy(self,
+                                  strategy: AbstractStrategy[TRoot],
+                                  auto: bool = False,
+                                  persist: bool = False) -> None:
+        self._wrapped.execute_prepared_strategy(strategy, auto, persist)
+
     def auto_seal(self) -> None:
         self._wrapped.auto_seal()
 
@@ -117,3 +123,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def repair(self):
         return self._wrapped.repair()
+
+    def get_last_sequence(self):
+        return self._wrapped.get_last_sequence()

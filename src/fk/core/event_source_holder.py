@@ -42,7 +42,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._source = None
 
-    def request_new_source(self) -> None:
+    def request_new_source(self) -> AbstractEventSource[TRoot]:
         source_type = self._settings.get('Source.type')
         logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
         if not get_event_source_factory().is_valid(source_type):
@@ -69,6 +69,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         self._emit(AfterSourceChanged, {
             'source': self._source
         })
+        return self._source
 
     def get_source(self) -> AbstractEventSource[TRoot] | None:
         return self._source
