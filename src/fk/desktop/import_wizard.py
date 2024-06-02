@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckB
     QHBoxLayout, QPushButton, QProgressBar, QWidget, QComboBox, QRadioButton
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.event_source_holder import EventSourceHolder
 from fk.core.import_export import import_
 from fk.desktop.settings import SettingsDialog
 
@@ -83,7 +84,7 @@ class PageImportProgress(QWizardPage):
     label: QLabel
     layout_v: QVBoxLayout
     progress: QProgressBar
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _import_complete: bool
     _filename: str | None
     _ignore_errors: QCheckBox
@@ -93,12 +94,12 @@ class PageImportProgress(QWizardPage):
         return self._import_complete
 
     def __init__(self,
-                 source: AbstractEventSource,
+                 source_holder: EventSourceHolder,
                  ignore_errors: QCheckBox,
                  import_type_smart: QRadioButton):
         super().__init__()
         self._import_complete = False
-        self._source = source
+        self._source_holder = source_holder
         self._filename = None
         self._ignore_errors = ignore_errors
         self._import_type_smart = import_type_smart
@@ -120,12 +121,13 @@ class PageImportProgress(QWizardPage):
         self.progress.setValue(self.progress.maximum())
         self._import_complete = True
         self.label.setText('Done. You can now close this window.')
+        self._source_holder.request_new_source()
         self.completeChanged.emit()
 
     def start(self):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
-        import_(self._source,
+        import_(self._source_holder.get_source(),
                 self._filename,
                 self._ignore_errors.isChecked(),
                 self._import_type_smart.isChecked(),
@@ -139,15 +141,15 @@ class ImportWizard(QWizard):
     page_settings: PageImportSettings
     page_progress: PageImportProgress
     option_filename: str | None
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
 
-    def __init__(self, source: AbstractEventSource, parent: QWidget | None):
+    def __init__(self, source_holder: EventSourceHolder, parent: QWidget | None):
         super().__init__(parent)
-        self._source = source
+        self._source_holder = source_holder
         self.setWindowTitle("Import")
         self.page_intro = PageImportIntro()
         self.page_settings = PageImportSettings()
-        self.page_progress = PageImportProgress(source,
+        self.page_progress = PageImportProgress(source_holder,
                                                 self.page_settings.import_ignore_errors,
                                                 self.page_settings.import_type_smart)
         self.addPage(self.page_intro)

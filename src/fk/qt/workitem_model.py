@@ -147,6 +147,8 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setItem(i, 1, col2)
 
         col3 = QtGui.QStandardItem()
+        # Here we rely on the fact that dict.values() stores values in the FIFO order,
+        # i.e. acts like a list. I'm not sure if it is guaranteed, but seems to work.
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
         col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
         col3.setData(workitem, 500)

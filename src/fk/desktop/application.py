@@ -424,7 +424,7 @@ class Application(QApplication, AbstractEventEmitter):
         Application.quit()
 
     def show_import_wizard(self):
-        ImportWizard(self._source_holder.get_source(),
+        ImportWizard(self._source_holder,
                      self.activeWindow()).show()
 
     def show_export_wizard(self):

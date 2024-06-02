@@ -83,6 +83,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
         if (target_state == 'finished' and self.is_resting()) or target_state == 'canceled':
             self._state = target_state
             self._date_completed = when
+            self._last_modified_date = when
         elif target_state == 'finished' and self.is_working():
             # This is a rare corner case, which we may encounter in the field. The client went down while
             # the pomodoro was in work, and came back up when it was in rest. The timer then transitioned
@@ -94,16 +95,19 @@ class Pomodoro(AbstractDataItem['Workitem']):
                              "authorized its completion (transition happened when the client was offline)")
                 self._state = target_state
                 self._date_completed = when
+                self._last_modified_date = when
         else:
             raise Exception(f'Cannot seal pomodoro from {self._state} to {target_state}')
 
     def start_work(self, when: datetime.datetime) -> None:
         self._state = 'work'
         self._date_work_started = when
+        self._last_modified_date = when
 
     def start_rest(self, when: datetime.datetime) -> None:
         self._state = 'rest'
         self._date_rest_started = when
+        self._last_modified_date = when
 
     def is_running(self) -> bool:
         return self._state == 'work' or self._state == 'rest'

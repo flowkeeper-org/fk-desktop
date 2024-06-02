@@ -161,12 +161,12 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                         seq += 1
 
             for workitem in backlog.values():
-                existing_workitem = None
                 if workitem.get_uid() not in existing_workitems:
                     yield CreateWorkitemStrategy(seq, workitem.get_create_date(), user.get_identity(),
                                                  [workitem.get_uid(), backlog.get_uid(), workitem.get_name()],
                                                  source.get_settings())
                     seq += 1
+                    existing_workitem = existing_workitems[workitem.get_uid()]
                 else:
                     # Check if it was renamed
                     existing_workitem = existing_workitems[workitem.get_uid()]
@@ -176,9 +176,43 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                          [workitem.get_uid(), workitem.get_name()],
                                                          source.get_settings())
                             seq += 1
+                    if existing_workitem.has_running_pomodoro():
+                        yield VoidPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
+                                                   [workitem.get_uid()],
+                                                   source.get_settings())
+                        seq += 1
 
-                # TODO: Merge pomodoros here
-                # Can we preserve timings?
+                # Merge pomodoros by adding the new ones and completing some, if needed
+                num_pomodoros_to_add = len(workitem) - len(existing_workitem)
+                if num_pomodoros_to_add > 0:
+                    yield AddPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
+                                              [workitem.get_uid(), str(num_pomodoros_to_add)],
+                                              source.get_settings())
+                    seq += 1
+
+                # Here we rely on dict.values() having list semantics. Need to check if this is guaranteed behavior.
+                # Also, we rely on the fact that there are at least len(workitem) pomodoros now
+                pomodoros_old = list(existing_workitem.values())
+                for i, p_new in enumerate(workitem.values()):
+                    p_old = pomodoros_old[i]
+                    if p_old.is_startable():
+                        if p_new.is_canceled() or p_new.is_finished():
+                            yield StartWorkStrategy(seq,
+                                                    p_new.get_last_modified_date() - datetime.timedelta(seconds=1),
+                                                    user.get_identity(),
+                                                    [workitem.get_uid(), '1'],
+                                                    source.get_settings())
+                            seq += 1
+                            if p_new.is_canceled():
+                                yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
+                                                           [workitem.get_uid()],
+                                                           source.get_settings())
+                                seq += 1
+                            if p_new.is_finished():
+                                yield StartRestStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
+                                                        [workitem.get_uid(), '1'],
+                                                        source.get_settings())
+                                seq += 1
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):
                     yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
@@ -334,5 +368,6 @@ def import_classic(source: AbstractEventSource[TRoot],
                 else:
                     raise e
 
+    source.auto_seal()
     source.unmute()
     completion_callback(total)
