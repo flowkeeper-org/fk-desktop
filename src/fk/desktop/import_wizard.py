@@ -13,11 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
-    QHBoxLayout, QPushButton, QProgressBar, QWidget, QComboBox, QRadioButton
+    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.import_export import import_
 from fk.desktop.settings import SettingsDialog
