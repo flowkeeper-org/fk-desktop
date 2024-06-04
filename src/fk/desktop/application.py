@@ -16,6 +16,7 @@
 import datetime
 import json
 import logging
+import platform
 import random
 import sys
 import traceback
@@ -23,6 +24,7 @@ import urllib
 import webbrowser
 from pathlib import Path
 
+from PySide6 import QtCore
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
@@ -176,6 +178,12 @@ class Application(QApplication, AbstractEventEmitter):
         stdio_handler.setLevel(logging.WARNING)
         root.handlers.append(stdio_handler)
 
+        logger.debug(f'Flowkeeper: {get_current_version()}')
+        logger.debug(f'Qt: {QtCore.__version__}')
+        logger.debug(f'Python: {sys.version}')
+        logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
+        logger.debug(f'Kernel: {platform.platform()}')
+
     def initialize_source(self):
         self._source_holder.request_new_source()
 
@@ -247,8 +255,7 @@ class Application(QApplication, AbstractEventEmitter):
 
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
-        self._initialize_fonts()
-
+        logger.debug('Refreshing theme and fonts')
         theme = self._settings.get('Application.theme')
 
         template_file = QFile(":/style-template.qss")
@@ -267,6 +274,10 @@ class Application(QApplication, AbstractEventEmitter):
         self.setStyleSheet(qss)
         logger.debug('Stylesheet loaded')
 
+        # In Qt 6.7.x it is important to do this AFTER we load the stylesheet, otherwise the fonts
+        # are not loaded correctly at startup
+        self._initialize_fonts()
+
     def _initialize_fonts(self) -> (QFont, QFont):
         self._font_header = QFont(self._settings.get('Application.font_header_family'),
                                   int(self._settings.get('Application.font_header_size')))
@@ -277,10 +288,11 @@ class Application(QApplication, AbstractEventEmitter):
     
         self._font_main = QFont(self._settings.get('Application.font_main_family'),
                                 int(self._settings.get('Application.font_main_size')))
-        if self._font_main is None:
-            self._font_main = QFont()
 
         self.setFont(self._font_main)
+        logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
+        logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
+
         self._emit(AfterFontsChanged, {
             'main_font': self._font_main,
             'header_font': self._font_header,
@@ -350,7 +362,10 @@ class Application(QApplication, AbstractEventEmitter):
                 request_logger_change = True
 
         if request_ui_refresh:
-            logger.debug(f'Refreshing theme and fonts because of a setting change')
+            logger.debug(f'Refreshing theme and fonts twice because of a setting change')
+            self.refresh_theme_and_fonts()
+            # With Qt 6.7.x on Windows we need to do it twice, otherwise the
+            # fonts apply only the next time we change the setting.
             self.refresh_theme_and_fonts()
 
         if request_new_source:
