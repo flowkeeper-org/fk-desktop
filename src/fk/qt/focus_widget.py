@@ -138,6 +138,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
+    def update_fonts(self):
+        self._header_text.setFont(self._application.get_header_font())
+
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)

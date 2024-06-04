@@ -355,6 +355,11 @@ if __name__ == "__main__":
 
         window.show()
 
+        # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
+        # Otherwise, the font size for the focus' header is picked correctly, but
+        # default font family is used.
+        focus.update_fonts()
+
         try:
             app.initialize_source()
         except Exception as ex:
