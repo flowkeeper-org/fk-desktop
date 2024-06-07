@@ -46,11 +46,15 @@ QMainWindow {
 }
 
 QTableView, #backlogs_widget, #workitems_widget {
-    selection-color: $TABLE_TEXT_COLOR;
-    selection-background-color: $SELECTION_BG_COLOR;
     color: $TABLE_TEXT_COLOR;
     border: none;
     padding: 10px;
+}
+
+QTableView::item:selected {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
 }
 
 #users_table {

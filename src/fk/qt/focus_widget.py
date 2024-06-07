@@ -18,7 +18,7 @@ import logging
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QToolButton, \
-    QMessageBox, QMenu
+    QMessageBox, QMenu, QSizePolicy
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -34,6 +34,7 @@ from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
 
 logger = logging.getLogger(__name__)
+DISPLAY_HEIGHT = 80
 
 
 class FocusWidget(QWidget, AbstractTimerDisplay):
@@ -56,6 +57,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                  settings: AbstractSettings,
                  actions: Actions):
         super().__init__(parent, timer=timer, source_holder=source_holder)
+
+        self._apply_size_policy()
+
         self._settings = settings
         self._actions = actions
         self._application = application
@@ -76,10 +80,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         text_layout = QVBoxLayout()
         text_layout.setObjectName("text_layout")
-        # Here
         layout.addLayout(text_layout)
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.setSpacing(0)
+        text_layout.addStretch()
 
         header_text = QLabel(self)
         header_text.setObjectName('headerText')
@@ -94,6 +98,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         text_layout.addWidget(header_subtext)
         header_subtext.setText("Welcome to Flowkeeper!")
         self._header_subtext = header_subtext
+
+        text_layout.addStretch()
 
         self._timer_widget = TimerWidget(self,
                                          'timer',
@@ -243,7 +249,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._buttons['focus.nextPomodoro'].hide()
         elif new_mode == 'working' or new_mode == 'resting':
             self._header_subtext.setText(self._timer.get_running_workitem().get_name())
-            self._timer_widget.show()
             self._actions['focus.voidPomodoro'].setDisabled(False)
             self._buttons['focus.voidPomodoro'].show()
             self._buttons['focus.nextPomodoro'].hide()
@@ -251,3 +256,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         elif new_mode == 'ready':
             self.reset('Start another Pomodoro?', self._continue_workitem.get_name())
             self._buttons['focus.nextPomodoro'].show()
+
+    def _apply_size_policy(self):
+        sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sp.setVerticalStretch(0)
+        self.setSizePolicy(sp)
+        self.setMinimumHeight(DISPLAY_HEIGHT)
+        self.setMaximumHeight(DISPLAY_HEIGHT)

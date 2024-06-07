@@ -18,6 +18,7 @@
 - [Technical] E2e tests handle exceptions correctly now.
 - [Technical] Introduced a configurable logger.
 - [Technical] New facility for creating timer displays - AbstractTimerDisplay.
+- [Technical] Migrated to the latest Qt 6.7.
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.

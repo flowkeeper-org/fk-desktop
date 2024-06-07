@@ -22,6 +22,7 @@ from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
 from fk.qt.timer_renderer import TimerRenderer
 
 logger = logging.getLogger(__name__)
+DISPLAY_SIZE = 63
 
 
 class TimerWidget(QWidget):
@@ -43,10 +44,10 @@ class TimerWidget(QWidget):
         sp3.setHorizontalStretch(0)
         sp3.setVerticalStretch(0)
         self.setSizePolicy(sp3)
-        self.setMinimumHeight(60)
-        self.setMinimumWidth(60)
-        self.setMaximumHeight(60)
-        self.setMaximumWidth(60)
+        self.setMinimumHeight(DISPLAY_SIZE)
+        self.setMinimumWidth(DISPLAY_SIZE)
+        self.setMaximumHeight(DISPLAY_SIZE)
+        self.setMaximumWidth(DISPLAY_SIZE)
         self.setBaseSize(QSize(0, 0))
 
         inner_timer_layout = QHBoxLayout(self)
@@ -95,7 +96,6 @@ class TimerWidget(QWidget):
 
     def reset(self):
         self._timer_display.reset()
-        self._timer_display.hide()
         self._timer_display.repaint()
 
     def set_values(self, completion) -> None:

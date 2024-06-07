@@ -171,8 +171,3 @@ class TimerRenderer(QtCore.QObject):
             self.paint(painter, rect)
         else:
             self._widget.repaint()
-
-    def hide(self) -> None:
-        if self._widget is None:
-            raise Exception("Cannot hide a Pixmap")
-        self._widget.hide()
