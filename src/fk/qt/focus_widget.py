@@ -34,7 +34,7 @@ from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
 
 logger = logging.getLogger(__name__)
-DISPLAY_HEIGHT = 80
+DISPLAY_HEIGHT = 90
 
 
 class FocusWidget(QWidget, AbstractTimerDisplay):

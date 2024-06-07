@@ -55,8 +55,8 @@ class AbstractTimerDisplay:
         if old_mode != mode:
             # Check forbidden mode transitions
             if (old_mode == 'resting' and mode == 'working') or \
-                    (old_mode == 'idle' and mode == 'resting') or \
-                    (old_mode == 'idle' and mode == 'ready'):
+                    (old_mode == 'idle' and mode == 'ready') or \
+                    (old_mode == 'undefined' and mode == 'ready'):
                 raise Exception(f'Encountered impossible timer mode change from {old_mode} to {mode}')
             self._mode = mode
             self.mode_changed(old_mode, mode)
