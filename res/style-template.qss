@@ -99,3 +99,8 @@ InfoOverlay {
 InfoOverlay #overlay_text {
     color: $TABLE_TEXT_COLOR;
 }
+
+#timer {
+    qproperty-fg_color: $FOCUS_TEXT_COLOR;
+    qproperty-bg_color: $FOCUS_BG_COLOR;
+}

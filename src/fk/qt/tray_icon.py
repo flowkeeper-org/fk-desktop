@@ -17,14 +17,14 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
+from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.qt.actions import Actions
-from fk.qt.timer_widget import TimerWidget, render_for_pixmap
+from fk.qt.timer_renderer import TimerRenderer
 
 
 class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
@@ -32,7 +32,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _timer_widget: TimerWidget | None
+    _timer_widget: TimerRenderer | None
     _continue_workitem: Workitem | None
 
     def __init__(self,
@@ -46,7 +46,18 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._continue_workitem = None
-        self._timer_widget = render_for_pixmap()
+        self._timer_widget = TimerRenderer(
+            None,
+            None,
+            None,
+            0.05,
+            0.5,
+            None,
+            None,
+            2,
+            0,
+            120,
+        )
 
         self.activated.connect(lambda reason:
                                self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None)

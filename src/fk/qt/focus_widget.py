@@ -16,11 +16,12 @@
 import logging
 
 from PySide6.QtCore import QSize, QPoint, QLine
-from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
+from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu
 
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro
@@ -29,9 +30,8 @@ from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
-from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.qt.actions import Actions
-from fk.qt.timer_widget import render_for_widget, TimerWidget
+from fk.qt.timer_widget import TimerWidget
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +40,13 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _settings: AbstractSettings
     _header_text: QLabel
     _header_subtext: QLabel
-    _timer_display: TimerWidget
     _actions: Actions
     _buttons: dict[str, QToolButton]
     _application: Application
     _pixmap: QPixmap | None
     _border_color: QColor
     _continue_workitem: Workitem | None
+    _timer_widget: TimerWidget
 
     def __init__(self,
                  parent: QWidget,
@@ -95,25 +95,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         header_subtext.setText("Welcome to Flowkeeper!")
         self._header_subtext = header_subtext
 
-        outer_timer_widget = QWidget(self)
-        outer_timer_widget.setObjectName("timer")
-        layout.addWidget(outer_timer_widget)
-        sp3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sp3.setHorizontalStretch(0)
-        sp3.setVerticalStretch(0)
-        outer_timer_widget.setSizePolicy(sp3)
-        outer_timer_widget.setMinimumHeight(60)
-        outer_timer_widget.setMinimumWidth(60)
-        outer_timer_widget.setMaximumHeight(60)
-        outer_timer_widget.setMaximumWidth(60)
-        outer_timer_widget.setBaseSize(QSize(0, 0))
-
-        inner_timer_layout = QHBoxLayout(outer_timer_widget)
-        inner_timer_layout.setObjectName("inner_timer_layout")
-        inner_timer_layout.setContentsMargins(0, 0, 0, 0)
-        inner_timer_layout.setSpacing(0)
-
-        inner_timer_layout.addWidget(self._create_button("focus.voidPomodoro"))
+        self._timer_widget = TimerWidget(self,
+                                         'timer',
+                                         self._create_button("focus.voidPomodoro"))
+        layout.addWidget(self._timer_widget)
         layout.addWidget(self._create_button("focus.nextPomodoro"))
         layout.addWidget(self._create_button("focus.completeItem"))
         layout.addWidget(self._create_button("focus.showFilter"))
@@ -127,13 +112,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._buttons['focus.nextPomodoro'].hide()
         self._buttons['focus.completeItem'].hide()
         self._buttons['focus.voidPomodoro'].hide()
-
-        self._timer_display = render_for_widget(
-            parent.palette(),
-            outer_timer_widget,
-            QFont(),
-            0.3
-        )
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -175,9 +153,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._buttons['focus.completeItem'].hide()
         self._buttons['focus.voidPomodoro'].hide()
         self._actions['focus.voidPomodoro'].setDisabled(True)
-        self._timer_display.reset()
-        self._timer_display.hide()
-        self._timer_display.repaint()
+        self._timer_widget.reset()
 
     def eye_candy(self):
         eyecandy_type = self._settings.get('Application.eyecandy_type')
@@ -259,8 +235,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
         self._header_text.setText(state_txt)
-        self._timer_display.set_values(completion)
-        self._timer_display.repaint()
+        self._timer_widget.set_values(completion)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
@@ -268,7 +243,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._buttons['focus.nextPomodoro'].hide()
         elif new_mode == 'working' or new_mode == 'resting':
             self._header_subtext.setText(self._timer.get_running_workitem().get_name())
-            self._timer_display.show()
+            self._timer_widget.show()
             self._actions['focus.voidPomodoro'].setDisabled(False)
             self._buttons['focus.voidPomodoro'].show()
             self._buttons['focus.nextPomodoro'].hide()
