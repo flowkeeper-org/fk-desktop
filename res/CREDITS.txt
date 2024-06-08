@@ -16,7 +16,14 @@ We use Coverage.py by Ned Batchelder <https://github.com/nedbat/coveragepy/blob/
 
 The build pipeline automatically uploads test coverage results to coveralls.io under its "Open Source" plan <https://coveralls.io/terms>.
 
-Flowkeeper leverages python-semanticversion library by Raphaël Barrois <https://github.com/rbarrois/python-semanticversion/blob/master/LICENSE> to check for updates.
+Flowkeeper uses "python-semanticversion" library by Raphaël Barrois <https://github.com/rbarrois/python-semanticversion/blob/master/LICENSE> to check for updates.
+
+Flowkeeper uses "keyring" library by Jason R. Coombs <https://github.com/jaraco/keyring?tab=MIT-1-ov-file#readme> for storing secrets in the OS-native keychain / secret storage.
+
+Flowkeeper uses "cryptography" library by Paul Kehrer <https://github.com/pyca/cryptography/blob/main/LICENSE> for its Fernet end-to-end encryption algorithm.
+
+Flowkeeper uses "assertpy" library by Activision Publishing, Inc. <https://github.com/assertpy/assertpy/blob/main/LICENSE> and "unittest-xml-reporting" by
+Daniel Fernandes Martins <https://github.com/xmlrunner/unittest-xml-reporting/blob/master/LICENSE> for writing and executing unit tests.
 
 To produce desktop binaries for Linux, macOS and Windows we use PyInstaller <https://github.com/pyinstaller/pyinstaller?tab=License-1-ov-file#readme>.
 

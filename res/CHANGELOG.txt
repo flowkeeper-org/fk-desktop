@@ -20,6 +20,7 @@
 - [Technical] Introduced a configurable logger.
 - [Technical] New facility for creating timer displays - AbstractTimerDisplay.
 - [Technical] Migrated to the latest Qt 6.7.
+- [Technical] The secrets are now stored in the OS keychain.
 
 ### v0.4.1 (25 April 2024)
 - Added configurable toolbars.

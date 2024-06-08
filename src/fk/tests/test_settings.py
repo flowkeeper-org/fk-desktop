@@ -122,7 +122,7 @@ class TestSettings(TestCase):
         # Never
         self.assertNotIn('Application.window_width', visible)
         self.assertNotIn('Application.show_status_bar', visible)
-        self.assertNotIn('WebsocketEventSource.refresh_token', visible)
+        self.assertNotIn('WebsocketEventSource.refresh_token!', visible)
         self.assertNotIn('Source.fullname', visible)
         self.assertNotIn('Application.show_completed', visible)
         # For file event source

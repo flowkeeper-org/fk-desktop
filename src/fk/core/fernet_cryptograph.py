@@ -31,7 +31,7 @@ class FernetCryptograph(AbstractCryptograph):
 
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
-        cached_key = self._settings.get('Source.encryption_key_cache')
+        cached_key = self._settings.get('Source.encryption_key_cache!')
         self._fernet = self._create_fernet(cached_key)
 
     def _create_fernet(self, cached_key) -> Fernet:
@@ -43,7 +43,7 @@ class FernetCryptograph(AbstractCryptograph):
                 iterations=480000,
             )
             key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
-            self._settings.set({'Source.encryption_key_cache': key.decode('utf-8')})
+            self._settings.set({'Source.encryption_key_cache!': key.decode('utf-8')})
         else:
             key = cached_key.encode('utf-8')
         logger.debug(f'Fernet encryption key: {key}')

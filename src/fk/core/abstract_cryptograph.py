@@ -28,22 +28,22 @@ class AbstractCryptograph(ABC):
 
     def __init__(self, settings: AbstractSettings):
         self._settings = settings
-        self.key = self._settings.get('Source.encryption_key')
+        self.key = self._settings.get('Source.encryption_key!')
         self.enabled = self._settings.is_e2e_encryption_enabled()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
-        if settings.get('Source.encryption_key') == '':
+        if settings.get('Source.encryption_key!') == '':
             self._generate_key()
 
     def _generate_key(self) -> None:
         key = ''.join(
             secrets.choice(string.ascii_letters + string.digits) for _ in range(20)
         )
-        self._settings.set({'Source.encryption_key': key})
+        self._settings.set({'Source.encryption_key!': key})
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         self.enabled = self._settings.is_e2e_encryption_enabled()
-        if 'Source.encryption_key' in new_values:
-            self.key = new_values['Source.encryption_key']
+        if 'Source.encryption_key!' in new_values:
+            self.key = new_values['Source.encryption_key!']
             self._on_key_changed()
 
     @abstractmethod

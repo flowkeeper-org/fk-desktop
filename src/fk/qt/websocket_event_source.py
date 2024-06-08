@@ -157,7 +157,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _authenticate_with_google_and_replay(self) -> None:
-        refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token')
+        refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
         get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
@@ -198,7 +198,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             auth = AuthenticationRecord()
             auth.email = self.get_config_parameter('WebsocketEventSource.username')
             auth.type = auth_type
-            auth.id_token = self.get_config_parameter('WebsocketEventSource.password')
+            auth.id_token = self.get_config_parameter('WebsocketEventSource.password!')
             self._replay_after_auth(auth)
         elif auth_type == 'google':
             self._authenticate_with_google_and_replay()

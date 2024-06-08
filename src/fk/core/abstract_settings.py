@@ -98,7 +98,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
         self._callback_invoker = callback_invoker
 
-
         self._definitions = {
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
@@ -140,15 +139,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _show_for_websocket_source),
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
                 ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
-                ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
-                ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
+                ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
                 ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
-                ('Source.encryption_key', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
-                ('Source.encryption_key_cache', 'str', 'Encryption key cache', '', [], _never_show),
+                ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
+                ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [

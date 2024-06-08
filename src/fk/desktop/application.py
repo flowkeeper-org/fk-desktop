@@ -120,7 +120,7 @@ class Application(QApplication, AbstractEventEmitter):
                     'Application.play_tick_sound': 'False',
                     'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
                     'Logger.level': 'DEBUG',
-                    'Source.encryption_key': 'test key',
+                    'Source.encryption_key!': 'test key',
                 })
             else:
                 self._settings = QtSettings()
@@ -350,7 +350,7 @@ class Application(QApplication, AbstractEventEmitter):
                     name.startswith('WebsocketEventSource.') or \
                     name.startswith('FileEventSource.') or \
                     name == 'Source.encryption_enabled' or \
-                    name == 'Source.encryption_key':
+                    name == 'Source.encryption_key!':
                 request_new_source = True
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
@@ -447,7 +447,7 @@ class Application(QApplication, AbstractEventEmitter):
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
                 'WebsocketEventSource.consent': 'False',
-                'WebsocketEventSource.refresh_token': auth.refresh_token,
+                'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
         authenticate(self, save)
 

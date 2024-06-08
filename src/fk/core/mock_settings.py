@@ -35,8 +35,8 @@ class MockSettings(AbstractSettings):
             'FileEventSource.filename': filename,
             'WebsocketEventSource.username': username,
             'Source.encryption_enabled': 'False',
-            'Source.encryption_key': 'oBokryM75NwBXkKVa3bY',
-            'Source.encryption_key_cache': '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
+            'Source.encryption_key!': 'oBokryM75NwBXkKVa3bY',
+            'Source.encryption_key_cache!': '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
         }
 
     def get(self, name: str) -> str:
