@@ -4,6 +4,7 @@
 - Support for encryption and compression in Import and Export.
 - Import now works in a new "smart merge" mode, which should prevent duplicate pomodoros.
 - You can now sign up to flowkeeper.org from the desktop app.
+- You can now request flowkeeper.org account deletion from Settings.
 - You can now change appearance theme on the fly.
 - New color themes.
 - New fonts can now be applied without application restart.

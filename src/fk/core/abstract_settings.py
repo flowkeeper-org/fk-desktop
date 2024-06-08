@@ -143,6 +143,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
+                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),

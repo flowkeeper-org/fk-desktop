@@ -210,17 +210,19 @@ class SettingsDialog(QDialog):
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
             self._widgets_value[option_id] = ed3.text
             layout.addWidget(ed3)
-            sequence_edit = QPushButton(parent)
-            sequence_edit.setText('Browse...')
-            sequence_edit.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
-            layout.addWidget(sequence_edit)
+            browse_btn = QPushButton(parent)
+            browse_btn.setText('Browse...')
+            browse_btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
+            layout.addWidget(browse_btn)
             return [widget]
         elif option_type == 'button':
-            sequence_edit = QPushButton(parent)
-            sequence_edit.setText(option_display)
-            sequence_edit.clicked.connect(lambda: self._handle_button_click(option_id))
+            button = QPushButton(parent)
+            button.setText(option_display)
+            if len(option_options) > 0:
+                button.setIcon(QIcon(f':/icons/{option_options[0]}.png'))
+            button.clicked.connect(lambda: self._handle_button_click(option_id))
             self._widgets_value[option_id] = lambda: ""
-            return [sequence_edit]
+            return [button]
         elif option_type == 'int':
             ed4 = QSpinBox(parent)
             ed4.setMinimum(option_options[0])
@@ -270,28 +272,28 @@ class SettingsDialog(QDialog):
             # as those have been already initialized from the settings on startup
             for a in actions:
                 shortcuts[a] = Actions.ALL[a].shortcut().toString()
-            sequence_edit = QKeySequenceEdit(parent)
-            sequence_edit.setKeySequence(shortcuts[actions[0]])
+            seq_edit = QKeySequenceEdit(parent)
+            seq_edit.setKeySequence(shortcuts[actions[0]])
             reset_button = QPushButton(widget)
             reset_button.setText('Clear')
-            reset_button.clicked.connect(lambda: sequence_edit.clear())
+            reset_button.clicked.connect(lambda: seq_edit.clear())
 
             def on_shortcut_changed(k: QKeySequence):
                 shortcuts[actions[ed8.currentIndex()]] = k.toString()
                 self._on_value_changed(option_id, json.dumps(shortcuts))
 
-            sequence_edit.keySequenceChanged.connect(on_shortcut_changed)
+            seq_edit.keySequenceChanged.connect(on_shortcut_changed)
 
             ed8 = QComboBox(parent)
             ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
-            ed8.currentIndexChanged.connect(lambda v: sequence_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
+            ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
             self._widgets_value[option_id] = lambda: json.dumps(shortcuts)
 
             layout.addWidget(ed8)
 
             hlayout = QHBoxLayout(widget)
             hlayout.setContentsMargins(0, 0, 0, 0)
-            hlayout.addWidget(sequence_edit)
+            hlayout.addWidget(seq_edit)
             hlayout.addWidget(reset_button)
 
             layout.addLayout(hlayout)

@@ -42,6 +42,7 @@ from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.tenant import Tenant
+from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -381,6 +382,7 @@ class Application(QApplication, AbstractEventEmitter):
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
             'WebsocketEventSource.authenticate': self.sign_in,
+            'WebsocketEventSource.delete_account': self.delete_account,
         }).show()
 
     def repair_file_event_source(self, _):
@@ -407,6 +409,42 @@ class Application(QApplication, AbstractEventEmitter):
                                           "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
                                           "Flowkeeper restart is required to reload the changes.",
                                           "\n".join(log))
+
+    def delete_account(self, _):
+        source = self._source_holder.get_source()
+        if not source.can_connect() or not self.get_heartbeat().is_online():
+            QMessageBox().warning(self.activeWindow(),
+                                  'No connection',
+                                  'To perform this operation you must be logged in and online.',
+                                  QMessageBox.StandardButton.Ok)
+            return
+        (test, ok) = QInputDialog.getText(self.activeWindow(),
+                                          'Confirmation',
+                                          'Are you sure you want to delete your account? This will erase all\n'
+                                          'traces of your user on this server. This operation cannot be undone.\n'
+                                          'Export your data before doing it.\n\n'
+                                          'Type "delete" below to confirm.',
+                                          text='')
+        if ok:
+            if test.lower() == 'delete':
+                source.execute(DeleteAccountStrategy, [''])
+                source.disconnect()
+                source.set_config_parameters({
+                    'WebsocketEventSource.username': 'user@local.host',
+                    'WebsocketEventSource.password': '',
+                    'WebsocketEventSource.refresh_token': '',
+                    'Source.type': 'local',
+                })
+                QMessageBox().information(self.activeWindow(),
+                                          'Deleted',
+                                          'We sent a request to delete your account and logged you '
+                                          'out automatically.',
+                                          QMessageBox.StandardButton.Ok)
+            else:
+                QMessageBox().information(self.activeWindow(),
+                                          'Canceled',
+                                          'You should\'ve typed "delete", canceling account deletion.',
+                                          QMessageBox.StandardButton.Ok)
 
     def generate_gradient(self, _):
         preset_names = [preset.name for preset in QGradient.Preset]

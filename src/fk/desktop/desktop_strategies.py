@@ -187,3 +187,28 @@ class PingStrategy(AbstractStrategy):
                 data: Tenant) -> (str, any):
         # Send only
         return None, None
+
+
+# DeleteAccount("reason")
+@strategy
+class DeleteAccountStrategy(AbstractStrategy):
+    _reason: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._reason = params[0]
+
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        # Send only
+        return None, None
