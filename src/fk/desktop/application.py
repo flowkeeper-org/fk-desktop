@@ -428,18 +428,6 @@ class Application(QApplication, AbstractEventEmitter):
         if ok:
             if test.lower() == 'delete':
                 source.execute(DeleteAccountStrategy, [''])
-                source.disconnect()
-                source.set_config_parameters({
-                    'WebsocketEventSource.username': 'user@local.host',
-                    'WebsocketEventSource.password': '',
-                    'WebsocketEventSource.refresh_token': '',
-                    'Source.type': 'local',
-                })
-                QMessageBox().information(self.activeWindow(),
-                                          'Deleted',
-                                          'We sent a request to delete your account and logged you '
-                                          'out automatically.',
-                                          QMessageBox.StandardButton.Ok)
             else:
                 QMessageBox().information(self.activeWindow(),
                                           'Canceled',

@@ -72,7 +72,9 @@ class BacklogModel(QtGui.QStandardItemModel):
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
-        source.on('After*', self._sort)
+        source.on('AfterBacklog*', self._sort)
+        source.on('AfterWorkitem*', self._sort)
+        source.on('AfterPomodoro*', self._sort)
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':

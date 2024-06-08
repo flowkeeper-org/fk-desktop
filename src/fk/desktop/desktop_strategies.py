@@ -131,6 +131,18 @@ class ErrorStrategy(AbstractStrategy):
                 self._settings.set({
                     'WebsocketEventSource.consent': 'True',
                 })
+        elif self._error_message == 'Deleted':
+            QMessageBox().warning(None,
+                                  'Deleted',
+                                  'Your account was deleted and Flowkeeper went offline. '
+                                  'Please select another data source.',
+                                  QMessageBox.StandardButton.Ok)
+        elif (self._error_message.startswith('Unknown user') or
+              self._error_message.startswith('Wrong password for user')):
+            QMessageBox().critical(None,
+                                   'Server error',
+                                   self._error_message,
+                                   QMessageBox.StandardButton.Ok)
         else:
             raise Exception(self._error_message)
 

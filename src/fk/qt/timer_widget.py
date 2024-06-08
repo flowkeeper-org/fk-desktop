@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
 from fk.qt.timer_renderer import TimerRenderer
 
 logger = logging.getLogger(__name__)
-DISPLAY_SIZE = 73
+DISPLAY_SIZE = 63
 
 
 class TimerWidget(QWidget):

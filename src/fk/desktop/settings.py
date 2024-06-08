@@ -117,7 +117,6 @@ class SettingsDialog(QDialog):
         for widget in self._widgets_visibility:
             is_visible = self._widgets_visibility[widget](computed)
             widget.setVisible(is_visible)
-            logger.debug(f" - {widget.objectName()}: {is_visible}")
 
     def _set_buttons_state(self, is_enabled: bool):
         self._buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(is_enabled)
