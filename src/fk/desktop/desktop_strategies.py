@@ -138,7 +138,8 @@ class ErrorStrategy(AbstractStrategy):
                                   'Please select another data source.',
                                   QMessageBox.StandardButton.Ok)
         elif (self._error_message.startswith('Unknown user') or
-              self._error_message.startswith('Wrong password for user')):
+              self._error_message.startswith('Wrong password for user') or
+              self._error_message.startswith('Invalid Google auth token for user')):
             QMessageBox().critical(None,
                                    'Server error',
                                    self._error_message,
