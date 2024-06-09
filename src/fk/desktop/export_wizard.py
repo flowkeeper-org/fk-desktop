@@ -170,6 +170,8 @@ class ExportWizard(QWizard):
         self.option_filename = None
         self.option_compressed = False
         self.option_encrypted = source.get_settings().is_e2e_encryption_enabled()
+        # Account for a Qt bug which shrinks dialogs opened on non-primary displays
+        self.setMinimumSize(550, 400)
 
     def set_filename(self, filename):
         self.option_filename = filename

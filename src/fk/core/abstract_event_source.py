@@ -211,6 +211,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def can_connect(self):
         pass
 
+    def connect(self):
+        raise Exception('Connect is not supported on this type of event source')
+
     def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
         return CreateUserStrategy(1,
                                   datetime.datetime.now(datetime.timezone.utc),

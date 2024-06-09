@@ -40,7 +40,7 @@ class SettingsDialog(QDialog):
 
     def __init__(self,
                  data: AbstractSettings,
-                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
+                 buttons_mapping: dict[str, Callable[[dict[str, str]], bool]] | None = None):
         super().__init__()
         self._data = data
         self._buttons_mapping = buttons_mapping
@@ -346,7 +346,8 @@ class SettingsDialog(QDialog):
         for name in self._widgets_value:
             values[name] = self._widgets_value[name]()
 
-        self._buttons_mapping[option_id](values)
+        if self._buttons_mapping[option_id](values):
+            self.close()
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
         res = QWidget(tabs)

@@ -154,6 +154,8 @@ class ImportWizard(QWizard):
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)
         self.option_filename = None
+        # Account for a Qt bug which shrinks dialogs opened on non-primary displays
+        self.setMinimumSize(550, 400)
 
     def set_filename(self, filename):
         self.option_filename = filename

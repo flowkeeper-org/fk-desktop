@@ -1,4 +1,4 @@
-### v0.5.0 (TBD)
+### v0.5.0 (9 June 2024)
 - Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
 - Encrypted content can be mixed with plaintext.
 - Support for encryption and compression in Import and Export.
@@ -12,6 +12,7 @@
 - New Focus-mode button to complete the current item while it's running.
 - [Bugfix] Fixed workitem search.
 - [Bugfix] Fixed "Start another pomodoro?" logic.
+- [Bugfix] Modal dialogs open shrunk on secondary displays on Linux.
 - [Technical] Restructured the resources, icons and colors.
 - [Technical] Sharing timer state with teammates (no support in the UI yet).
 - [Technical] Introduced Serializer and Cryptograph facilities.

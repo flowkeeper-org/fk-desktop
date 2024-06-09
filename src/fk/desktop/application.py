@@ -385,7 +385,7 @@ class Application(QApplication, AbstractEventEmitter):
             'WebsocketEventSource.delete_account': self.delete_account,
         }).show()
 
-    def repair_file_event_source(self, _):
+    def repair_file_event_source(self, _) -> bool:
         if QMessageBox().warning(self.activeWindow(),
                                  "Confirmation",
                                  f"Are you sure you want to repair the data source? "
@@ -409,6 +409,7 @@ class Application(QApplication, AbstractEventEmitter):
                                           "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
                                           "Flowkeeper restart is required to reload the changes.",
                                           "\n".join(log))
+            return False
 
     def delete_account(self, _):
         source = self._source_holder.get_source()
@@ -417,7 +418,7 @@ class Application(QApplication, AbstractEventEmitter):
                                   'No connection',
                                   'To perform this operation you must be logged in and online.',
                                   QMessageBox.StandardButton.Ok)
-            return
+            return False
         (test, ok) = QInputDialog.getText(self.activeWindow(),
                                           'Confirmation',
                                           'Are you sure you want to delete your account? This will erase all\n'
@@ -428,20 +429,25 @@ class Application(QApplication, AbstractEventEmitter):
         if ok:
             if test.lower() == 'delete':
                 source.execute(DeleteAccountStrategy, [''])
+                # Avoid re-creating this account immediately
+                source.set_config_parameters({'WebsocketEventSource.consent': 'False'})
+                return True # Close Settings dialog
             else:
                 QMessageBox().information(self.activeWindow(),
                                           'Canceled',
                                           'You should\'ve typed "delete", canceling account deletion.',
                                           QMessageBox.StandardButton.Ok)
+        return False
 
-    def generate_gradient(self, _):
+    def generate_gradient(self, _) -> bool:
         preset_names = [preset.name for preset in QGradient.Preset]
         if 'NumPresets' in preset_names:
             preset_names.remove('NumPresets')
         chosen = random.choice(preset_names)
         self._settings.set({'Application.eyecandy_gradient': chosen})
+        return False
 
-    def sign_in(self, _):
+    def sign_in(self, _) -> bool:
         def save(auth: AuthenticationRecord):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
@@ -450,6 +456,7 @@ class Application(QApplication, AbstractEventEmitter):
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
         authenticate(self, save)
+        return False
 
     @staticmethod
     def define_actions(actions: Actions):

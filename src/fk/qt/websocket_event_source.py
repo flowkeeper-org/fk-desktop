@@ -89,9 +89,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
         else:
             logger.warning(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
-            self._reconnect_timer.schedule(next_reconnect, self._connect, None, True)
+            self._reconnect_timer.schedule(next_reconnect, self.connect, None, True)
 
-    def _connect(self, params: dict | None = None) -> None:
+    def connect(self, params: dict | None = None) -> None:
         self._connection_attempt += 1
         source_type = self.get_config_parameter('Source.type')
         if source_type == 'websocket':
@@ -108,7 +108,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def start(self, mute_events=True) -> None:
         self._last_seq = 0
         self._mute_requested = mute_events
-        self._connect()
+        self.connect()
 
     def _on_message(self, message: str) -> None:
         self._received_error = False
