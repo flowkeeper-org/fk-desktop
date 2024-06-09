@@ -290,12 +290,13 @@ class SettingsDialog(QDialog):
 
             layout.addWidget(ed8)
 
-            hlayout = QHBoxLayout(widget)
+            hwidget = QWidget(widget)
+            hlayout = QHBoxLayout(hwidget)
             hlayout.setContentsMargins(0, 0, 0, 0)
             hlayout.addWidget(seq_edit)
             hlayout.addWidget(reset_button)
 
-            layout.addLayout(hlayout)
+            layout.addWidget(hwidget)
             return [widget]
         elif option_type == 'duration':
             ed9 = QTimeEdit(parent)
@@ -350,7 +351,6 @@ class SettingsDialog(QDialog):
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
         res = QWidget(tabs)
         layout = QFormLayout(res)
-        res.setLayout(layout)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
             widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)
