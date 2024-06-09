@@ -13,8 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
+import logging
 import re
 from typing import Callable
 
@@ -24,31 +24,35 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
-from fk.core.user import User
+from fk.core.tenant import Tenant
 
+logger = logging.getLogger(__name__)
 EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 
-# Authenticate("alice@example.com", "secret")
+# Authenticate("alice@example.com", "google|token123", "false")
 @strategy
-class AuthenticateStrategy(AbstractStrategy['Tenant']):
+class AuthenticateStrategy(AbstractStrategy[Tenant]):
     _username: str
     _token: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._username = params[0]
         self._token = params[1]
 
-    def execute(self) -> (str, any):
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         return None, None
 
 
@@ -60,16 +64,19 @@ class ReplayStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._since_seq = int(params[0])
 
-    def execute(self) -> (str, any):
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         # Send only
         return None, None
 
@@ -83,26 +90,60 @@ class ErrorStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
 
-    def execute(self) -> (str, any):
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._error_message == 'User consent is required':
-            QMessageBox().warning(
+            # TODO: Transfer this message from the server
+            if QMessageBox().warning(
                 None,
-                "IMPORTANT",
-                "Flowkeeper.org is in its BETA testing stage. It lacks end-to-end encryption, which means "
-                "that our engineers have access to your data. DO NOT STORE ANY SENSITIVE INFORMATION IN "
-                "FLOWKEEPER.ORG -- we may read it or it may disappear at any time.",
+                "Do you want to create an account?",
+                "PLEASE READ IT: Support for Flowkeeper Server is experimental. We host Flowkeeper.org on "
+                "best-effort basis and deploy updates frequently, all of which means that in general we cannot "
+                "provide reliable 24/7 service. Unplanned downtime should be expected and WILL happen. \n\n"
+                "RELIABILITY: Although we take regular backups and handle your data as carefully as we can, we "
+                "cannot guarantee that your data will be stored forever. We may accidentally lose it or simply "
+                "terminate our service without warning. We recommend you to export your data to a local backup "
+                "file from time to time. \n\n"
+                "SECURITY: Your data is encrypted and decrypted on your computer using Fernet algorithm, "
+                "which is based on AES cypher. The server deals with encrypted content only, and we don't "
+                "have any means of decrypting it, so as long as you keep your encryption key private, your "
+                "personal data should be safe.\n\n"
+                "If you click Yes, we will automatically create an account for the "
+                "email you provided, and won't show this message again. If you'd like to "
+                "delete your account, please send an email to contact@flowkeeper.org.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
+            ) == QMessageBox.StandardButton.Yes:
+                logger.debug('Obtained consent for Flowkeeper Server, will re-authenticate')
+                # TODO: Recreate the source. This will trigger re-authentication, this time with
+                #  "true" parameter, meaning that the user has already given their consent.
+                self._settings.set({
+                    'WebsocketEventSource.consent': 'True',
+                })
+        elif self._error_message == 'Deleted':
+            QMessageBox().warning(None,
+                                  'Deleted',
+                                  'Your account was deleted and Flowkeeper went offline. '
+                                  'Please select another data source.',
+                                  QMessageBox.StandardButton.Ok)
+        elif (self._error_message.startswith('Unknown user') or
+              self._error_message.startswith('Wrong password for user') or
+              self._error_message.startswith('Invalid Google auth token for user')):
+            QMessageBox().critical(None,
+                                   'Server error',
+                                   self._error_message,
+                                   QMessageBox.StandardButton.Ok)
         else:
             raise Exception(self._error_message)
 
@@ -115,20 +156,24 @@ class PongStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any]], None],
-                 data: 'System',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
 
-    def execute(self) -> (str, any):
-        # print(f'Received Pong - {self._uid}')
-        self._emit(events.PongReceived, {
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Received Pong - {self._uid}')
+        emit(events.PongReceived, {
             'uid': self._uid
-        })
+        }, self._carry)
         return None, None
 
 
@@ -140,15 +185,43 @@ class PingStrategy(AbstractStrategy):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
 
-    def execute(self) -> (str, any):
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        # Send only
+        return None, None
+
+
+# DeleteAccount("reason")
+@strategy
+class DeleteAccountStrategy(AbstractStrategy):
+    _reason: str
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._reason = params[0]
+
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         # Send only
         return None, None

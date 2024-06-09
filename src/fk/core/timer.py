@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -23,6 +24,8 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import StartRestStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
+
+logger = logging.getLogger(__name__)
 
 
 # This timer never goes below 0
@@ -43,21 +46,27 @@ class PomodoroTimer(AbstractEventEmitter):
     TimerWorkStart = "TimerWorkStart"
     TimerWorkComplete = "TimerWorkComplete"
     TimerRestComplete = "TimerRestComplete"
+    TimerInitialized = "TimerInitialized"
 
     def __init__(self,
                  tick_timer: AbstractTimer,
                  transition_timer: AbstractTimer,
                  settings: AbstractSettings,
                  source_holder: EventSourceHolder):
-        super().__init__([self.TimerTick, self.TimerWorkStart, self.TimerWorkComplete, self.TimerRestComplete],
+        super().__init__([self.TimerTick,
+                          self.TimerWorkStart,
+                          self.TimerWorkComplete,
+                          self.TimerRestComplete,
+                          self.TimerInitialized,
+                          ],
                          settings.invoke_callback)
-        print('PomodoroTimer: Initializing')
+        logger.debug('PomodoroTimer: Initializing')
         self._tick_timer = tick_timer
         self._transition_timer = transition_timer
         self._source_holder = source_holder
         self._reset()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        print('PomodoroTimer: Initialized')
+        logger.debug('PomodoroTimer: Initialized')
 
     def _reset(self):
         self._state = None
@@ -74,7 +83,7 @@ class PomodoroTimer(AbstractEventEmitter):
         source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
 
     def _refresh(self, event: str | None = None, **kwargs) -> None:
-        print('PomodoroTimer: Refreshing')
+        logger.debug('PomodoroTimer: Refreshing')
         workitem: Workitem | None = None
         pomodoro: Pomodoro | None = None
         for backlog in self._source_holder.get_source().backlogs():
@@ -85,7 +94,7 @@ class PomodoroTimer(AbstractEventEmitter):
                 break
 
         if workitem is None:
-            print('PomodoroTimer: Currently idle')
+            logger.debug('PomodoroTimer: Currently idle')
             self._state = 'idle'    # work, rest, idle
             self._pomodoro = None
             self._workitem = None
@@ -95,7 +104,7 @@ class PomodoroTimer(AbstractEventEmitter):
             self._tick_timer.cancel()
         elif workitem is not None and pomodoro is not None:
             self._state = 'rest' if pomodoro.is_resting() else 'work'
-            print(f'PomodoroTimer: Current state is "{self._state}"')
+            logger.debug(f'PomodoroTimer: Current state is "{self._state}"')
             self._pomodoro = pomodoro
             self._workitem = workitem
             self._planned_duration = pomodoro.get_rest_duration() \
@@ -105,14 +114,14 @@ class PomodoroTimer(AbstractEventEmitter):
             if self._remaining_duration > 0:
                 self._schedule_tick()
                 if pomodoro.is_working():
-                    print(f'PomodoroTimer: Is working')
+                    logger.debug(f'PomodoroTimer: Is working')
                     self._schedule_transition(
                         self._remaining_duration * 1000,
                         pomodoro,
                         workitem,
                         'rest')
                 elif pomodoro.is_resting():
-                    print(f'PomodoroTimer: Is resting')
+                    logger.debug(f'PomodoroTimer: Is resting')
                     self._schedule_transition(
                         self._remaining_duration * 1000,
                         pomodoro,
@@ -120,6 +129,10 @@ class PomodoroTimer(AbstractEventEmitter):
                         'finished')
                 else:
                     raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
+
+        self._emit(PomodoroTimer.TimerInitialized, {
+            'timer': self,
+        }, None)
 
     def __str__(self):
         return f'Timer is {self._state}'
@@ -133,58 +146,58 @@ class PomodoroTimer(AbstractEventEmitter):
             # Only tick if there's something running
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': self,
-            })
+                'pomodoro': self._pomodoro,
+            }, None)
 
     def _schedule_transition(self,
                              ms: float,
                              target_pomodoro: Pomodoro,
                              target_workitem: Workitem,
                              target_state: str) -> None:
-        print(f'PomodoroTimer: Scheduled transition to {target_state} in {ms / 1000} seconds')
+        logger.debug(f'PomodoroTimer: Scheduled transition to {target_state} in {ms / 1000} seconds')
         self._transition_timer.schedule(ms, self._handle_transition, {
             'target_pomodoro': target_pomodoro,
             'target_workitem': target_workitem,
             'target_state': target_state,
         }, True)
-        print(f'PomodoroTimer: Done - Scheduled transition to {target_state} in {ms / 1000} seconds')
+        logger.debug(f'PomodoroTimer: Done - Scheduled transition to {target_state} in {ms / 1000} seconds')
 
     def _handle_transition(self, params: dict | None) -> None:
         target_pomodoro: Pomodoro = params['target_pomodoro']
         target_workitem: Workitem = params['target_workitem']
         target_state: str = params['target_state']
-        print(f'PomodoroTimer: Handling transition from {self._state} to {target_state}')
+        logger.debug(f'PomodoroTimer: Handling transition from {self._state} to {target_state}')
         if target_pomodoro.is_canceled() or target_pomodoro.is_finished():
             # We've already sealed this pomodoro, nothing else to do
-            print(f"We've already sealed this pomodoro, nothing else to do")
+            logger.debug(f"We've already sealed this pomodoro, nothing else to do")
             return
         if target_state == 'rest':
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
             rest_duration = self._source_holder.get_settings().get('Pomodoro.default_rest_duration')
-            print(f"Will execute StartRestStrategy('{target_workitem.get_name()}', '{rest_duration}')")
+            logger.debug(f"Will execute StartRestStrategy('{target_workitem.get_name()}', '{rest_duration}')")
             self._source_holder.get_source().execute(
                 StartRestStrategy,
-                [target_workitem.get_uid(), rest_duration]
-            )
-            print(f"PomodoroTimer: Executed StartRestStrategy")
+                [target_workitem.get_uid(), rest_duration])
+            logger.debug(f"PomodoroTimer: Executed StartRestStrategy")
         elif target_state == 'finished':
-            print(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
+            logger.debug(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
             self._source_holder.get_source().execute(
                 FinishPomodoroInternalStrategy,
                 [target_workitem.get_uid()],
-                persist=False
-            )
-            print(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
+                persist=False)
+            logger.debug(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
         else:
             raise Exception(f"Unexpected scheduled transition state: {target_state}")
-        print(f'PomodoroTimer: Done - Handling transition to {target_state}')
+        logger.debug(f'PomodoroTimer: Done - Handling transition to {target_state}')
 
     def _handle_pomodoro_work_start(self,
                                     event: str,
                                     pomodoro: Pomodoro,
                                     workitem: Workitem,
-                                    work_duration: float) -> None:
-        print(f'Handling work start')
+                                    work_duration: float,
+                                    **kwargs) -> None:
+        logger.debug(f'Handling work start')
         self._pomodoro = pomodoro
         self._workitem = workitem
         self._state = 'work'
@@ -195,41 +208,43 @@ class PomodoroTimer(AbstractEventEmitter):
         })
         self._schedule_transition(work_duration * 1000, pomodoro, workitem, 'rest')
         self._schedule_tick()
-        print(f'PomodoroTimer: Done - Handling work start')
+        logger.debug(f'PomodoroTimer: Done - Handling work start')
 
     def _handle_pomodoro_rest_start(self,
                                     event: str,
                                     pomodoro: Pomodoro,
                                     workitem: Workitem,
-                                    rest_duration: float) -> None:
-        print(f'PomodoroTimer: Handling rest start')
+                                    rest_duration: float,
+                                    **kwargs) -> None:
+        logger.debug(f'PomodoroTimer: Handling rest start')
         if pomodoro != self._pomodoro:
-            print("PomodoroTimer: Warning - Timer detected start of an unexpected pomodoro")
+            logger.warning("PomodoroTimer: Warning - Timer detected start of an unexpected pomodoro")
         if workitem != self._workitem:
-            print(f"PomodoroTimer: Warning - Timer detected start of an unexpected workitem ({workitem} != {self._workitem})")
+            logger.warning(f"PomodoroTimer: Warning - Timer detected start of an unexpected workitem ({workitem} != {self._workitem})")
         self._pomodoro = pomodoro
         self._workitem = workitem
         self._state = 'rest'
         self._planned_duration = rest_duration
         self._remaining_duration = rest_duration
-        print(f'PomodoroTimer: Before emitting TimerWorkComplete')
+        logger.debug(f'PomodoroTimer: Before emitting TimerWorkComplete')
         self._emit(PomodoroTimer.TimerWorkComplete, {
             'timer': self,
-        })
-        print(f'PomodoroTimer: Before scheduling transition to finished')
+        }, None)
+        logger.debug(f'PomodoroTimer: Before scheduling transition to finished')
         self._schedule_transition(rest_duration * 1000, pomodoro, workitem, 'finished')
-        print(f'PomodoroTimer: Done - Handling rest start')
+        logger.debug(f'PomodoroTimer: Done - Handling rest start')
 
     def _handle_pomodoro_complete(self,
                                   event: str,
                                   pomodoro: Pomodoro,
                                   workitem: Workitem,
-                                  target_state: str) -> None:
-        print(f'PomodoroTimer: Handling pomodoro complete')
+                                  target_state: str,
+                                  **kwargs) -> None:
+        logger.debug(f'PomodoroTimer: Handling pomodoro complete')
         if pomodoro != self._pomodoro:
-            print("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")
+            logger.warning("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")
         if workitem != self._workitem:
-            print(f"PomodoroTimer: Warning - Timer detected completion of an unexpected workitem ({workitem} != {self._workitem})")
+            logger.warning(f"PomodoroTimer: Warning - Timer detected completion of an unexpected workitem ({workitem} != {self._workitem})")
         last_pomodoro = self._pomodoro
         self._pomodoro = None
         last_workitem = self._workitem
@@ -241,7 +256,7 @@ class PomodoroTimer(AbstractEventEmitter):
             'timer': self,
             'pomodoro': last_pomodoro,
             'workitem': last_workitem,
-        })
+        }, None)
         # It might look better to just check for the terminal conditions directly in the handlers instead
         # of canceling timers here. We are going the latter path to account for scenarios when stuff gets
         # void because of cascading deletes. For instance, if we delete a Workitem with a running pomodoro,
@@ -250,8 +265,8 @@ class PomodoroTimer(AbstractEventEmitter):
         # consistency point of view.
         self._transition_timer.cancel()
         self._tick_timer.cancel()
-        print('PomodoroTimer: Canceled transition timer')
-        print(f'PomodoroTimer: Done - Handling pomodoro complete')
+        logger.debug('PomodoroTimer: Canceled transition timer')
+        logger.debug(f'PomodoroTimer: Done - Handling pomodoro complete')
 
     def get_running_workitem(self) -> Workitem:
         return self._workitem
@@ -276,3 +291,13 @@ class PomodoroTimer(AbstractEventEmitter):
 
     def get_remaining_duration(self) -> float:
         return self._remaining_duration
+
+    def format_remaining_duration(self) -> str:
+        remaining_duration = self.get_remaining_duration()     # This is always >= 0
+        remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
+        remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
+        return f'{remaining_minutes}:{remaining_seconds}'
+
+    def get_completion(self) -> float:
+        planned = self.get_planned_duration()
+        return self.get_remaining_duration() / planned if planned > 0 else 0

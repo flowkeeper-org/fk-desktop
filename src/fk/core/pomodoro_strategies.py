@@ -13,8 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-
 import datetime
 from typing import Callable
 
@@ -23,33 +21,34 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro
 from fk.core.strategy_factory import strategy
+from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
 # StartWork("123-456-789", "1500")
 @strategy
-class StartWorkStrategy(AbstractStrategy['Tenant']):
+class StartWorkStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _work_duration: float
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._work_duration = float(params[1])
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
         running: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -76,14 +75,14 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
                     'work_duration': work_duration,
                 }
                 if not workitem.is_running():
-                    self._emit(events.BeforeWorkitemStart, params)
+                    emit(events.BeforeWorkitemStart, params, self._carry)
                     workitem.start(self._when)
-                    self._emit(events.AfterWorkitemStart, params)
-                self._emit(events.BeforePomodoroWorkStart, params)
+                    emit(events.AfterWorkitemStart, params, self._carry)
+                emit(events.BeforePomodoroWorkStart, params, self._carry)
                 pomodoro.update_work_duration(work_duration)
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
-                self._emit(events.AfterPomodoroWorkStart, params)
+                emit(events.AfterPomodoroWorkStart, params, self._carry)
                 return None, None
 
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
@@ -92,26 +91,26 @@ class StartWorkStrategy(AbstractStrategy['Tenant']):
 # StartRest("123-456-789", "300")
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 @strategy
-class StartRestStrategy(AbstractStrategy['Tenant']):
+class StartRestStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _rest_duration: float
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._rest_duration = float(params[1])
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -133,11 +132,11 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
                     'workitem': workitem,
                     'rest_duration': rest_duration,
                 }
-                self._emit(events.BeforePomodoroRestStart, params)
+                emit(events.BeforePomodoroRestStart, params, self._carry)
                 pomodoro.update_rest_duration(rest_duration)
                 pomodoro.start_rest(self._when)
                 pomodoro.item_updated(self._when)
-                self._emit(events.AfterPomodoroRestStart, params)
+                emit(events.AfterPomodoroRestStart, params, self._carry)
                 return None, None
 
         raise Exception(f'No in-work pomodoro in "{self._workitem_uid}"')
@@ -145,31 +144,31 @@ class StartRestStrategy(AbstractStrategy['Tenant']):
 
 # AddPomodoro("123-456-789", "1")
 @strategy
-class AddPomodoroStrategy(AbstractStrategy['Tenant']):
+class AddPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
         self._default_work_duration = float(settings.get('Pomodoro.default_work_duration'))
         self._default_rest_duration = float(settings.get('Pomodoro.default_rest_duration'))
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -185,14 +184,14 @@ class AddPomodoroStrategy(AbstractStrategy['Tenant']):
             'workitem': workitem,
             'num_pomodoros': self._num_pomodoros,
         }
-        self._emit(events.BeforePomodoroAdd, params)
+        emit(events.BeforePomodoroAdd, params, self._carry)
         workitem.add_pomodoro(
             self._num_pomodoros,
             self._default_work_duration,
             self._default_rest_duration,
             self._when)
         workitem.item_updated(self._when)
-        self._emit(events.AfterPomodoroAdd, params)
+        emit(events.AfterPomodoroAdd, params, self._carry)
         return None, None
 
 
@@ -200,6 +199,7 @@ def _complete_pomodoro(user: User,
                        workitem_uid: str,
                        target_state: str,
                        emit: Callable[[str, dict[str, any], any], None],
+                       carry: any,
                        when: datetime.datetime) -> None:
     workitem: Workitem | None = None
     for backlog in user.values():
@@ -222,10 +222,10 @@ def _complete_pomodoro(user: User,
                 'pomodoro': pomodoro,
                 'target_state': target_state,
             }
-            emit(events.BeforePomodoroComplete, params)
+            emit(events.BeforePomodoroComplete, params, carry)
             pomodoro.seal(target_state, when)
             pomodoro.item_updated(when)
-            emit(events.AfterPomodoroComplete, params)
+            emit(events.AfterPomodoroComplete, params, carry)
             return
 
     raise Exception(f'No running pomodoros in "{workitem_uid}"')
@@ -233,101 +233,106 @@ def _complete_pomodoro(user: User,
 
 # VoidPomodoro("123-456-789")
 @strategy
-class VoidPomodoroStrategy(AbstractStrategy['Tenant']):
+class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
-        _complete_pomodoro(user, self._workitem_uid, 'canceled', self._emit, self._when)
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._carry, self._when)
         return None, None
 
 
 # Not available externally, not registered as a strategy
-class FinishPomodoroInternalStrategy(AbstractStrategy['Tenant']):
+class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
-        _complete_pomodoro(user, self._workitem_uid, 'finished', self._emit, self._when)
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._carry, self._when)
         return None, None
 
 
 # CompletePomodoro("123-456-789", "finished")
 # Legacy, for compatibility purposes only. To be removed in the future.
 @strategy
-class CompletePomodoroStrategy(AbstractStrategy['Tenant']):
-    _another: VoidPomodoroStrategy | None
+class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
+    _uid: str
+    _state: str
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
-        if params[1] == 'canceled':
-            self._another = VoidPomodoroStrategy(seq, when, user, [params[0]], emit, data, settings, carry)
-        else:
-            self._another = None
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._uid = params[0]
+        self._state = params[1]
 
-    def execute(self) -> (str, any):
-        if self._another:
-            return self._another.execute()
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        if self._state == 'canceled':
+            another = VoidPomodoroStrategy(self.get_sequence(),
+                                           self.get_when(),
+                                           self.get_user_identity(),
+                                           [self._uid],
+                                           self._settings,
+                                           self._carry)
+            return another.execute(emit, data)
         else:
             return None, None   # Since version 0.3.1 we always complete pomodoros implicitly
 
 # RemovePomodoro("123-456-789", "1")
 @strategy
-class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
+class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
 
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -354,9 +359,9 @@ class RemovePomodoroStrategy(AbstractStrategy['Tenant']):
             'num_pomodoros': self._num_pomodoros,
             'pomodoros': to_remove
         }
-        self._emit(events.BeforePomodoroRemove, params)
+        emit(events.BeforePomodoroRemove, params, self._carry)
         for p in to_remove:
             workitem.remove_pomodoro(p)
         workitem.item_updated(self._when)
-        self._emit(events.AfterPomodoroRemove, params)
+        emit(events.AfterPomodoroRemove, params, self._carry)
         return None, None

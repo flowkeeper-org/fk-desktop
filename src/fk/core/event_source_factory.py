@@ -13,31 +13,36 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Callable, Self, TypeVar, Generic
 
-from typing import Callable, Self
-
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.tenant import Tenant
+
+TRoot = TypeVar('TRoot')
 
 
-class EventSourceFactory:
-    _source_producers: dict[str, Callable[[AbstractSettings, object], AbstractEventSource]]
+class EventSourceFactory(Generic[TRoot]):
+    _source_producers: dict[str, Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]]
     _instance: Self = None
 
     def __init__(self):
         self._source_producers = dict()
 
-    @staticmethod
-    def get_instance() -> 'EventSourceFactory':
-        if EventSourceFactory._instance is None:
-            EventSourceFactory._instance = EventSourceFactory()
-        return EventSourceFactory._instance
-
     def is_valid(self, name: str) -> bool:
         return name in self._source_producers
 
-    def get_producer(self, name: str) -> Callable[[AbstractSettings, object], AbstractEventSource]:
+    def get_producer(self, name: str) -> Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]:
         return self._source_producers.get(name)
 
-    def register_producer(self, name: str, producer: Callable[[AbstractSettings, object], AbstractEventSource]) -> None:
+    def register_producer(self,
+                          name: str,
+                          producer: Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]) -> None:
         self._source_producers[name] = producer
+
+
+def get_event_source_factory() -> EventSourceFactory[Tenant]:
+    if EventSourceFactory._instance is None:
+        EventSourceFactory._instance = EventSourceFactory[Tenant]()
+    return EventSourceFactory._instance

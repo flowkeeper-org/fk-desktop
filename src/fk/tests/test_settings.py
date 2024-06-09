@@ -15,8 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from unittest import TestCase
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
 from fk.core.tenant import Tenant
 from fk.core.user import User
@@ -24,12 +26,14 @@ from fk.core.user import User
 
 class TestSettings(TestCase):
     settings: AbstractSettings
+    cryptograph: AbstractCryptograph
     source: EphemeralEventSource
     data: dict[str, User]
 
     def setUp(self) -> None:
         self.settings = MockSettings()
-        self.source = EphemeralEventSource(self.settings, Tenant(self.settings))
+        self.cryptograph = FernetCryptograph(self.settings)
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
 
@@ -118,7 +122,7 @@ class TestSettings(TestCase):
         # Never
         self.assertNotIn('Application.window_width', visible)
         self.assertNotIn('Application.show_status_bar', visible)
-        self.assertNotIn('WebsocketEventSource.refresh_token', visible)
+        self.assertNotIn('WebsocketEventSource.refresh_token!', visible)
         self.assertNotIn('Source.fullname', visible)
         self.assertNotIn('Application.show_completed', visible)
         # For file event source

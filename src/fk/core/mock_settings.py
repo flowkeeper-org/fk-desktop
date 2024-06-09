@@ -13,9 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
+
+logger = logging.getLogger(__name__)
 
 
 def invoke_direct(fn, **kwargs):
@@ -25,11 +28,15 @@ def invoke_direct(fn, **kwargs):
 class MockSettings(AbstractSettings):
     _settings: dict[str, str]
 
-    def __init__(self, filename=None, username=None):
+    def __init__(self, filename=None, username=None, source_type="local"):
         super().__init__('Arial', 10, invoke_direct)
         self._settings = {
+            'Source.type': source_type,
             'FileEventSource.filename': filename,
             'WebsocketEventSource.username': username,
+            'Source.encryption_enabled': 'False',
+            'Source.encryption_key!': 'oBokryM75NwBXkKVa3bY',
+            'Source.encryption_key_cache!': '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
         }
 
     def get(self, name: str) -> str:
@@ -48,11 +55,11 @@ class MockSettings(AbstractSettings):
             'old_values': old_values,
             'new_values': values,
         }
-        self._emit(events.BeforeSettingsChanged, params)
+        self._emit(events.BeforeSettingsChanged, params, None)
         for name in old_values.keys():  # This is not a typo, we've just filtered this list
             # to only contain settings which actually changed.
             self._settings[name] = values[name]
-        self._emit(events.AfterSettingsChanged, params)
+        self._emit(events.AfterSettingsChanged, params, None)
 
     def location(self) -> str:
         return "N/A"
@@ -60,25 +67,16 @@ class MockSettings(AbstractSettings):
     def clear(self) -> None:
         self._settings = {}
 
-    def _recompute_visibility(self, option_id, new_value):
-        computed = dict[str, str]()
-        for name in self._widgets_value:
-            computed[name] = self._widgets_value[name]()
-        computed[option_id] = new_value
-        for widget in self._widgets_visibility:
-            is_visible = self._widgets_visibility[widget](computed)
-            widget.setVisible(is_visible)
-
     def get_displayed_settings(self) -> list[str]:
         res = list()
         for tab_name in self.get_categories():
-            print(f'Category: {tab_name}')
+            logger.debug(f'Category: {tab_name}')
             settings = self.get_settings(tab_name)
             values = dict()
             for s in settings:
                 values[s[0]] = s[3]
             for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
                 if option_visible(values) and option_type not in ('separator', 'button'):
-                    print(f' - {option_display}: {option_value}')
+                    logger.debug(f' - {option_display}: {option_value}')
                     res.append(option_id)
         return res

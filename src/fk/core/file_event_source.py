@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import os
 import time
 from collections import deque
@@ -20,18 +21,20 @@ from os import path
 from typing import Self, TypeVar, Iterable
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
-from fk.core.strategy_factory import strategy_from_string
+from fk.core.simple_serializer import SimpleSerializer
+from fk.core.tenant import Tenant
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy
 
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
 
 
@@ -43,10 +46,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def __init__(self,
                  settings: AbstractSettings,
+                 cryptograph: AbstractCryptograph,
                  root: TRoot,
                  filesystem_watcher: AbstractFilesystemWatcher = None,
                  existing_strategies: Iterable[AbstractStrategy] | None = None):
-        super().__init__(settings)
+        super().__init__(SimpleSerializer(settings, cryptograph),
+                         settings,
+                         cryptograph)
+        logger.debug(f'Created FileEventSource with serializer {self._serializer}')
         self._data = root
         self._watcher = None
         self._existing_strategies = existing_strategies
@@ -60,14 +67,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
-        print(f'Data file content changed: {filename}')
+        logger.debug(f'Data file content changed: {filename}')
 
         # When we execute strategies here, events are emitted.
         # TODO: Check file locks here?
         with open(filename, encoding='UTF-8') as file:
             for line in file:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
-                if type(strategy) is str:
+                strategy = self._serializer.deserialize(line)
+                if strategy is None:
                     continue
                 self._last_strategy = strategy
                 seq = strategy.get_sequence()
@@ -75,7 +82,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                     self._last_seq = seq
-                    # print(f" - {strategy}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f" - {strategy}")
                     self.execute_prepared_strategy(strategy)
         self.auto_seal()
 
@@ -99,11 +107,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
         is_first = True
         seq = 1
         for strategy in self._existing_strategies:
-            strategy._data = self._data
-            strategy._settings = self._settings
-            strategy._emit_func = self._emit
-            if type(strategy) is str:
+            if strategy is None:
                 continue
+            strategy._settings = self._settings
             self._last_strategy = strategy
 
             if is_first:
@@ -116,28 +122,28 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.execute_prepared_strategy(strategy)
         self.auto_seal()
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self})
+        self._emit(events.SourceMessagesProcessed, {'source': self}, None)
 
     def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
-        self._emit(events.SourceMessagesRequested, dict())
+        self._emit(events.SourceMessagesRequested, dict(), None)
         if mute_events:
             self.mute()
 
         filename = self._get_filename()
         if not path.isfile(filename):
             with open(filename, 'w', encoding='UTF-8') as f:
-                s = self.get_data().get_init_strategy(self._emit)
-                f.write(f'{s}\n')
-                print(f'Created empty data file {filename}')
+                s = self.get_init_strategy(self._emit)
+                f.write(f'{self._serializer.serialize(s)}\n')
+                logger.info(f'Created empty data file {filename}')
 
         is_first = True
         seq = 1
-        print(f'FileEventSource: Reading file {filename}')
+        logger.info(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             for line in f:
-                strategy = strategy_from_string(line, self._emit, self.get_data(), self._settings)
-                if type(strategy) is str:
+                strategy = self._serializer.deserialize(line)
+                if strategy is None:
                     continue
                 self._last_strategy = strategy
 
@@ -149,10 +155,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
-        print('FileEventSource: Processed file content, will auto-seal now')
+        logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
         self.auto_seal()
-        print('FileEventSource: Sealed, will unmute events now')
+        logger.debug('FileEventSource: Sealed, will unmute events now')
 
         if mute_events:
             self.unmute()
@@ -181,11 +187,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         all_users: set[str] = set()
         all_backlogs: set[str] = set()
         all_workitems: set[str] = set()
-        repaired_backlog: str = None
+        repaired_backlog: str | None = None
         with open(filename, encoding='UTF-8') as f:
             for line in f:
                 try:
-                    s = strategy_from_string(line, self._emit, self._data, self._settings)
+                    s = self._serializer.deserialize(line)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {s}')
                     changes += 1
@@ -206,10 +212,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if uid not in all_users:
                         strategies.append(CreateUserStrategy(1,
                                                              s._when,
-                                                             s._user,
+                                                             s._user_identity,
                                                              [uid, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
                                                              self._settings))
                         all_users.add(uid)
                         log.append(f'Created missing user on first reference: {s}')
@@ -228,12 +232,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     uid = cast.get_backlog_uid()
                     if uid not in all_backlogs:
                         strategies.append(CreateBacklogStrategy(1,
-                                                             s._when,
-                                                             s._user,
-                                                             [uid, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
-                                                             self._settings))
+                                                                s._when,
+                                                                s._user_identity,
+                                                                [uid, f"[Repaired] {uid}"],
+                                                                self._settings))
                         all_backlogs.add(uid)
                         log.append(f'Created missing backlog on first reference: {s}')
                         changes += 1
@@ -254,21 +256,17 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             repaired_backlog = generate_uid()
                             strategies.append(CreateBacklogStrategy(1,
                                                                     s._when,
-                                                                    s._user,
+                                                                    s._user_identity,
                                                                     [repaired_backlog, '[Repaired] Orphan workitems'],
-                                                                    self._emit,
-                                                                    self._data,
                                                                     self._settings))
                             all_backlogs.add(repaired_backlog)
                             log.append(f'Created a backlog for orphan workitems: {repaired_backlog}')
                             changes += 1
                         strategies.append(CreateWorkitemStrategy(1,
-                                                             s._when,
-                                                             s._user,
-                                                             [uid, repaired_backlog, f"[Repaired] {uid}"],
-                                                             self._emit,
-                                                             self._data,
-                                                             self._settings))
+                                                                 s._when,
+                                                                 s._user_identity,
+                                                                 [uid, repaired_backlog, f"[Repaired] {uid}"],
+                                                                 self._settings))
                         all_workitems.add(uid)
                         log.append(f'Created missing workitem on first reference: {s}')
                         changes += 1
@@ -279,7 +277,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Renumber strategies
             seq = strategies[0].get_sequence()
             for s in strategies:
-                if type(s) is str:
+                if s is None:
                     continue
                 if s.get_sequence() != seq:
                     s._seq = seq
@@ -311,7 +309,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Write it back
             with open(filename, 'w', encoding='UTF-8') as f:
                 for s in strategies:
-                    f.write(str(s) + '\n')
+                    f.write(self._serializer.serialize(s) + '\n')
             log.append(f'Overwritten original file {filename}')
         else:
             log.append(f'No changes were made')
@@ -324,7 +322,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # then append to both files at the same time.
         with open(self._get_filename(), 'a', encoding='UTF-8') as f:
             for s in strategies:
-                f.write(str(s) + '\n')
+                f.write(self._serializer.serialize(s) + '\n')
 
     def get_name(self) -> str:
         return "File"
@@ -342,7 +340,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
-        return FileEventSource(self._settings, new_root, self._watcher, existing_strategies)
+        return FileEventSource[TRoot](self._settings,
+                                      self._cryptograph,
+                                      new_root,
+                                      self._watcher,
+                                      existing_strategies)
 
     def disconnect(self):
         if self._watcher is not None:

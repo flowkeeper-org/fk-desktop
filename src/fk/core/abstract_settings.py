@@ -13,13 +13,15 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+
+logger = logging.getLogger(__name__)
 
 
 def _always_show(_) -> bool:
@@ -44,6 +46,15 @@ def _show_for_file_source(values: dict[str, str]) -> bool:
 
 def _show_for_websocket_source(values: dict[str, str]) -> bool:
     return values['Source.type'] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
+
+
+def _show_when_encryption_is_enabled(values: dict[str, str]) -> bool:
+    return values['Source.type'] in ('flowkeeper.org', 'flowkeeper.pro') \
+        or values['Source.encryption_enabled'] == 'True'
+
+
+def _show_when_encryption_is_optional(values: dict[str, str]) -> bool:
+    return values['Source.type'] in ('websocket', 'local', 'ephemeral')
 
 
 def _show_for_custom_websocket_source(values: dict[str, str]) -> bool:
@@ -79,8 +90,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
-                 callback_invoker: Callable,
-                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
+                 callback_invoker: Callable):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingsChanged,
             events.AfterSettingsChanged,
@@ -101,31 +111,43 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'False', [], _never_show),
+                ('', 'separator', '', '', [], _always_show),
+                ('Logger.level', 'choice', 'Log level', 'WARNING', [
+                    "ERROR:Errors only",
+                    "WARNING:Errors and warnings",
+                    "DEBUG:Verbose (use it for troubleshooting)",
+                ], _always_show),
+                ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
-                    "flowkeeper.org:Flowkeeper.org",
+                    "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
                     #"flowkeeper.pro:Flowkeeper.pro",
-                    "websocket:Self-hosted server",
-                    "ephemeral:Ephemeral (for testing only)",
+                    "websocket:Self-hosted server (EXPERIMENTAL)",
+                    "ephemeral:Ephemeral (in-memory, for testing purposes)",
                 ], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
-                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'True', [], _show_for_file_source),
+                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
-                ('WebsocketEventSource.url', 'str', 'Server URL', 'wss://localhost:8443', [], _show_for_custom_websocket_source),
+                ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
                     "basic:Simple username and password",
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
-                ('WebsocketEventSource.password', 'secret', 'Password', '', [], _show_for_basic_auth),
-                ('WebsocketEventSource.refresh_token', 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
+                ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
+                ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
+                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
                 ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
+                ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
+                ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
+                ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
@@ -136,7 +158,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.theme', 'choice', 'Theme', 'mixed', [
                     "light:Light",
                     "dark:Dark",
-                    "mixed:Mixed",
+                    "mixed:Mixed (Default)",
+                    "desert:Desert",
+                    "beach:Beach volley",
+                    "terra:Terra",
+                    "motel:Motel",
+                    "lime:Sneakers",
+                    "resort:Sea resort",
+                    "purple:Purple rain",
+                    "highlight:Highlight",
                 ], _always_show),
                 ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], _always_show),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
@@ -180,12 +210,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
-
         self._defaults = dict()
         for lst in self._definitions.values():
             for s in lst:
                 self._defaults[s[0]] = s[3]
-        # print('Filled defaults', self._defaults)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('Filled defaults', self._defaults)
 
     def invoke_callback(self, fn: Callable, **kwargs) -> None:
         self._callback_invoker(fn, **kwargs)
@@ -249,3 +279,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 to_set[option_id] = option_default
         self.clear()
         self.set(to_set)
+
+    def is_e2e_encryption_enabled(self) -> bool:
+        return _show_when_encryption_is_enabled({
+            'Source.encryption_enabled': self.get('Source.encryption_enabled'),
+            'Source.type': self.get('Source.type')
+        })

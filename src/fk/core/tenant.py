@@ -13,15 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
-from typing import Self, Callable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.user import User
-from fk.core.user_strategies import CreateUserStrategy
 
 ADMIN_USER = 'admin@local.host'
 
@@ -52,17 +48,5 @@ class Tenant(AbstractDataContainer[User, None]):
     def get_user(self, identity: str) -> User:
         return self[identity]
 
-    def get_admin_user(self) -> User:
-        return self[ADMIN_USER]
-
     def get_current_user(self) -> User:
         return self[self._settings.get_username()]
-
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
-        return CreateUserStrategy(1,
-                                  datetime.datetime.now(datetime.timezone.utc),
-                                  self[ADMIN_USER],
-                                  [self._settings.get_username(), self._settings.get_fullname()],
-                                  emit,
-                                  self,
-                                  self._settings)

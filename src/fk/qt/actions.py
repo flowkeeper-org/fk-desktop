@@ -47,7 +47,7 @@ class Actions:
     def add(self,
             name: str,
             text: str,
-            shortcut: str,
+            shortcut: str | None,
             icon: str | None,
             member: Callable,
             is_toggle: bool = False,
@@ -60,7 +60,8 @@ class Actions:
             else:
                 res.setShortcut(shortcut)
         if icon is not None:
-            res.setIcon(QIcon(icon))
+            # res.setIcon(QIcon(icon))
+            res.setIcon(QIcon.fromTheme(icon))
         if is_toggle:
             res.setCheckable(True)
             res.setChecked(is_checked)

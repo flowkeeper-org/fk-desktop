@@ -14,8 +14,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import inspect
+import logging
 import re
 from typing import Callable
+
+logger = logging.getLogger(__name__)
 
 
 def _callback_display(callback) -> str:
@@ -47,7 +50,8 @@ class AbstractEventEmitter:
             if regex.match(event):
                 # Ordered set semantics
                 if callback not in self._connections[event]:
-                    print(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event}{" as the LAST handler" if last else ""}')
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event}{" as the LAST handler" if last else ""}')
                     self._connections[event].append(callback)
         if last:
             self._last.add(callback)
@@ -68,10 +72,12 @@ class AbstractEventEmitter:
                     params['event'] = event
                     if carry is not None:
                         params['carry'] = carry
-                    print(f' ! {_callback_display(callback)}(' + str(params) + ')')
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f' ! {_callback_display(callback)}(' + str(params) + ')')
                     self._callback_invoker(callback, **params)
                 if not first:
-                    print(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
                     return
                 first = False
 
@@ -79,9 +85,9 @@ class AbstractEventEmitter:
         return self._muted
 
     def unmute(self) -> None:
-        print('Unmuting events')
+        logger.debug('Unmuting events')
         self._muted = False
 
     def mute(self) -> None:
-        print('Muting events')
+        logger.debug('Muting events')
         self._muted = True

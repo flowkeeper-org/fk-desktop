@@ -13,53 +13,54 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QWidget, QLabel
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QWidget, QToolButton
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.desktop.application import Application, AfterSourceChanged
 
+logger = logging.getLogger(__name__)
 
-class ConnectionWidget(QLabel):
+
+class ConnectionWidget(QToolButton):
     _application: Application
-    _img_unknown: QPixmap
-    _img_offline: QPixmap
-    _img_online: QPixmap
+    _source: AbstractEventSource
 
     def __init__(self, parent: QWidget, application: Application):
         super().__init__(parent)
         self._application = application
+        self._source = None
         self.setObjectName('connectionState')
-        self.setFixedSize(QSize(32, 32))
-
-        self._img_online = QPixmap(':/icons/conn-online.svg')
-        self._img_offline = QPixmap(':/icons/conn-offline.svg')
-        self._img_unknown = QPixmap(':/icons/conn-unknown.svg')
-
+        self.setIconSize(QSize(32, 32))
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
     def _update_connection_state(self, is_connected: bool) -> None:
+        username = self._application.get_settings().get_username()
         if is_connected:
-            self.setPixmap(self._img_online)
+            self.setIcon(QIcon.fromTheme('conn-online'))
             self.setToolTip('Connected')
-            self.topLevelWidget().setWindowTitle('Flowkeeper - Online')
+            self.topLevelWidget().setWindowTitle(f'Flowkeeper - {username} - Online')
         else:
-            self.setPixmap(self._img_offline)
+            self.setIcon(QIcon.fromTheme('conn-offline'))
             self.setToolTip('Disconnected')
-            self.topLevelWidget().setWindowTitle('Flowkeeper - OFFLINE')
+            self.topLevelWidget().setWindowTitle(f'Flowkeeper - {username} - Offline')
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
+        self._source = source
+        self.clicked.connect(self._source.connect)
         self.setVisible(source.can_connect())
         if source.can_connect():
-            print('ConnectionWidget._on_source_changed: Connectable source')
+            logger.debug('ConnectionWidget._on_source_changed: Connectable source')
             heartbeat = self._application.get_heartbeat()
             self._update_connection_state(heartbeat.is_online())
             heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
             heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
         else:
-            print('ConnectionWidget._on_source_changed: Offline source')
-            self.setPixmap(self._img_unknown)
+            logger.debug('ConnectionWidget._on_source_changed: Offline source')
+            self.setIcon(QIcon.fromTheme('conn-unknown'))
             self.setToolTip('N/A')
             self.topLevelWidget().setWindowTitle('Flowkeeper')

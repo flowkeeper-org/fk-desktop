@@ -13,15 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import sys
+from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
+    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton
 
-from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QWizard, QCheckBox, QLineEdit, \
-    QHBoxLayout, QPushButton, QProgressBar, QWidget
-
-from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.file_event_source import FileEventSource
+from fk.core.event_source_holder import EventSourceHolder
+from fk.core.import_export import import_
 from fk.desktop.settings import SettingsDialog
-from fk.qt.qt_settings import QtSettings
 
 
 class PageImportIntro(QWizardPage):
@@ -71,6 +68,11 @@ class PageImportSettings(QWizardPage):
         self.import_ignore_errors = QCheckBox('Ignore errors and continue')
         self.import_ignore_errors.setDisabled(False)
         self.layout_v.addWidget(self.import_ignore_errors)
+        self.import_type_smart = QRadioButton("Smart import - safe option, data is appended or renamed", self)
+        self.import_type_smart.setChecked(True)
+        self.layout_v.addWidget(self.import_type_smart)
+        self.import_type_replay = QRadioButton("Replay imported history - can result in duplicates or deletions", self)
+        self.layout_v.addWidget(self.import_type_replay)
         self.setLayout(self.layout_v)
         self.setCommitPage(True)
         self.setButtonText(QWizard.WizardButton.CommitButton, 'Start')
@@ -80,20 +82,25 @@ class PageImportProgress(QWizardPage):
     label: QLabel
     layout_v: QVBoxLayout
     progress: QProgressBar
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
     _import_complete: bool
     _filename: str | None
     _ignore_errors: QCheckBox
+    _import_type_smart: QRadioButton
 
     def isComplete(self):
         return self._import_complete
 
-    def __init__(self, source: AbstractEventSource, ignore_errors: QCheckBox):
+    def __init__(self,
+                 source_holder: EventSourceHolder,
+                 ignore_errors: QCheckBox,
+                 import_type_smart: QRadioButton):
         super().__init__()
         self._import_complete = False
-        self._source = source
+        self._source_holder = source_holder
         self._filename = None
         self._ignore_errors = ignore_errors
+        self._import_type_smart = import_type_smart
         #self.setTitle("Importing...")
         self.layout_v = QVBoxLayout()
         self.label = QLabel("Data import is in progress. Please do not close this window until it completes.")
@@ -112,16 +119,19 @@ class PageImportProgress(QWizardPage):
         self.progress.setValue(self.progress.maximum())
         self._import_complete = True
         self.label.setText('Done. You can now close this window.')
+        self._source_holder.request_new_source()
         self.completeChanged.emit()
 
     def start(self):
         # noinspection PyUnresolvedReferences
         self._filename = self.wizard().option_filename
-        self._source.import_(self._filename,
-                             self._ignore_errors.isChecked(),
-                             lambda total: self.progress.setMaximum(total),
-                             lambda value, total: self.progress.setValue(value),
-                             lambda total: self.finish())
+        import_(self._source_holder.get_source(),
+                self._filename,
+                self._ignore_errors.isChecked(),
+                self._import_type_smart.isChecked(),
+                lambda total: self.progress.setMaximum(total),
+                lambda value, total: self.progress.setValue(value),
+                lambda total: self.finish())
 
 
 class ImportWizard(QWizard):
@@ -129,28 +139,23 @@ class ImportWizard(QWizard):
     page_settings: PageImportSettings
     page_progress: PageImportProgress
     option_filename: str | None
-    _source: AbstractEventSource
+    _source_holder: EventSourceHolder
 
-    def __init__(self, source: AbstractEventSource, parent: QWidget | None):
+    def __init__(self, source_holder: EventSourceHolder, parent: QWidget | None):
         super().__init__(parent)
-        self._source = source
+        self._source_holder = source_holder
         self.setWindowTitle("Import")
         self.page_intro = PageImportIntro()
         self.page_settings = PageImportSettings()
-        self.page_progress = PageImportProgress(source, self.page_settings.import_ignore_errors)
+        self.page_progress = PageImportProgress(source_holder,
+                                                self.page_settings.import_ignore_errors,
+                                                self.page_settings.import_type_smart)
         self.addPage(self.page_intro)
         self.addPage(self.page_settings)
         self.addPage(self.page_progress)
         self.option_filename = None
+        # Account for a Qt bug which shrinks dialogs opened on non-primary displays
+        self.setMinimumSize(550, 400)
 
     def set_filename(self, filename):
         self.option_filename = filename
-
-
-if __name__ == '__main__':
-    app = QApplication([])
-    src = FileEventSource(QtSettings())
-    src.start()
-    wizard = ImportWizard(src, None)
-    wizard.show()
-    sys.exit(app.exec())

@@ -19,7 +19,6 @@ from fk.tools.minimal_common import MinimalCommon
 
 
 def on_data(root: Tenant):
-    print('on_data', root)
     users_table.upstream_selected(root)
 
 

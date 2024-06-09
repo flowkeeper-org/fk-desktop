@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
 from abc import ABC, abstractmethod
 from typing import Callable, Type, Self, Generic, TypeVar
@@ -21,7 +20,6 @@ from typing import Callable, Type, Self, Generic, TypeVar
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.user import User
 
 TRoot = TypeVar('TRoot', bound=AbstractDataItem)
 
@@ -30,10 +28,8 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     _seq: int
     _when: datetime.datetime
     _params: list[str]
-    _emit_func: Callable[[str, dict[str, any], any], None]
-    _data: TRoot
     _settings: AbstractSettings
-    _user: User
+    _user_identity: str
     _carry: any
 
     # TODO -- Add strategy source, i.e. where it originates from
@@ -43,62 +39,57 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: TRoot,
                  settings: AbstractSettings,
                  carry: any = None):
         self._seq = seq
         self._when = when
-        self._user = user
+        self._user_identity = user_identity
         self._params = params
-        self._emit_func = emit
-        self._data = data
         self._settings = settings
         self._carry = carry
-
-    @staticmethod
-    def escape_parameter(value):
-        return value.replace('\\', '\\\\').replace('"', '\\"')
-
-    def __str__(self):
-        # Escape params
-        escaped = [AbstractStrategy.escape_parameter(p) for p in self._params]
-        if len(escaped) < 2:
-            escaped.append("")
-        if len(escaped) < 2:
-            escaped.append("")
-        params = '"' + '", "'.join(escaped) + '"'
-        return f'{self._seq}, {self._when}, {self._user.get_identity()}: {self.get_name()}({params})'
 
     def get_name(self) -> str:
         name = self.__class__.__name__
         return name[0:len(name) - 8]
 
+    def get_when(self) -> datetime.datetime:
+        return self._when
+
+    def get_user_identity(self) -> str:
+        return self._user_identity
+
+    def replace_user_identity(self, user_identity: str) -> None:
+        self._user_identity = user_identity
+
     def get_sequence(self) -> int:
         return self._seq
 
+    def encryptable(self) -> bool:
+        return True
+
     @abstractmethod
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: TRoot) -> (str, any):
         pass
 
     def get_params(self):
         return self._params
 
-    def execute_another(self, cls: Type[Self], params: list[str]) -> (str, any):
+    def execute_another(self,
+                        emit: Callable[[str, dict[str, any], any], None],
+                        data: TRoot,
+                        cls: Type[Self],
+                        params: list[str]) -> (str, any):
         strategy = cls(self._seq,
                        self._when,
-                       self._user,
+                       self._user_identity,
                        params,
-                       self._emit_func,
-                       self._data,
                        self._settings)
         params = {'strategy': strategy, 'auto': True}
-        self._emit(events.BeforeMessageProcessed, params)
-        res = strategy.execute()
-        self._emit(events.AfterMessageProcessed, params)
+        emit(events.BeforeMessageProcessed, params, self._carry)
+        res = strategy.execute(emit, data)
+        emit(events.AfterMessageProcessed, params, self._carry)
         return res
-
-    def _emit(self, name: str, params: dict[str, any]):
-        self._emit_func(name, params, self._carry)

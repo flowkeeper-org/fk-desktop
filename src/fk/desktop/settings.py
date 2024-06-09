@@ -14,18 +14,21 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
+import logging
 import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime
-from PySide6.QtGui import QFont, QKeySequence
+from PySide6.QtGui import QFont, QKeySequence, QIcon
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsDialog(QDialog):
@@ -37,7 +40,7 @@ class SettingsDialog(QDialog):
 
     def __init__(self,
                  data: AbstractSettings,
-                 buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None = None):
+                 buttons_mapping: dict[str, Callable[[dict[str, str]], bool]] | None = None):
         super().__init__()
         self._data = data
         self._buttons_mapping = buttons_mapping
@@ -98,8 +101,7 @@ class SettingsDialog(QDialog):
 
     def _on_value_changed(self, option_id, new_value):
         old_value = self._data.get(option_id)
-        # Uncomment to debug
-        # print(f"Changed {option_id} from {old_value} to {new_value}")
+        logger.debug(f"Changed {option_id} from {old_value} to {new_value}")
         # Enable / disable "save" buttons
         self._set_buttons_state(old_value != new_value)
         self._recompute_visibility(option_id, new_value)
@@ -115,8 +117,6 @@ class SettingsDialog(QDialog):
         for widget in self._widgets_visibility:
             is_visible = self._widgets_visibility[widget](computed)
             widget.setVisible(is_visible)
-            # Uncomment to debug
-            # print(f" - {widget.objectName()}: {is_visible}")
 
     def _set_buttons_state(self, is_enabled: bool):
         self._buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(is_enabled)
@@ -139,6 +139,46 @@ class SettingsDialog(QDialog):
         if dlg.exec_():
             selected: str = dlg.selectedFiles()[0]
             edit.setText(selected)
+
+    @staticmethod
+    def do_change_key(edit: QLineEdit) -> None:
+        warning_text = "WARNING: Flowkeeper.org requires end-to-end data encryption. This mechanism ensures \n" \
+                       "that nobody (including Flowkeeper developers) can have access to your online data, \n" \
+                       "which is transmitted and stored in encrypted form. To encrypt and decrypt your data \n" \
+                       "Flowkeeper uses a key, which is stored ONLY ON THIS COMPUTER. A default secure random \n" \
+                       "key is generated during Flowkeeper installation.\n\n" \
+                       \
+                       "If you lose this key, nobody in the world will be able to decrypt your existing data, \n" \
+                       "which will be lost forever! Although this key is stored in the settings, which should \n" \
+                       "survive Flowkeeper re-installation on this computer, we HIGHLY recommend you to store a \n" \
+                       "copy of it in a safe place, in case something happens with your disk or operating \n" \
+                       "system.\n\n" \
+                       \
+                       "Alternatively, you can also choose your own key and treat it like a password, just \n" \
+                       "note that you will NOT be able to restore it if you forget it.\n\n" \
+                       \
+                       "Finally, you will have to provide the same key in all your Flowkeeper apps, which \n" \
+                       "connect to this flowkeeper.org account."
+
+        old_key = edit.text()
+        (new_key, ok) = QInputDialog.getText(edit,
+                                             "End-to-end encryption key",
+                                             warning_text,
+                                             text=old_key)
+        if ok and old_key != new_key:
+            if QMessageBox().warning(edit,
+                                     "Confirmation",
+                                     "If you see existing data in this app -- you WILL lose access to it after "
+                                     "clicking 'Yes'! Are you sure?",
+                                     QMessageBox.StandardButton.Yes,
+                                     QMessageBox.StandardButton.Cancel) \
+                    == QMessageBox.StandardButton.Yes:
+                edit.setText(new_key)
+                QMessageBox().information(edit,
+                                          "Info",
+                                          "You still need to click Apply or Save. Also make sure that you use the "
+                                          "same encryption key across all your devices.",
+                                          QMessageBox.StandardButton.Ok)
 
     def _display_option(self,
                         parent: QWidget,
@@ -169,17 +209,19 @@ class SettingsDialog(QDialog):
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
             self._widgets_value[option_id] = ed3.text
             layout.addWidget(ed3)
-            sequence_edit = QPushButton(parent)
-            sequence_edit.setText('Browse...')
-            sequence_edit.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
-            layout.addWidget(sequence_edit)
+            browse_btn = QPushButton(parent)
+            browse_btn.setText('Browse...')
+            browse_btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
+            layout.addWidget(browse_btn)
             return [widget]
         elif option_type == 'button':
-            sequence_edit = QPushButton(parent)
-            sequence_edit.setText(option_display)
-            sequence_edit.clicked.connect(lambda: self._handle_button_click(option_id))
+            button = QPushButton(parent)
+            button.setText(option_display)
+            if len(option_options) > 0:
+                button.setIcon(QIcon(f':/icons/{option_options[0]}.png'))
+            button.clicked.connect(lambda: self._handle_button_click(option_id))
             self._widgets_value[option_id] = lambda: ""
-            return [sequence_edit]
+            return [button]
         elif option_type == 'int':
             ed4 = QSpinBox(parent)
             ed4.setMinimum(option_options[0])
@@ -229,31 +271,32 @@ class SettingsDialog(QDialog):
             # as those have been already initialized from the settings on startup
             for a in actions:
                 shortcuts[a] = Actions.ALL[a].shortcut().toString()
-            sequence_edit = QKeySequenceEdit(parent)
-            sequence_edit.setKeySequence(shortcuts[actions[0]])
+            seq_edit = QKeySequenceEdit(parent)
+            seq_edit.setKeySequence(shortcuts[actions[0]])
             reset_button = QPushButton(widget)
             reset_button.setText('Clear')
-            reset_button.clicked.connect(lambda: sequence_edit.clear())
+            reset_button.clicked.connect(lambda: seq_edit.clear())
 
             def on_shortcut_changed(k: QKeySequence):
                 shortcuts[actions[ed8.currentIndex()]] = k.toString()
                 self._on_value_changed(option_id, json.dumps(shortcuts))
 
-            sequence_edit.keySequenceChanged.connect(on_shortcut_changed)
+            seq_edit.keySequenceChanged.connect(on_shortcut_changed)
 
             ed8 = QComboBox(parent)
             ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
-            ed8.currentIndexChanged.connect(lambda v: sequence_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
+            ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
             self._widgets_value[option_id] = lambda: json.dumps(shortcuts)
 
             layout.addWidget(ed8)
 
-            hlayout = QHBoxLayout(widget)
+            hwidget = QWidget(widget)
+            hlayout = QHBoxLayout(hwidget)
             hlayout.setContentsMargins(0, 0, 0, 0)
-            hlayout.addWidget(sequence_edit)
+            hlayout.addWidget(seq_edit)
             hlayout.addWidget(reset_button)
 
-            layout.addLayout(hlayout)
+            layout.addWidget(hwidget)
             return [widget]
         elif option_type == 'duration':
             ed9 = QTimeEdit(parent)
@@ -270,6 +313,24 @@ class SettingsDialog(QDialog):
             ed9.setTime(QTime(hours, minutes, seconds, 0))
             self._widgets_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
             return [ed9]
+        elif option_type == 'key':
+            widget = QWidget(parent)
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(0, 0, 0, 0)
+            ed10 = QLineEdit(parent)
+            ed10.setText(option_value)
+            ed10.setEchoMode(QLineEdit.EchoMode.Password)
+            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
+            self._widgets_value[option_id] = ed10.text
+            ed10.setHidden(True)
+            self._widgets_value[option_id] = ed10.text
+            layout.addWidget(ed10)
+            key_view = QPushButton(parent)
+            key_view.setText('IMPORTANT - READ THIS')
+            key_view.setIcon(QIcon(':/icons/warning.png'))
+            key_view.clicked.connect(lambda: SettingsDialog.do_change_key(ed10))
+            layout.addWidget(key_view)
+            return [widget]
         else:
             return []
 
@@ -285,12 +346,12 @@ class SettingsDialog(QDialog):
         for name in self._widgets_value:
             values[name] = self._widgets_value[name]()
 
-        self._buttons_mapping[option_id](values)
+        if self._buttons_mapping[option_id](values):
+            self.close()
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
         res = QWidget(tabs)
         layout = QFormLayout(res)
-        res.setLayout(layout)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
             widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)

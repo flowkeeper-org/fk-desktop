@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
@@ -24,6 +25,8 @@ from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.workitem_tableview import WorkitemTableView
+
+logger = logging.getLogger(__name__)
 
 
 class WorkitemWidget(QWidget):
@@ -69,4 +72,4 @@ class WorkitemWidget(QWidget):
     def on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.show_toolbar' in new_values:
             show = new_values['Application.show_toolbar'] == 'True'
-            print(f'Show workitem toolbar: {show}')
+            logger.debug(f'Show workitem toolbar: {show}')

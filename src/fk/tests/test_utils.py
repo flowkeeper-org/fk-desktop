@@ -13,12 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.tenant import Tenant
 from fk.core.mock_settings import MockSettings
+from fk.core.tenant import Tenant
 from fk.core.user import User
 
 PREDEFINED_TIMESTAMP = [1632408308, 1666626369, 1700938030]
@@ -40,7 +39,6 @@ def predefined_uid(n: int) -> str:
 
 def noop_emit(event: str, params: dict[str, any], carry: any) -> None:
     pass
-    # print('Emit trace', event, params)
 
 
 def test_user(n: int) -> User:

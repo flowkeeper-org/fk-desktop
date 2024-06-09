@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPixmap, QMouseEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
@@ -65,7 +64,7 @@ class InfoOverlay(QFrame):
     def close(self):
         if self._timer is not None:
             self._timer.stop()
-        print('TODO: Save its state in settings')
+        # TODO: Save its state in settings
         super().close()
 
 

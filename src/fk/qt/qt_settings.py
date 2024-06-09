@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import keyring
 from PySide6 import QtCore
 from PySide6.QtGui import QFont
 
@@ -24,9 +24,11 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 
 class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
+    _app_name: str
 
     def __init__(self, app_name: str = 'desktop-client'):
         font = QFont()
+        self._app_name = app_name
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
@@ -44,14 +46,26 @@ class QtSettings(AbstractSettings):
             self._emit(events.BeforeSettingsChanged, params)
             for name in old_values.keys():  # This is not a typo, we've just filtered this list
                 # to only contain settings which actually changed.
-                self._settings.setValue(name, values[name])
+                if name.endswith('!'):
+                    keyring.set_password(self._app_name, name, values[name])
+                else:
+                    self._settings.setValue(name, values[name])
             self._emit(events.AfterSettingsChanged, params)
 
     def get(self, name: str) -> str:
-        return str(self._settings.value(name, self._defaults[name]))
+        if name.endswith('!'):
+            return keyring.get_password(self._app_name, name)
+        else:
+            return str(self._settings.value(name, self._defaults[name]))
 
     def location(self) -> str:
         return self._settings.fileName()
 
     def clear(self) -> None:
         self._settings.clear()
+        for category in self._definitions.values():
+            for setting in category:
+                key = setting[0]
+                if key.endswith('!'):
+                    if self.get(key) is not None:
+                        keyring.delete_password(self._app_name, key)

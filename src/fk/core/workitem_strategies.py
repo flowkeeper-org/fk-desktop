@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
 from typing import Callable
 
@@ -22,13 +21,14 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
+from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
 @strategy
-class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
+class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
@@ -42,19 +42,19 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
 
-    def execute(self) -> (str, any):
-        user = self._data[self._user.get_identity()]
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
@@ -62,11 +62,11 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         if self._workitem_uid in backlog:
             raise Exception(f'Workitem "{self._workitem_uid}" already exists')
 
-        self._emit(events.BeforeWorkitemCreate, {
+        emit(events.BeforeWorkitemCreate, {
             'backlog_uid': self._backlog_uid,
             'workitem_uid': self._workitem_uid,
             'workitem_name': self._workitem_name,
-        })
+        }, self._carry)
         workitem = Workitem(
             self._workitem_name,
             self._workitem_uid,
@@ -75,24 +75,27 @@ class CreateWorkitemStrategy(AbstractStrategy['Tenant']):
         )
         backlog[self._workitem_uid] = workitem
         workitem.item_updated(self._when)   # This will also update the Backlog
-        self._emit(events.AfterWorkitemCreate, {
+        emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
-            'carry': None,
-        })
+        }, self._carry)
         return None, None
 
 
-def void_running_pomodoro(strategy: AbstractStrategy, workitem: Workitem) -> None:
+def void_running_pomodoro(strategy_: AbstractStrategy,
+                          emit: Callable[[str, dict[str, any], any], None],
+                          data: Tenant,
+                          workitem: Workitem) -> None:
     for pomodoro in workitem.values():
         if pomodoro.is_running():
-            strategy.execute_another(VoidPomodoroStrategy, [
-                workitem.get_uid(),
-            ])
+            strategy_.execute_another(emit,
+                                      data,
+                                      VoidPomodoroStrategy,
+                                      [workitem.get_uid()])
 
 
 # DeleteWorkitem("123-456-789")
 @strategy
-class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
+class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
     def get_workitem_uid(self) -> str:
@@ -101,18 +104,18 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -124,17 +127,17 @@ class DeleteWorkitemStrategy(AbstractStrategy['Tenant']):
         params = {
             'workitem': workitem
         }
-        self._emit(events.BeforeWorkitemDelete, params)
-        void_running_pomodoro(self, workitem)
+        emit(events.BeforeWorkitemDelete, params, self._carry)
+        void_running_pomodoro(self, emit, data, workitem)
         workitem.item_updated(self._when)   # Update Backlog
         del workitem.get_parent()[self._workitem_uid]
-        self._emit(events.AfterWorkitemDelete, params)
+        emit(events.AfterWorkitemDelete, params, self._carry)
         return None, None
 
 
 # RenameWorkitem("123-456-789", "Wake up")
 @strategy
-class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
+class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _new_workitem_name: str
 
@@ -144,19 +147,19 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -177,15 +180,15 @@ class RenameWorkitemStrategy(AbstractStrategy['Tenant']):
             'old_name': workitem.get_name(),
             'new_name': self._new_workitem_name,
         }
-        self._emit(events.BeforeWorkitemRename, params)
+        emit(events.BeforeWorkitemRename, params, self._carry)
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
-        self._emit(events.AfterWorkitemRename, params)
+        emit(events.AfterWorkitemRename, params, self._carry)
 
 
 # CompleteWorkitem("123-456-789", "canceled")
 @strategy
-class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
+class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _target_state: str
 
@@ -195,19 +198,19 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
-                 user: User,
+                 user_identity: str,
                  params: list[str],
-                 emit: Callable[[str, dict[str, any], any], None],
-                 data: 'Tenant',
                  settings: AbstractSettings,
                  carry: any = None):
-        super().__init__(seq, when, user, params, emit, data, settings, carry)
+        super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
 
-    def execute(self) -> (str, any):
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
         workitem: Workitem | None = None
-        user = self._data[self._user.get_identity()]
+        user: User = data[self._user_identity]
         for backlog in user.values():
             if self._workitem_uid in backlog:
                 workitem = backlog[self._workitem_uid]
@@ -223,13 +226,13 @@ class CompleteWorkitemStrategy(AbstractStrategy['Tenant']):
             'workitem': workitem,
             'target_state': self._target_state,
         }
-        self._emit(events.BeforeWorkitemComplete, params)
+        emit(events.BeforeWorkitemComplete, params, self._carry)
 
         # First void pomodoros if needed
-        void_running_pomodoro(self, workitem)
+        void_running_pomodoro(self, emit, data, workitem)
 
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
-        self._emit(events.AfterWorkitemComplete, params)
+        emit(events.AfterWorkitemComplete, params, self._carry)
         return None, None

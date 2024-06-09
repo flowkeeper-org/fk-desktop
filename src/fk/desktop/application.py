@@ -13,28 +13,36 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
+import json
+import logging
+import platform
 import random
 import sys
 import traceback
 import urllib
 import webbrowser
+from pathlib import Path
 
+from PySide6 import QtCore
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontMetrics, QGradient
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
 from fk.core import events
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import EventSourceFactory
+from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.tenant import Tenant
+from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -51,12 +59,15 @@ from fk.qt.threaded_event_source import ThreadedEventSource
 from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
+logger = logging.getLogger(__name__)
+
 AfterFontsChanged = "AfterFontsChanged"
 NewReleaseAvailable = "NewReleaseAvailable"
 
 
 class Application(QApplication, AbstractEventEmitter):
     _settings: AbstractSettings
+    _cryptograph: AbstractCryptograph
     _font_main: QFont
     _font_header: QFont
     _row_height: int
@@ -69,10 +80,17 @@ class Application(QApplication, AbstractEventEmitter):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
-        self._register_source_producers()
+        # It's important to import Common theme very early, because we need it to get app version, etc.
+        # noinspection PyUnresolvedReferences
+        import fk.desktop.resources
 
+        if '--version' in self.arguments():
+            # This might be useful on Windows or macOS, which store their settings in some obscure locations
+            print(f'Flowkeeper v{get_current_version()}')
+            sys.exit(0)
+
+        self._register_source_producers()
         self._heartbeat = None
-        sys.excepthook = self.on_exception
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
@@ -80,21 +98,42 @@ class Application(QApplication, AbstractEventEmitter):
         if self.is_e2e_mode():
             self._settings = QtSettings('desktop-client-e2e')
             self._settings.reset_to_defaults()
+            self._initialize_logger()
+            self._cryptograph = FernetCryptograph(self._settings)
             from fk.e2e.backlog_e2e import BacklogE2eTest
             test = BacklogE2eTest(self)
+            sys.excepthook = test.on_exception
             test.start()
         else:
-            self._settings = QtSettings()
+            sys.excepthook = self.on_exception
+            if self.is_testing_mode():
+                self._settings = QtSettings('desktop-client-testing')
+                self._settings.reset_to_defaults()
+                self._settings.set({
+                    'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
+                    'Application.show_tutorial': 'False',
+                    'Application.check_updates': 'False',
+                    'Pomodoro.default_work_duration': '5',
+                    'Pomodoro.default_rest_duration': '5',
+                    'Application.play_alarm_sound': 'False',
+                    'Application.play_rest_sound': 'False',
+                    'Application.play_tick_sound': 'False',
+                    'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
+                    'Logger.level': 'DEBUG',
+                    'Source.encryption_key!': 'test key',
+                })
+            else:
+                self._settings = QtSettings()
+            self._initialize_logger()
+            self._cryptograph = FernetCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close
         quit_on_close = (self._settings.get('Application.quit_on_close') == 'True')
         self.setQuitOnLastWindowClosed(quit_on_close)
 
-        self.set_theme(self._settings.get('Application.theme'))
-
         # Fonts, styles, etc.
-        self._initialize_fonts()
+        self.refresh_theme_and_fonts()
         self._row_height = self._auto_resize()
 
         # Version checks
@@ -108,7 +147,7 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.show_tutorial') == 'True':
             self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
-        self._source_holder = EventSourceHolder(self._settings)
+        self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
         # Heartbeat
@@ -116,51 +155,83 @@ class Application(QApplication, AbstractEventEmitter):
         self._heartbeat.on(events.WentOffline, self._on_went_offline)
         self._heartbeat.on(events.WentOnline, self._on_went_online)
 
+    def _initialize_logger(self):
+        log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        root = logging.getLogger()
+
+        # 0. Set the overall log level that would apply to ALL handlers
+        root.setLevel(self._settings.get('Logger.level'))
+
+        # 1. Remove existing handlers, if any
+        for existing_handle in root.handlers:
+            existing_handle.close()
+        root.handlers.clear()
+
+        # 2. Add FILE handler for whatever the user configured
+        file_handler = logging.FileHandler(filename=self._settings.get('Logger.filename'))
+        file_handler.setFormatter(log_format)
+        file_handler.setLevel(self._settings.get('Logger.level'))
+        root.handlers.append(file_handler)
+
+        # 3. Add STDIO handler for warnings and errors
+        stdio_handler = logging.StreamHandler(sys.stdout)
+        stdio_handler.setFormatter(log_format)
+        stdio_handler.setLevel(logging.WARNING)
+        root.handlers.append(stdio_handler)
+
+        logger.debug(f'Flowkeeper: {get_current_version()}')
+        logger.debug(f'Qt: {QtCore.__version__}')
+        logger.debug(f'Python: {sys.version}')
+        logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
+        logger.debug(f'Kernel: {platform.platform()}')
+
     def initialize_source(self):
         self._source_holder.request_new_source()
 
     def _register_source_producers(self):
-        def local_source_producer(settings, root):
-            inner_source = FileEventSource(settings, root, QtFilesystemWatcher())
+        def local_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            inner_source = FileEventSource[Tenant](settings, cryptograph, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
-        EventSourceFactory.get_instance().register_producer('local', local_source_producer)
+        get_event_source_factory().register_producer('local', local_source_producer)
 
-        def ephemeral_source_producer(settings, root):
-            inner_source = EphemeralEventSource(settings, root)
+        def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
             return ThreadedEventSource(inner_source, self)
 
-        EventSourceFactory.get_instance().register_producer('ephemeral', ephemeral_source_producer)
+        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
-        def websocket_source_producer(settings, root):
-            return WebsocketEventSource(settings, self, root)
+        def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+            return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
 
-        EventSourceFactory.get_instance().register_producer('websocket', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.org', websocket_source_producer)
-        EventSourceFactory.get_instance().register_producer('flowkeeper.pro', websocket_source_producer)
+        get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
-            print(f'Application: Received AfterSourceChanged for {source}')
-            print(f'Application: Starting the event source')
+            logger.debug(f'Application: Received AfterSourceChanged for {source}')
+            logger.debug(f'Application: Starting the event source')
             source.start()
-            print(f'Application: Event source started successfully')
+            logger.debug(f'Application: Event source started successfully')
         except Exception as e:
-            print(f'Application: ERROR {e}')
+            logger.error(f'Application: Error on source change', exc_info=e)
             raise e
 
     def is_e2e_mode(self):
-        print('E2e mode:', 'e2e' in self.arguments())
-        return 'e2e' in self.arguments()
+        return '--e2e' in self.arguments()
+
+    def is_testing_mode(self):
+        return '--testing' in self.arguments()
 
     def _on_went_offline(self, event, after: int, last_received: datetime.datetime) -> None:
         # TODO -- lock the UI
-        print(f'WARNING - We detected that the client went offline after {after}ms')
-        print(f'          Last time we heard from the server was {last_received}')
+        logger.warning(f'WARNING - We detected that the client went offline after {after}ms. Last '
+                       f'time we heard from the server was {last_received}')
 
     def _on_went_online(self, event, ping: int) -> None:
         # TODO -- unlock the UI
-        print(f'We are (back) online with the roundtrip delay of {ping}ms')
+        logger.info(f'We are (back) online with the roundtrip delay of {ping}ms')
 
     def get_settings(self):
         return self._settings
@@ -168,43 +239,68 @@ class Application(QApplication, AbstractEventEmitter):
     def get_source_holder(self):
         return self._source_holder
 
+    def get_theme_variables(self, theme: str):
+        var_file = QFile(f":/style-{theme}.json")
+        var_file.open(QFile.OpenModeFlag.ReadOnly)
+        variables = json.loads(var_file.readAll().toStdString())
+        var_file.close()
+        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size')
+        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
+        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size')
+        return variables
+
+    def get_icon_theme(self):
+        theme = self._settings.get('Application.theme')
+        return self.get_theme_variables(theme)['ICON_THEME']
+
     # noinspection PyUnresolvedReferences
-    def set_theme(self, theme: str):
-        # Apply CSS
-        import fk.desktop.theme_common
-        if theme == 'light':
-            import fk.desktop.theme_light
-        elif theme == 'dark':
-            import fk.desktop.theme_dark
-        elif theme == 'mixed':
-            import fk.desktop.theme_mixed
+    def refresh_theme_and_fonts(self):
+        logger.debug('Refreshing theme and fonts')
+        theme = self._settings.get('Application.theme')
 
-        # TODO: Can't change this on the fly
-        f = QFile(":/style.qss")
-        f.open(QFile.OpenModeFlag.ReadOnly)
-        self.setStyleSheet(f.readAll().toStdString())
-        f.close()
+        template_file = QFile(":/style-template.qss")
+        template_file.open(QFile.OpenModeFlag.ReadOnly)
+        qss = template_file.readAll().toStdString()
+        template_file.close()
 
-        print('Stylesheet loaded')
+        variables = self.get_theme_variables(theme)
+
+        for name in variables:
+            value = variables[name]
+            qss = qss.replace(f'${name}', value)
+
+        QIcon.setThemeName(variables['ICON_THEME'])
+
+        self.setStyleSheet(qss)
+        logger.debug('Stylesheet loaded')
+
+        # In Qt 6.7.x it is important to do this AFTER we load the stylesheet, otherwise the fonts
+        # are not loaded correctly at startup
+        self._initialize_fonts()
 
     def _initialize_fonts(self) -> (QFont, QFont):
         self._font_header = QFont(self._settings.get('Application.font_header_family'),
                                   int(self._settings.get('Application.font_header_size')))
         if self._font_header is None:
             self._font_header = QFont()
-            self._font_header.setPointSize(int(self._font_header.pointSize() * 24.0 / 9))
+            new_size = int(self._font_header.pointSize() * 24.0 / 9)
+            self._font_header.setPointSize(new_size)
     
         self._font_main = QFont(self._settings.get('Application.font_main_family'),
                                 int(self._settings.get('Application.font_main_size')))
-        if self._font_main is None:
-            self._font_main = QFont()
 
         self.setFont(self._font_main)
+        logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
+        logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
+
         self._emit(AfterFontsChanged, {
             'main_font': self._font_main,
             'header_font': self._font_header,
             'application': self
         })
+
+        self._auto_resize()
 
     def _auto_resize(self) -> int:
         h: int = QFontMetrics(self._font_main).height() + 8
@@ -217,17 +313,9 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set({'Application.table_row_height': str(h)})
         return h
 
-    def restart_warning(self) -> None:
-        if QMessageBox().warning(self.activeWindow(),
-                                 "Restart required",
-                                 f"To apply new settings Flowkeeper needs a restart. "
-                                 f"Please run it again after pressing OK. We apologize for this inconvenience.",
-                                 QMessageBox.StandardButton.Ok) == QMessageBox.StandardButton.Ok:
-            self.exit(0)
-
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
-        print("Exception", to_log)
+        logger.error(f"Global exception handler. Full log: {to_log}")
         if (QMessageBox().critical(self.activeWindow(),
                                    "Unexpected error",
                                    f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
@@ -251,38 +339,53 @@ class Application(QApplication, AbstractEventEmitter):
         return self._row_height
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        # print(f'Setting {name} changed from {old_value} to {new_value}')
-        show_restart_warning = False
+        logger.debug(f'Settings changed from {old_values} to {new_values}')
+
+        request_ui_refresh = False
+        request_new_source = False
+        request_logger_change = False
+
         for name in new_values.keys():
-            if name == 'Source.type' or name.startswith('WebsocketEventSource.') or name.startswith('FileEventSource.'):
-                self._source_holder.request_new_source()
+            if name == 'Source.type' or \
+                    name.startswith('WebsocketEventSource.') or \
+                    name.startswith('FileEventSource.') or \
+                    name == 'Source.encryption_enabled' or \
+                    name == 'Source.encryption_key!':
+                request_new_source = True
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
-            elif 'Application.font_' in name:
-                self._initialize_fonts()
-            elif name == 'Application.theme':
-                show_restart_warning = True
-                # app.set_theme(new_value)
+            elif name == 'Application.theme' or 'Application.font_' in name:
+                request_ui_refresh = True
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
                     self._version_timer.schedule(1000, self.check_version, None, True)
+            elif name.startswith('Logger.'):
+                request_logger_change = True
 
-        if show_restart_warning:
-            self.restart_warning()
+        if request_ui_refresh:
+            logger.debug(f'Refreshing theme and fonts twice because of a setting change')
+            self.refresh_theme_and_fonts()
+            # With Qt 6.7.x on Windows we need to do it twice, otherwise the
+            # fonts apply only the next time we change the setting.
+            self.refresh_theme_and_fonts()
 
-        # TODO: Subscribe to sound settings
-        # TODO: Subscribe the sources to the settings they use
-        # TODO: Reload the app when the source changes
-        # TODO: Recreate the source
+        if request_new_source:
+            logger.debug(f'Requesting new source because of a setting change')
+            self._source_holder.request_new_source()
+
+        if request_logger_change:
+            logger.debug(f'Reinitializing the logger because of a setting change')
+            self._initialize_logger()
 
     def show_settings_dialog(self):
         SettingsDialog(self._settings, {
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
             'WebsocketEventSource.authenticate': self.sign_in,
+            'WebsocketEventSource.delete_account': self.delete_account,
         }).show()
 
-    def repair_file_event_source(self, _):
+    def repair_file_event_source(self, _) -> bool:
         if QMessageBox().warning(self.activeWindow(),
                                  "Confirmation",
                                  f"Are you sure you want to repair the data source? "
@@ -306,34 +409,54 @@ class Application(QApplication, AbstractEventEmitter):
                                           "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
                                           "Flowkeeper restart is required to reload the changes.",
                                           "\n".join(log))
+            return False
 
-    def generate_gradient(self, _):
+    def delete_account(self, _):
+        source = self._source_holder.get_source()
+        if not source.can_connect() or not self.get_heartbeat().is_online():
+            QMessageBox().warning(self.activeWindow(),
+                                  'No connection',
+                                  'To perform this operation you must be logged in and online.',
+                                  QMessageBox.StandardButton.Ok)
+            return False
+        (test, ok) = QInputDialog.getText(self.activeWindow(),
+                                          'Confirmation',
+                                          'Are you sure you want to delete your account? This will erase all\n'
+                                          'traces of your user on this server. This operation cannot be undone.\n'
+                                          'Export your data before doing it.\n\n'
+                                          'Type "delete" below to confirm.',
+                                          text='')
+        if ok:
+            if test.lower() == 'delete':
+                source.execute(DeleteAccountStrategy, [''])
+                # Avoid re-creating this account immediately
+                source.set_config_parameters({'WebsocketEventSource.consent': 'False'})
+                return True # Close Settings dialog
+            else:
+                QMessageBox().information(self.activeWindow(),
+                                          'Canceled',
+                                          'You should\'ve typed "delete", canceling account deletion.',
+                                          QMessageBox.StandardButton.Ok)
+        return False
+
+    def generate_gradient(self, _) -> bool:
         preset_names = [preset.name for preset in QGradient.Preset]
         if 'NumPresets' in preset_names:
             preset_names.remove('NumPresets')
         chosen = random.choice(preset_names)
         self._settings.set({'Application.eyecandy_gradient': chosen})
+        return False
 
-    def sign_in(self, _):
-        def check_server(auth: AuthenticationRecord):
-            pass
-
+    def sign_in(self, _) -> bool:
         def save(auth: AuthenticationRecord):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
-                'WebsocketEventSource.refresh_token': auth.refresh_token,
+                'WebsocketEventSource.consent': 'False',
+                'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
-
-        if QMessageBox().warning(self.activeWindow(),
-                                 "Known bug",
-                                 f"After you login the app may crash. It will remember your credentials, so you just "
-                                 f"need to restart it. This is due to a bug in Qt6 OAuth module, for which we are "
-                                 f"implementing a workaround. In the meantime we apologize for the inconvenience.",
-                                 QMessageBox.StandardButton.Ok,
-                                 QMessageBox.StandardButton.Cancel
-                                 ) == QMessageBox.StandardButton.Ok:
-            authenticate(self, save)
+        authenticate(self, save)
+        return False
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -349,7 +472,7 @@ class Application(QApplication, AbstractEventEmitter):
         Application.quit()
 
     def show_import_wizard(self):
-        ImportWizard(self._source_holder.get_source(),
+        ImportWizard(self._source_holder,
                      self.activeWindow()).show()
 
     def show_export_wizard(self):
@@ -376,10 +499,10 @@ class Application(QApplication, AbstractEventEmitter):
                         'changelog': changelog,
                     })
                 else:
-                    print(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+                    logger.debug(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
             else:
-                print("Warning: Couldn't get the latest release info from GitHub")
-        print('Will check GitHub releases for the latest version')
+                logger.warning("Couldn't get the latest release info from GitHub")
+        logger.debug('Will check GitHub releases for the latest version')
         get_latest_version(self, on_version)
 
     def show_tutorial(self, event: str = None) -> None:
@@ -389,7 +512,7 @@ class Application(QApplication, AbstractEventEmitter):
         ignored = self._settings.get('Application.ignored_updates').split(',')
         latest_str = str(latest)
         if latest_str in ignored:
-            print(f'An updated version {latest_str} is available, but the user chose to ignore it')
+            logger.debug(f'An updated version {latest_str} is available, but the user chose to ignore it')
             return
         msg = QMessageBox(QMessageBox.Icon.Information,
                           "An update is available",

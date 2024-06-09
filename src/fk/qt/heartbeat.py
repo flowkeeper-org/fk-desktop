@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -21,6 +22,8 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.timer import AbstractTimer
 from fk.qt.qt_timer import QtTimer
+
+logger = logging.getLogger(__name__)
 
 
 class Heartbeat(AbstractEventEmitter):
@@ -79,15 +82,17 @@ class Heartbeat(AbstractEventEmitter):
                     'last_received': self._last_received_time,
                 })
         self._last_sent_uid = self._source_holder.get_source().send_ping()
-        # print(f' -> Ping {self._last_sent_uid}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f' -> Ping {self._last_sent_uid}')
         self._last_sent_time = now
 
-    def _on_pong(self, event, uid) -> None:
+    def _on_pong(self, event, uid, carry) -> None:
         now = datetime.datetime.now(datetime.timezone.utc)
         if self._last_sent_uid == uid:
             diff_ms = (now - self._last_sent_time).total_seconds() * 1000
             self._last_ping_ms = diff_ms
-            # print(f' <- Pong {uid} with {diff_ms}ms delay')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f' <- Pong {uid} with {diff_ms}ms delay')
             if not self.is_online():
                 if diff_ms <= self._threshold_ms:
                     self._state = 'online'
@@ -95,7 +100,7 @@ class Heartbeat(AbstractEventEmitter):
                         'ping': diff_ms,
                     })
         else:
-            print(f'Warning - received unexpected pong {uid}')
+            logger.warning(f'Received unexpected pong {uid}')
         self._last_received_uid = uid
         self._last_received_time = now
 

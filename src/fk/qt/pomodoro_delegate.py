@@ -13,28 +13,28 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
     _svg_renderer: dict[str, QtSvg.QSvgRenderer]
+    _theme: str
 
-    @staticmethod
-    def _get_renderer(name):
-        return QtSvg.QSvgRenderer(f':/icons/pomodoro-{name}.svg')
+    def _get_renderer(self, name):
+        return QtSvg.QSvgRenderer(f':/icons/{self._theme}/24x24/pomodoro-{name}.svg')
 
-    def __init__(self, parent: QtCore.QObject = None):
+    def __init__(self, parent: QtCore.QObject = None, theme: str = 'mixed'):
         QtWidgets.QItemDelegate.__init__(self, parent)
+        self._theme = theme
         self._svg_renderer = {
-            '[x]': PomodoroDelegate._get_renderer('[x]'),
-            '[ ]': PomodoroDelegate._get_renderer("[ ]"),
-            '[v]': PomodoroDelegate._get_renderer("[v]"),
-            '[#]': PomodoroDelegate._get_renderer("[#]"),
-            '(x)': PomodoroDelegate._get_renderer("(x)"),
-            '( )': PomodoroDelegate._get_renderer("( )"),
-            '(v)': PomodoroDelegate._get_renderer("(v)"),
-            '(#)': PomodoroDelegate._get_renderer("(#)"),
+            '[x]': self._get_renderer('[x]'),
+            '[ ]': self._get_renderer("[ ]"),
+            '[v]': self._get_renderer("[v]"),
+            '[#]': self._get_renderer("[#]"),
+            '(x)': self._get_renderer("(x)"),
+            '( )': self._get_renderer("( )"),
+            '(v)': self._get_renderer("(v)"),
+            '(#)': self._get_renderer("(#)"),
         }
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:

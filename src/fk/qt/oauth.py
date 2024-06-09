@@ -15,12 +15,15 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import base64
 import json
+import logging
 from typing import Callable
 
 from PySide6.QtCore import QUrl, QObject
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager
 from PySide6.QtNetworkAuth import QAbstractOAuth, QOAuth2AuthorizationCodeFlow, QOAuthHttpServerReplyHandler
+
+logger = logging.getLogger(__name__)
 
 client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
 local_port = 64166
@@ -29,6 +32,7 @@ token_url = 'https://app.flowkeeper.org/token'
 
 MGR: QNetworkAccessManager = None
 HANDLER: QOAuthHttpServerReplyHandler = None
+
 
 class AuthenticationRecord:
     type: str
@@ -58,12 +62,12 @@ def _fix_parameters(stage, parameters):
 
 
 def authenticate(parent: QObject, callback: Callable[[AuthenticationRecord], None]) -> None:
-    print(f'Authenticating for a refresh token')
+    logger.debug(f'Authenticating for a refresh token')
     return _perform_flow(parent, callback, None)
 
 
 def get_id_token(parent: QObject, callback: Callable[[AuthenticationRecord], None], refresh_token: str) -> None:
-    print(f'Getting ID token for refresh token {refresh_token}')
+    logger.debug(f'Getting ID token for refresh token {refresh_token}')
     _perform_flow(parent, callback, refresh_token)
 
 
@@ -85,26 +89,26 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
     flow.granted.connect(lambda: _granted(flow, callback))
     flow.error.connect(lambda err: _error(err, flow, callback))
     if refresh_token is not None:
-        print('Refreshing access token')
+        logger.debug('Refreshing access token')
         flow.refreshAccessToken()
     else:
-        print('Requesting access grant')
+        logger.debug('Requesting access grant')
         flow.grant()
 
 
 def _extract_email(id_token: str) -> str:
     b = bytes(id_token.split('.')[1], 'iso8859-1')
     t = json.loads(base64.decodebytes(b + b'===='))
-    print(f'Extracted JWT info: {json.dumps(t)}')
+    logger.debug(f'Extracted JWT info: {json.dumps(t)}')
     return t['email']
 
 
 def _error(err, flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[AuthenticationRecord], None]):
-    print('Error in OAuth2 Authorization Flow', err)
+    logger.error('Error in OAuth2 Authorization Flow', exc_info=err)
 
 
 def _granted(flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[AuthenticationRecord], None]):
-    print('Access granted')
+    logger.debug('Access granted')
     id_token = flow.extraTokens().get('id_token', None)
     email = _extract_email(id_token)
     auth = AuthenticationRecord()
@@ -113,6 +117,5 @@ def _granted(flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[Authenticat
     auth.access_token = flow.token()
     auth.id_token = id_token
     auth.refresh_token = flow.refreshToken()
-    print('OAuth access granted / refreshed')
-    print(auth)
+    logger.debug(f'OAuth access granted / refreshed: {auth}')
     callback(auth)

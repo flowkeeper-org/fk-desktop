@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 
 from PySide6.QtCore import QObject
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
@@ -23,6 +24,8 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
+
+logger = logging.getLogger(__name__)
 
 
 class AudioPlayer(QObject):
@@ -67,7 +70,7 @@ class AudioPlayer(QObject):
                                  Q.VolumeScale.LogarithmicVolumeScale,
                                  Q.VolumeScale.LinearVolumeScale)
         self._audio_output.setVolume(volume)
-        print(f'Volume is set to {int(volume * 100)}%')
+        logger.debug(f'Volume is set to {int(volume * 100)}%')
 
     def _play_audio(self, event: str = None, **kwargs) -> None:
         # Alarm bell

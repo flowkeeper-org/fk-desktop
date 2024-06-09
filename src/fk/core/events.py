@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Emitted events
 BeforeUserCreate = "BeforeUserCreate"
 AfterUserCreate = "AfterUserCreate"
 BeforeUserDelete = "BeforeUserDelete"
@@ -63,3 +62,10 @@ AfterMessageProcessed = "AfterMessageProcessed"
 PongReceived = "PongReceived"
 WentOnline = "WentOnline"
 WentOffline = "WentOffline"
+
+BeforeTenantRename = "BeforeTenantRename"
+AfterTenantRename = "AfterTenantRename"
+BeforeTenantDelete = "BeforeTenantDelete"
+AfterTenantDelete = "AfterTenantDelete"
+BeforeTenantCreate = "BeforeTenantCreate"
+AfterTenantCreate = "AfterTenantCreate"

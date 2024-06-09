@@ -1,0 +1,115 @@
+QWidget {
+    font-family: $FONT_MAIN_FAMILY;
+    font-size: $FONT_MAIN_SIZE;
+}
+
+QMainWindow {
+    background-color: $FOCUS_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+}
+
+#headerText {
+    color: $FOCUS_TEXT_COLOR;
+    font-family: $FONT_HEADER_FAMILY;
+    font-size: $FONT_HEADER_SIZE;
+}
+
+#headerSubtext {
+    color: $FOCUS_TEXT_COLOR;
+}
+
+#statusBar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+}
+
+#footerLabel {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 4px;
+}
+
+#search {
+    padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background: no-repeat left url(:/icons/$ICON_THEME/24x24/tool-search.svg);
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#left_toolbar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+    border: none;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+QTableView, #backlogs_widget, #workitems_widget {
+    color: $TABLE_TEXT_COLOR;
+    border: none;
+    padding: 10px;
+}
+
+QTableView::item:selected {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
+}
+
+#users_table {
+    border-top: 1px solid $BORDER_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+#backlogs_table, #users_table, #backlogs_widget {
+    background-color: $SECONDARY_BG_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+#workitems_widget {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#workitems_table {
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 10px 10px 10px 8px;
+}
+
+QToolButton {
+    background: none;
+    border-radius: 5px;
+}
+
+QToolButton:checked {
+    background: $TOOLBAR_CHECKED_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+}
+
+QScrollBar {
+    height: 0px;
+    width: 0px;
+}
+
+QSplitter::handle {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+InfoOverlay {
+    background-color: $PRIMARY_BG_COLOR;
+    border: 1px solid $BORDER_COLOR;
+}
+
+InfoOverlay #overlay_text {
+    color: $TABLE_TEXT_COLOR;
+}
+
+#timer {
+    qproperty-fg_color: $FOCUS_TEXT_COLOR;
+    qproperty-bg_color: $FOCUS_BG_COLOR;
+}
+
+#image1, #image2, #image3, #image4, #image5, #pages, #title1, #title2, #title3, #title4, #title5, #tutorial_window {
+    background-color: "#f7f8fa";
+    color: "#000000";
+}

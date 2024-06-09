@@ -13,14 +13,13 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import datetime
 from typing import Iterable, Generic, TypeVar
 
 from fk.core.abstract_data_item import AbstractDataItem
 
-TParent = TypeVar('TParent', bound=AbstractDataItem)
 TChild = TypeVar('TChild', bound=AbstractDataItem)
+TParent = TypeVar('TParent', bound=AbstractDataItem)
 
 
 class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent]):

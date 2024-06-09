@@ -13,10 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 
 import datetime
+import logging
 
 from fk.core.abstract_data_item import AbstractDataItem
+
+logger = logging.getLogger(__name__)
 
 
 class Pomodoro(AbstractDataItem['Workitem']):
@@ -79,6 +83,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
         if (target_state == 'finished' and self.is_resting()) or target_state == 'canceled':
             self._state = target_state
             self._date_completed = when
+            self._last_modified_date = when
         elif target_state == 'finished' and self.is_working():
             # This is a rare corner case, which we may encounter in the field. The client went down while
             # the pomodoro was in work, and came back up when it was in rest. The timer then transitioned
@@ -86,20 +91,23 @@ class Pomodoro(AbstractDataItem['Workitem']):
             # We can work around this situation reliably if the Finish happened "after" the work + rest
             # should've finished (take into account some little margin for error, just a few seconds).
             if when > self.planned_end_of_rest() - datetime.timedelta(seconds=5):
-                print("Warning - skipped rest for a pomodoro, but still authorized its completion "
-                      "(transition happened when the client was offline)")
+                logger.debug(f"Warning - skipped rest for a pomodoro on {self.get_parent().get_name()}, but still "
+                             "authorized its completion (transition happened when the client was offline)")
                 self._state = target_state
                 self._date_completed = when
+                self._last_modified_date = when
         else:
             raise Exception(f'Cannot seal pomodoro from {self._state} to {target_state}')
 
     def start_work(self, when: datetime.datetime) -> None:
         self._state = 'work'
         self._date_work_started = when
+        self._last_modified_date = when
 
     def start_rest(self, when: datetime.datetime) -> None:
         self._state = 'rest'
         self._date_rest_started = when
+        self._last_modified_date = when
 
     def is_running(self) -> bool:
         return self._state == 'work' or self._state == 'rest'
@@ -119,10 +127,10 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def is_canceled(self) -> bool:
         return self._state == 'canceled'
 
-    def get_work_duration(self) -> int:
+    def get_work_duration(self) -> float:
         return self._work_duration
 
-    def get_rest_duration(self) -> int:
+    def get_rest_duration(self) -> float:
         return self._rest_duration
 
     def total_remaining_time(self) -> float:
@@ -153,7 +161,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
         else:
             return f"{round(m)} minutes"
 
-    def planned_time_in_current_state(self) -> int:
+    def planned_time_in_current_state(self) -> float:
         # Planned time in the current state in seconds. Will be 0 if this pomodoro is
         # sealed or hasn't started yet.
         if self.is_resting():
@@ -169,7 +177,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def planned_end_of_rest(self) -> datetime.datetime:
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
 
-    def total_planned_time(self) -> int:
+    def total_planned_time(self) -> float:
         # Total planned time in seconds. Can be None, if this pomodoro is sealed or hasn't started yet.
         planned_in_current = self.planned_time_in_current_state()
         if self.is_working():

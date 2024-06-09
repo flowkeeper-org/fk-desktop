@@ -13,75 +13,24 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-import datetime
+import logging
 import re
-from typing import Callable, Type, TypeVar
+from typing import Type, TypeVar
 
-from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.user import User
 
-REGEX = re.compile(r'([1-9][0-9]*)\s*,\s*'
-                   r'([0-9: .\-+]+)\s*,\s*'
-                   r'([\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4})\s*:\s*'
-                   r'([a-zA-Z]+)\s*\(\s*'
-                   r'"((?:[^"\\]|\\"|\\\\)*)?"\s*(?:,\s*'
-                   r'"((?:[^"\\]|\\"|\\\\)*)")?\s*(?:,\s*'
-                   r'"((?:[^"\\]|\\"|\\\\)*)"\s*)*\)')
-
-STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
-
-STRATEGIES = dict()
-
+logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
+STRATEGY_CLASS_NAME_REGEX = re.compile(r'([A-Z][a-zA-Z]*)Strategy')
+STRATEGIES = dict[str, Type[AbstractStrategy[TRoot]]]()
 
 
 def strategy(cls: Type[AbstractStrategy[TRoot]]):
     m = STRATEGY_CLASS_NAME_REGEX.search(cls.__name__)
     if m is not None:
         name = m.group(1)
-        print(f'Registering strategy {name} -> {cls.__name__}')
+        logger.debug(f'Registering strategy {name} -> {cls.__name__}')
         STRATEGIES[name] = cls
         return cls
     else:
         raise Exception(f"Invalid strategy class name: {cls.__name__}")
-
-
-def strategy_seq_from_string(s: str) -> int | None:
-    # Empty strings and comments are special cases
-    if s.strip() == '' or s.startswith('#'):
-        return None
-
-    m = REGEX.search(s)
-    if m is not None:
-        return int(m.group(1))
-
-
-def strategy_from_string(s: str,
-                         emit: Callable[[str, dict[str, any], any], None],
-                         data: TRoot,
-                         settings: AbstractSettings,
-                         replacement_user: User | None = None) -> AbstractStrategy[TRoot] | str:
-    # Empty strings and comments are special cases
-    if s.strip() == '' or s.startswith('#'):
-        return s
-
-    m = REGEX.search(s)
-    if m is not None:
-        name = m.group(4)
-        if name not in STRATEGIES:
-            raise Exception(f"Unknown strategy: {name}")
-
-        seq = int(m.group(1))
-        when = datetime.datetime.fromisoformat(m.group(2))
-        who = m.group(3)
-        user = replacement_user if replacement_user is not None else data.get_user(who)
-        params = list(filter(lambda p: p is not None, m.groups()[4:]))
-        params = [p.replace('\\"', '"').replace('\\\\', '\\') for p in params]
-
-        # TODO: Enable trace
-        # print (f"Initializing: '{seq}' / '{when}' / '{user}' / '{name}' / {params}")
-        return STRATEGIES[name](seq, when, user, params, emit, data, settings)
-    else:
-        raise Exception(f"Bad syntax: {s}")

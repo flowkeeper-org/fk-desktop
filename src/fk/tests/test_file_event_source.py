@@ -16,7 +16,9 @@
 import os
 from unittest import TestCase
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.tenant import Tenant
@@ -27,12 +29,14 @@ TEMP_FILENAME = 'src/fk/tests/fixtures/flowkeeper-data-TEMP.txt'
 
 class TestFileEventSource(TestCase):
     settings: AbstractSettings
+    cryptograph: AbstractCryptograph
     source: FileEventSource
     data: dict[str, User]
 
     def setUp(self) -> None:
         self.settings = MockSettings(filename=TEMP_FILENAME)
-        self.source = FileEventSource(self.settings, Tenant(self.settings))
+        self.cryptograph = FernetCryptograph(self.settings)
+        self.source = FileEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
 

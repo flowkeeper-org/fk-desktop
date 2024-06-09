@@ -22,6 +22,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.qt_invoker import invoke_in_main_thread
 
@@ -34,7 +35,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     _app: 'Application'
 
     def __init__(self, wrapped: AbstractEventSource[TRoot], app: 'Application'):
-        super().__init__(wrapped._settings)
+        super().__init__(wrapped._serializer, wrapped._settings, wrapped._cryptograph)
         self._app = app
         self._thread_pool = QThreadPool()
         self._wrapped = wrapped
@@ -90,8 +91,17 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                 carry: any = None) -> None:
         self._wrapped.execute(strategy_class, params, persist, when, auto, carry)
 
+    def execute_prepared_strategy(self,
+                                  strategy: AbstractStrategy[TRoot],
+                                  auto: bool = False,
+                                  persist: bool = False) -> None:
+        self._wrapped.execute_prepared_strategy(strategy, auto, persist)
+
     def auto_seal(self) -> None:
         self._wrapped.auto_seal()
+
+    def users(self) -> Iterable[User]:
+        return self._wrapped.users()
 
     def backlogs(self) -> Iterable[Backlog]:
         return self._wrapped.backlogs()
@@ -101,22 +111,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def pomodoros(self) -> Iterable[Pomodoro]:
         return self._wrapped.pomodoros()
-
-    def export(self,
-               filename: str,
-               new_root: Self,
-               start_callback: Callable[[int], None],
-               progress_callback: Callable[[int, int], None],
-               completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.export(filename, new_root, start_callback, progress_callback, completion_callback)
-
-    def import_(self,
-                filename: str,
-                ignore_errors: bool,
-                start_callback: Callable[[int], None],
-                progress_callback: Callable[[int, int], None],
-                completion_callback: Callable[[int], None]) -> None:
-        self._wrapped.import_(filename, ignore_errors, start_callback, progress_callback, completion_callback)
 
     def disconnect(self):
         self._wrapped.disconnect()
@@ -129,3 +123,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def repair(self):
         return self._wrapped.repair()
+
+    def get_last_sequence(self):
+        return self._wrapped.get_last_sequence()

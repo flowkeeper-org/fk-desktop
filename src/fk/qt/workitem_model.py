@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import traceback
+import logging
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
@@ -22,9 +22,11 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete
+    AfterWorkitemDelete, AfterSettingsChanged
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy
+
+logger = logging.getLogger(__name__)
 
 
 class WorkitemModel(QtGui.QStandardItemModel):
@@ -46,9 +48,25 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_sealed.setStrikeOut(True)
         self._backlog = None
         self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
+        self._update_row_height()
         self.itemChanged.connect(lambda item: self._handle_rename(item))
-        self._row_height = int(source_holder.get_settings().get('Application.table_row_height'))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.table_row_height' in new_values:
+            self._update_row_height()
+
+    def _update_row_height(self):
+        rh = int(self._source_holder.get_settings().get('Application.table_row_height'))
+        self._row_height = rh
+        # TODO: Updating existing rows doesn't work.
+        #  The right way to do it is by using QStandardItem subclass, like we do for BacklogModel
+        # for i in range(self.rowCount()):
+        #     item: QStandardItem = self.item(i, 2)
+        #     workitem: Workitem = item.data(500)
+        #     item.setData(QSize(len(workitem) * rh, rh), Qt.SizeHintRole)
+        #     self.setItem(i, 2, item)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
@@ -68,7 +86,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
                 try:
                     self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
                 except Exception as e:
-                    print("\n".join(traceback.format_exception(e)))
+                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
                         self.parent(),
@@ -129,6 +147,8 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setItem(i, 1, col2)
 
         col3 = QtGui.QStandardItem()
+        # Here we rely on the fact that dict.values() stores values in the FIFO order,
+        # i.e. acts like a list. I'm not sure if it is guaranteed, but seems to work.
         col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
         col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
         col3.setData(workitem, 500)
@@ -137,7 +157,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.setItem(i, 2, col3)
 
     def load(self, backlog: Backlog) -> None:
-        print(f'WorkitemModel.load({backlog})')
+        logger.debug(f'WorkitemModel.load({backlog})')
         self.clear()
         self._backlog = backlog
         if backlog is not None:

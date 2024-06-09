@@ -13,13 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from unittest import TestCase
 
-from fk.core.tenant import Tenant
 from fk.core.backlog_strategies import CreateBacklogStrategy
+from fk.core.tenant import Tenant
 from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
-                                 test_users, TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
+                                 TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
 
 
 class TestBacklogStrategies(TestCase):
@@ -29,12 +28,10 @@ class TestBacklogStrategies(TestCase):
         s = CreateBacklogStrategy(
             1,
             predefined_datetime(0),
-            test_users()[TEST_USERNAMES[0]],
+            TEST_USERNAMES[0],
             [predefined_uid(0), 'Basic Test'],
-            noop_emit,
-            data,
             test_settings(0))
-        s.execute()
+        s.execute(noop_emit, data)
         return data
 
     def test_create_backlog_strategy_basic(self):
@@ -63,12 +60,10 @@ class TestBacklogStrategies(TestCase):
         s = CreateBacklogStrategy(
             2,
             predefined_datetime(1),
-            test_users()[TEST_USERNAMES[0]],
+            TEST_USERNAMES[0],
             [predefined_uid(1), 'Basic Test'],
-            noop_emit,
-            data,
             test_settings(0))
-        s.execute()
+        s.execute(noop_emit, data)
         user = data[TEST_USERNAMES[0]]
         self.assertEqual(user[predefined_uid(0)].get_name(), 'Basic Test')
         self.assertEqual(user[predefined_uid(1)].get_name(), 'Basic Test')
@@ -79,12 +74,10 @@ class TestBacklogStrategies(TestCase):
         s = CreateBacklogStrategy(
             2,
             predefined_datetime(1),
-            test_users()[TEST_USERNAMES[1]],
+            TEST_USERNAMES[1],
             [predefined_uid(0), 'Second Backlog'],
-            noop_emit,
-            data,
             test_settings(1))
-        s.execute()
+        s.execute(noop_emit, data)
         user1 = data[TEST_USERNAMES[0]]
         user2 = data[TEST_USERNAMES[1]]
         user3 = data[TEST_USERNAMES[2]]

@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import logging
 import sys
 from typing import Callable
 
@@ -25,6 +25,8 @@ from fk.core.event_source_holder import AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
+
+logger = logging.getLogger(__name__)
 
 
 class MinimalCommon:
@@ -41,9 +43,9 @@ class MinimalCommon:
         self._window.show()
 
         try:
-            print(f'MinimalCommon: Entering main_loop: {self._source} / {self._initialize_source}')
+            logger.debug(f'MinimalCommon: Entering main_loop: {self._source} / {self._initialize_source}')
             if self._initialize_source:
-                print('MinimalCommon: Request source initialization')
+                logger.debug('MinimalCommon: Request source initialization')
                 self._app.initialize_source()
         except Exception as ex:
             self._app.on_exception(type(ex), ex, ex.__traceback__)
@@ -51,11 +53,11 @@ class MinimalCommon:
         sys.exit(self._app.exec())
 
     def _on_messages(self, event: str, source: AbstractEventSource) -> None:
-        print(f'MinimalCommon: Will call {self._callback}')
+        logger.debug(f'MinimalCommon: Will call {self._callback}')
         self._callback(source.get_data())
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        print(f'MinimalCommon: _on_source_changed({source})')
+        logger.debug(f'MinimalCommon: _on_source_changed({source})')
         self._source = source
         if self._callback is not None:
             source.on(SourceMessagesProcessed, self._on_messages)

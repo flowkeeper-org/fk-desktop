@@ -13,36 +13,41 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import traceback
+import logging
 
-from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QIcon, QFont, QPainter, QPixmap, Qt, QGradient, QColor
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QToolButton, \
-    QMessageBox, QMenu
+from PySide6.QtCore import QSize, QPoint, QLine
+from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QToolButton, \
+    QMessageBox, QMenu, QSizePolicy
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterWorkitemComplete, AfterSettingsChanged
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy
+from fk.core.abstract_timer_display import AbstractTimerDisplay
+from fk.core.event_source_holder import EventSourceHolder
+from fk.core.events import AfterSettingsChanged
+from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
 from fk.qt.actions import Actions
-from fk.qt.timer_widget import render_for_widget, TimerWidget
+from fk.qt.timer_widget import TimerWidget
+
+logger = logging.getLogger(__name__)
+DISPLAY_HEIGHT = 80
 
 
-class FocusWidget(QWidget):
-    _source_holder: EventSourceHolder
+class FocusWidget(QWidget, AbstractTimerDisplay):
     _settings: AbstractSettings
-    _timer: PomodoroTimer
     _header_text: QLabel
     _header_subtext: QLabel
-    _timer_display: TimerWidget
     _actions: Actions
     _buttons: dict[str, QToolButton]
     _application: Application
     _pixmap: QPixmap | None
+    _border_color: QColor
+    _continue_workitem: Workitem | None
+    _timer_widget: TimerWidget
 
     def __init__(self,
                  parent: QWidget,
@@ -51,14 +56,19 @@ class FocusWidget(QWidget):
                  source_holder: EventSourceHolder,
                  settings: AbstractSettings,
                  actions: Actions):
-        super().__init__(parent)
-        self._source_holder = source_holder
+        super().__init__(parent, timer=timer, source_holder=source_holder)
+
+        self._apply_size_policy()
+
         self._settings = settings
-        self._timer = timer
         self._actions = actions
         self._application = application
         self._buttons = dict()
         self._pixmap = None
+        self._continue_workitem = None
+
+        self._border_color = QColor('#000000')
+        self._set_border_color()
 
         self.setObjectName('focus')
 
@@ -70,10 +80,10 @@ class FocusWidget(QWidget):
 
         text_layout = QVBoxLayout()
         text_layout.setObjectName("text_layout")
-        # Here
         layout.addLayout(text_layout)
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.setSpacing(0)
+        text_layout.addStretch()
 
         header_text = QLabel(self)
         header_text.setObjectName('headerText')
@@ -89,25 +99,12 @@ class FocusWidget(QWidget):
         header_subtext.setText("Welcome to Flowkeeper!")
         self._header_subtext = header_subtext
 
-        outer_timer_widget = QWidget(self)
-        outer_timer_widget.setObjectName("timer")
-        layout.addWidget(outer_timer_widget)
-        sp3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sp3.setHorizontalStretch(0)
-        sp3.setVerticalStretch(0)
-        outer_timer_widget.setSizePolicy(sp3)
-        outer_timer_widget.setMinimumHeight(60)
-        outer_timer_widget.setMinimumWidth(60)
-        outer_timer_widget.setMaximumHeight(60)
-        outer_timer_widget.setMaximumWidth(60)
-        outer_timer_widget.setBaseSize(QSize(0, 0))
+        text_layout.addStretch()
 
-        inner_timer_layout = QHBoxLayout(outer_timer_widget)
-        inner_timer_layout.setObjectName("inner_timer_layout")
-        inner_timer_layout.setContentsMargins(0, 0, 0, 0)
-        inner_timer_layout.setSpacing(0)
-
-        inner_timer_layout.addWidget(self._create_button("focus.voidPomodoro"))
+        self._timer_widget = TimerWidget(self,
+                                         'timer',
+                                         self._create_button("focus.voidPomodoro"))
+        layout.addWidget(self._timer_widget)
         layout.addWidget(self._create_button("focus.nextPomodoro"))
         layout.addWidget(self._create_button("focus.completeItem"))
         layout.addWidget(self._create_button("focus.showFilter"))
@@ -120,33 +117,20 @@ class FocusWidget(QWidget):
 
         self._buttons['focus.nextPomodoro'].hide()
         self._buttons['focus.completeItem'].hide()
-
-        self._timer_display = render_for_widget(
-            parent.palette(),
-            outer_timer_widget,
-            QFont(),
-            0.3
-        )
-
-        self.update_header()
-
-        # Last because we rely on PomodoroTimer to update the header, and want it to update its state first
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
-        timer.on('Timer*', lambda **kwargs: self.update_header())
+        self._buttons['focus.voidPomodoro'].hide()
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
-    def _on_source_changed(self, event: str, source: AbstractEventSource):
-        source.on(AfterWorkitemComplete, lambda event, workitem, **kwargs: self.update_header(workitem=workitem))
-        self._reset_header()
+    def update_fonts(self):
+        self._header_text.setFont(self._application.get_header_font())
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', ":/icons/tool-void.svg", FocusWidget._void_pomodoro)
-        actions.add('focus.nextPomodoro', "Next Pomodoro", None, ":/icons/tool-next.svg", FocusWidget._next_pomodoro)
-        actions.add('focus.completeItem', "Complete Item", None, ":/icons/tool-complete.svg", FocusWidget._complete_item)
-        actions.add('focus.showFilter', "Show Filter", None, ":/icons/tool-filter.svg", FocusWidget._display_filter)
+        actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
+        actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
+        actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
+        actions.add('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
     def _create_button(self,
                        name: str,
@@ -169,45 +153,13 @@ class FocusWidget(QWidget):
             self.parent().mapToGlobal(
                 self._buttons['focus.showFilter'].geometry().center()))
 
-    def _reset_header(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
+    def reset(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
         self._header_text.setText(text)
         self._header_subtext.setText(subtext)
+        self._buttons['focus.completeItem'].hide()
         self._buttons['focus.voidPomodoro'].hide()
         self._actions['focus.voidPomodoro'].setDisabled(True)
-        self._timer_display.reset()
-        self._timer_display.hide()
-        self._timer_display.repaint()
-
-    def update_header(self, **kwargs) -> None:
-        if self._timer.is_idling():
-            w = kwargs.get('workitem')  # != running_workitem for end-of-pomodoro
-            if w is not None and w.is_startable():
-                self._reset_header('Start another Pomodoro?', w.get_name())
-            else:
-                self._reset_header()
-        elif self._timer.is_working() or self._timer.is_resting():
-            remaining_duration = self._timer.get_remaining_duration()  # This is always >= 0
-            remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
-            remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
-            state = 'Focus' if self._timer.is_working() else 'Rest'
-            txt = f'{state}: {remaining_minutes}:{remaining_seconds}'
-            self._header_text.setText(f'{txt} left')
-            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
-            self._buttons['focus.voidPomodoro'].show()
-            self._actions['focus.voidPomodoro'].setDisabled(False)
-            self._buttons['focus.nextPomodoro'].hide()
-            self._buttons['focus.completeItem'].hide()
-            self._timer_display.set_values(
-                remaining_duration / self._timer.get_planned_duration(),
-                None,
-                ""  # f'{remaining_minutes}:{remaining_seconds}'
-            )
-            self._timer_display.show()
-            self._timer_display.repaint()
-        elif self._timer.is_initializing():
-            print('The timer is still initializing')
-        else:
-            raise Exception("The timer is in an unexpected state")
+        self._timer_widget.reset()
 
     def eye_candy(self):
         eyecandy_type = self._settings.get('Application.eyecandy_type')
@@ -222,31 +174,40 @@ class FocusWidget(QWidget):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+        rect = self.rect()
+        painter = QPainter(self)
         eyecandy_type = self._settings.get('Application.eyecandy_type')
         if eyecandy_type == 'image':
             if self._pixmap is not None:
                 img = self._pixmap
-                painter = QPainter(self)
                 painter.drawPixmap(
                     QPoint(0, 0),
                     img.scaled(
                         QSize(self.width(), self.width() * img.height() / img.width()),
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
-            painter = QPainter(self)
             gradient = self._settings.get('Application.eyecandy_gradient')
             try:
-                painter.fillRect(self.rect(), QGradient.Preset[gradient])
+                painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
-                print('ERROR while updating the gradient -- ignoring it', e)
-                print("\n".join(traceback.format_exception(e)))
+                logger.error(f'ERROR while updating the gradient to {gradient} -- ignoring it', exc_info=e)
                 painter.fillRect(self.rect(), QColor.setRgb(127, 127, 127))
+        else:   # Default
+            painter.setPen(self._border_color)
+            painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
+
+    def _set_border_color(self):
+        self._border_color = self._application.get_theme_variables(
+            self._settings.get('Application.theme')
+        ).get('FOCUS_BORDER_COLOR', '#000000')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        for name in new_values.keys():
-            if name.startswith('Application.eyecandy'):
-                self.eye_candy()
-                return
+        if 'Application.theme' in new_values:
+            self._set_border_color()
+        if 'Application.eyecandy_type' in new_values or \
+                'Application.eyecandy_gradient' in new_values or \
+                'Application.eyecandy_image' in new_values:
+            self.eye_candy()
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
@@ -261,13 +222,44 @@ class FocusWidget(QWidget):
                     self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
 
     def _next_pomodoro(self) -> None:
-        QMessageBox().warning(self.parent(),
-                              "Not implemented",
-                              f"Starting next pomodoro in the current item is not implemented",
-                              QMessageBox.StandardButton.Ok)
+        self._source_holder.get_source().execute(StartWorkStrategy, [
+            self._continue_workitem.get_uid(),
+            self._source_holder.get_settings().get('Pomodoro.default_work_duration'),
+        ])
 
     def _complete_item(self) -> None:
-        QMessageBox().warning(self.parent(),
-                              "Not implemented",
-                              f"Completing current item is not implemented",
-                              QMessageBox.StandardButton.Ok)
+        item = self._timer.get_running_workitem()
+        if QMessageBox().warning(
+                self,
+                "Confirmation",
+                f"Are you sure you want to complete workitem '{item.get_name()}'? This will void current pomodoro.",
+                QMessageBox.StandardButton.Ok,
+                QMessageBox.StandardButton.Cancel
+                ) == QMessageBox.StandardButton.Ok:
+            self._source_holder.get_source().execute(CompleteWorkitemStrategy,
+                                 [item.get_uid(), "finished"])
+
+    def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
+        self._header_text.setText(state_txt)
+        self._timer_widget.set_values(completion)
+
+    def mode_changed(self, old_mode: str, new_mode: str) -> None:
+        if new_mode == 'undefined' or new_mode == 'idle':
+            self.reset()
+            self._buttons['focus.nextPomodoro'].hide()
+        elif new_mode == 'working' or new_mode == 'resting':
+            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
+            self._actions['focus.voidPomodoro'].setDisabled(False)
+            self._buttons['focus.voidPomodoro'].show()
+            self._buttons['focus.nextPomodoro'].hide()
+            self._buttons['focus.completeItem'].show()
+        elif new_mode == 'ready':
+            self.reset('Start another Pomodoro?', self._continue_workitem.get_name())
+            self._buttons['focus.nextPomodoro'].show()
+
+    def _apply_size_policy(self):
+        sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sp.setVerticalStretch(0)
+        self.setSizePolicy(sp)
+        self.setMinimumHeight(DISPLAY_HEIGHT)
+        self.setMaximumHeight(DISPLAY_HEIGHT)

@@ -95,22 +95,8 @@ jobs:
       - name: Generate resources
         run: |
           cd res
-          cd common
-          pyside6-rcc --project -o theme-common.qrc
-          pyside6-rcc -g python theme-common.qrc -o "../../src/fk/desktop/theme_common.py"
-          cd ..
-          cd light
-          pyside6-rcc --project -o theme-light.qrc
-          pyside6-rcc -g python theme-light.qrc -o "../../src/fk/desktop/theme_light.py"
-          cd ..
-          cd dark
-          pyside6-rcc --project -o theme-dark.qrc
-          pyside6-rcc -g python theme-dark.qrc -o "../../src/fk/desktop/theme_dark.py"
-          cd ..
-          cd mixed
-          pyside6-rcc --project -o theme-mixed.qrc
-          pyside6-rcc -g python theme-mixed.qrc -o "../../src/fk/desktop/theme_mixed.py"
-          cd ..
+          pyside6-rcc --project -o resources.qrc
+          pyside6-rcc -g python resources.qrc -o "../src/fk/desktop/resources.py"
       - name: Package builds
         run: |
           pyinstaller installer\portable-build.spec
@@ -125,7 +111,7 @@ jobs:
       - name: Create FK installer
         shell: cmd
         run: |
-          set /p FIRST_LINE=< res\common\CHANGELOG.txt
+          set /p FIRST_LINE=< res\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
           move installer\Output\mysetup.exe dist\setup.exe

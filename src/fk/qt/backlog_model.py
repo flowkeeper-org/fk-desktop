@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import traceback
+import logging
 from typing import Self
 
 from PySide6 import QtGui, QtWidgets, QtCore
@@ -26,6 +26,7 @@ from fk.core.backlog_strategies import RenameBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
 
+logger = logging.getLogger(__name__)
 font_new = QtGui.QFont()
 font_today = QtGui.QFont()
 font_today.setBold(True)
@@ -71,7 +72,9 @@ class BacklogModel(QtGui.QStandardItemModel):
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
-        source.on('After*', self._sort)
+        source.on('AfterBacklog*', self._sort)
+        source.on('AfterWorkitem*', self._sort)
+        source.on('AfterPomodoro*', self._sort)
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -82,7 +85,7 @@ class BacklogModel(QtGui.QStandardItemModel):
                 try:
                     self._source_holder.get_source().execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
                 except Exception as e:
-                    print("\n".join(traceback.format_exception(e)))
+                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
                     item.setText(old_name)
                     QtWidgets.QMessageBox().warning(
                         self.parent(),

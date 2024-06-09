@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from fk.desktop.settings import SettingsDialog
 from fk.tools.minimal_common import MinimalCommon
 

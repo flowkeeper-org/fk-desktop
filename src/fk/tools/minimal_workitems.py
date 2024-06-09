@@ -20,7 +20,6 @@ from fk.tools.minimal_common import MinimalCommon
 
 def select_first_backlog(data: Tenant):
     backlogs = list(data.get_current_user().values())
-    print(f'select_first_backlog: {backlogs}')
     workitems_table.upstream_selected(backlogs[0])
 
 

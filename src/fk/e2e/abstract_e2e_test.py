@@ -1,8 +1,25 @@
+#  Flowkeeper - Pomodoro timer for power users and teams
+#  Copyright (c) 2023 Constantine Kulak
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import atexit
 import inspect
+import logging
 import os
 import sys
+import traceback
 from abc import ABC
 from datetime import datetime
 from typing import Callable, Self
@@ -16,7 +33,9 @@ from fk.desktop.application import Application
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.1  # seconds
-STARTUP_DURATION = 1  # seconds
+STARTUP_DURATION = 2  # seconds
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractE2eTest(ABC):
@@ -65,7 +84,7 @@ class AbstractE2eTest(ABC):
                 self._tests = len(self._seq)
                 self._failures = 0
                 self._errors = 0
-                self._skipped = 0
+                self._skipped = len(self._seq)
                 self._start = datetime.now()
                 self.init_log()
                 try:
@@ -78,13 +97,21 @@ class AbstractE2eTest(ABC):
                         except Exception as e:
                             self.error(e)
                         finally:
+                            self._skipped -= 1
                             method_duration = (datetime.now() - method_start).total_seconds()
                             if method_duration < 0.0001:
                                 method_duration = 0.0001    # Otherwise we'd get scientific notation in output
                             self._update_log_for_method('time', str(method_duration))
                 finally:
+                    logger.debug(f'*** E2e tests completed {"successfully" if self._errors == 0 and self._skipped == 0 and self._failures == 0 else "with errors" } ***')
                     self.close_log()
-                self._app.exit(0)
+                    logger.debug('Do whatever it takes to exit')
+                    window.close()
+                    logger.debug(' - Closed the window')
+                    self._app.exit(0)
+                    logger.debug(' - Exited Qt')
+                    sys.exit(0)
+                    logger.debug(' - Exited Python')
 
     def _update_log_for_method(self, name: str, value: str):
         el = self._log_xml.find(f"testcase[@name='{self._current_method}']")
@@ -100,8 +127,10 @@ class AbstractE2eTest(ABC):
     def init_log(self) -> None:
         filename = f"{__name__.replace('.', '/')}.py"
         test_name = f'{__name__}.{self.__class__.__name__}'
+        if not os.path.exists('test-results'):
+            os.mkdir('test-results')
         self._log_filename = f'test-results/TEST-{test_name}.xml'
-        print(f'INFO: Creating a log file {self._log_filename}')
+        logger.debug(f'Creating a log file {self._log_filename}')
         self._log_xml = ElementTree.Element('testsuite')
         self._log_xml.set('name', test_name)
         self._log_xml.set('file', filename)
@@ -118,7 +147,7 @@ class AbstractE2eTest(ABC):
 
     def close_log(self) -> None:
         if self._log_xml is not None and self._log_filename is not None:
-            print(f'Saving file {self._log_filename}')
+            logger.debug(f'Saving file {self._log_filename}')
             self._log_xml.set('tests', str(self._tests))
             self._log_xml.set('time', str((datetime.now() - self._start).total_seconds()))
             self._log_xml.set('failures', str(self._failures))
@@ -133,11 +162,11 @@ class AbstractE2eTest(ABC):
             self._log_xml = None
 
     def info(self, txt):
-        print(f'INFO: {self._current_method}: {txt}')
+        logger.info(f'INFO: {self._current_method}: {txt}')
         self._append_to_system_out_for_method(txt)
 
     def error(self, e: Exception):
-        print(f'ERROR: {self._current_method}: {e}')
+        logger.error(f'ERROR: {self._current_method}', exc_info=e)
         self._append_to_system_out_for_method(f'ERROR: {e}')
         self._errors += 1
 
@@ -255,3 +284,7 @@ class AbstractE2eTest(ABC):
 
     async def instant_pause(self) -> None:
         await asyncio.sleep(INSTANT_DURATION)
+
+    def on_exception(self, exc_type, exc_value, exc_trace):
+        to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
+        self.info('Exception: ' + to_log)

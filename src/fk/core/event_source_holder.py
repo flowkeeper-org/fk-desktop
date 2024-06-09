@@ -13,31 +13,39 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+from typing import TypeVar, Generic
 
+from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.event_source_factory import EventSourceFactory
+from fk.core.event_source_factory import get_event_source_factory
 from fk.core.tenant import Tenant
 
 BeforeSourceChanged = "BeforeSourceChanged"
 AfterSourceChanged = "AfterSourceChanged"
 
+logger = logging.getLogger(__name__)
+TRoot = TypeVar('TRoot')
 
-class EventSourceHolder(AbstractEventEmitter):
+
+class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
     _settings: AbstractSettings
-    _source: AbstractEventSource | None
+    _cryptograph: AbstractCryptograph
+    _source: AbstractEventSource[TRoot] | None
 
-    def __init__(self, settings: AbstractSettings):
+    def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
         super().__init__(allowed_events=[BeforeSourceChanged, AfterSourceChanged],
                          callback_invoker=settings.invoke_callback)
         self._settings = settings
+        self._cryptograph = cryptograph
         self._source = None
 
-    def request_new_source(self) -> None:
+    def request_new_source(self) -> AbstractEventSource[TRoot]:
         source_type = self._settings.get('Source.type')
-        print(f'EventSourceHolder: Recreating event source of type {source_type}')
-        if not EventSourceFactory.get_instance().is_valid(source_type):
+        logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
+        if not get_event_source_factory().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
 
@@ -50,18 +58,20 @@ class EventSourceHolder(AbstractEventEmitter):
             self._source.cancel('*')
             self._source.disconnect()
 
-        producer = EventSourceFactory.get_instance().get_producer(source_type)
-        print(f'EventSourceHolder: About to create new source using producer {producer}')
+        producer = get_event_source_factory().get_producer(source_type)
+        logger.debug(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
         self._source = producer(
             self._settings,
+            self._cryptograph,
             Tenant(self._settings))
-        print(f'EventSourceHolder: Source object created. You need to start it yourself!')
+        logger.debug(f'EventSourceHolder: Source object created. You need to start it yourself!')
 
         self._emit(AfterSourceChanged, {
             'source': self._source
         })
+        return self._source
 
-    def get_source(self) -> AbstractEventSource | None:
+    def get_source(self) -> AbstractEventSource[TRoot] | None:
         return self._source
 
     def get_settings(self) -> AbstractSettings:

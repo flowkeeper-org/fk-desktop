@@ -13,11 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import sys
 import threading
-import traceback
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -42,6 +43,8 @@ from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
 from fk.qt.workitem_widget import WorkitemWidget
+
+logger = logging.getLogger(__name__)
 
 
 def get_timer_ui_mode() -> str:
@@ -105,7 +108,8 @@ def on_messages(event: str, source: AbstractEventSource) -> None:
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
-    # print(f'Setting {name} changed from {old_value} to {new_value}')
+    logger.debug(f'Settings changed from {old_values} to {new_values}')
+
     status.showMessage('Settings changed')
     for name in new_values.keys():
         new_value = new_values[name]
@@ -148,16 +152,16 @@ class MainWindow:
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('window.showAll', "Show All", None, ":/icons/tool-show-all.svg", MainWindow.show_all)
-        actions.add('window.showFocus', "Show Focus", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_focus)
-        actions.add('window.showMainWindow', "Show Main Window", None, ":/icons/tool-show-timer-only.svg", MainWindow.show_window)
+        actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
+        actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+        actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
         backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
                     "Backlogs",
                     'Ctrl+B',
-                    ':/icons/tool-backlogs.svg',
+                    'tool-backlogs',
                     MainWindow.toggle_backlogs,
                     True,
                     backlogs_were_visible)
@@ -166,7 +170,7 @@ class MainWindow:
         actions.add('window.showUsers',
                     "Team",
                     'Ctrl+T',
-                    ':/icons/tool-teams.svg',
+                    'tool-teams',
                     MainWindow.toggle_users,
                     True,
                     settings.is_team_supported() and users_were_visible)
@@ -180,10 +184,11 @@ if __name__ == "__main__":
     # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
     # will pass through to Qt data models via Qt-like connect / emit mechanism.
     try:
+        settings = None
         app = Application(sys.argv)
         settings = app.get_settings()
 
-        print('UI thread:', threading.get_ident())
+        logger.debug(f'UI thread: {threading.get_ident()}')
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
@@ -257,7 +262,11 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         search_bar: QtWidgets.QHBoxLayout = window.findChild(QtWidgets.QHBoxLayout, "searchBar")
-        search = SearchBar(window, app.get_source_holder(), actions, backlogs_widget, workitems_widget)
+        search = SearchBar(window,
+                           app.get_source_holder(),
+                           actions,
+                           backlogs_widget.get_table(),
+                           workitems_widget.get_table())
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
@@ -310,16 +319,19 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
+        tool_backlogs.setIcon(QIcon.fromTheme('tool-backlogs'))
         tool_backlogs.setDefaultAction(action_backlogs)
 
         # noinspection PyTypeChecker
         tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
+        tool_teams.setIcon(QIcon.fromTheme('tool-teams'))
         tool_teams.setDefaultAction(action_teams)
         action_teams.setEnabled(settings.is_team_supported())
         tool_teams.setVisible(settings.is_team_supported())
 
         # noinspection PyTypeChecker
         tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
+        tool_settings.setIcon(QIcon.fromTheme('tool-settings'))
         tool_settings.clicked.connect(lambda: menu_file.exec(
             tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
         ))
@@ -343,6 +355,11 @@ if __name__ == "__main__":
 
         window.show()
 
+        # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
+        # Otherwise, the font size for the focus' header is picked correctly, but
+        # default font family is used.
+        focus.update_fonts()
+
         try:
             app.initialize_source()
         except Exception as ex:
@@ -352,16 +369,14 @@ if __name__ == "__main__":
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
             QtAsyncio.run()
-        elif 'reset' in app.arguments():
-            # This might be useful on Windows or macOS, which store their settings in some obscure locations
-            settings.reset_to_defaults()
         else:
+            if '--reset' in app.arguments():
+                settings.reset_to_defaults()
             # This would work on any Qt 6.6.x
             sys.exit(app.exec())
 
     except Exception as exc:
-        print("FATAL: Exception on startup", exc)
-        print("\n".join(traceback.format_exception(exc)))
+        logger.error("FATAL: Exception on startup", exc_info=exc)
         res = QMessageBox().critical(None,
                                      "Startup error",
                                      f"Something unexpected has happened during Flowkeeper startup. It is most likely "
@@ -380,5 +395,5 @@ if __name__ == "__main__":
                                       f"To finish resetting its configuration, Flowkeeper will now close.",
                                       QMessageBox.StandardButton.Ok)
 
-        print('Exiting')
+        logger.debug('Exiting')
         sys.exit(2)
