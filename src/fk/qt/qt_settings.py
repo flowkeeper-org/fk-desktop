@@ -26,7 +26,7 @@ class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
     _app_name: str
 
-    def __init__(self, app_name: str = 'desktop-client'):
+    def __init__(self, app_name: str = 'flowkeeper-desktop'):
         font = QFont()
         self._app_name = app_name
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
@@ -54,7 +54,8 @@ class QtSettings(AbstractSettings):
 
     def get(self, name: str) -> str:
         if name.endswith('!'):
-            return keyring.get_password(self._app_name, name)
+            value = keyring.get_password(self._app_name, name)
+            return value if value is not None else ''
         else:
             return str(self._settings.value(name, self._defaults[name]))
 

@@ -96,7 +96,7 @@ class Application(QApplication, AbstractEventEmitter):
         # has been constructed, as it uses default QFont and other
         # OS-specific values
         if self.is_e2e_mode():
-            self._settings = QtSettings('desktop-client-e2e')
+            self._settings = QtSettings('flowkeeper-desktop-e2e')
             self._settings.reset_to_defaults()
             self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
@@ -107,7 +107,7 @@ class Application(QApplication, AbstractEventEmitter):
         else:
             sys.excepthook = self.on_exception
             if self.is_testing_mode():
-                self._settings = QtSettings('desktop-client-testing')
+                self._settings = QtSettings('flowkeeper-desktop-testing')
                 self._settings.reset_to_defaults()
                 self._settings.set({
                     'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
