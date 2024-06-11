@@ -349,6 +349,8 @@ class Application(QApplication, AbstractEventEmitter):
             if name == 'Source.type' or \
                     name.startswith('WebsocketEventSource.') or \
                     name.startswith('FileEventSource.') or \
+                    name == 'Source.ignore_errors' or \
+                    name == 'Source.ignore_invalid_sequence' or \
                     name == 'Source.encryption_enabled' or \
                     name == 'Source.encryption_key!':
                 request_new_source = True

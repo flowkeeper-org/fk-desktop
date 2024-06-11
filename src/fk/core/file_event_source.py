@@ -73,18 +73,24 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: Check file locks here?
         with open(filename, encoding='UTF-8') as file:
             for line in file:
-                strategy = self._serializer.deserialize(line)
-                if strategy is None:
-                    continue
-                self._last_strategy = strategy
-                seq = strategy.get_sequence()
-                if seq > self._last_seq:
-                    if seq != self._last_seq + 1:
-                        self._sequence_error(self._last_seq, seq)
-                    self._last_seq = seq
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(f" - {strategy}")
-                    self.execute_prepared_strategy(strategy)
+                try:
+                    strategy = self._serializer.deserialize(line)
+                    if strategy is None:
+                        continue
+                    self._last_strategy = strategy
+                    seq = strategy.get_sequence()
+                    if seq > self._last_seq:
+                        if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                            self._sequence_error(self._last_seq, seq)
+                        self._last_seq = seq
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(f" - {strategy}")
+                        self.execute_prepared_strategy(strategy)
+                except Exception as ex:
+                    if self._ignore_errors:
+                        logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
+                    else:
+                        raise ex
         self.auto_seal()
 
     def _get_filename(self) -> str:
@@ -107,19 +113,25 @@ class FileEventSource(AbstractEventSource[TRoot]):
         is_first = True
         seq = 1
         for strategy in self._existing_strategies:
-            if strategy is None:
-                continue
-            strategy._settings = self._settings
-            self._last_strategy = strategy
+            try:
+                if strategy is None:
+                    continue
+                strategy._settings = self._settings
+                self._last_strategy = strategy
 
-            if is_first:
-                is_first = False
-            else:
-                seq = strategy.get_sequence()
-                if seq != self._last_seq + 1:
-                    self._sequence_error(self._last_seq, seq)
-            self._last_seq = seq
-            self.execute_prepared_strategy(strategy)
+                if is_first:
+                    is_first = False
+                else:
+                    seq = strategy.get_sequence()
+                    if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                        self._sequence_error(self._last_seq, seq)
+                self._last_seq = seq
+                self.execute_prepared_strategy(strategy)
+            except Exception as ex:
+                if self._ignore_errors:
+                    logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
+                else:
+                    raise ex
         self.auto_seal()
         self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self}, None)
@@ -141,20 +153,28 @@ class FileEventSource(AbstractEventSource[TRoot]):
         seq = 1
         logger.info(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
+            # TODO: If we wrap this for into a generator, we'll be able to reuse a this entire loop
+            #  with _process_from_existing() and _on_file_change()
             for line in f:
-                strategy = self._serializer.deserialize(line)
-                if strategy is None:
-                    continue
-                self._last_strategy = strategy
+                try:
+                    strategy = self._serializer.deserialize(line)
+                    if strategy is None:
+                        continue
+                    self._last_strategy = strategy
 
-                if is_first:
-                    is_first = False
-                else:
-                    seq = strategy.get_sequence()
-                    if seq != self._last_seq + 1:
-                        self._sequence_error(self._last_seq, seq)
-                self._last_seq = seq
-                self.execute_prepared_strategy(strategy)
+                    if is_first:
+                        is_first = False
+                    else:
+                        seq = strategy.get_sequence()
+                        if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                            self._sequence_error(self._last_seq, seq)
+                    self._last_seq = seq
+                    self.execute_prepared_strategy(strategy)
+                except Exception as ex:
+                    if self._ignore_errors:
+                        logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
+                    else:
+                        raise ex
         logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
         self.auto_seal()

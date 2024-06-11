@@ -1,3 +1,7 @@
+### v0.5.1 (TBD)
+- [Bugfix] Fixed an error with the passwords stored in the OS keychain.
+- [Technical] Now the user can choose to ignore errors for the Local File data source.
+
 ### v0.5.0 (9 June 2024)
 - Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
 - Encrypted content can be mixed with plaintext.

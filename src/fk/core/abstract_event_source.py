@@ -43,6 +43,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     _cryptograph: AbstractCryptograph
     _last_seq: int
     _estimated_count: int
+    _ignore_invalid_sequences: bool
+    _ignore_errors: bool
 
     def __init__(self,
                  serializer: AbstractSerializer,
@@ -93,6 +95,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._last_seq = 0
         self._estimated_count = 0
+        self._ignore_invalid_sequences = settings.get('Source.ignore_invalid_sequence') == 'True'
+        self._ignore_errors = settings.get('Source.ignore_errors') == 'True'
 
     # Override
     @abstractmethod
