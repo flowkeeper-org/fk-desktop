@@ -103,6 +103,7 @@ class SettingsDialog(QDialog):
         old_value = self._data.get(option_id)
         logger.debug(f"Changed {option_id} from {old_value} to {new_value}")
         # Enable / disable "save" buttons
+        # TODO: Do this for *all* values at once, not only for this one
         self._set_buttons_state(old_value != new_value)
         self._recompute_visibility(option_id, new_value)
 
@@ -320,10 +321,12 @@ class SettingsDialog(QDialog):
             ed10 = QLineEdit(parent)
             ed10.setText(option_value)
             ed10.setEchoMode(QLineEdit.EchoMode.Password)
+            option_id_cache = f'{option_id}_cache'
             ed10.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
+            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
             self._widgets_value[option_id] = ed10.text
+            self._widgets_value[option_id_cache] = lambda: ''   # Always empty the cache
             ed10.setHidden(True)
-            self._widgets_value[option_id] = ed10.text
             layout.addWidget(ed10)
             key_view = QPushButton(parent)
             key_view.setText('IMPORTANT - READ THIS')
