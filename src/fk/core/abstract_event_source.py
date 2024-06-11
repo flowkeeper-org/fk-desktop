@@ -138,8 +138,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
         if persist:
-            self._last_seq = strategy.get_sequence()   # Only save it if all went well
             self._append([strategy])
+            self._last_seq = strategy.get_sequence()   # Only save it if all went well
 
     def execute(self,
                 strategy_class: type[AbstractStrategy[TRoot]],
@@ -152,9 +152,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         # TODO: Get username from the login provider instead
         if when is None:
             when = datetime.datetime.now(datetime.timezone.utc)
-        new_sequence = self._last_seq + 1
         s = strategy_class(
-            new_sequence,
+            self._last_seq + 1,
             when,
             self._settings.get_username(),
             params,
