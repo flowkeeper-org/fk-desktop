@@ -405,11 +405,13 @@ class Application(QApplication, AbstractEventEmitter):
                 == QMessageBox.StandardButton.Ok:
             cast: FileEventSource = self._source_holder.get_source()
             log = cast.repair()
+            if log[-1] != 'No changes were made':
+                # Reload the source
+                self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
                                           "Please save this log for future reference. "
-                                          "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
-                                          "Flowkeeper restart is required to reload the changes.",
+                                          "You can find all new items by searching (CTRL+F) for [Repaired] string.",
                                           "\n".join(log))
             return False
 
@@ -433,7 +435,7 @@ class Application(QApplication, AbstractEventEmitter):
                 source.execute(DeleteAccountStrategy, [''])
                 # Avoid re-creating this account immediately
                 source.set_config_parameters({'WebsocketEventSource.consent': 'False'})
-                return True # Close Settings dialog
+                return True  # Close Settings dialog
             else:
                 QMessageBox().information(self.activeWindow(),
                                           'Canceled',

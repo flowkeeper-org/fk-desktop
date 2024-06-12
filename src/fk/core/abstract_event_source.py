@@ -122,7 +122,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     # This will initiate connection, which will trigger replay
     @abstractmethod
-    def start(self, mute_events=True) -> None:
+    def start(self, mute_events: bool = True) -> None:
         pass
 
     def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:

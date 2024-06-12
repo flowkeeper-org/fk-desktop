@@ -332,11 +332,14 @@ class SettingsDialog(QDialog):
             ed10 = QLineEdit(parent)
             ed10.setText(option_value)
             ed10.setEchoMode(QLineEdit.EchoMode.Password)
-            option_id_cache = f'{option_id}_cache'
+
             ed10.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
             self._widgets_value[option_id] = ed10.text
+
+            option_id_cache = f'{option_id.replace("!", "")}_cache!' if option_id.endswith('!') else f'{option_id}_cache'
+            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
             self._widgets_value[option_id_cache] = lambda: ''   # Always empty the cache
+
             ed10.setHidden(True)
             layout.addWidget(ed10)
             key_view = QPushButton(parent)

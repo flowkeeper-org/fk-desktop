@@ -28,6 +28,8 @@ from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, StartRestStrategy, VoidPomodoroStrategy, \
+    RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -99,13 +101,13 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def _is_watch_changes(self) -> bool:
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
-    def start(self, mute_events=True) -> None:
+    def start(self, mute_events: bool = True, fail_early: bool = False) -> None:
         if self._existing_strategies is None:
             self._process_from_file(mute_events)
         else:
-            self._process_from_existing()
+            self._process_from_existing(fail_early)
 
-    def _process_from_existing(self) -> None:
+    def _process_from_existing(self, fail_early: bool) -> None:
         # This method is called when we repair an existing data source
         # All events are muted during processing
         self._emit(events.SourceMessagesRequested, dict())
@@ -123,12 +125,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     is_first = False
                 else:
                     seq = strategy.get_sequence()
-                    if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                    if (fail_early or not self._ignore_invalid_sequences) and seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
             except Exception as ex:
-                if self._ignore_errors:
+                if self._ignore_errors and not fail_early:
                     logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
                 else:
                     raise ex
@@ -184,7 +186,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
-    def repair(self) -> Iterable[str]:
+    def repair(self) -> list[str]:
         # This method attempts some basic repairs, trying to save as much
         # data as possible:
         # 0. Remove duplicate creations
@@ -204,8 +206,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # Read strategies and repair in one pass
         filename = self._get_filename()
         strategies: deque[AbstractStrategy] = deque()
-        all_users: set[str] = set()
-        all_backlogs: set[str] = set()
+        all_users: dict[str, set[str]] = dict()
+        all_backlogs: dict[str, set[str]] = dict()
         all_workitems: set[str] = set()
         repaired_backlog: str | None = None
         with open(filename, encoding='UTF-8') as f:
@@ -221,34 +223,67 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 # Create users on the first reference
                 if t is CreateUserStrategy:
                     cast: CreateUserStrategy = s
-                    if cast.get_user_identity() in all_users:   # Remove duplicate creation
-                        log.append(f'Skipped duplicate user: {s}')
+                    uid = cast.get_target_user_identity()
+                    if uid in all_users:   # Remove duplicate creation
+                        log.append(f'Skipped a duplicate user: {uid}')
                         changes += 1
                         continue
-                    all_users.add(cast.get_user_identity())
-                elif t is DeleteUserStrategy or t is RenameUserStrategy:
-                    cast: DeleteUserStrategy | RenameUserStrategy = s
-                    uid = cast.get_user_identity()
+                    all_users[uid] = set()
+                elif t is DeleteUserStrategy:
+                    cast: DeleteUserStrategy = s
+                    uid = cast.get_target_user_identity()
+                    if uid not in all_users:
+                        log.append(f'Skipped deletion of a non-existent user: {uid}')
+                        changes += 1
+                        continue
+
+                    # Remove all user's backlogs with their content recursively
+                    for backlog_uid in all_users[uid]:
+                        if backlog_uid in all_backlogs:
+                            for workitem_uid in all_backlogs[backlog_uid]:
+                                if workitem_uid in all_workitems:
+                                    all_workitems.remove(workitem_uid)
+                            del all_backlogs[backlog_uid]
+                    del all_users[uid]
+
+                elif t is RenameUserStrategy:
+                    cast: RenameUserStrategy = s
+                    uid = cast.get_target_user_identity()
                     if uid not in all_users:
                         strategies.append(CreateUserStrategy(1,
                                                              s._when,
                                                              s._user_identity,
                                                              [uid, f"[Repaired] {uid}"],
                                                              self._settings))
-                        all_users.add(uid)
-                        log.append(f'Created missing user on first reference: {s}')
+                        all_users[uid] = set()
+                        log.append(f'Created a missing user on first reference: {uid}')
                         changes += 1
 
                 # Create backlogs on the first reference
                 elif t is CreateBacklogStrategy:
                     cast: CreateBacklogStrategy = s
-                    if cast.get_backlog_uid() in all_backlogs:   # Remove duplicate creation
-                        log.append(f'Skipped duplicate backlog: {s}')
+                    uid = cast.get_backlog_uid()
+                    if uid in all_backlogs:   # Remove duplicate creation
+                        log.append(f'Skipped a duplicate backlog: {uid}')
                         changes += 1
                         continue
-                    all_backlogs.add(cast.get_backlog_uid())
-                elif t is DeleteBacklogStrategy or t is RenameBacklogStrategy or t is CreateWorkitemStrategy:
-                    cast: DeleteBacklogStrategy | RenameBacklogStrategy | CreateWorkitemStrategy = s
+                    all_backlogs[uid] = set()
+                elif t is DeleteBacklogStrategy:
+                    cast: DeleteBacklogStrategy = s
+                    uid = cast.get_backlog_uid()
+                    if uid not in all_backlogs:
+                        log.append(f'Skipped deletion of a non-existent backlog: {uid}')
+                        changes += 1
+                        continue
+
+                    # Remove all child workitems recursively
+                    for workitem_uid in all_backlogs[uid]:
+                        if workitem_uid in all_workitems:
+                            all_workitems.remove(workitem_uid)
+                    del all_backlogs[uid]
+
+                elif t is RenameBacklogStrategy or t is CreateWorkitemStrategy:
+                    cast: RenameBacklogStrategy | CreateWorkitemStrategy = s
                     uid = cast.get_backlog_uid()
                     if uid not in all_backlogs:
                         strategies.append(CreateBacklogStrategy(1,
@@ -256,20 +291,38 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                 s._user_identity,
                                                                 [uid, f"[Repaired] {uid}"],
                                                                 self._settings))
-                        all_backlogs.add(uid)
-                        log.append(f'Created missing backlog on first reference: {s}')
+                        all_backlogs[uid] = set()
+                        all_users[s._user_identity].add(uid)
+                        log.append(f'Created a missing backlog on first reference: {uid}')
                         changes += 1
                     if t is CreateWorkitemStrategy:
                         cast: CreateWorkitemStrategy = s
-                        if cast.get_workitem_uid() in all_workitems:  # Remove duplicate creation
-                            log.append(f'Skipped duplicate workitem: {s}')
+                        uid = cast.get_workitem_uid()
+                        if uid in all_workitems:  # Remove duplicate creation
+                            log.append(f'Skipped a duplicate workitem: {uid}')
                             changes += 1
                             continue
-                        all_workitems.add(cast.get_workitem_uid())
+                        all_workitems.add(uid)
+                        all_backlogs[cast.get_backlog_uid()].add(uid)
 
-                # Create workitems on the first reference
-                elif t is DeleteWorkitemStrategy or t is RenameWorkitemStrategy or t is CompleteWorkitemStrategy:
-                    cast: DeleteWorkitemStrategy | RenameWorkitemStrategy | CompleteWorkitemStrategy = s
+                elif t is DeleteWorkitemStrategy:
+                    cast: DeleteWorkitemStrategy = s
+                    uid = cast.get_workitem_uid()
+                    if uid not in all_workitems:
+                        log.append(f'Skipped deletion of a non-existent workitem: {uid}')
+                        changes += 1
+                        continue
+                    all_workitems.remove(uid)
+
+                # Create workitems on the first reference. All those strategies assume an existing workitem.
+                elif t is RenameWorkitemStrategy or \
+                        t is CompleteWorkitemStrategy or \
+                        t is StartWorkStrategy or \
+                        t is StartRestStrategy or \
+                        t is AddPomodoroStrategy or \
+                        t is VoidPomodoroStrategy or \
+                        t is RemovePomodoroStrategy:
+                    cast: RenameWorkitemStrategy = s
                     uid = cast.get_workitem_uid()
                     if uid not in all_workitems:
                         if repaired_backlog is None:
@@ -279,7 +332,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                     s._user_identity,
                                                                     [repaired_backlog, '[Repaired] Orphan workitems'],
                                                                     self._settings))
-                            all_backlogs.add(repaired_backlog)
+                            all_backlogs[repaired_backlog] = set()
+                            all_users[s._user_identity].add(repaired_backlog)
                             log.append(f'Created a backlog for orphan workitems: {repaired_backlog}')
                             changes += 1
                         strategies.append(CreateWorkitemStrategy(1,
@@ -288,11 +342,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
                                                                  [uid, repaired_backlog, f"[Repaired] {uid}"],
                                                                  self._settings))
                         all_workitems.add(uid)
-                        log.append(f'Created missing workitem on first reference: {s}')
+                        all_backlogs[repaired_backlog].add(uid)
+                        log.append(f'Created a missing workitem on first reference: {uid}')
                         changes += 1
 
                 strategies.append(s)
 
+        # Now we need to ensure data consistency somehow. Even though all workitems and backlogs might be there,
+        # we may still have an issue with removing too many pomodoros or starting sealed workitems. To fix those,
+        # it would be easier to just skip the strategies which throw exceptions on parse.
         while True:
             # Renumber strategies
             seq = strategies[0].get_sequence()
@@ -308,13 +366,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Restart and remove failing strategies
             new_source = self.clone(Tenant(self._settings), strategies)
             try:
-                new_source.start()
+                new_source.start(fail_early=True)
                 log.append(f'Tested successfully')
-                break   # No exceptions means we repaired successfully
+                break   # No exceptions mean we repaired successfully
             except Exception as ex:
                 failed = new_source.get_last_strategy()
                 log.append(f'Tested with an error: {ex}. Removed failed strategy: {failed}')
+                print(f'Size before remove: {len(strategies)}')
                 strategies.remove(failed)
+                print(f'Size after remove: {len(strategies)}')
                 changes += 1
 
         if changes > 0:
