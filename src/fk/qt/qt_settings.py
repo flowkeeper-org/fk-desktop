@@ -68,5 +68,7 @@ class QtSettings(AbstractSettings):
             for setting in category:
                 key = setting[0]
                 if key.endswith('!'):
-                    if self.get(key) is not None:
+                    value = self.get(key)
+                    print('key', key, value)
+                    if self.get(key) is not None and value != '':
                         keyring.delete_password(self._app_name, key)

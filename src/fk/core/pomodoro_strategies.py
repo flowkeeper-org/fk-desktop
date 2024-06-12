@@ -32,6 +32,9 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _work_duration: float
 
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -95,6 +98,9 @@ class StartRestStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _rest_duration: float
 
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -147,6 +153,9 @@ class StartRestStrategy(AbstractStrategy[Tenant]):
 class AddPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
 
     def __init__(self,
                  seq: int,
@@ -236,6 +245,9 @@ def _complete_pomodoro(user: User,
 class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -313,6 +325,9 @@ class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
 class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _num_pomodoros: int
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
 
     def __init__(self,
                  seq: int,
