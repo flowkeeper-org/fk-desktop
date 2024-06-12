@@ -186,7 +186,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
-    def repair(self) -> Iterable[str]:
+    def repair(self) -> list[str]:
         # This method attempts some basic repairs, trying to save as much
         # data as possible:
         # 0. Remove duplicate creations
