@@ -273,6 +273,19 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             in self._definitions[category]
         ]
 
+    def _get_property(self, option_id, n) -> str:
+        for cat in self._definitions.values():
+            for opt in cat:
+                if opt[0] == option_id:
+                    return opt[n]
+        raise Exception(f'Invalid option {option_id}')
+
+    def get_type(self, option_id) -> str:
+        return self._get_property(option_id, 1)
+
+    def get_display_name(self, option_id) -> str:
+        return self._get_property(option_id, 2)
+
     def reset_to_defaults(self) -> None:
         to_set = dict[str, str]()
         for lst in self._definitions.values():

@@ -96,8 +96,8 @@ class SettingsDialog(QDialog):
                 self._data.reset_to_defaults()
                 self.close()
         elif role == QDialogButtonBox.ButtonRole.AcceptRole:
-            self._save_settings()
-            self.close()
+            if self._save_settings():
+                self.close()
 
     def _computed_values(self) -> dict[str, str]:
         computed = dict[str, str]()
@@ -114,7 +114,6 @@ class SettingsDialog(QDialog):
             old_value = self._data.get(name)
             calculated_value = new_value if name == option_id else self._widgets_value[name]()
             if old_value != calculated_value:
-                print(f'Changed {name} from {old_value} to {calculated_value}')
                 changed = True
                 break
 
@@ -134,14 +133,19 @@ class SettingsDialog(QDialog):
         self._buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(is_enabled)
         self._buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(is_enabled)
 
-    def _save_settings(self):
+    def _save_settings(self) -> bool:
+        # Returns True if the settings were changed
         to_set = dict[str, str]()
         for name in self._widgets_value:
             value = self._widgets_value[name]()
             if self._data.get(name) != value:
+                if self._data.get_type(name) == 'key':
+                    if not SettingsDialog.display_key_warning(self._data.get_display_name(name)):
+                        return False
                 to_set[name] = value
         self._data.set(to_set)
         self._set_buttons_state(False)
+        return True
 
     @staticmethod
     def do_browse(edit: QLineEdit) -> None:
@@ -153,44 +157,24 @@ class SettingsDialog(QDialog):
             edit.setText(selected)
 
     @staticmethod
-    def do_change_key(edit: QLineEdit) -> None:
-        warning_text = "WARNING: Flowkeeper.org requires end-to-end data encryption. This mechanism ensures \n" \
-                       "that nobody (including Flowkeeper developers) can have access to your online data, \n" \
-                       "which is transmitted and stored in encrypted form. To encrypt and decrypt your data \n" \
-                       "Flowkeeper uses a key, which is stored ONLY ON THIS COMPUTER. A default secure random \n" \
-                       "key is generated during Flowkeeper installation.\n\n" \
+    def display_key_warning(name: str) -> bool:
+        warning_text = f"WARNING: You are about to change the {name}! Read this carefully.\n\n" \
                        \
-                       "If you lose this key, nobody in the world will be able to decrypt your existing data, \n" \
-                       "which will be lost forever! Although this key is stored in the settings, which should \n" \
-                       "survive Flowkeeper re-installation on this computer, we HIGHLY recommend you to store a \n" \
-                       "copy of it in a safe place, in case something happens with your disk or operating \n" \
-                       "system.\n\n" \
+                       "It is only stored on your computer, so if you lose this key, you won't be able to " \
+                       "restore it. Therefore, please SAVE A COPY IN A SAFE PLACE.\n\n" \
                        \
-                       "Alternatively, you can also choose your own key and treat it like a password, just \n" \
-                       "note that you will NOT be able to restore it if you forget it.\n\n" \
+                       "DO NOT CHANGE THIS KEY IF YOU ALREADY CREATED SOME DATA! If you do it, " \
+                       "Flowkeeper won't be able to decrypt your old data and so you will lose " \
+                       "access to it. Instead, export your data, and then " \
+                       "import it into a clean data store with the new key.\n\n" \
                        \
-                       "Finally, you will have to provide the same key in all your Flowkeeper apps, which \n" \
-                       "connect to this flowkeeper.org account."
-
-        old_key = edit.text()
-        (new_key, ok) = QInputDialog.getText(edit,
-                                             "End-to-end encryption key",
-                                             warning_text,
-                                             text=old_key)
-        if ok and old_key != new_key:
-            if QMessageBox().warning(edit,
-                                     "Confirmation",
-                                     "If you see existing data in this app -- you WILL lose access to it after "
-                                     "clicking 'Yes'! Are you sure?",
+                       "Finally, you will have to provide the same key in all your Flowkeeper apps, which " \
+                       "connect to this account."
+        return QMessageBox().warning(None,
+                                     f"Change {name}?",
+                                     warning_text,
                                      QMessageBox.StandardButton.Yes,
-                                     QMessageBox.StandardButton.Cancel) \
-                    == QMessageBox.StandardButton.Yes:
-                edit.setText(new_key)
-                QMessageBox().information(edit,
-                                          "Info",
-                                          "You still need to click Apply or Save. Also make sure that you use the "
-                                          "same encryption key across all your devices.",
-                                          QMessageBox.StandardButton.Ok)
+                                     QMessageBox.StandardButton.Cancel) == QMessageBox.StandardButton.Yes
 
     def _display_option(self,
                         parent: QWidget,
@@ -339,13 +323,12 @@ class SettingsDialog(QDialog):
             option_id_cache = f'{option_id.replace("!", "")}_cache!' if option_id.endswith('!') else f'{option_id}_cache'
             ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
             self._widgets_value[option_id_cache] = lambda: ''   # Always empty the cache
-
-            ed10.setHidden(True)
             layout.addWidget(ed10)
+
             key_view = QPushButton(parent)
-            key_view.setText('IMPORTANT - READ THIS')
-            key_view.setIcon(QIcon(':/icons/warning.png'))
-            key_view.clicked.connect(lambda: SettingsDialog.do_change_key(ed10))
+            key_view.setText('Show')
+            key_view.clicked.connect(lambda: ed10.setEchoMode(QLineEdit.EchoMode.Password if ed10.echoMode() == QLineEdit.EchoMode.Normal else QLineEdit.EchoMode.Normal))
+            key_view.clicked.connect(lambda: key_view.setText("Show" if key_view.text() == "Hide" else "Hide"))
             layout.addWidget(key_view)
             return [widget]
         else:
