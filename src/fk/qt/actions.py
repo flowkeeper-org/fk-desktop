@@ -108,3 +108,10 @@ class Actions:
 
     def get_settings(self):
         return self._settings
+
+    def all_actions_defined(self) -> None:
+        if self._settings.get('Application.shortcuts') == '{}':
+            shortcuts = dict()
+            for a in self._actions:
+                shortcuts[a] = self._actions[a].shortcut().toString()
+            self._settings.set({'Application.shortcuts': json.dumps(shortcuts)})

@@ -99,22 +99,33 @@ class SettingsDialog(QDialog):
             self._save_settings()
             self.close()
 
+    def _computed_values(self) -> dict[str, str]:
+        computed = dict[str, str]()
+        for name in self._widgets_value:
+            computed[name] = self._widgets_value[name]()
+        return computed
+
     def _on_value_changed(self, option_id, new_value):
-        old_value = self._data.get(option_id)
-        logger.debug(f"Changed {option_id} from {old_value} to {new_value}")
+        changed = False
+        logger.debug(f"Changed {option_id} to {new_value}")
+
         # Enable / disable "save" buttons
-        # TODO: Do this for *all* values at once, not only for this one
-        self._set_buttons_state(old_value != new_value)
+        for name in self._widgets_value:
+            old_value = self._data.get(name)
+            calculated_value = new_value if name == option_id else self._widgets_value[name]()
+            if old_value != calculated_value:
+                print(f'Changed {name} from {old_value} to {calculated_value}')
+                changed = True
+                break
+
+        self._set_buttons_state(changed)
         self._recompute_visibility(option_id, new_value)
 
     def _recompute_visibility(self, option_id, new_value):
         # Name / value pair here is a hack to "override" settings value for visibility checks
         # because Qt sends value change events BEFORE setValue() finished
-        computed = dict[str, str]()
-        for name in self._widgets_value:
-            computed[name] = self._widgets_value[name]()
+        computed = self._computed_values()
         computed[option_id] = new_value
-
         for widget in self._widgets_visibility:
             is_visible = self._widgets_visibility[widget](computed)
             widget.setVisible(is_visible)
