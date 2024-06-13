@@ -3,3 +3,4 @@ semantic-version
 cryptography
 keyring
 keyrings.alt
+dbus-python
