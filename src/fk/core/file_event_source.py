@@ -372,9 +372,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             except Exception as ex:
                 failed = new_source.get_last_strategy()
                 log.append(f'Tested with an error: {ex}. Removed failed strategy: {failed}')
-                print(f'Size before remove: {len(strategies)}')
                 strategies.remove(failed)
-                print(f'Size after remove: {len(strategies)}')
                 changes += 1
 
         if changes > 0:

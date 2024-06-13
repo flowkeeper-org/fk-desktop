@@ -15,11 +15,12 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
+import re
 import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime
-from PySide6.QtGui import QFont, QKeySequence, QIcon
+from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog
@@ -33,21 +34,26 @@ logger = logging.getLogger(__name__)
 
 class SettingsDialog(QDialog):
     _data: AbstractSettings
-    _widgets_value: dict[str, Callable[[], str]]
+    _widgets_get_value: dict[str, Callable[[], str]]
+    _widgets_set_value: dict[str, Callable[[str], None]]
     _widgets_visibility: dict[QWidget, Callable[[dict[str, str]], bool]]
     _buttons: QDialogButtonBox
-    _buttons_mapping: dict[str, Callable[[dict[str, str]], None]] | None
+    _buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None
 
     def __init__(self,
                  data: AbstractSettings,
-                 buttons_mapping: dict[str, Callable[[dict[str, str]], bool]] | None = None):
+                 buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None = None):
         super().__init__()
         self._data = data
         self._buttons_mapping = buttons_mapping
-        self._widgets_value = dict()
+        self._widgets_get_value = dict()
+        self._widgets_set_value = dict()
         self._widgets_visibility = dict()
         self.resize(QSize(500, 450))
         self.setWindowTitle("Settings")
+
+        self._init_gradients()
+        self._init_sign_out_button()
 
         buttons = QDialogButtonBox(self)
         buttons.setStandardButtons(
@@ -80,6 +86,30 @@ class SettingsDialog(QDialog):
         self.setLayout(root_layout)
         self._set_buttons_state(False)
 
+    def _init_sign_out_button(self):
+        lst = self._data._definitions['Connection']
+        for i, d in enumerate(lst):
+            if d[0] == 'WebsocketEventSource.logout':
+                t = list(d)
+                t[2] = f'Sign out <{self._data.get_username()}>'
+                lst[i] = tuple(t)
+                return
+
+    def _init_gradients(self):
+        regex = re.compile('([A-Z][a-z]+)([A-Z].+)')
+        for d in self._data._definitions['Appearance']:
+            if d[0] == 'Application.eyecandy_gradient':
+                choice = d[4]
+                choice.clear()
+                for preset in QGradient.Preset:
+                    if preset.name == 'NumPresets':
+                        continue
+                    m = regex.search(preset.name)
+                    if m is not None:
+                        display_name = f'{m.group(1)} {m.group(2)}'
+                        choice.append(f'{preset.name}:{display_name}')
+                break
+
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
         if role == QDialogButtonBox.ButtonRole.ApplyRole:
             self._save_settings()
@@ -101,8 +131,8 @@ class SettingsDialog(QDialog):
 
     def _computed_values(self) -> dict[str, str]:
         computed = dict[str, str]()
-        for name in self._widgets_value:
-            computed[name] = self._widgets_value[name]()
+        for name in self._widgets_get_value:
+            computed[name] = self._widgets_get_value[name]()
         return computed
 
     def _on_value_changed(self, option_id, new_value):
@@ -110,9 +140,9 @@ class SettingsDialog(QDialog):
         logger.debug(f"Changed {option_id} to {new_value}")
 
         # Enable / disable "save" buttons
-        for name in self._widgets_value:
+        for name in self._widgets_get_value:
             old_value = self._data.get(name)
-            calculated_value = new_value if name == option_id else self._widgets_value[name]()
+            calculated_value = new_value if name == option_id else self._widgets_get_value[name]()
             if old_value != calculated_value:
                 changed = True
                 break
@@ -136,8 +166,8 @@ class SettingsDialog(QDialog):
     def _save_settings(self) -> bool:
         # Returns True if the settings were changed
         to_set = dict[str, str]()
-        for name in self._widgets_value:
-            value = self._widgets_value[name]()
+        for name in self._widgets_get_value:
+            value = self._widgets_get_value[name]()
             if self._data.get(name) != value:
                 if self._data.get_type(name) == 'key':
                     if not SettingsDialog.display_key_warning(self._data.get_display_name(name)):
@@ -187,14 +217,16 @@ class SettingsDialog(QDialog):
             ed1 = QLineEdit(parent)
             ed1.setText(option_value)
             ed1.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            self._widgets_value[option_id] = ed1.text
+            self._widgets_get_value[option_id] = ed1.text
+            self._widgets_set_value[option_id] = ed1.setText
             return [ed1]
         elif option_type == 'secret':
             ed2 = QLineEdit(parent)
             ed2.setEchoMode(QLineEdit.EchoMode.Password)
             ed2.setText(option_value)
             ed2.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            self._widgets_value[option_id] = ed2.text
+            self._widgets_get_value[option_id] = ed2.text
+            self._widgets_set_value[option_id] = ed2.setText
             return [ed2]
         elif option_type == 'file':
             widget = QWidget(parent)
@@ -203,7 +235,8 @@ class SettingsDialog(QDialog):
             ed3 = QLineEdit(parent)
             ed3.setText(option_value)
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            self._widgets_value[option_id] = ed3.text
+            self._widgets_get_value[option_id] = ed3.text
+            self._widgets_set_value[option_id] = ed3.setText
             layout.addWidget(ed3)
             browse_btn = QPushButton(parent)
             browse_btn.setText('Browse...')
@@ -216,7 +249,8 @@ class SettingsDialog(QDialog):
             if len(option_options) > 0:
                 button.setIcon(QIcon(f':/icons/{option_options[0]}.png'))
             button.clicked.connect(lambda: self._handle_button_click(option_id))
-            self._widgets_value[option_id] = lambda: ""
+            self._widgets_get_value[option_id] = lambda: ""
+            self._widgets_set_value[option_id] = lambda txt: button.setText(txt)
             return [button]
         elif option_type == 'int':
             ed4 = QSpinBox(parent)
@@ -224,28 +258,26 @@ class SettingsDialog(QDialog):
             ed4.setMaximum(option_options[1])
             ed4.setValue(int(option_value))
             ed4.valueChanged.connect(lambda v: self._on_value_changed(option_id, str(v)))
-            self._widgets_value[option_id] = lambda: str(ed4.value())
+            self._widgets_get_value[option_id] = lambda: str(ed4.value())
+            self._widgets_set_value[option_id] = lambda txt: ed4.setValue(int(txt))
             return [ed4]
         elif option_type == 'bool':
             ed5 = QCheckBox(parent)
             ed5.setChecked(option_value == 'True')
             ed5.stateChanged.connect(lambda v: self._on_value_changed(option_id, str(v == 2)))
-            self._widgets_value[option_id] = lambda: str(ed5.isChecked())
+            self._widgets_get_value[option_id] = lambda: str(ed5.isChecked())
+            self._widgets_set_value[option_id] = lambda txt: ed5.setChecked(txt == 'True')
             return [ed5]
         elif option_type == 'choice':
             ed6 = QComboBox(parent)
             ed6.addItems([v.split(':')[1] for v in option_options])
+            ed6.setCurrentIndex(self._find_combobox_option(option_options, option_value))
             ed6.currentIndexChanged.connect(lambda v: self._on_value_changed(
                 option_id,
                 option_options[ed6.currentIndex()].split(':')[0]
             ))
-            i = 0
-            for v in option_options:
-                if v.split(':')[0] == option_value:
-                    break
-                i += 1
-            ed6.setCurrentIndex(i)
-            self._widgets_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
+            self._widgets_get_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
+            self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
             return [ed6]
         elif option_type == 'font':
             ed7 = QFontComboBox(parent)
@@ -254,7 +286,8 @@ class SettingsDialog(QDialog):
                 v.family()
             ))
             ed7.setCurrentFont(option_value)
-            self._widgets_value[option_id] = lambda: ed7.currentFont().family()
+            self._widgets_get_value[option_id] = lambda: ed7.currentFont().family()
+            self._widgets_set_value[option_id] = lambda txt: ed7.currentFont().setFamily(txt)
             return [ed7]
         elif option_type == 'shortcuts':
             widget = QWidget(parent)
@@ -282,7 +315,8 @@ class SettingsDialog(QDialog):
             ed8 = QComboBox(parent)
             ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
             ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
-            self._widgets_value[option_id] = lambda: json.dumps(shortcuts)
+            self._widgets_get_value[option_id] = lambda: json.dumps(shortcuts)
+            self._widgets_set_value[option_id] = lambda txt: logger.error('Changing shortcuts programmatically is not implemented yet')
 
             layout.addWidget(ed8)
 
@@ -307,7 +341,8 @@ class SettingsDialog(QDialog):
             minutes = int(total_seconds / 60) - hours * 60
             seconds = total_seconds - hours * 60 * 60 - minutes * 60
             ed9.setTime(QTime(hours, minutes, seconds, 0))
-            self._widgets_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
+            self._widgets_get_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
+            self._widgets_set_value[option_id] = lambda txt: logger.error('Changing durations programmatically is not implemented yet')
             return [ed9]
         elif option_type == 'key':
             widget = QWidget(parent)
@@ -318,11 +353,12 @@ class SettingsDialog(QDialog):
             ed10.setEchoMode(QLineEdit.EchoMode.Password)
 
             ed10.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            self._widgets_value[option_id] = ed10.text
+            self._widgets_get_value[option_id] = ed10.text
+            self._widgets_set_value[option_id] = ed10.setText
 
             option_id_cache = f'{option_id.replace("!", "")}_cache!' if option_id.endswith('!') else f'{option_id}_cache'
             ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
-            self._widgets_value[option_id_cache] = lambda: ''   # Always empty the cache
+            self._widgets_get_value[option_id_cache] = lambda: ''   # Always empty the cache
             layout.addWidget(ed10)
 
             key_view = QPushButton(parent)
@@ -334,6 +370,14 @@ class SettingsDialog(QDialog):
         else:
             return []
 
+    def _find_combobox_option(self, option_options: list[str], option_value: str):
+        i = 0
+        for v in option_options:
+            if v.split(':')[0] == option_value:
+                break
+            i += 1
+        return i
+
     def _handle_button_click(self, option_id: str):
         if self._buttons_mapping is None or option_id not in self._buttons_mapping:
             QMessageBox().warning(self,
@@ -343,11 +387,15 @@ class SettingsDialog(QDialog):
             return
 
         values: dict[str, str] = dict()
-        for name in self._widgets_value:
-            values[name] = self._widgets_value[name]()
+        for name in self._widgets_get_value:
+            values[name] = self._widgets_get_value[name]()
 
-        if self._buttons_mapping[option_id](values):
+        if self._buttons_mapping[option_id](values, self._value_changed_extrnally):
             self.close()
+
+    def _value_changed_extrnally(self, name: str, value: str):
+        logger.debug(f'Update the setting display of {name} to {value}')
+        self._widgets_set_value[name](value)
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
         res = QWidget(tabs)

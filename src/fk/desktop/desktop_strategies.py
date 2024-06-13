@@ -120,9 +120,7 @@ class ErrorStrategy(AbstractStrategy):
                 "which is based on AES cypher. The server deals with encrypted content only, and we don't "
                 "have any means of decrypting it, so as long as you keep your encryption key private, your "
                 "personal data should be safe.\n\n"
-                "If you click Yes, we will automatically create an account for the "
-                "email you provided, and won't show this message again. If you'd like to "
-                "delete your account, please send an email to contact@flowkeeper.org.",
+                "If you click Yes, we will automatically create an account for the email you provided.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             ) == QMessageBox.StandardButton.Yes:
                 logger.debug('Obtained consent for Flowkeeper Server, will re-authenticate')
@@ -132,6 +130,12 @@ class ErrorStrategy(AbstractStrategy):
                     'WebsocketEventSource.consent': 'True',
                 })
         elif self._error_message == 'Deleted':
+            self._settings.set({
+                'WebsocketEventSource.auth_type': 'google',
+                'WebsocketEventSource.username': 'user@local.host',
+                'WebsocketEventSource.consent': 'False',
+                'WebsocketEventSource.refresh_token!': '',
+            })
             QMessageBox().warning(None,
                                   'Deleted',
                                   'Your account was deleted and Flowkeeper went offline. '

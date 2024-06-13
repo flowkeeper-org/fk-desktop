@@ -106,6 +106,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
         self._callback_invoker = callback_invoker
 
+        self._defaults = dict()
         self._definitions = {
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
@@ -153,7 +154,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
                 ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
-                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
+                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
                 ('', 'separator', '', '', [], _always_show),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
@@ -190,8 +191,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "gradient:Gradient",
                 ], _always_show),
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
-                ('Application.eyecandy_gradient', 'str', 'Background gradient', 'SugarLollipop', [], _never_show),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
@@ -220,7 +221,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
-        self._defaults = dict()
         for lst in self._definitions.values():
             for s in lst:
                 self._defaults[s[0]] = s[3]

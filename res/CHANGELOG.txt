@@ -1,6 +1,10 @@
 ### v0.5.1 (TBD)
+- Simplified Connection settings.
+- Gradient can be now selected in the Settings popup.
 - [Bugfix] Fixed an error with the passwords stored in the OS keychain.
+- [Bugfix] Fixed Settings not detecting the changes correctly.
 - [Technical] Now the user can choose to ignore errors for the Local File data source.
+- [Technical] Buttons like "Sign out" can now change Settings window state.
 
 ### v0.5.0 (9 June 2024)
 - Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
