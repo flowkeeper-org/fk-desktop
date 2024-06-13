@@ -384,6 +384,7 @@ class Application(QApplication, AbstractEventEmitter):
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
             'WebsocketEventSource.authenticate': self.sign_in,
+            'WebsocketEventSource.logout': self.sign_out,
             'WebsocketEventSource.delete_account': self.delete_account,
         }).show()
 
@@ -460,6 +461,14 @@ class Application(QApplication, AbstractEventEmitter):
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
         authenticate(self, save)
+        return False
+
+    def sign_out(self, _) -> bool:
+        self._settings.set({
+            'WebsocketEventSource.username': 'user@local.host',
+            'WebsocketEventSource.consent': 'False',
+            'WebsocketEventSource.refresh_token!': '',
+        })
         return False
 
     @staticmethod

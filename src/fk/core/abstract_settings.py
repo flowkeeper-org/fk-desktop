@@ -73,6 +73,14 @@ def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_alarm_sound'] == 'True'
 
 
+def _show_if_signed_in(values: dict[str, str]) -> bool:
+    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] != 'user@local.host'
+
+
+def _show_if_signed_out(values: dict[str, str]) -> bool:
+    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] == 'user@local.host'
+
+
 def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_rest_sound'] == 'True'
 
@@ -143,7 +151,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
                 ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
-                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
+                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
+                ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
                 ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
                 ('', 'separator', '', '', [], _always_show),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
