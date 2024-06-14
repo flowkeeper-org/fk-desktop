@@ -47,6 +47,7 @@ from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
+from fk.desktop.stats_window import StatsWindow
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
@@ -494,6 +495,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
+        actions.add('application.stats', "Statistics", '', None, Application.show_stats)
 
     def quit_local(self):
         Application.quit()
@@ -534,6 +536,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_tutorial(self, event: str = None) -> None:
         TutorialWindow(self.activeWindow(), self._settings).show()
+
+    def show_stats(self, event: str = None) -> None:
+        StatsWindow(self.activeWindow(), self._source_holder.get_source()).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
