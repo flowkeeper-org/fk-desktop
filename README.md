@@ -12,9 +12,14 @@ simple tool, which focuses on doing one thing well. It is Free Software with ope
 ## Building
 
 Flowkeeper has a single major dependency -- Qt 6.6, which in turn requires Python 3.8 or later (3.9+ if you
-use Qt 6.7). We build Flowkeeper using Python 3.11, but also test it with 3.10.
-If you want to build it with Ubuntu 20.04 or Debian 11, both of which come with older versions 
-of Python, you would have to [compile Python 3.11 first](https://fostips.com/install-python-3-10-debian-11/).
+use Qt 6.7). To create installers and binary packages we build Flowkeeper on Ubuntu 22.04 using Python 3.11 
+and the latest version of Qt (6.7.2 at the time of writing). We also occasionally test it on Ubuntu 20.04 
+against Qt 6.2.4 and Python 3.8.10. Some features might not work as expected with Qt 6.2.x.
+
+OLD ADVICE, which might not be relevant to you anymore: If you want to build it with Ubuntu 20.04 or Debian 11, 
+both of which come with older versions of Python, you would have to 
+[compile Python 3.11](https://fostips.com/install-python-3-10-debian-11/). <-- Try the system Python version 
+first. 
 
 The Websocket backend relies on Qt WebSockets module, which in turn requires OpenSSL 3.0. Note 
 that some legacy OS like Ubuntu 20.04 require manual steps to install OpenSSL v3.
