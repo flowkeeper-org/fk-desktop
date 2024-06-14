@@ -2,5 +2,3 @@ PySide6>=6.6.2
 semantic-version
 cryptography
 keyring
-keyrings.alt
-dbus-python
