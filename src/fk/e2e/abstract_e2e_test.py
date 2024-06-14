@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import asyncio
 import atexit
 import inspect
@@ -22,7 +24,7 @@ import sys
 import traceback
 from abc import ABC
 from datetime import datetime
-from typing import Callable, Self
+from typing import Callable
 from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
@@ -170,7 +172,7 @@ class AbstractE2eTest(ABC):
         self._append_to_system_out_for_method(f'ERROR: {e}')
         self._errors += 1
 
-    def do(self, what: Callable[[], None], delay: int = 1) -> Self:
+    def do(self, what: Callable[[], None], delay: int = 1) -> AbstractE2eTest:
         self._timer.timeout.disconnect()
         self._timer.timeout.connect(lambda: self._do_once(what))
         self._timer.start(delay)

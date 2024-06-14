@@ -13,10 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import datetime
 import logging
 from abc import ABC, abstractmethod
-from typing import Iterable, Self, Callable, TypeVar, Generic
+from typing import Iterable, Callable, TypeVar, Generic
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -191,7 +193,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 yield pomodoro
 
     @abstractmethod
-    def clone(self, new_root: TRoot) -> Self:
+    def clone(self, new_root: TRoot) -> AbstractEventSource[TRoot]:
         pass
 
     def _sequence_error(self, prev: int, next_: int) -> None:
@@ -217,7 +219,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def connect(self):
         raise Exception('Connect is not supported on this type of event source')
 
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[Self]:
+    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[AbstractEventSource[TRoot]]:
         return CreateUserStrategy(1,
                                   datetime.datetime.now(datetime.timezone.utc),
                                   ADMIN_USER,

@@ -13,8 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import logging
-from typing import Self
 
 from PySide6 import QtGui, QtWidgets, QtCore
 from PySide6.QtCore import Qt
@@ -52,7 +53,7 @@ class BacklogItem(QtGui.QStandardItem):
         font = font_today if self._backlog.is_today() else font_new
         self.setData(font, Qt.FontRole)
 
-    def __lt__(self, other: Self):
+    def __lt__(self, other: BacklogItem):
         return self._backlog.get_last_modified_date() < other._backlog.get_last_modified_date()
 
 
