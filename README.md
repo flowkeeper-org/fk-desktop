@@ -11,7 +11,8 @@ simple tool, which focuses on doing one thing well. It is Free Software with ope
 
 ## Building
 
-Flowkeeper has a single major dependency -- Qt 6.6, which in turn requires Python 3.11 or later. 
+Flowkeeper has a single major dependency -- Qt 6.6, which in turn requires Python 3.8 or later (3.9+ if you
+use Qt 6.7). We build Flowkeeper using Python 3.11, but also test it with 3.10.
 If you want to build it with Ubuntu 20.04 or Debian 11, both of which come with older versions 
 of Python, you would have to [compile Python 3.11 first](https://fostips.com/install-python-3-10-debian-11/).
 
