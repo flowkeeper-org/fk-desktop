@@ -219,6 +219,7 @@ if __name__ == "__main__":
         WorkitemTableView.define_actions(actions)
         FocusWidget.define_actions(actions)
         MainWindow.define_actions(actions)
+        actions.all_actions_defined()
 
         audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 

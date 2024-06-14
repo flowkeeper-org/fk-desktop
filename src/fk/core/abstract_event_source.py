@@ -43,6 +43,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     _cryptograph: AbstractCryptograph
     _last_seq: int
     _estimated_count: int
+    _ignore_invalid_sequences: bool
+    _ignore_errors: bool
 
     def __init__(self,
                  serializer: AbstractSerializer,
@@ -93,6 +95,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._last_seq = 0
         self._estimated_count = 0
+        self._ignore_invalid_sequences = settings.get('Source.ignore_invalid_sequence') == 'True'
+        self._ignore_errors = settings.get('Source.ignore_errors') == 'True'
 
     # Override
     @abstractmethod
@@ -118,7 +122,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     # This will initiate connection, which will trigger replay
     @abstractmethod
-    def start(self, mute_events=True) -> None:
+    def start(self, mute_events: bool = True) -> None:
         pass
 
     def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
@@ -134,8 +138,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
         if persist:
-            self._last_seq = strategy.get_sequence()   # Only save it if all went well
             self._append([strategy])
+            self._last_seq = strategy.get_sequence()   # Only save it if all went well
 
     def execute(self,
                 strategy_class: type[AbstractStrategy[TRoot]],
@@ -148,9 +152,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         # TODO: Get username from the login provider instead
         if when is None:
             when = datetime.datetime.now(datetime.timezone.utc)
-        new_sequence = self._last_seq + 1
         s = strategy_class(
-            new_sequence,
+            self._last_seq + 1,
             when,
             self._settings.get_username(),
             params,

@@ -47,8 +47,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     _connection_attempt: int
     _reconnect_timer: AbstractTimer
     _received_error: bool
-    _ignore_invalid_sequences: bool
-    _ignore_errors: bool
     _application: QApplication
 
     def __init__(self,
@@ -69,9 +67,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: self._connection_lost())
         self._ws.textMessageReceived.connect(lambda msg: self._on_message(msg))
-
-        self._ignore_invalid_sequences = settings.get('WebsocketEventSource.ignore_invalid_sequence') == 'True'
-        self._ignore_errors = settings.get('WebsocketEventSource.ignore_errors') == 'True'
 
         # Log errors
         self._ws.sslErrors.connect(lambda e: self._on_error('SSL error', e))

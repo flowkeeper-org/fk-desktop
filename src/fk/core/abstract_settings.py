@@ -73,6 +73,14 @@ def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_alarm_sound'] == 'True'
 
 
+def _show_if_signed_in(values: dict[str, str]) -> bool:
+    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] != 'user@local.host'
+
+
+def _show_if_signed_out(values: dict[str, str]) -> bool:
+    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] == 'user@local.host'
+
+
 def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_rest_sound'] == 'True'
 
@@ -98,6 +106,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
         self._callback_invoker = callback_invoker
 
+        self._defaults = dict()
         self._definitions = {
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
@@ -128,6 +137,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "websocket:Self-hosted server (EXPERIMENTAL)",
                     "ephemeral:Ephemeral (in-memory, for testing purposes)",
                 ], _always_show),
+                ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
+                ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
@@ -141,10 +152,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
                 ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
-                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_for_google_auth),
-                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_for_websocket_source),
-                ('WebsocketEventSource.ignore_errors', 'bool', 'Ignore errors', 'True', [], _show_for_websocket_source),
-                ('WebsocketEventSource.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _show_for_websocket_source),
+                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
+                ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
+                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
+                ('', 'separator', '', '', [], _always_show),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
@@ -180,8 +191,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "gradient:Gradient",
                 ], _always_show),
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
-                ('Application.eyecandy_gradient', 'str', 'Background gradient', 'SugarLollipop', [], _never_show),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
                 ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
@@ -210,7 +221,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
             ],
         }
-        self._defaults = dict()
         for lst in self._definitions.values():
             for s in lst:
                 self._defaults[s[0]] = s[3]
@@ -271,6 +281,19 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             for option_id, option_type, option_display, option_default, option_options, option_visible
             in self._definitions[category]
         ]
+
+    def _get_property(self, option_id, n) -> str:
+        for cat in self._definitions.values():
+            for opt in cat:
+                if opt[0] == option_id:
+                    return opt[n]
+        raise Exception(f'Invalid option {option_id}')
+
+    def get_type(self, option_id) -> str:
+        return self._get_property(option_id, 1)
+
+    def get_display_name(self, option_id) -> str:
+        return self._get_property(option_id, 2)
 
     def reset_to_defaults(self) -> None:
         to_set = dict[str, str]()

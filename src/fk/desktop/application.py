@@ -23,6 +23,7 @@ import traceback
 import urllib
 import webbrowser
 from pathlib import Path
+from typing import Callable
 
 from PySide6 import QtCore
 from PySide6.QtCore import QFile
@@ -96,7 +97,7 @@ class Application(QApplication, AbstractEventEmitter):
         # has been constructed, as it uses default QFont and other
         # OS-specific values
         if self.is_e2e_mode():
-            self._settings = QtSettings('desktop-client-e2e')
+            self._settings = QtSettings('flowkeeper-desktop-e2e')
             self._settings.reset_to_defaults()
             self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
@@ -107,7 +108,7 @@ class Application(QApplication, AbstractEventEmitter):
         else:
             sys.excepthook = self.on_exception
             if self.is_testing_mode():
-                self._settings = QtSettings('desktop-client-testing')
+                self._settings = QtSettings('flowkeeper-desktop-testing')
                 self._settings.reset_to_defaults()
                 self._settings.set({
                     'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
@@ -349,6 +350,8 @@ class Application(QApplication, AbstractEventEmitter):
             if name == 'Source.type' or \
                     name.startswith('WebsocketEventSource.') or \
                     name.startswith('FileEventSource.') or \
+                    name == 'Source.ignore_errors' or \
+                    name == 'Source.ignore_invalid_sequence' or \
                     name == 'Source.encryption_enabled' or \
                     name == 'Source.encryption_key!':
                 request_new_source = True
@@ -382,10 +385,11 @@ class Application(QApplication, AbstractEventEmitter):
             'FileEventSource.repair': self.repair_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
             'WebsocketEventSource.authenticate': self.sign_in,
+            'WebsocketEventSource.logout': self.sign_out,
             'WebsocketEventSource.delete_account': self.delete_account,
         }).show()
 
-    def repair_file_event_source(self, _) -> bool:
+    def repair_file_event_source(self, _, callback: Callable) -> bool:
         if QMessageBox().warning(self.activeWindow(),
                                  "Confirmation",
                                  f"Are you sure you want to repair the data source? "
@@ -403,15 +407,17 @@ class Application(QApplication, AbstractEventEmitter):
                 == QMessageBox.StandardButton.Ok:
             cast: FileEventSource = self._source_holder.get_source()
             log = cast.repair()
+            if log[-1] != 'No changes were made':
+                # Reload the source
+                self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
                                           "Please save this log for future reference. "
-                                          "You can find all new items by searching (CTRL+F) for [Repaired] string.\n"
-                                          "Flowkeeper restart is required to reload the changes.",
+                                          "You can find all new items by searching (CTRL+F) for [Repaired] string.",
                                           "\n".join(log))
             return False
 
-    def delete_account(self, _):
+    def delete_account(self, _, callback: Callable) -> bool:
         source = self._source_holder.get_source()
         if not source.can_connect() or not self.get_heartbeat().is_online():
             QMessageBox().warning(self.activeWindow(),
@@ -431,7 +437,8 @@ class Application(QApplication, AbstractEventEmitter):
                 source.execute(DeleteAccountStrategy, [''])
                 # Avoid re-creating this account immediately
                 source.set_config_parameters({'WebsocketEventSource.consent': 'False'})
-                return True # Close Settings dialog
+                callback('WebsocketEventSource.consent', 'False')
+                return True  # Close Settings dialog
             else:
                 QMessageBox().information(self.activeWindow(),
                                           'Canceled',
@@ -439,15 +446,16 @@ class Application(QApplication, AbstractEventEmitter):
                                           QMessageBox.StandardButton.Ok)
         return False
 
-    def generate_gradient(self, _) -> bool:
+    def generate_gradient(self, _, callback: Callable) -> bool:
         preset_names = [preset.name for preset in QGradient.Preset]
         if 'NumPresets' in preset_names:
             preset_names.remove('NumPresets')
         chosen = random.choice(preset_names)
         self._settings.set({'Application.eyecandy_gradient': chosen})
+        callback('Application.eyecandy_gradient', chosen)
         return False
 
-    def sign_in(self, _) -> bool:
+    def sign_in(self, _, callback: Callable) -> bool:
         def save(auth: AuthenticationRecord):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
@@ -455,7 +463,26 @@ class Application(QApplication, AbstractEventEmitter):
                 'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
+            callback('WebsocketEventSource.auth_type', 'google')
+            callback('WebsocketEventSource.username', auth.email)
+            callback('WebsocketEventSource.consent', 'False')
+            callback('WebsocketEventSource.refresh_token!', auth.refresh_token)
+            callback('WebsocketEventSource.logout', f'Sign out <{auth.email}>')
         authenticate(self, save)
+        return False
+
+    def sign_out(self, _, callback: Callable) -> bool:
+        self._settings.set({
+            'WebsocketEventSource.auth_type': 'google',
+            'WebsocketEventSource.username': 'user@local.host',
+            'WebsocketEventSource.consent': 'False',
+            'WebsocketEventSource.refresh_token!': '',
+        })
+        callback('WebsocketEventSource.auth_type', 'google')
+        callback('WebsocketEventSource.username', 'user@local.host')
+        callback('WebsocketEventSource.consent', 'False')
+        callback('WebsocketEventSource.refresh_token!', '')
+        callback('WebsocketEventSource.logout', f'Sign out')
         return False
 
     @staticmethod

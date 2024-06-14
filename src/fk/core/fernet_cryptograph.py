@@ -35,7 +35,8 @@ class FernetCryptograph(AbstractCryptograph):
         self._fernet = self._create_fernet(cached_key)
 
     def _create_fernet(self, cached_key) -> Fernet:
-        if cached_key == '':
+        if cached_key is None or cached_key == '':
+            logger.debug(f'There is no cached key, will generate it')
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
