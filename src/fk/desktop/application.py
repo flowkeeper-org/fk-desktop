@@ -27,7 +27,7 @@ from typing import Callable
 
 from PySide6 import QtCore
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -538,7 +538,7 @@ class Application(QApplication, AbstractEventEmitter):
         TutorialWindow(self.activeWindow(), self._settings).show()
 
     def show_stats(self, event: str = None) -> None:
-        StatsWindow(self.activeWindow(), self._source_holder.get_source()).show()
+        StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
@@ -561,3 +561,8 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.set({'Application.ignored_updates': ','.join(ignored)})
         if res == QMessageBox.StandardButton.Yes:
             webbrowser.open(f"https://flowkeeper.org/#download")
+
+    def is_dark_theme(self):
+        theme = self._settings.get('Application.theme')
+        bg_color_str = self.get_theme_variables(theme)['PRIMARY_BG_COLOR']
+        return QColor(bg_color_str).lightness() < 128

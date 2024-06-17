@@ -8,13 +8,13 @@ QMainWindow {
     color: $TABLE_TEXT_COLOR;
 }
 
-#headerText {
+#headerText, #statsHeaderText {
     color: $FOCUS_TEXT_COLOR;
     font-family: $FONT_HEADER_FAMILY;
     font-size: $FONT_HEADER_SIZE;
 }
 
-#headerSubtext {
+#headerSubtext, #statsHeaderSubtext {
     color: $FOCUS_TEXT_COLOR;
 }
 
@@ -67,7 +67,7 @@ QTableView::item:selected {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#workitems_widget {
+#workitems_widget, #statsView, #statsMain {
     background-color: $PRIMARY_BG_COLOR;
 }
 
@@ -79,6 +79,7 @@ QTableView::item:selected {
 QToolButton {
     background: none;
     border-radius: 5px;
+    color: $TABLE_TEXT_COLOR;
 }
 
 QToolButton:checked {
