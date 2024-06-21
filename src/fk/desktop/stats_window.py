@@ -53,7 +53,7 @@ class StatsWindow(QObject):
         super().__init__(parent)
         self._source = source
         self._period = 'week'
-        self._to = self._drop_time(datetime.datetime.now(datetime.timezone.utc), self._period)
+        self._reset_to(self._period)
 
         file = QFile(":/stats.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
@@ -74,10 +74,17 @@ class StatsWindow(QObject):
         }
         self._period_actions['week'].setChecked(True)
         self._prev_action = self._create_simple_action('prev', self._prev)
+        self._prev_action.setShortcut('Left')
         self._next_action = self._create_simple_action('next', self._next)
+        self._next_action.setShortcut('Right')
+
+        close_action = QAction(self._stats_window, 'Close')
+        close_action.triggered.connect(self._stats_window.close)
+        close_action.setShortcut('Esc')
+        self._stats_window.addAction(close_action)
 
         self._stats_window.setWindowTitle('Pomodoro Statistics')
-        self._stats_window.resize(700, 500)
+        self._stats_window.resize(900, 700)
         chart = QChart()
         self._chart = chart
         axis_x = QBarCategoryAxis(self)
@@ -93,7 +100,7 @@ class StatsWindow(QObject):
         self._series.attachAxis(self._axis_y)
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
         chart.setMargins(QMargins(10, 0, 10, 0))
-        chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
+        # chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         self._update_chart('week', self._to)
 
@@ -106,7 +113,7 @@ class StatsWindow(QObject):
         layout.addWidget(view)
 
     def _time_delta_for_period(self, period: str, date: datetime.datetime, left: bool):
-        date = self._drop_time(date, period)
+        date = self._drop_time(date, period, True)
         if period == 'week':
             return datetime.timedelta(days=(-7 if left else 7))
         elif period == 'year':
@@ -148,27 +155,37 @@ class StatsWindow(QObject):
         else:
             raise Exception(f'Unexpected period: {period}')
 
-    def _drop_time(self, date: datetime.datetime, period: str):
+    def _drop_time(self, date: datetime.datetime, period: str, start: bool):
         if period == 'week':
             return datetime.datetime(date.year,
                                      date.month,
                                      date.day,
+                                     0 if start else 23,
+                                     0 if start else 59,
+                                     0 if start else 59,
                                      tzinfo=date.tzinfo)
         elif period == 'year':
             return datetime.datetime(date.year,
                                      date.month,
                                      monthrange(date.year, date.month)[1],
+                                     0 if start else 23,
+                                     0 if start else 59,
+                                     0 if start else 59,
                                      tzinfo=date.tzinfo)
         elif period == 'day':
             return datetime.datetime(date.year,
                                      date.month,
                                      date.day,
                                      date.hour,
+                                     0 if start else 59,
                                      tzinfo=date.tzinfo)
         elif period == 'month':
             return datetime.datetime(date.year,
                                      date.month,
                                      date.day,
+                                     0 if start else 23,
+                                     0 if start else 59,
+                                     0 if start else 59,
                                      tzinfo=date.tzinfo)
         elif period == 'month6':
             return datetime.datetime(date.year,
@@ -193,21 +210,21 @@ class StatsWindow(QObject):
             raise Exception(f'Unexpected period: {period}')
 
     def _prev(self):
-        self._to = self._drop_time(self._to, self._period)
+        self._to = self._drop_time(self._to, self._period, False)
         self._to += self._substep_delta_for_period(self._period, self._to, True)
         self._update_chart(self._period, self._to)
 
     def _next(self):
-        self._to = self._drop_time(self._to, self._period)
+        self._to = self._drop_time(self._to, self._period, False)
         self._to += self._substep_delta_for_period(self._period, self._to, False)
         self._update_chart(self._period, self._to)
 
     def _format_date(self, date: datetime.datetime):
-        return date.strftime('%d %b %Y')
+        return date.strftime('%d %b %Y, %H:%M')
 
     def _update_chart(self, period: str, to: datetime.datetime) -> None:
         self._period = period
-        _from: datetime.datetime = to + self._time_delta_for_period(period, to, True)
+        _from: datetime.datetime = to + self._time_delta_for_period(period, to, True) + datetime.timedelta(minutes=1)
         self._header_subtext.setText(f'Average over {self._format_date(_from)} to {self._format_date(to)}')
 
         d = self.extract_data(period, _from, to)
@@ -218,6 +235,7 @@ class StatsWindow(QObject):
         self._header_text.setText(f'Completed {completed_count} out of {total_count} {percentage}')
 
         self._axis_y.setRange(0, max(d[4]))
+        # self._axis_y.setRange(0, 20)
         self._axis_x.clear()
         self._axis_x.append(d[0])
 
@@ -250,10 +268,14 @@ class StatsWindow(QObject):
         action.triggered.connect(callback)
         return action
 
+    def _reset_to(self, period):
+        self._to = self._drop_time(datetime.datetime.now(datetime.timezone.utc).astimezone(), period, False)
+
     def select_period(self, period: str) -> None:
         for name in self._period_actions:
             action = self._period_actions[name]
             action.setChecked(name == period)
+        self._reset_to(period)
         self._update_chart(period, self._to)
 
     def _rotate(self, lst: list, n: int) -> list:
@@ -316,11 +338,20 @@ class StatsWindow(QObject):
                 list_ready[index] += 1
             list_total[index] += 1
 
-        return self._rotate(cats, rotate_around), \
-            self._rotate(list_finished, rotate_around), \
-            self._rotate(list_canceled, rotate_around), \
-            self._rotate(list_ready, rotate_around), \
-            self._rotate(list_total, rotate_around)
+        r = [self._rotate(cats, rotate_around), \
+             self._rotate(list_finished, rotate_around), \
+             self._rotate(list_canceled, rotate_around), \
+             self._rotate(list_ready, rotate_around), \
+             self._rotate(list_total, rotate_around)]
+
+        if group == 'month6':
+            r[0] = r[0][26:]
+            r[1] = r[1][26:]
+            r[2] = r[2][26:]
+            r[3] = r[3][26:]
+            r[4] = r[4][26:]
+
+        return r
 
     def show(self):
         self._stats_window.show()
