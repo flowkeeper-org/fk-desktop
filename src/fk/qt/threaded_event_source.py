@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import datetime
-from typing import TypeVar, Self, Callable, Iterable
+from typing import TypeVar, Callable, Iterable
 
 from PySide6.QtCore import QThreadPool, Slot
 
@@ -60,7 +62,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         return self._wrapped._append(strategies)
 
-    def clone(self, new_root: TRoot) -> Self:
+    def clone(self, new_root: TRoot) -> ThreadedEventSource[TRoot]:
         return self._wrapped.clone(new_root)
 
     def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:

@@ -13,12 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import logging
 import os
 import time
 from collections import deque
 from os import path
-from typing import Self, TypeVar, Iterable
+from typing import TypeVar, Iterable
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -417,7 +419,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: Implement
         pass
 
-    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> Self:
+    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> FileEventSource[TRoot]:
         return FileEventSource[TRoot](self._settings,
                                       self._cryptograph,
                                       new_root,

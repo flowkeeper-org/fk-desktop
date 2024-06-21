@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import datetime
 from abc import ABC, abstractmethod
-from typing import Callable, Type, Self, Generic, TypeVar
+from typing import Callable, Type, Generic, TypeVar
 
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
@@ -81,7 +83,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     def execute_another(self,
                         emit: Callable[[str, dict[str, any], any], None],
                         data: TRoot,
-                        cls: Type[Self],
+                        cls: Type[AbstractStrategy[TRoot]],
                         params: list[str]) -> (str, any):
         strategy = cls(self._seq,
                        self._when,

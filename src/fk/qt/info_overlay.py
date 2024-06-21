@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Callable, Tuple
+
 from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPixmap, QMouseEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
@@ -20,13 +22,17 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
 class InfoOverlay(QFrame):
     _timer: QTimer
+    _on_close: Callable[[None], None]
 
     def __init__(self,
                  text: str,
                  absolute_position: QPoint,
                  icon: str = None,
-                 duration: int = 3):
+                 duration: int = 3,
+                 font_scale: float = 0.8,
+                 on_close: Callable[[], None] = None):
         super().__init__()
+        self._on_close = on_close
 
         self.setWindowFlags(Qt.WindowType.ToolTip)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
@@ -51,7 +57,7 @@ class InfoOverlay(QFrame):
         main_label.setObjectName('overlay_text')
         main_label.setText(text)
         font = main_label.font()
-        font.setPointSize(font.pointSize() * 0.8)
+        font.setPointSize(font.pointSize() * font_scale)
         main_label.setFont(font)
         layout.addWidget(main_label)
 
@@ -66,16 +72,39 @@ class InfoOverlay(QFrame):
             self._timer.stop()
         # TODO: Save its state in settings
         super().close()
+        if self._on_close is not None:
+            self._on_close()
 
 
 # Without it Qt will destroy the overlay before you can see it
 INFO_OVERLAY_INSTANCE: InfoOverlay | None = None
+TUTORIAL_STEP: int = 0
 
 
 def show_info_overlay(text: str,
                       absolute_position: QPoint,
                       icon: str = None,
-                      duration: int = 3):
+                      duration: int = 3,
+                      on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, on_close)
     INFO_OVERLAY_INSTANCE.show()
+
+
+def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint]], first: bool = True):
+    global TUTORIAL_STEP
+    if first:
+        TUTORIAL_STEP = 0
+    TUTORIAL_STEP += 1
+    res = get_step(TUTORIAL_STEP)
+    if res is not None:
+        text, pos = res
+        if text is not None and pos is not None:
+            global INFO_OVERLAY_INSTANCE
+            INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+                                                pos,
+                                                ":/icons/info.png",
+                                                0,
+                                                1,
+                                                lambda: show_tutorial(get_step, False))
+            INFO_OVERLAY_INSTANCE.show()

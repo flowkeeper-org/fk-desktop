@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import logging
-from typing import Self, TypeVar, Iterable
+from typing import TypeVar, Iterable
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -65,7 +67,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
     def get_data(self) -> TRoot:
         return self._data
 
-    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy[TRoot]] | None = None) -> Self:
+    def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy[TRoot]] | None = None) -> EphemeralEventSource[TRoot]:
         return EphemeralEventSource[TRoot](self._settings,
                                            self._cryptograph,
                                            new_root)

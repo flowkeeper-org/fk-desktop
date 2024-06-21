@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import json
-from typing import Callable, Iterable, Self
+from typing import Callable, Iterable
 
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QWidget
@@ -23,7 +25,7 @@ from fk.core.abstract_settings import AbstractSettings
 
 
 class Actions:
-    ALL: Self = None
+    ALL: Actions = None
     _window: QWidget
     _domains: dict[str, object]
     _actions: dict[str, QAction]
