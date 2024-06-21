@@ -3,7 +3,7 @@ QWidget {
     font-size: $FONT_MAIN_SIZE;
 }
 
-QMainWindow {
+QMainWindow, #StatsWindow {
     background-color: $FOCUS_BG_COLOR;
     color: $TABLE_TEXT_COLOR;
 }

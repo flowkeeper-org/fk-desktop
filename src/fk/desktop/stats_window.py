@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
-import sys
 from calendar import monthrange
 from typing import Callable
 
@@ -25,10 +24,6 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLabel, QToolButton
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.file_event_source import FileEventSource
-from fk.core.no_cryptograph import NoCryptograph
-from fk.core.tenant import Tenant
-from fk.qt.qt_settings import QtSettings
 
 
 class StatsWindow(QObject):
@@ -83,11 +78,12 @@ class StatsWindow(QObject):
         close_action.setShortcut('Esc')
         self._stats_window.addAction(close_action)
 
-        self._stats_window.setWindowTitle('Pomodoro Statistics')
-        self._stats_window.resize(900, 700)
         chart = QChart()
         self._chart = chart
         axis_x = QBarCategoryAxis(self)
+        f = axis_x.labelsFont()
+        f.setPointSize(round(f.pointSize() * 0.8))
+        axis_x.setLabelsFont(f)
         self._axis_x = axis_x
         axis_y = QValueAxis(self)
         self._axis_y = axis_y
@@ -231,8 +227,10 @@ class StatsWindow(QObject):
 
         completed_count = sum(d[1])
         total_count = completed_count + sum(d[2]) + sum(d[3])
-        percentage = f'({round(100 * completed_count / total_count)}%)' if total_count > 0 else ''
-        self._header_text.setText(f'Completed {completed_count} out of {total_count} {percentage}')
+        if total_count > 0:
+            self._header_text.setText(f'Completed {completed_count} out of {total_count} ({round(100 * completed_count / total_count)}%)')
+        else:
+            self._header_text.setText(f'No data')
 
         self._axis_y.setRange(0, max(d[4]))
         # self._axis_y.setRange(0, 20)
@@ -290,7 +288,7 @@ class StatsWindow(QObject):
             rotate_around = period_to.month - 1
         elif group == 'day':
             cats = [str(i) for i in range(24)]
-            rotate_around = period_to.hour - 1
+            rotate_around = period_to.hour
         elif group == 'month':
             cats = [str(i + 1) for i in range(31)]
             rotate_around = period_to.day - 1
@@ -309,9 +307,9 @@ class StatsWindow(QObject):
             finished = p.is_finished()
             canceled = p.is_canceled()
             if finished or canceled:
-                when = p.get_last_modified_date()
+                when = p.get_last_modified_date().astimezone()
             else:
-                when = p.get_create_date()
+                when = p.get_create_date().astimezone()
             if when is None:
                 continue
 
@@ -324,7 +322,7 @@ class StatsWindow(QObject):
             elif group == 'year':
                 index = when.month - 1
             elif group == 'day':
-                index = when.hour - 1
+                index = when.hour
             elif group == 'month':
                 index = when.day - 1
             elif group == 'month6':
@@ -345,6 +343,7 @@ class StatsWindow(QObject):
              self._rotate(list_total, rotate_around)]
 
         if group == 'month6':
+            # Truncate to half a year
             r[0] = r[0][26:]
             r[1] = r[1][26:]
             r[2] = r[2][26:]
@@ -355,13 +354,3 @@ class StatsWindow(QObject):
 
     def show(self):
         self._stats_window.show()
-
-
-if __name__ == '__main__':
-    app = QApplication([])
-    settings = QtSettings()
-    src = FileEventSource[Tenant](settings, NoCryptograph(settings), Tenant(settings))
-    src.start()
-    stats = StatsWindow(None, None, src)
-    stats.show()
-    sys.exit(app.exec())
