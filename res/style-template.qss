@@ -84,7 +84,7 @@ QToolButton {
 
 QToolButton:checked {
     background: $TOOLBAR_CHECKED_BG_COLOR;
-    color: $TABLE_TEXT_COLOR;
+    color: $FOCUS_TEXT_COLOR;
 }
 
 QScrollBar {
