@@ -1,7 +1,7 @@
-### v0.6.0 (TBD)
--
-- [Bugfix] Fixed NoKeyringError on Kubuntu 22.04
-- [Technical] Removed dependency on typing.Self, which required Python 3.11+
+### v0.6.0 (21 June 2024)
+- Implemented the Statistics feature AKA Pomodoro Health.
+- [Bugfix] Fixed NoKeyringError on Kubuntu 22.04.
+- [Technical] Removed dependency on typing.Self, which required Python 3.11+.
 
 ### v0.5.1 (14 June 2024)
 - Simplified Connection settings.
