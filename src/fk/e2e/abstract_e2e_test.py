@@ -30,6 +30,7 @@ from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
 
 from fk.desktop.application import Application
+from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.1  # seconds
@@ -51,9 +52,11 @@ class AbstractE2eTest(ABC):
     _tests: int
     _start: datetime
     _current_method: str
+    _screenshot: Screenshot
 
     def __init__(self, app: Application):
         self._app = app
+        self._screenshot = None
         app.get_settings().set(self.custom_settings())
         self._initialized = False
         self._seq = self._get_test_cases()
@@ -288,3 +291,11 @@ class AbstractE2eTest(ABC):
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
         self.info('Exception: ' + to_log)
+
+    def take_screenshot(self, name: str, window: bool = True) -> str:
+        if self._screenshot is None:    # Lazy init, because we don't always want to take screenshots
+            self._screenshot = Screenshot()
+        window_id = None
+        if window:
+            window_id = self.window().winId()
+        return self._screenshot.take(name, window_id)
