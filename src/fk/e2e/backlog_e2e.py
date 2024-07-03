@@ -218,9 +218,6 @@ class BacklogE2eTest(AbstractE2eTest):
         await self._find_workitem('Call Alex in the afternoon')
         await self._complete_workitem()
 
-        self.take_screenshot('01-backlog')
-        self.take_screenshot('01-backlog-full', False)
-
     async def test_02_actions_visibility(self):
         main_window = self.window()
         # noinspection PyTypeChecker

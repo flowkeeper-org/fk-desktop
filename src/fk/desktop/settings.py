@@ -23,7 +23,7 @@ from PySide6.QtCore import QSize, QTime
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
@@ -66,6 +66,7 @@ class SettingsDialog(QDialog):
         self._buttons = buttons
 
         tabs = QTabWidget(self)
+        tabs.setObjectName('settings_tabs')
         for tab_name in data.get_categories():
             tab = self._create_tab(tabs, data.get_settings(tab_name))
             tabs.addTab(tab, tab_name)
@@ -416,6 +417,7 @@ class SettingsDialog(QDialog):
                 pass
             elif len(widgets) == 1:
                 widgets[0].setObjectName(f'{option_id}')
+                print(f'Set {option_id} - {widgets[0]}')
                 self._widgets_visibility[widgets[0]] = option_visible
                 layout.addRow(label, widgets[0])
             else:

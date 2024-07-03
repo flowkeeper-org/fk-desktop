@@ -68,6 +68,11 @@ class QtSettings(AbstractSettings):
             for setting in category:
                 key = setting[0]
                 if key.endswith('!'):
-                    value = self.get(key)
-                    if self.get(key) is not None and value != '':
-                        keyring.delete_password(self._app_name, key)
+                    value = keyring.get_password(self._app_name, key)
+                    if value is not None:
+                        try:
+                            keyring.delete_password(self._app_name, key)
+                        except Exception as e:
+                            # Ignore, this is a common issue with keyring module
+                            # It seems to be solved in a more recent version, which doesn't work for us
+                            pass

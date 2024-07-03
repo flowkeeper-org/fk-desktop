@@ -197,24 +197,25 @@ class AbstractE2eTest(ABC):
     def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
         self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
-    def mouse_click(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
+    def mouse_click(self, widget: QWidget, pos: QPoint = QPoint(5, 5), left_button: bool = True):
         self.do(lambda: widget.focusInEvent(QFocusEvent(
             QEvent.Type.FocusIn,
         )))
         self.do(lambda: widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonPress,
             pos,
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
+            None,
             Qt.KeyboardModifier.NoModifier,
         )))
         self.do(lambda: widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonRelease,
             pos,
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
+            None,
             Qt.KeyboardModifier.NoModifier,
         )))
+        print('clicked', widget, pos, Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton)
 
     def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
         self.do(lambda: widget.mouseDoubleClickEvent(QMouseEvent(
@@ -294,10 +295,8 @@ class AbstractE2eTest(ABC):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
         self.info('Exception: ' + to_log)
 
-    def take_screenshot(self, name: str, window: bool = True) -> str:
+    def take_screenshot(self, name: str):
         if self._screenshot is None:    # Lazy init, because we don't always want to take screenshots
             self._screenshot = Screenshot()
-        window_id = None
-        if window:
-            window_id = self.window().winId()
-        return self._screenshot.take(name, window_id)
+        self._screenshot.take(name, self.window().winId())
+        self._screenshot.take(f'{name}-full', None)

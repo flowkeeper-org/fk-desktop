@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 class BacklogTableView(AbstractTableView[User, Backlog]):
     _application: Application
+    _menu: QMenu
 
     def __init__(self,
                  parent: QWidget,
@@ -52,7 +53,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          'No data or connection error.',
                          "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
                          0)
-        self._init_menu(actions)
+        self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.on(AfterSelectionChanged, lambda event, before, after: self._application.get_settings().set({
             'Application.last_selected_backlog': after.get_uid() if after is not None else ''
@@ -76,7 +77,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         heartbeat.on(events.WentOffline, self._lock_ui)
         heartbeat.on(events.WentOnline, self._unlock_ui)
 
-    def _init_menu(self, actions: Actions):
+    def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
         menu.addActions([
             actions['backlogs_table.newBacklog'],
@@ -87,6 +88,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
+        return menu
 
     def upstream_selected(self, user: User) -> None:
         super().upstream_selected(user)

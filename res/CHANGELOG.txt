@@ -1,3 +1,8 @@
+### v0.6.1 (TBD)
+- Reworked the tutorial.
+- [Technical] macOS DMG installer is now properly signed.
+- [Technical] Screenshots collection in e2e tests.
+
 ### v0.6.0 (21 June 2024)
 - Implemented the Statistics feature AKA Pomodoro Health.
 - [Bugfix] Fixed NoKeyringError on Kubuntu 22.04.

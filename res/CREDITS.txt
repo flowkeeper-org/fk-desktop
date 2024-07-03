@@ -25,6 +25,8 @@ Flowkeeper uses "cryptography" library by Paul Kehrer <https://github.com/pyca/c
 Flowkeeper uses "assertpy" library by Activision Publishing, Inc. <https://github.com/assertpy/assertpy/blob/main/LICENSE> and "unittest-xml-reporting" by
 Daniel Fernandes Martins <https://github.com/xmlrunner/unittest-xml-reporting/blob/master/LICENSE> for writing and executing unit tests.
 
+Python Pillow library by Jeffrey A. Clark and contributors <https://github.com/python-pillow/Pillow/blob/main/LICENSE> is used for taking screenshots in the end-to-end tests.
+
 To produce desktop binaries for Linux, macOS and Windows we use PyInstaller <https://github.com/pyinstaller/pyinstaller?tab=License-1-ov-file#readme>.
 
 The Windows installer is created using Inno Setup by Jordan Russell <https://jrsoftware.org/files/is/license.txt>.

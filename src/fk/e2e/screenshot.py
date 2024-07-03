@@ -21,6 +21,8 @@ import random
 import subprocess
 from typing import Callable
 
+from PIL import Image
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,12 +32,12 @@ class Screenshot:
     def __init__(self):
         self._method = None
         for m in [
-            Screenshot._take_scrot,
-            Screenshot._take_imagemagick,
             Screenshot._take_gnome_screenshot,
-            Screenshot._take_flameshot,
             Screenshot._take_xfce4_screenshooter,
             Screenshot._take_xwd,
+            Screenshot._take_scrot,
+            Screenshot._take_imagemagick,
+            Screenshot._take_flameshot,
             Screenshot._take_ksnip,
             Screenshot._take_spectacle,
             Screenshot._take_nircmd,
@@ -44,14 +46,15 @@ class Screenshot:
             file = f'test-results/check-{random.randint(100000, 999999)}.png'
             try:
                 m(file)
-                self._method = m
-                logger.info(f'Screenshot method {m.__name__} works')
-                print(f'Screenshot method {m.__name__} works')
-                # TODO Raise if the file is black / empty
-                # break
+                im = Image.open(file)
+                if im.getbbox():
+                    logger.info(f'Screenshot method {m.__name__} works')
+                    self._method = m
+                    break
+                else:
+                    logger.warning(f'Taking screenshot via {m.__name__} resulted in an empty image')
             except Exception as e:
-                logger.error(f'Taking screenshot via {m.__name__} failed', exc_info=e)
-                print(f'Taking screenshot via {m.__name__} failed: {e}')
+                logger.warning(f'Taking screenshot via {m.__name__} failed')
             finally:
                 if os.path.exists(file):
                     os.unlink(file)
@@ -62,7 +65,6 @@ class Screenshot:
         else:
             filename = f'test-results/{name}.png'
             logger.debug(f'Taking screenshot {filename} / {window_id} via {self._method.__name__}')
-            print(f'Taking screenshot {filename} / {window_id} via {self._method.__name__}')
             return self._method(filename, window_id)
 
     @staticmethod
@@ -210,8 +212,3 @@ class Screenshot:
         subprocess.run(["powershell",
                         "-Command",
                         ps])
-
-
-if __name__ == "__main__":
-    s = Screenshot()
-    s.take('main-full')
