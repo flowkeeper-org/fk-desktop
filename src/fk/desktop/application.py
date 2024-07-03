@@ -27,7 +27,7 @@ from typing import Callable
 
 from PySide6 import QtCore
 from PySide6.QtCore import QFile
-from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -47,6 +47,7 @@ from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
+from fk.desktop.stats_window import StatsWindow
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
@@ -494,6 +495,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
+        actions.add('application.stats', "Statistics", '', None, Application.show_stats)
 
     def quit_local(self):
         Application.quit()
@@ -535,6 +537,9 @@ class Application(QApplication, AbstractEventEmitter):
     def show_tutorial(self, event: str = None) -> None:
         TutorialWindow(self.activeWindow(), self._settings).show()
 
+    def show_stats(self, event: str = None) -> None:
+        StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()
+
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
         latest_str = str(latest)
@@ -556,3 +561,8 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.set({'Application.ignored_updates': ','.join(ignored)})
         if res == QMessageBox.StandardButton.Yes:
             webbrowser.open(f"https://flowkeeper.org/#download")
+
+    def is_dark_theme(self):
+        theme = self._settings.get('Application.theme')
+        bg_color_str = self.get_theme_variables(theme)['PRIMARY_BG_COLOR']
+        return QColor(bg_color_str).lightness() < 128

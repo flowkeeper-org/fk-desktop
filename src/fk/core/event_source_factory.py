@@ -13,7 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Callable, Self, TypeVar, Generic
+from __future__ import annotations
+
+from typing import Callable, TypeVar, Generic
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
@@ -25,7 +27,7 @@ TRoot = TypeVar('TRoot')
 
 class EventSourceFactory(Generic[TRoot]):
     _source_producers: dict[str, Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]]
-    _instance: Self = None
+    _instance: EventSourceFactory[TRoot] = None
 
     def __init__(self):
         self._source_producers = dict()

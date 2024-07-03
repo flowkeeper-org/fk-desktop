@@ -13,10 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import datetime
 import enum
 import logging
-from typing import Self, TypeVar
+from typing import TypeVar
 
 from PySide6 import QtWebSockets, QtCore
 from PySide6.QtNetwork import QAbstractSocket
@@ -213,7 +215,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def get_data(self) -> TRoot:
         return self._data
 
-    def clone(self, new_root: TRoot) -> Self:
+    def clone(self, new_root: TRoot) -> WebsocketEventSource[TRoot]:
         return WebsocketEventSource[TRoot](self._settings,
                                            self._cryptograph,
                                            self._application,
