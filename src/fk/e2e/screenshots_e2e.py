@@ -6,7 +6,7 @@ from PySide6.QtGui import QContextMenuEvent
 from PySide6.QtWidgets import QTabWidget, QComboBox, QWidget
 
 from fk.desktop.application import Application
-from fk.e2e.abstract_e2e_test import AbstractE2eTest
+from fk.e2e.abstract_e2e_test import AbstractE2eTest, GALLERY_FILENAME
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 
@@ -18,6 +18,10 @@ POMODORO_REST_DURATION = 0.25  # seconds
 class ScreenshotE2eTest(AbstractE2eTest):
     def __init__(self, app: Application):
         super().__init__(app)
+
+    def setup(self) -> None:
+        if os.path.isfile(GALLERY_FILENAME):
+            os.unlink(GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
         return {
@@ -147,7 +151,6 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
-        return
 
         await self._new_workitem('Generate new screenshots', 2)
         await self._new_workitem('Reply to Peter', 1)
