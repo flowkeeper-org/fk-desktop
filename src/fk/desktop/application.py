@@ -102,8 +102,12 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.reset_to_defaults()
             self._initialize_logger()
             self._cryptograph = FernetCryptograph(self._settings)
-            from fk.e2e.backlog_e2e import BacklogE2eTest
-            test = BacklogE2eTest(self)
+            if self.is_screenshot_mode():
+                from fk.e2e.screenshots_e2e import ScreenshotE2eTest
+                test = ScreenshotE2eTest(self)
+            else:
+                from fk.e2e.backlog_e2e import BacklogE2eTest
+                test = BacklogE2eTest(self)
             sys.excepthook = test.on_exception
             test.start()
         else:
@@ -222,6 +226,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def is_e2e_mode(self):
         return '--e2e' in self.arguments()
+
+    def is_screenshot_mode(self):
+        return '--screenshots' in self.arguments()
 
     def is_testing_mode(self):
         return '--testing' in self.arguments()
