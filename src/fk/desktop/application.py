@@ -502,7 +502,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
-        actions.add('application.stats', "Statistics", '', None, Application.show_stats)
+        actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
 
     def quit_local(self):
         Application.quit()
