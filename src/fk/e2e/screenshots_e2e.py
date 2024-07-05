@@ -304,7 +304,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.get_application().get_settings().set({
             'Application.theme': 'resort',
             'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': '/home/w/Downloads/marcus-ganahl-W5qgKZj-qnk-unsplash.jpg',
+            'Application.eyecandy_image': ':/icons/bg.jpg',
             'Application.font_header_family': 'Impact',
             'Application.font_header_size': '32',
             'Application.show_toolbar': 'False',
