@@ -61,11 +61,11 @@ class StatsWindow(QObject):
 
         self._header_subtext = self._stats_window.findChild(QLabel, "statsHeaderSubtext")
         self._period_actions = {
-            'year': self._create_checkable_action('year'),
-            'month6': self._create_checkable_action('month6'),
-            'month': self._create_checkable_action('month'),
-            'week': self._create_checkable_action('week'),
-            'day': self._create_checkable_action('day'),
+            'year': self._create_checkable_action('year', 'Ctrl+Y'),
+            'month6': self._create_checkable_action('month6', 'Ctrl+H'),
+            'month': self._create_checkable_action('month', 'Ctrl+M'),
+            'week': self._create_checkable_action('week', 'Ctrl+W'),
+            'day': self._create_checkable_action('day', 'Ctrl+D'),
         }
         self._period_actions['week'].setChecked(True)
         self._prev_action = self._create_simple_action('prev', self._prev)
@@ -251,10 +251,11 @@ class StatsWindow(QObject):
         [self._bars['canceled'].append(i) for i in d[2]]
         [self._bars['startable'].append(i) for i in d[3]]
 
-    def _create_checkable_action(self, name: str) -> QAction:
+    def _create_checkable_action(self, name: str, shortcut: str) -> QAction:
         button: QToolButton = self._stats_window.findChild(QToolButton, name)
         action = QAction(button.text(), self)
         action.setCheckable(True)
+        action.setShortcut(shortcut)
         button.setDefaultAction(action)
         action.triggered.connect(lambda: self.select_period(name))
         return action

@@ -29,7 +29,7 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QAbstractButton, QAbstractItemView
 
 from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
@@ -259,7 +259,7 @@ class AbstractE2eTest(ABC):
     def get_focused(self) -> QWidget:
         return self._app.focusWidget()
 
-    def get_application(self) -> QApplication:
+    def get_application(self) -> Application:
         return self._app
 
     def window(self) -> QWidget:
@@ -291,6 +291,13 @@ class AbstractE2eTest(ABC):
 
     async def instant_pause(self) -> None:
         await asyncio.sleep(INSTANT_DURATION)
+
+    async def longer_pause(self) -> None:
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
 
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
