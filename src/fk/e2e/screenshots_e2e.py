@@ -120,23 +120,15 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 return i
         return -1
 
-    async def test_01_create_backlogs(self):
+    async def test_01_screenshots(self):
         main_window = self.window()
+        self.center_window()
+        await self.instant_pause()
 
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
         ################################################################
         await self._new_backlog('Trip to Italy')
-
-        # self.keypress(Qt.Key.Key_F10)
-        # await self.instant_pause()
-        # shortcuts_dropdown: QComboBox = self.window().findChild(QComboBox, "Application.shortcuts-list")
-        # shortcuts_dropdown.setCurrentIndex(11)  # "New item"
-        # await self.instant_pause()
-        # shortcuts_dropdown.showPopup()
-        # await self.instant_pause()
-        # self.take_screenshot('06-shortcuts-3')
-        # return
 
         await self._new_backlog('House renovation')
         await self._new_backlog('Long-term stuff')
@@ -147,6 +139,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self._generate_pomodoros_for_stats()
         await self.instant_pause()
         self.keypress(Qt.Key.Key_F9)
+        await self.instant_pause()
+        self.center_window()
         await self.instant_pause()
         self.take_screenshot('13-stats-week')
         self.keypress(Qt.Key.Key_M, True)
@@ -159,6 +153,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.instant_pause()
 
         self.keypress(Qt.Key.Key_F10)
+        await self.instant_pause()
+        self.center_window()
         await self.instant_pause()
         settings_tabs: QTabWidget = self.window().findChild(QTabWidget, "settings_tabs")
         settings_tabs.setCurrentIndex(1)
@@ -214,10 +210,14 @@ class ScreenshotE2eTest(AbstractE2eTest):
         ####################################
         await self._find_workitem('Generate new screenshots')
         await self._start_pomodoro()
+        self.center_window()
+        await self.instant_pause()
 
         self.take_screenshot('02-pomodoro')
 
         await self._wait_pomodoro_complete()
+        self.center_window()
+        await self.instant_pause()
         await self._start_pomodoro()
         await self._wait_pomodoro_complete()
         await self._add_pomodoro()
@@ -258,6 +258,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         self.keypress(Qt.Key.Key_F10)
         await self.instant_pause()
+        self.center_window()
+        await self.instant_pause()
 
         shortcuts_dropdown: QComboBox = self.window().findChild(QComboBox, "Application.shortcuts-list")
         shortcuts_dropdown.setCurrentIndex(11)  # "New item"
@@ -274,6 +276,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         self.keypress(Qt.Key.Key_I, True)
         await self.instant_pause()
+        self.center_window()
+        await self.instant_pause()
         self.keypress(Qt.Key.Key_Enter)
         await self.instant_pause()
         self.take_screenshot('11-import')
@@ -281,6 +285,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.instant_pause()
 
         self.keypress(Qt.Key.Key_E, True)
+        await self.instant_pause()
+        self.center_window()
         await self.instant_pause()
         self.keypress(Qt.Key.Key_Enter)
         await self.instant_pause()
@@ -313,6 +319,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_B, True)
         await self.instant_pause()
         self.window().resize(QSize(500, 400))
+        await self.instant_pause()
+        self.center_window()
         await self.instant_pause()
         self.take_screenshot('10-customized')
 

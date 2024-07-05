@@ -324,3 +324,8 @@ class AbstractE2eTest(ABC):
                 ''')
         with open(GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}.png" title="{name}">\n')
+
+    def center_window(self):
+        screen_center = self._app.primaryScreen().geometry().center()
+        fg = self.window().frameGeometry()
+        self.window().move(screen_center - (fg.center() - fg.topLeft()))
