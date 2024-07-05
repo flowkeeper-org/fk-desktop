@@ -37,7 +37,8 @@ from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.1  # seconds
 STARTUP_DURATION = 2  # seconds
-GALLERY_FILENAME = 'test-results/screenshots.html'
+WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
+SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
 logger = logging.getLogger(__name__)
 
@@ -309,9 +310,9 @@ class AbstractE2eTest(ABC):
         self._screenshot.take(name, self.window().winId())
         self._screenshot.take(f'{name}-full', None)
 
-        # Update gallery
-        if not os.path.isfile(GALLERY_FILENAME):
-            with open(GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+        # Update window gallery
+        if not os.path.isfile(WINDOW_GALLERY_FILENAME):
+            with open(WINDOW_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
                 f.write('''
                     <style>
                     .screenshot {
@@ -322,8 +323,24 @@ class AbstractE2eTest(ABC):
                     }
                     </style>
                 ''')
-        with open(GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+        with open(WINDOW_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}.png" title="{name}">\n')
+
+        # Update screen gallery
+        if not os.path.isfile(SCREEN_GALLERY_FILENAME):
+            with open(SCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+                f.write('''
+                    <style>
+                    .screenshot {
+                        box-shadow: 5px 5px 30px 0px rgba(0, 0, 0, 0.5);
+                        margin: 30px;
+                        width: 1000px;
+                        height: auto;
+                    }
+                    </style>
+                ''')
+        with open(SCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+            f.write(f'<img class="screenshot" src="{name}-full.png" title="{name}">\n')
 
     def center_window(self):
         screen_center = self._app.primaryScreen().geometry().center()

@@ -10,7 +10,7 @@ from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
-from fk.e2e.abstract_e2e_test import AbstractE2eTest, GALLERY_FILENAME
+from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -25,8 +25,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         super().__init__(app)
 
     def setup(self) -> None:
-        if os.path.isfile(GALLERY_FILENAME):
-            os.unlink(GALLERY_FILENAME)
+        if os.path.isfile(WINDOW_GALLERY_FILENAME):
+            os.unlink(WINDOW_GALLERY_FILENAME)
+        if os.path.isfile(SCREEN_GALLERY_FILENAME):
+            os.unlink(SCREEN_GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
         return {

@@ -32,11 +32,11 @@ class Screenshot:
     def __init__(self):
         self._method = None
         for m in [
+            Screenshot._take_scrot,
             Screenshot._take_gnome_screenshot,
             Screenshot._take_xfce4_screenshooter,
-            Screenshot._take_xwd,
-            Screenshot._take_scrot,
             Screenshot._take_imagemagick,
+            Screenshot._take_xwd,
             Screenshot._take_flameshot,
             Screenshot._take_ksnip,
             Screenshot._take_spectacle,
