@@ -22,12 +22,13 @@ import subprocess
 from typing import Callable
 
 from PIL import Image
+from PySide6.QtWidgets import QWidget
 
 logger = logging.getLogger(__name__)
 
 
 class Screenshot:
-    _method: Callable[[str, str | None], None]
+    _method: Callable[[str], None]
 
     def __init__(self):
         self._method = None
@@ -42,6 +43,7 @@ class Screenshot:
             Screenshot._take_spectacle,
             Screenshot._take_nircmd,
             Screenshot._take_powershell,
+            Screenshot._take_screencapture,
         ]:
             file = f'test-results/check-{random.randint(100000, 999999)}.png'
             try:
@@ -59,136 +61,92 @@ class Screenshot:
                 if os.path.exists(file):
                     os.unlink(file)
 
-    def take(self, name: str, window_id: int | None = None) -> str:
+    def take_screen(self, name: str) -> str:
         if self._method is None:
             logger.warning(f'Tried to take screenshot {name}, but couldn\'t find how to do it')
         else:
-            filename = f'test-results/{name}.png'
-            logger.debug(f'Taking screenshot {filename} / {window_id} via {self._method.__name__}')
-            return self._method(filename, window_id)
+            filename = f'test-results/{name}-full.png'
+            logger.debug(f'Taking full-screen screenshot {filename} via {self._method.__name__}')
+            return self._method(filename)
 
-    @staticmethod
-    def _take_scrot(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["scrot",
-                            "--silent",
-                            "--overwrite",
-                            filename])
+    def take_window(self, name: str, window: QWidget) -> str:
+        if self._method is None:
+            logger.warning(f'Tried to take screenshot {name}, but couldn\'t find how to do it')
         else:
-            subprocess.run(["scrot",
-                            "--silent",
-                            "--overwrite",
-                            "--focused",
-                            "--border",
-                            filename])
+            filename = f'test-results/{name}-window.png'
+            logger.debug(f'Taking screenshot {filename} of window {window.objectName()} via {self._method.__name__}')
+            window.grab().save(filename)
 
     @staticmethod
-    def _take_imagemagick(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["import",
-                            "-window",
-                            "root",
-                            filename])
-        else:
-            subprocess.run(["import",
-                            "-border",
-                            "-window",
-                            str(window_id),
-                            filename])
+    def _take_scrot(filename: str) -> None:
+        subprocess.run(["scrot",
+                        "--silent",
+                        "--overwrite",
+                        filename])
 
     @staticmethod
-    def _take_gnome_screenshot(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["gnome-screenshot",
-                            "-f",
-                            filename])
-        else:
-            subprocess.run(["gnome-screenshot",
-                            "--window",
-                            "--include-border",
-                            "-f",
-                            filename])
+    def _take_imagemagick(filename: str) -> None:
+        subprocess.run(["import",
+                        "-window",
+                        "root",
+                        filename])
 
     @staticmethod
-    def _take_flameshot(filename: str, window_id: int | None = None) -> None:
+    def _take_gnome_screenshot(filename: str) -> None:
+        subprocess.run(["gnome-screenshot",
+                        "-f",
+                        filename])
+
+    @staticmethod
+    def _take_flameshot(filename: str) -> None:
         with open(filename, "w") as file:
             subprocess.run(["flameshot",
                         "screen",
                         "-r"], stdout=file)
-        if window_id is not None:
-            # TODO: Crop the screenshot here
-            pass
 
     @staticmethod
-    def _take_xwd(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["xwd",
-                            "-root",
-                            "-out",
-                            filename])
-        else:
-            subprocess.run(["xwd",
-                            "-id",
-                            str(window_id),
-                            "-out",
-                            filename])
+    def _take_xwd(filename: str) -> None:
+        subprocess.run(["xwd",
+                        "-root",
+                        "-out",
+                        filename])
         subprocess.run(["convert",
                         f"xwd:{filename}",
                         filename])
 
     @staticmethod
-    def _take_xfce4_screenshooter(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["xfce4-screenshooter",
-                            "--fullscreen",
-                            "--save",
-                            filename])
-        else:
-            subprocess.run(["xfce4-screenshooter",
-                            "--window",
-                            "--save",
-                            filename])
+    def _take_xfce4_screenshooter(filename: str) -> None:
+        subprocess.run(["xfce4-screenshooter",
+                        "--fullscreen",
+                        "--save",
+                        filename])
 
     @staticmethod
-    def _take_ksnip(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["ksnip",
-                            "--fullscreen",
-                            "--saveto",
-                            filename])
-        else:
-            subprocess.run(["ksnip",
-                            "--active",
-                            "--saveto",
-                            filename])
+    def _take_ksnip(filename: str) -> None:
+        subprocess.run(["ksnip",
+                        "--fullscreen",
+                        "--saveto",
+                        filename])
 
     @staticmethod
-    def _take_spectacle(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["spectacle",
-                            "--fullscreen",
-                            "--background",
-                            "--nonotify",
-                            "--output",
-                            filename])
-        else:
-            subprocess.run(["spectacle",
-                            "--activewindow",
-                            "--background",
-                            "--nonotify",
-                            "--output",
-                            filename])
+    def _take_spectacle(filename: str) -> None:
+        subprocess.run(["spectacle",
+                        "--fullscreen",
+                        "--background",
+                        "--nonotify",
+                        "--output",
+                        filename])
 
     @staticmethod
-    def _take_nircmd(filename: str, window_id: int | None = None) -> None:
-        if window_id is None:
-            subprocess.run(["nircmdc",
-                            "savescreenshot",
-                            filename])
-        else:
-            subprocess.run(["nircmdc",
-                            "savescreenshotwin",
-                            filename])
+    def _take_screencapture(filename: str) -> None:
+        subprocess.run(["screencapture",
+                        filename])
+
+    @staticmethod
+    def _take_nircmd(filename: str) -> None:
+        subprocess.run(["nircmdc",
+                        "savescreenshot",
+                        filename])
 
     @staticmethod
     def _take_powershell(filename: str, window_id: int | None = None) -> None:
@@ -212,3 +170,8 @@ class Screenshot:
         subprocess.run(["powershell",
                         "-Command",
                         ps])
+
+
+if __name__ == "__main__":
+    s = Screenshot()
+    s.take_screen('test')

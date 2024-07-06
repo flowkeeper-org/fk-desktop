@@ -307,8 +307,8 @@ class AbstractE2eTest(ABC):
     def take_screenshot(self, name: str):
         if self._screenshot is None:    # Lazy init, because we don't always want to take screenshots
             self._screenshot = Screenshot()
-        self._screenshot.take(name, self.window().winId())
-        self._screenshot.take(f'{name}-full', None)
+        self._screenshot.take_window(name, self.window())
+        self._screenshot.take_screen(name)
 
         # Update window gallery
         if not os.path.isfile(WINDOW_GALLERY_FILENAME):
@@ -324,7 +324,7 @@ class AbstractE2eTest(ABC):
                     </style>
                 ''')
         with open(WINDOW_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
-            f.write(f'<img class="screenshot" src="{name}.png" title="{name}">\n')
+            f.write(f'<img class="screenshot" src="{name}-window.png" title="{name}">\n')
 
         # Update screen gallery
         if not os.path.isfile(SCREEN_GALLERY_FILENAME):
