@@ -16,8 +16,8 @@ from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
 TEMP_FILENAME = './screenshots-e2e.txt'
-POMODORO_WORK_DURATION = 0.25  # seconds
-POMODORO_REST_DURATION = 0.25  # seconds
+POMODORO_WORK_DURATION = 1  # seconds
+POMODORO_REST_DURATION = 1  # seconds
 
 
 class ScreenshotE2eTest(AbstractE2eTest):
@@ -329,7 +329,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
     def _generate_pomodoros_for_stats(self):
         source = self.get_application().get_source_holder().get_source()
         for b in source.backlogs():
-            if b.get_name() == '2024-03-14, Thursday':
+            if b.get_name() == '2024-03-13, Wednesday':
                 now = datetime.datetime.now(datetime.timezone.utc)
                 uid = generate_uid()
                 workitem = Workitem('Huge', uid, b, now)
