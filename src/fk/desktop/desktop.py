@@ -57,6 +57,7 @@ def show_timer_automatically() -> None:
     actions['focus.voidPomodoro'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
+        window.setWindowFlags(default_flags | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         height = focus.size().height()
         focus.show()
         main_layout.hide()
@@ -66,11 +67,13 @@ def show_timer_automatically() -> None:
         window.adjustSize()
         focus._buttons['window.showFocus'].hide()
         focus._buttons['window.showAll'].show()
+        window.show()
     elif mode == 'minimize':
         window.hide()
 
 
 def hide_timer(event: str|None = None, **kwargs) -> None:
+    window.setWindowFlags(default_flags)
     main_layout.show()
     focus.show()
     left_toolbar.show()
@@ -81,6 +84,14 @@ def hide_timer(event: str|None = None, **kwargs) -> None:
     event_filter.restore_size()
     focus._buttons['window.showFocus'].show()
     focus._buttons['window.showAll'].hide()
+    window.show()
+
+    # Without this junk with Qt 6.7.0, KDE 5.18.8 on XOrg the window moves down every time its size is restored
+    pos = window.pos()
+    pos.setY(pos.y() - 1)
+    window.move(pos)
+    pos.setY(pos.y() + 1)
+    window.move(pos)
 
 
 def hide_timer_automatically() -> None:
@@ -210,6 +221,8 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         window: QtWidgets.QMainWindow = loader.load(file, None)
         file.close()
+
+        default_flags = window.windowFlags()
 
         # Collect actions from all widget types
         actions = Actions(window, settings)

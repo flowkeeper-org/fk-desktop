@@ -1,5 +1,6 @@
 ### v0.6.1 (TBD)
 - Reworked the tutorial.
+- Frameless always-on-top window in Focus mode, with double-click and move.
 - [Technical] macOS DMG installer is now properly signed.
 - [Technical] Screenshots collection in e2e tests.
 

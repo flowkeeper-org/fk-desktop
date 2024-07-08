@@ -16,7 +16,7 @@
 import logging
 
 from PySide6.QtCore import QSize, QPoint, QLine
-from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor
+from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QToolButton, \
     QMessageBox, QMenu, QSizePolicy
 
@@ -48,6 +48,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _border_color: QColor
     _continue_workitem: Workitem | None
     _timer_widget: TimerWidget
+    _moving_around: QPoint | None
 
     def __init__(self,
                  parent: QWidget,
@@ -66,6 +67,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._buttons = dict()
         self._pixmap = None
         self._continue_workitem = None
+        self._moving_around = None
 
         self._border_color = QColor('#000000')
         self._set_border_color()
@@ -263,3 +265,21 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self.setSizePolicy(sp)
         self.setMinimumHeight(DISPLAY_HEIGHT)
         self.setMaximumHeight(DISPLAY_HEIGHT)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self._moving_around = event.pos()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self._moving_around is not None:
+            self.window().move(self.window().pos() + event.pos() - self._moving_around)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self._moving_around = None
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        show_all = self._buttons['window.showAll']
+        show_focus = self._buttons['window.showFocus']
+        if show_all.isVisible():
+            show_all.click()
+        elif show_focus.isVisible():
+            show_focus.click()
