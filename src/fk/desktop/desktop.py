@@ -18,11 +18,13 @@ import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -52,12 +54,26 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
+def set_window_flags(is_focused: bool):
+    flags = default_flags
+
+    mode = get_timer_ui_mode()
+    if mode == 'focus' and is_focused:
+        flags = flags | Qt.WindowType.FramelessWindowHint
+
+    is_pinned = settings.get('Application.always_on_top') == 'True'
+    if is_pinned:
+        flags = flags | Qt.WindowType.WindowStaysOnTopHint
+
+    window.setWindowFlags(flags)
+
+
 def show_timer_automatically() -> None:
     global continue_workitem
     actions['focus.voidPomodoro'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
-        window.setWindowFlags(default_flags | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        set_window_flags(True)
         height = focus.size().height()
         focus.show()
         main_layout.hide()
@@ -73,7 +89,7 @@ def show_timer_automatically() -> None:
 
 
 def hide_timer(event: str|None = None, **kwargs) -> None:
-    window.setWindowFlags(default_flags)
+    set_window_flags(False)
     main_layout.show()
     focus.show()
     left_toolbar.show()
@@ -147,6 +163,16 @@ class MainWindow:
     def show_focus(self):
         show_timer_automatically()
 
+    def pin_focus(self):
+        settings.set({'Application.always_on_top': 'True'})
+        set_window_flags(main_layout.isHidden())
+        window.show()
+
+    def unpin_focus(self):
+        settings.set({'Application.always_on_top': 'False'})
+        set_window_flags(main_layout.isHidden())
+        window.show()
+
     def show_window(self):
         window.show()
 
@@ -165,6 +191,8 @@ class MainWindow:
     def define_actions(actions: Actions):
         actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
         actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+        actions.add('window.pinFocus', "Pin Focus", None, "tool-pin", MainWindow.pin_focus)
+        actions.add('window.unpinFocus', "Unpin Focus", None, "tool-unpin", MainWindow.unpin_focus)
         actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
@@ -367,6 +395,8 @@ if __name__ == "__main__":
         actions.bind('workitems_table', workitems_widget.get_table())
         actions.bind('focus', focus)
         actions.bind('window', main_window)
+
+        set_window_flags(False)
 
         window.show()
 

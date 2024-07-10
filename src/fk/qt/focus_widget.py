@@ -116,6 +116,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._buttons['window.showAll'].hide()
         if "window.showFocus" in actions:
             layout.addWidget(self._create_button("window.showFocus"))
+        if "window.pinFocus" in actions:
+            layout.addWidget(self._create_button("window.pinFocus"))
+            layout.addWidget(self._create_button("window.unpinFocus"))
+            self._update_pinned_button(settings.get('Application.always_on_top') == 'True')
 
         self._buttons['focus.nextPomodoro'].hide()
         self._buttons['focus.completeItem'].hide()
@@ -210,6 +214,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 'Application.eyecandy_gradient' in new_values or \
                 'Application.eyecandy_image' in new_values:
             self.eye_candy()
+        if 'Application.always_on_top' in new_values:
+            self._update_pinned_button(new_values['Application.always_on_top'] == 'True')
+
+    def _update_pinned_button(self, pinned: bool):
+        self._buttons['window.pinFocus'].setVisible(not pinned)
+        self._buttons['window.unpinFocus'].setVisible(pinned)
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

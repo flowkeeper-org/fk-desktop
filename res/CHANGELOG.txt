@@ -1,6 +1,7 @@
 ### v0.6.1 (TBD)
 - Reworked the tutorial.
-- Frameless always-on-top window in Focus mode, with double-click and move.
+- The window loses its frame in Focus mode, with double-click and move.
+- The window can be pinned to stay always-on-top.
 - [Technical] macOS DMG installer is now properly signed.
 - [Technical] Screenshots collection in e2e tests.
 
