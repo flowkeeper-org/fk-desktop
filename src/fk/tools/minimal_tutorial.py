@@ -13,27 +13,27 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from fk.qt.info_overlay import show_tutorial
 from fk.tools.minimal_common import MinimalCommon
 
 
-def get_tutorial_step(step: int, widget: QWidget):
-    print(f'get_tutorial_step({step}, {widget})')
+def get_tutorial_step(step: int, widget: QWidget) -> (str, QPoint, str):
     if step == 1:
-        return 'Welcome to Flowkeeper!', widget.mapToGlobal(widget.rect().topLeft())
+        return 'Welcome to Flowkeeper!', widget.mapToGlobal(widget.rect().topLeft()), 'info'
     elif step == 2:
-        return 'Tutorial step 2\nLonger description', widget.mapToGlobal(widget.rect().bottomRight())
+        return 'Tutorial step 2 with a somewhat longer description', widget.mapToGlobal(widget.rect().bottomRight()), 'arrow'
     elif step == 3:
-        return 'Thank you!', widget.mapToGlobal(widget.rect().center())
+        return 'Thank you!', widget.mapToGlobal(widget.rect().center()), 'info'
 
 
 mc = MinimalCommon(initialize_source=False)
 button = QPushButton(mc.get_window())
 button.setFixedWidth(300)
 button.setText('Tutorial')
-button.clicked.connect(lambda: show_tutorial(lambda step: get_tutorial_step(step, button)))
+button.clicked.connect(lambda: show_tutorial(lambda step: get_tutorial_step(step, button), 250))
 mc.get_window().setCentralWidget(button)
 
 mc.main_loop()

@@ -58,7 +58,6 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 logger = logging.getLogger(__name__)
@@ -76,7 +75,6 @@ class Application(QApplication, AbstractEventEmitter):
     _source_holder: EventSourceHolder | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
-    _tutorial_timer: QtTimer
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -147,11 +145,6 @@ class Application(QApplication, AbstractEventEmitter):
         self.on(NewReleaseAvailable, self.on_new_version)
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
-
-        # Tutorial
-        self._tutorial_timer = QtTimer('Tutorial')
-        if self._settings.get('Application.show_tutorial') == 'True':
-            self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
         self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
@@ -499,7 +492,6 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
         actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
         actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
-        actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
@@ -540,9 +532,6 @@ class Application(QApplication, AbstractEventEmitter):
                 logger.warning("Couldn't get the latest release info from GitHub")
         logger.debug('Will check GitHub releases for the latest version')
         get_latest_version(self, on_version)
-
-    def show_tutorial(self, event: str = None) -> None:
-        TutorialWindow(self.activeWindow(), self._settings).show()
 
     def show_stats(self, event: str = None) -> None:
         StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()

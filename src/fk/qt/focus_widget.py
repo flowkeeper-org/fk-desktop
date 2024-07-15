@@ -116,9 +116,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._buttons['window.showAll'].hide()
         if "window.showFocus" in actions:
             layout.addWidget(self._create_button("window.showFocus"))
-        if "window.pinFocus" in actions:
-            layout.addWidget(self._create_button("window.pinFocus"))
-            layout.addWidget(self._create_button("window.unpinFocus"))
+        if "window.pinWindow" in actions:
+            layout.addWidget(self._create_button("window.pinWindow"))
+            layout.addWidget(self._create_button("window.unpinWindow"))
             self._update_pinned_button(settings.get('Application.always_on_top') == 'True')
 
         self._buttons['focus.nextPomodoro'].hide()
@@ -218,8 +218,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._update_pinned_button(new_values['Application.always_on_top'] == 'True')
 
     def _update_pinned_button(self, pinned: bool):
-        self._buttons['window.pinFocus'].setVisible(not pinned)
-        self._buttons['window.unpinFocus'].setVisible(pinned)
+        self._buttons['window.pinWindow'].setVisible(not pinned)
+        self._buttons['window.unpinWindow'].setVisible(pinned)
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

@@ -424,7 +424,6 @@ class SettingsDialog(QDialog):
                 pass
             elif len(widgets) == 1:
                 widgets[0].setObjectName(f'{option_id}')
-                print(f'Set {option_id} - {widgets[0]}')
                 self._widgets_visibility[widgets[0]] = option_visible
                 layout.addRow(label, widgets[0])
             else:

@@ -217,7 +217,6 @@ class AbstractE2eTest(ABC):
             None,
             Qt.KeyboardModifier.NoModifier,
         )))
-        print('clicked', widget, pos, Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton)
 
     def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
         self.do(lambda: widget.mouseDoubleClickEvent(QMouseEvent(
@@ -344,5 +343,5 @@ class AbstractE2eTest(ABC):
 
     def center_window(self):
         screen_center = self._app.primaryScreen().geometry().center()
-        fg = self.window().frameGeometry()
+        fg = self.window().geometry()
         self.window().move(screen_center - (fg.center() - fg.topLeft()))

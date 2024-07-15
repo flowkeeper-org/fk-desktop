@@ -1,9 +1,10 @@
 ### v0.6.1 (TBD)
-- Reworked the tutorial.
+- New interactive tutorial.
 - The window loses its frame in Focus mode, with double-click and move.
 - The window can be pinned to stay always-on-top.
+- New appearance settings (always on top, window title in focus mode).
 - [Technical] macOS DMG installer is now properly signed.
-- [Technical] Screenshots collection in e2e tests.
+- [Technical] Screenshots collection via e2e tests.
 
 ### v0.6.0 (21 June 2024)
 - Implemented the Statistics feature AKA Pomodoro Health.

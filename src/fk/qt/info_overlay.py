@@ -16,8 +16,8 @@
 from typing import Callable, Tuple
 
 from PySide6.QtCore import Qt, QTimer, QPoint
-from PySide6.QtGui import QPixmap, QMouseEvent
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
+from PySide6.QtGui import QPixmap, QMouseEvent, QFont
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy
 
 
 class InfoOverlay(QFrame):
@@ -30,22 +30,30 @@ class InfoOverlay(QFrame):
                  icon: str = None,
                  duration: int = 3,
                  font_scale: float = 0.8,
-                 on_close: Callable[[], None] = None):
+                 width: int | None = None,
+                 on_close: Callable[[], None] = None,
+                 on_prev: Callable[[], None] = None):
         super().__init__()
         self._on_close = on_close
 
         self.setWindowFlags(Qt.WindowType.ToolTip)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
-        self.setLayout(layout)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        self.setLayout(main_layout)
+
+        top_layout = QHBoxLayout()
+        top_layout.setContentsMargins(8, 8, 8, 8)
+        top_layout.setSpacing(6)
+        main_layout.addLayout(top_layout)
 
         if icon is not None:
             icon_label = QLabel(self)
             icon_label.setPixmap(QPixmap(icon))
-            layout.addWidget(icon_label)
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+            top_layout.addWidget(icon_label)
 
         self._timer = QTimer(self)
         if duration > 0:
@@ -56,10 +64,32 @@ class InfoOverlay(QFrame):
         main_label = QLabel(self)
         main_label.setObjectName('overlay_text')
         main_label.setText(text)
+        main_label.setWordWrap(True)
         font = main_label.font()
         font.setPointSize(font.pointSize() * font_scale)
         main_label.setFont(font)
-        layout.addWidget(main_label)
+        top_layout.addWidget(main_label)
+        top_layout.addStretch()
+
+        if on_prev is not None:
+            bottom_layout = QHBoxLayout()
+            bottom_layout.setContentsMargins(8, 0, 8, 8)
+            bottom_layout.setSpacing(2)
+            main_layout.addLayout(bottom_layout)
+            prev_button = QLabel(self)
+            prev_button.setObjectName('prev_button')
+            prev_button.setText('&lt; <a href="#">Back</a>')
+            prev_button.linkActivated.connect(on_prev)
+            prev_button.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+            smaller_font = QFont(main_label.font())
+            smaller_font.setPointSize(font.pointSize() * 0.8)
+            prev_button.setFont(smaller_font)
+            bottom_layout.addWidget(prev_button)
+            bottom_layout.addStretch()
+
+        if width is not None:
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding))
+            self.setFixedWidth(width)
 
         self.adjustSize()
         self.move(absolute_position)
@@ -70,7 +100,6 @@ class InfoOverlay(QFrame):
     def close(self):
         if self._timer is not None:
             self._timer.stop()
-        # TODO: Save its state in settings
         super().close()
         if self._on_close is not None:
             self._on_close()
@@ -87,24 +116,32 @@ def show_info_overlay(text: str,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, on_close)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close)
     INFO_OVERLAY_INSTANCE.show()
 
 
-def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint]], first: bool = True):
+def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int | None = None, first: bool = True):
     global TUTORIAL_STEP
     if first:
         TUTORIAL_STEP = 0
     TUTORIAL_STEP += 1
     res = get_step(TUTORIAL_STEP)
+
+    def on_prev():
+        global TUTORIAL_STEP
+        TUTORIAL_STEP -= 2  # That's because the onMousePress event also fires at the same time
+        show_tutorial(get_step, width, False)
+
     if res is not None:
-        text, pos = res
+        text, pos, icon = res
         if text is not None and pos is not None:
             global INFO_OVERLAY_INSTANCE
             INFO_OVERLAY_INSTANCE = InfoOverlay(text,
                                                 pos,
-                                                ":/icons/info.png",
+                                                f":/icons/tutorial-{icon}.png",
                                                 0,
                                                 1,
-                                                lambda: show_tutorial(get_step, False))
+                                                width,
+                                                lambda: show_tutorial(get_step, width, False),
+                                                on_prev if TUTORIAL_STEP > 1 else None)
             INFO_OVERLAY_INSTANCE.show()

@@ -101,7 +101,7 @@ InfoOverlay {
     border: 1px solid $BORDER_COLOR;
 }
 
-InfoOverlay #overlay_text {
+InfoOverlay #overlay_text, #prev_button {
     color: $TABLE_TEXT_COLOR;
 }
 
@@ -110,7 +110,7 @@ InfoOverlay #overlay_text {
     qproperty-bg_color: $FOCUS_BG_COLOR;
 }
 
-#image1, #image2, #image3, #image4, #image5, #pages, #title1, #title2, #title3, #title4, #title5, #tutorial_window {
+#image1, #image2, #image3, #image4, #image5, #pages, #title1, #title2, #title3, #title4, #title5 {
     background-color: "#f7f8fa";
     color: "#000000";
 }

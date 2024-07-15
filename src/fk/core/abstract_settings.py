@@ -166,7 +166,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ], _always_show),
-                ('Application.always_on_top', 'bool', 'Always on top', 'True', [], _never_show),
+                ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
+                ('Application.show_window_title', 'bool', 'Focus window title', 'False', [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'mixed', [
                     "light:Light",
                     "dark:Dark",
