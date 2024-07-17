@@ -62,6 +62,11 @@ class AbstractEventEmitter:
             if regex.match(event):
                 self._connections[event].clear()
 
+    def unsubscribe(self, callback: Callable) -> None:
+        for callables in self._connections.values():
+            if callback in callables:
+                callables.remove(callback)
+
     def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
         if not self._is_muted():
             first = True

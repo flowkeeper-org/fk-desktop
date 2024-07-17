@@ -29,6 +29,7 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
+from fk.desktop.tutorial import get_tutorial_step
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -36,6 +37,7 @@ from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
+from fk.qt.info_overlay import show_tutorial
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
@@ -57,8 +59,9 @@ def get_timer_ui_mode() -> str:
 def set_window_flags(is_focused: bool):
     flags = default_flags
 
+    hide_frame = settings.get('Application.show_window_title') != 'True'
     mode = get_timer_ui_mode()
-    if mode == 'focus' and is_focused:
+    if mode == 'focus' and is_focused and hide_frame:
         flags = flags | Qt.WindowType.FramelessWindowHint
 
     is_pinned = settings.get('Application.always_on_top') == 'True'
@@ -154,30 +157,39 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
             tray.setVisible(new_value == 'True')
         elif name == 'Application.shortcuts':
             actions.update_from_settings()
+        elif name == 'Application.always_on_top':
+            set_window_flags(main_layout.isHidden())
+            window.show()
 
 
 class MainWindow:
+    _tutorial_timer: QtTimer
+
+    def __init__(self, settings: AbstractSettings):
+        self._tutorial_timer = QtTimer('Tutorial')
+        if settings.get('Application.show_tutorial') == 'True':
+            self._tutorial_timer.schedule(1000, self.start_tutorial, None, True)
+
     def show_all(self):
         hide_timer()
 
     def show_focus(self):
         show_timer_automatically()
 
-    def pin_focus(self):
+    def pin_window(self):
         settings.set({'Application.always_on_top': 'True'})
-        set_window_flags(main_layout.isHidden())
-        window.show()
 
-    def unpin_focus(self):
+    def unpin_window(self):
         settings.set({'Application.always_on_top': 'False'})
-        set_window_flags(main_layout.isHidden())
-        window.show()
 
     def show_window(self):
         window.show()
 
     def show_search(self):
         search.show()
+
+    def start_tutorial(self, event=None):
+        show_tutorial(lambda step: get_tutorial_step(step, window), 300)
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
@@ -191,10 +203,11 @@ class MainWindow:
     def define_actions(actions: Actions):
         actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
         actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
-        actions.add('window.pinFocus', "Pin Focus", None, "tool-pin", MainWindow.pin_focus)
-        actions.add('window.unpinFocus', "Unpin Focus", None, "tool-unpin", MainWindow.unpin_focus)
+        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.pin_window)
+        actions.add('window.unpinWindow', "Unpin Flowkeeper", None, "tool-unpin", MainWindow.unpin_window)
         actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+        actions.add('window.tutorial', "Tutorial", '', '', MainWindow.start_tutorial)
 
         backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -271,7 +284,7 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
         menu_file.addSeparator()
-        menu_file.addAction(actions['application.tutorial'])
+        menu_file.addAction(actions['window.tutorial'])
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])
@@ -386,7 +399,7 @@ if __name__ == "__main__":
         window.installEventFilter(event_filter)
         window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
-        main_window = MainWindow()
+        main_window = MainWindow(settings)
 
         # Bind action domains to widget instances
         actions.bind('application', app)

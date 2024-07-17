@@ -120,6 +120,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'False', [], _never_show),
+                ('Application.completed_tutorial_steps', 'str', 'Completed tutrial steps', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Logger.level', 'choice', 'Log level', 'WARNING', [
                     "ERROR:Errors only",
