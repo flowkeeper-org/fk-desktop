@@ -96,13 +96,14 @@ QSplitter::handle {
     background-color: $PRIMARY_BG_COLOR;
 }
 
-InfoOverlay {
-    background-color: $PRIMARY_BG_COLOR;
-    border: 1px solid $BORDER_COLOR;
+InfoOverlayContent {
+    background-color: #fcfcca;
+    border-radius: 5px;
+    border: 1px solid #d7d8da;
 }
 
 InfoOverlay #overlay_text, #prev_button {
-    color: $TABLE_TEXT_COLOR;
+    color: #000000;
 }
 
 #timer {

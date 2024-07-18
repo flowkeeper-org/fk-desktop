@@ -35,31 +35,10 @@ from fk.qt.workitem_tableview import WorkitemTableView
 logger = logging.getLogger(__name__)
 
 
-def _get_row_position(widget: QAbstractItemView, row: int, col: int = 0) -> QPoint:
+def _get_row_position(widget: QAbstractItemView, x: float, row: int, col: int = 0) -> QPoint:
     row_rect = widget.visualRect(widget.model().index(row, col))
-    return QPoint(row_rect.center().x() * 0.5, row_rect.bottomRight().y() + 10)
-
-
-def get_tutorial_step(step: int, main_window: QWidget) -> (str, QPoint, str):
-    logger.debug(f'Tutorial step {step}')
-    if step == 1:
-        backlogs: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
-        return '1 / 10: Backlogs are To Do lists. You would usually start your day by creating a new backlog.', \
-            backlogs.parentWidget().mapToGlobal(backlogs.rect().center()), 'info'
-    elif step == 2:
-        backlogs: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
-
-        pos = _get_row_position(backlogs, 1)
-        # return '1 / 10: Backlogs are To Do lists. You would usually start your day by creating a new backlog. ' \
-        #        'You can create project backlogs, long-term to-do lists, etc.', \
-        #     backlogs.mapToGlobal(pos)
-        return '1 / 10: Backlogs are To Do lists.', backlogs.parentWidget().mapToGlobal(pos), 'arrow'
-        # backlogs.parentWidget().mapToGlobal(backlogs.rect().center())
-    elif step == 3:
-        workitems: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
-        return '2 / 10: Work items', workitems.parentWidget().mapToGlobal(workitems.rect().center()), 'info'
-    elif step == 4:
-        return '3 / 10: Thank you!', main_window.mapToGlobal(main_window.rect().center()), 'info'
+    return QPoint(round(row_rect.left() * (1.0 - x) + x * row_rect.right()),
+                  row_rect.bottom() + 5)
 
 
 class Tutorial:
@@ -96,7 +75,7 @@ class Tutorial:
 
     def _subscribe(self):
         print(f'Subscribing tutorial to source_holder changes')
-        self._source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
     def _unsubscribe(self):
         print(f'Unsubscribing the tutorial')
@@ -149,9 +128,10 @@ class Tutorial:
 
     def _on_backlog_create(self, complete: Callable, **kwargs) -> None:
         backlogs: BacklogTableView = self._main_window.findChild(BacklogTableView, "backlogs_table")
+        pos = _get_row_position(backlogs, 0.15, 0)
         show_tutorial_overlay('Pick a new name for your backlog and press Enter. You can rename existing backlogs '
                               'by double-clicking or pressing F2.',
-                              backlogs.parentWidget().mapToGlobal(backlogs.rect().center()),
+                              backlogs.mapToGlobal(pos),
                               'info',
                               complete)
 
@@ -166,8 +146,10 @@ class Tutorial:
             complete()
 
     def _on_workitem_create(self, complete: Callable, **kwargs) -> None:
+        workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
+        pos = _get_row_position(workitems, 0.15, 0, 1)
         show_tutorial_overlay('Pick a better name for this workitem and press Enter.',
-                              self._main_window.mapToGlobal(self._main_window.rect().center()),
+                              workitems.mapToGlobal(pos),
                               'info',
                               complete)
 

@@ -17,7 +17,7 @@ from typing import Callable, Tuple
 
 from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPixmap, QMouseEvent, QFont
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy, QWidget
 
 
 class InfoOverlay(QFrame):
@@ -33,7 +33,8 @@ class InfoOverlay(QFrame):
                  font_scale: float = 0.8,
                  width: int | None = None,
                  on_close: Callable[[], None] = None,
-                 on_prev: Callable[[], None] = None):
+                 on_prev: Callable[[], None] = None,
+                 arrow: bool = False):
         super().__init__()
         self._on_close = on_close
         self._text = text
@@ -41,10 +42,71 @@ class InfoOverlay(QFrame):
         self.setWindowFlags(Qt.WindowType.ToolTip)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
-        main_layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        self.setLayout(main_layout)
+        if arrow:
+            triangle = QLabel(self)
+            triangle.setPixmap(QPixmap(':/icons/triangle.svg'))
+            triangle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            main_layout.addWidget(triangle)
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            # TODO: Add that triangular thing in the corner
+
+        self._timer = QTimer(self)
+        if duration > 0:
+            self._timer.setInterval(duration * 1000)
+            self._timer.timeout.connect(self.close)
+            self._timer.start()
+
+        widget = InfoOverlayContent(text,
+                                    icon,
+                                    font_scale,
+                                    on_prev,
+                                    arrow)
+        main_layout.addWidget(widget)
+
+        if width is not None:
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding))
+            self.setFixedWidth(width)
+
+        self.adjustSize()
+        absolute_position.setX(absolute_position.x() - round(self.width() / 2))
+        self.move(absolute_position)
+
+    def get_text(self):
+        return self._text
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.close()
+
+    def close(self):
+        global INFO_OVERLAY_INSTANCE
+        if self._timer is not None:
+            self._timer.stop()
+        super().close()
+        if self._on_close is not None:
+            self._on_close()
+        INFO_OVERLAY_INSTANCE = None
+
+
+class InfoOverlayContent(QWidget):
+    def __init__(self,
+                 text: str,
+                 icon: str = None,
+                 font_scale: float = 0.8,
+                 on_prev: Callable[[], None] = None,
+                 arrow: bool = False):
+        super().__init__()
+
+        main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
+
+        if arrow:
+            self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         top_layout = QHBoxLayout()
         top_layout.setContentsMargins(8, 8, 8, 8)
@@ -56,12 +118,6 @@ class InfoOverlay(QFrame):
             icon_label.setPixmap(QPixmap(icon))
             icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
             top_layout.addWidget(icon_label)
-
-        self._timer = QTimer(self)
-        if duration > 0:
-            self._timer.setInterval(duration * 1000)
-            self._timer.timeout.connect(self.close)
-            self._timer.start()
 
         main_label = QLabel(self)
         main_label.setObjectName('overlay_text')
@@ -89,28 +145,6 @@ class InfoOverlay(QFrame):
             bottom_layout.addWidget(prev_button)
             bottom_layout.addStretch()
 
-        if width is not None:
-            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding))
-            self.setFixedWidth(width)
-
-        self.adjustSize()
-        self.move(absolute_position)
-
-    def get_text(self):
-        return self._text
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        self.close()
-
-    def close(self):
-        global INFO_OVERLAY_INSTANCE
-        if self._timer is not None:
-            self._timer.stop()
-        super().close()
-        if self._on_close is not None:
-            self._on_close()
-        INFO_OVERLAY_INSTANCE = None
-
 
 # Without it Qt will destroy the overlay before you can see it
 INFO_OVERLAY_INSTANCE: InfoOverlay | None = None
@@ -123,7 +157,7 @@ def show_info_overlay(text: str,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None, False)
     INFO_OVERLAY_INSTANCE.show()
 
 
@@ -150,7 +184,8 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int
                                                 1,
                                                 width,
                                                 lambda: show_tutorial(get_step, width, False),
-                                                on_prev if TUTORIAL_STEP > 1 else None)
+                                                on_prev if TUTORIAL_STEP > 1 else None,
+                                                True)
             INFO_OVERLAY_INSTANCE.show()
 
 
@@ -169,5 +204,6 @@ def show_tutorial_overlay(text: str, pos: QPoint, icon: str, on_close: Callable[
                                             1,
                                             width,
                                             on_close,
-                                            None)
+                                            None,
+                                            True)
         INFO_OVERLAY_INSTANCE.show()
