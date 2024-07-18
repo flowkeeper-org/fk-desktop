@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePol
 class InfoOverlay(QFrame):
     _timer: QTimer
     _on_close: Callable[[None], None]
+    _text: str
 
     def __init__(self,
                  text: str,
@@ -35,6 +36,7 @@ class InfoOverlay(QFrame):
                  on_prev: Callable[[], None] = None):
         super().__init__()
         self._on_close = on_close
+        self._text = text
 
         self.setWindowFlags(Qt.WindowType.ToolTip)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
@@ -94,15 +96,20 @@ class InfoOverlay(QFrame):
         self.adjustSize()
         self.move(absolute_position)
 
+    def get_text(self):
+        return self._text
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.close()
 
     def close(self):
+        global INFO_OVERLAY_INSTANCE
         if self._timer is not None:
             self._timer.stop()
         super().close()
         if self._on_close is not None:
             self._on_close()
+        INFO_OVERLAY_INSTANCE = None
 
 
 # Without it Qt will destroy the overlay before you can see it
@@ -116,7 +123,7 @@ def show_info_overlay(text: str,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None)
     INFO_OVERLAY_INSTANCE.show()
 
 
@@ -145,3 +152,22 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int
                                                 lambda: show_tutorial(get_step, width, False),
                                                 on_prev if TUTORIAL_STEP > 1 else None)
             INFO_OVERLAY_INSTANCE.show()
+
+
+def show_tutorial_overlay(text: str, pos: QPoint, icon: str, on_close: Callable[[], None] = None, width: int | None = None):
+    if text is not None and pos is not None:
+        global INFO_OVERLAY_INSTANCE
+        if INFO_OVERLAY_INSTANCE is not None:
+            if INFO_OVERLAY_INSTANCE.isVisible() and INFO_OVERLAY_INSTANCE.get_text() == text:
+                # Don't create duplicates
+                return
+            INFO_OVERLAY_INSTANCE.close()
+        INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+                                            pos,
+                                            f":/icons/tutorial-{icon}.png",
+                                            0,
+                                            1,
+                                            width,
+                                            on_close,
+                                            None)
+        INFO_OVERLAY_INSTANCE.show()

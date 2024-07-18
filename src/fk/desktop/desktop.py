@@ -24,12 +24,11 @@ from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
-from fk.desktop.tutorial import get_tutorial_step
+from fk.desktop.tutorial import Tutorial
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -37,7 +36,6 @@ from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
-from fk.qt.info_overlay import show_tutorial
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
@@ -163,12 +161,8 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
 
 
 class MainWindow:
-    _tutorial_timer: QtTimer
-
-    def __init__(self, settings: AbstractSettings):
-        self._tutorial_timer = QtTimer('Tutorial')
-        if settings.get('Application.show_tutorial') == 'True':
-            self._tutorial_timer.schedule(1000, self.start_tutorial, None, True)
+    def __init__(self):
+        super().__init__()
 
     def show_all(self):
         hide_timer()
@@ -188,9 +182,6 @@ class MainWindow:
     def show_search(self):
         search.show()
 
-    def start_tutorial(self, event=None):
-        show_tutorial(lambda step: get_tutorial_step(step, window), 300)
-
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
         update_tables_visibility()
@@ -207,7 +198,6 @@ class MainWindow:
         actions.add('window.unpinWindow', "Unpin Flowkeeper", None, "tool-unpin", MainWindow.unpin_window)
         actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
-        actions.add('window.tutorial', "Tutorial", '', '', MainWindow.start_tutorial)
 
         backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -284,7 +274,6 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
         menu_file.addSeparator()
-        menu_file.addAction(actions['window.tutorial'])
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])
@@ -399,7 +388,7 @@ if __name__ == "__main__":
         window.installEventFilter(event_filter)
         window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
 
-        main_window = MainWindow(settings)
+        main_window = MainWindow()
 
         # Bind action domains to widget instances
         actions.bind('application', app)
@@ -410,6 +399,8 @@ if __name__ == "__main__":
         actions.bind('window', main_window)
 
         set_window_flags(False)
+
+        tutorial = Tutorial(app.get_source_holder(), settings, window)
 
         window.show()
 
