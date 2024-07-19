@@ -48,7 +48,7 @@ class WorkitemWidget(QWidget):
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        tb = ConfigurableToolBar(self, actions)
+        tb = ConfigurableToolBar(self, actions, "workitems_toolbar")
         tb.addAction(actions['workitems_table.newItem'])
         tb.addAction(actions['workitems_table.deleteItem'])
         tb.addAction(actions['workitems_table.renameItem'])

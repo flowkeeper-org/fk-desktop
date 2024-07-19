@@ -51,7 +51,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                          actions,
                          'Loading, please wait...',
                          'No data or connection error.',
-                         "You haven't got any backlogs yet.\nCreate the first one by pressing Ctrl+N.",
+                         "You haven't got any backlogs yet. Create the first one by pressing Ctrl+N.",
                          0)
         self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)

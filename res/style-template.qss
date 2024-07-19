@@ -97,13 +97,11 @@ QSplitter::handle {
 }
 
 InfoOverlayContent {
-    background-color: #fcfcca;
-    border-radius: 5px;
-    border: 1px solid #d7d8da;
+    background-color: #3366cc;
 }
 
 InfoOverlay #overlay_text, #prev_button {
-    color: #000000;
+    color: #ffffff;
 }
 
 #timer {

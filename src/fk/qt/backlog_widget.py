@@ -42,7 +42,7 @@ class BacklogWidget(QWidget):
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        tb = ConfigurableToolBar(self, actions)
+        tb = ConfigurableToolBar(self, actions, "backlogs_toolbar")
         tb.addAction(actions['backlogs_table.newBacklog'])
         tb.addAction(actions['backlogs_table.deleteBacklog'])
         tb.addAction(actions['backlogs_table.renameBacklog'])

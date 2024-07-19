@@ -13,9 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from PySide6.QtCore import QEvent, QPoint
+from PySide6.QtCore import QEvent, QPoint, QRect
 from PySide6.QtGui import Qt, QMouseEvent, QAction
-from PySide6.QtWidgets import QWidget, QToolBar, QMenu, QStyleFactory, QApplication
+from PySide6.QtWidgets import QWidget, QToolBar, QMenu, QStyleFactory, QApplication, QToolButton
 
 from fk.core.events import AfterSettingsChanged
 from fk.qt.actions import Actions
@@ -25,13 +25,14 @@ from fk.qt.info_overlay import show_info_overlay
 class ConfigurableToolBar(QToolBar):
     _actions: Actions
 
-    def __init__(self, parent: QWidget, actions: Actions):
+    def __init__(self, parent: QWidget, actions: Actions, name: str):
         super().__init__(parent)
         self._actions = actions
         settings = actions.get_settings()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setStyle(QStyleFactory.create("windows"))
         self.setVisible(settings.get('Application.show_toolbar') == 'True')
+        self.setObjectName(name)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
@@ -57,3 +58,8 @@ class ConfigurableToolBar(QToolBar):
             context_menu.addAction(act)
             context_menu.exec(
                 self.parentWidget().mapToGlobal(event.pos()))
+
+    def get_button_geometry(self, action_name: str) -> QRect | None:
+        for a in self.actions():
+            if a.objectName() == action_name:
+                return self.actionGeometry(a)

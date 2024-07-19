@@ -34,7 +34,7 @@ class InfoOverlay(QFrame):
                  width: int | None = None,
                  on_close: Callable[[], None] = None,
                  on_prev: Callable[[], None] = None,
-                 arrow: bool = False):
+                 arrow: str = None):
         super().__init__()
         self._on_close = on_close
         self._text = text
@@ -44,15 +44,14 @@ class InfoOverlay(QFrame):
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
-        if arrow:
+        if arrow == 'up':
             triangle = QLabel(self)
-            triangle.setPixmap(QPixmap(':/icons/triangle.svg'))
+            triangle.setPixmap(QPixmap(':/icons/triangle-up.svg'))
             triangle.setAlignment(Qt.AlignmentFlag.AlignCenter)
             main_layout.addWidget(triangle)
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-            # TODO: Add that triangular thing in the corner
 
         self._timer = QTimer(self)
         if duration > 0:
@@ -67,12 +66,25 @@ class InfoOverlay(QFrame):
                                     arrow)
         main_layout.addWidget(widget)
 
+        if arrow == 'down':
+            triangle = QLabel(self)
+            triangle.setPixmap(QPixmap(':/icons/triangle-down.svg'))
+            triangle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            main_layout.addWidget(triangle)
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
         if width is not None:
             self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding))
             self.setFixedWidth(width)
 
         self.adjustSize()
+
         absolute_position.setX(absolute_position.x() - round(self.width() / 2))
+        if arrow is None:
+            absolute_position.setY(absolute_position.y() - round(self.height() / 2))
+        if arrow == 'down':
+            absolute_position.setY(absolute_position.y() - self.height())
+
         self.move(absolute_position)
 
     def get_text(self):
@@ -87,6 +99,7 @@ class InfoOverlay(QFrame):
             self._timer.stop()
         super().close()
         if self._on_close is not None:
+            print('On close', self._on_close)
             self._on_close()
         INFO_OVERLAY_INSTANCE = None
 
@@ -104,12 +117,10 @@ class InfoOverlayContent(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
-
-        if arrow:
-            self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         top_layout = QHBoxLayout()
-        top_layout.setContentsMargins(8, 8, 8, 8)
+        top_layout.setContentsMargins(12, 12, 12, 12)
         top_layout.setSpacing(6)
         main_layout.addLayout(top_layout)
 
@@ -157,11 +168,14 @@ def show_info_overlay(text: str,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None, False)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None, None)
     INFO_OVERLAY_INSTANCE.show()
 
 
-def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int | None = None, first: bool = True):
+def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]],
+                  width: int | None = None,
+                  first: bool = True,
+                  arrow: str = 'down'):
     global TUTORIAL_STEP
     if first:
         TUTORIAL_STEP = 0
@@ -171,7 +185,7 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int
     def on_prev():
         global TUTORIAL_STEP
         TUTORIAL_STEP -= 2  # That's because the onMousePress event also fires at the same time
-        show_tutorial(get_step, width, False)
+        show_tutorial(get_step, width, False, arrow)
 
     if res is not None:
         text, pos, icon = res
@@ -183,13 +197,18 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]], width: int
                                                 0,
                                                 1,
                                                 width,
-                                                lambda: show_tutorial(get_step, width, False),
+                                                lambda: show_tutorial(get_step, width, False, arrow),
                                                 on_prev if TUTORIAL_STEP > 1 else None,
-                                                True)
+                                                arrow)
             INFO_OVERLAY_INSTANCE.show()
 
 
-def show_tutorial_overlay(text: str, pos: QPoint, icon: str, on_close: Callable[[], None] = None, width: int | None = None):
+def show_tutorial_overlay(text: str,
+                          pos: QPoint,
+                          icon: str,
+                          on_close: Callable[[], None] = None,
+                          arrow: str = 'down'):
+    print(f'show_tutorial_overlay(text="{text}", pos={pos}, icon={icon}, on_close={on_close}, arrow={arrow})')
     if text is not None and pos is not None:
         global INFO_OVERLAY_INSTANCE
         if INFO_OVERLAY_INSTANCE is not None:
@@ -202,8 +221,8 @@ def show_tutorial_overlay(text: str, pos: QPoint, icon: str, on_close: Callable[
                                             f":/icons/tutorial-{icon}.png",
                                             0,
                                             1,
-                                            width,
+                                            None,
                                             on_close,
                                             None,
-                                            True)
+                                            arrow)
         INFO_OVERLAY_INSTANCE.show()

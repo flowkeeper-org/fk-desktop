@@ -28,17 +28,21 @@ from fk.core.events import AfterSettingsChanged, SourceMessagesProcessed, AfterB
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 from fk.qt.backlog_tableview import BacklogTableView
+from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.info_overlay import show_tutorial_overlay
+from fk.qt.timer_widget import TimerWidget
 from fk.qt.workitem_tableview import WorkitemTableView
 
 logger = logging.getLogger(__name__)
 
 
-def _get_row_position(widget: QAbstractItemView, x: float, row: int, col: int = 0) -> QPoint:
+def _get_row_position(widget: QAbstractItemView, x: float, row: int, col: int, arrow: str) -> QPoint:
     row_rect = widget.visualRect(widget.model().index(row, col))
-    return QPoint(round(row_rect.left() * (1.0 - x) + x * row_rect.right()),
-                  row_rect.bottom() + 5)
+    return widget.mapToGlobal(QPoint(
+        round(row_rect.left() * (1.0 - x) + x * row_rect.right()),
+        row_rect.top() + 5 if arrow == 'down' else row_rect.bottom() + 5
+    ))
 
 
 class Tutorial:
@@ -113,53 +117,64 @@ class Tutorial:
         for event in self._steps:
             source.on(event, self._on_event)
 
+    def _get_toolbar_button_position(self, action_name: str, arrow: str):
+        toolbar: ConfigurableToolBar
+        if action_name.startswith('backlogs_table'):
+            toolbar = self._main_window.findChild(ConfigurableToolBar, "backlogs_toolbar")
+        else:
+            toolbar = self._main_window.findChild(ConfigurableToolBar, "workitems_toolbar")
+        rect = toolbar.get_button_geometry(action_name)
+        pt = rect.center()
+        pt.setY(rect.top() if arrow == 'down' else rect.bottom())
+        return toolbar.parentWidget().mapToGlobal(pt)
+
     # Tutorial "steps" implementation are only called if the corresponding step hasn't been completed yet.
     # The "complete" parameter is a callback, which the step can execute to mark it completed.
 
     def _on_messages(self, complete: Callable, **kwargs) -> None:
         if next(iter(self._source_holder.get_source().backlogs()), None) is None:   # I.e. there are no backlogs
-            backlogs: BacklogTableView = self._main_window.findChild(BacklogTableView, "backlogs_table")
             show_tutorial_overlay('Welcome to Flowkeeper! Start by creating your first backlog.',
-                                  backlogs.parentWidget().mapToGlobal(backlogs.rect().center()),
+                                  self._get_toolbar_button_position('backlogs_table.newBacklog', 'up'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'up')
         else:
             complete()
 
     def _on_backlog_create(self, complete: Callable, **kwargs) -> None:
         backlogs: BacklogTableView = self._main_window.findChild(BacklogTableView, "backlogs_table")
-        pos = _get_row_position(backlogs, 0.15, 0)
         show_tutorial_overlay('Pick a new name for your backlog and press Enter. You can rename existing backlogs '
                               'by double-clicking or pressing F2.',
-                              backlogs.mapToGlobal(pos),
+                              _get_row_position(backlogs, 0.15, 0, 0, 'down'),
                               'info',
-                              complete)
+                              complete,
+                              'down')
 
     def _on_backlog_rename(self, complete: Callable, **kwargs) -> None:
         if next(iter(self._source_holder.get_source().workitems()), None) is None:   # I.e. there are no workitems
-            workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
             show_tutorial_overlay('Create a work item in the selected backlog.',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  self._get_toolbar_button_position('workitems_table.newItem', 'up'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'up')
         else:
             complete()
 
     def _on_workitem_create(self, complete: Callable, **kwargs) -> None:
         workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-        pos = _get_row_position(workitems, 0.15, 0, 1)
         show_tutorial_overlay('Pick a better name for this workitem and press Enter.',
-                              workitems.mapToGlobal(pos),
+                              _get_row_position(workitems, 0.15, 0, 1, 'down'),
                               'info',
-                              complete)
+                              complete,
+                              'down')
 
     def _on_workitem_rename(self, complete: Callable, workitem: Workitem, **kwargs) -> None:
         if len(workitem) == 0:   # I.e. there are no pomodoros
-            workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
             show_tutorial_overlay('Add several pomodoros by pressing Ctrl-[+] on the selected workitem a few times',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  self._get_toolbar_button_position('workitems_table.addPomodoro', 'down'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'down')
         else:
             complete()
 
@@ -167,29 +182,32 @@ class Tutorial:
         if len(workitem) >= 3:
             workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
             show_tutorial_overlay('Try to delete one by pressing Ctrl-[-]. Leave at least two pomodoros to continue.',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  _get_row_position(workitems, 0.5, 0, 2, 'up'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'up')
 
     def _on_pomodoro_remove(self, complete: Callable, workitem: Workitem, **kwargs) -> None:
         if len(workitem) >= 2:
-            workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-            show_tutorial_overlay(f'Now you are ready to start working on work item "{workitem.get_name()}". To '
+            show_tutorial_overlay(f'Now you are ready to start working on this work item. To '
                                   f'do that press Ctrl+S (Start) or click ▶️ button in the toolbar.',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  self._get_toolbar_button_position('workitems_table.startItem', 'down'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'down')
 
     def _on_pomodoro_work_start(self, complete: Callable, **kwargs) -> None:
-        focus: FocusWidget = self._main_window.findChild(FocusWidget, "focus")
+        timer: TimerWidget = self._main_window.findChild(TimerWidget, "timer")
+        pt: QPoint = timer.rect().center()
+        pt.setY(timer.rect().bottom())
         show_tutorial_overlay(f'The timer will tick for 25 minutes, which is a default Pomodoro duration. '
                               f'Void it.',
-                              focus.parentWidget().mapToGlobal(focus.rect().center()),
+                              timer.parentWidget().mapToGlobal(pt),
                               'info',
-                              complete)
+                              complete,
+                              'up')
 
     def _on_pomodoro_complete(self, complete: Callable, pomodoro: Pomodoro, **kwargs) -> None:
-        workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
         completed_count = 0
         for p in self._source_holder.get_source().pomodoros():
             if p.is_finished() or p.is_canceled():
@@ -198,20 +216,23 @@ class Tutorial:
             show_tutorial_overlay(f'{"You voided" if pomodoro.is_canceled() else "Congratulations! You successfully completed"} a pomodoro. '
                                   'Note how its icon changed. Try to complete another pomodoro, this time see what you can '
                                   'do with that Focus window. Also pay attention to the Flowkeeper icon in system tray.',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  self._main_window.mapToGlobal(self._main_window.rect().center()),
                                   'info',
-                                  lambda: None)
+                                  lambda: None,
+                                  None)
         elif completed_count > 1:
             show_tutorial_overlay('Now let\'s say you are done with this work item. You can mark it completed by '
                                   'pressing Ctrl+P, or via ✔️ icon.',
-                                  workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                                  self._get_toolbar_button_position('workitems_table.completeItem', 'down'),
                                   'info',
-                                  complete)
+                                  complete,
+                                  'down')
 
     def _on_workitem_complete(self, complete: Callable, **kwargs) -> None:
         workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
         show_tutorial_overlay('Now as you marked work item completed you can\'t modify it anymore. The only thing you '
                               'can do is delete it. This concludes the tutorial.',
-                              workitems.parentWidget().mapToGlobal(workitems.rect().center()),
+                              _get_row_position(workitems, 0.15, 0, 1, 'up'),
                               'info',
-                              complete)
+                              complete,
+                              'up')
