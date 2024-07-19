@@ -17,7 +17,7 @@ import logging
 from typing import Callable
 
 from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QWidget, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QAbstractItemView, QToolButton
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -29,9 +29,8 @@ from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.configurable_toolbar import ConfigurableToolBar
-from fk.qt.focus_widget import FocusWidget
 from fk.qt.info_overlay import show_tutorial_overlay
-from fk.qt.timer_widget import TimerWidget
+from fk.qt.qt_timer import QtTimer
 from fk.qt.workitem_tableview import WorkitemTableView
 
 logger = logging.getLogger(__name__)
@@ -90,7 +89,9 @@ class Tutorial:
 
     def _on_event(self, event: str, **kwargs):
         if self._is_to_complete(event):
-            self._steps[event](lambda: self._mark_completed(event), **kwargs)
+            self._steps[event](lambda: self._mark_completed(event),
+                               lambda: self._settings.set({'Application.show_tutorial': 'False'}),
+                               **kwargs)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.show_tutorial' in new_values:
@@ -131,108 +132,123 @@ class Tutorial:
     # Tutorial "steps" implementation are only called if the corresponding step hasn't been completed yet.
     # The "complete" parameter is a callback, which the step can execute to mark it completed.
 
-    def _on_messages(self, complete: Callable, **kwargs) -> None:
+    def _on_messages(self, complete: Callable, skip: Callable, **kwargs) -> None:
         if next(iter(self._source_holder.get_source().backlogs()), None) is None:   # I.e. there are no backlogs
-            show_tutorial_overlay('Welcome to Flowkeeper! Start by creating your first backlog.',
+            show_tutorial_overlay('1 / 11: Welcome to Flowkeeper! Start by creating your first backlog.',
                                   self._get_toolbar_button_position('backlogs_table.newBacklog', 'up'),
                                   'info',
                                   complete,
+                                  skip,
                                   'up')
         else:
             complete()
 
-    def _on_backlog_create(self, complete: Callable, **kwargs) -> None:
+    def _on_backlog_create(self, complete: Callable, skip: Callable, **kwargs) -> None:
         backlogs: BacklogTableView = self._main_window.findChild(BacklogTableView, "backlogs_table")
-        show_tutorial_overlay('Pick a new name for your backlog and press Enter. You can rename existing backlogs '
+        show_tutorial_overlay('2 / 11: Pick a new name for your backlog and press Enter. You can rename existing backlogs '
                               'by double-clicking or pressing F2.',
                               _get_row_position(backlogs, 0.15, 0, 0, 'down'),
                               'info',
                               complete,
+                              skip,
                               'down')
 
-    def _on_backlog_rename(self, complete: Callable, **kwargs) -> None:
+    def _on_backlog_rename(self, complete: Callable, skip: Callable, **kwargs) -> None:
         if next(iter(self._source_holder.get_source().workitems()), None) is None:   # I.e. there are no workitems
-            show_tutorial_overlay('Create a work item in the selected backlog.',
+            show_tutorial_overlay('3 / 11: Create a work item in the selected backlog.',
                                   self._get_toolbar_button_position('workitems_table.newItem', 'up'),
                                   'info',
                                   complete,
+                                  skip,
                                   'up')
         else:
             complete()
 
-    def _on_workitem_create(self, complete: Callable, **kwargs) -> None:
+    def _on_workitem_create(self, complete: Callable, skip: Callable, **kwargs) -> None:
         workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-        show_tutorial_overlay('Pick a better name for this workitem and press Enter.',
+        show_tutorial_overlay('4 / 11: Pick a better name for this workitem and press Enter.',
                               _get_row_position(workitems, 0.15, 0, 1, 'down'),
                               'info',
                               complete,
+                              skip,
                               'down')
 
-    def _on_workitem_rename(self, complete: Callable, workitem: Workitem, **kwargs) -> None:
+    def _on_workitem_rename(self, complete: Callable, skip: Callable, workitem: Workitem, **kwargs) -> None:
         if len(workitem) == 0:   # I.e. there are no pomodoros
-            show_tutorial_overlay('Add several pomodoros by pressing Ctrl-[+] on the selected workitem a few times',
+            show_tutorial_overlay('5 / 11: Add several pomodoros by pressing Ctrl-[+] on the selected workitem a few times',
                                   self._get_toolbar_button_position('workitems_table.addPomodoro', 'down'),
                                   'info',
                                   complete,
+                                  skip,
                                   'down')
         else:
             complete()
 
-    def _on_pomodoro_add(self, complete: Callable, workitem: Workitem, **kwargs) -> None:
+    def _on_pomodoro_add(self, complete: Callable, skip: Callable, workitem: Workitem, **kwargs) -> None:
         if len(workitem) >= 3:
             workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-            show_tutorial_overlay('Try to delete one by pressing Ctrl-[-]. Leave at least two pomodoros to continue.',
+            show_tutorial_overlay('6 / 11: Try to delete one by pressing Ctrl-[-]. Leave at least two pomodoros to continue.',
                                   _get_row_position(workitems, 0.5, 0, 2, 'up'),
                                   'info',
                                   complete,
+                                  skip,
                                   'up')
 
-    def _on_pomodoro_remove(self, complete: Callable, workitem: Workitem, **kwargs) -> None:
+    def _on_pomodoro_remove(self, complete: Callable, skip: Callable, workitem: Workitem, **kwargs) -> None:
         if len(workitem) >= 2:
-            show_tutorial_overlay(f'Now you are ready to start working on this work item. To '
+            show_tutorial_overlay(f'7 / 11: Now you are ready to start working on this work item. To '
                                   f'do that press Ctrl+S (Start) or click ▶️ button in the toolbar.',
                                   self._get_toolbar_button_position('workitems_table.startItem', 'down'),
                                   'info',
                                   complete,
+                                  skip,
                                   'down')
 
-    def _on_pomodoro_work_start(self, complete: Callable, **kwargs) -> None:
-        timer: TimerWidget = self._main_window.findChild(TimerWidget, "timer")
-        pt: QPoint = timer.rect().center()
-        pt.setY(timer.rect().bottom())
-        show_tutorial_overlay(f'The timer will tick for 25 minutes, which is a default Pomodoro duration. '
-                              f'Void it.',
-                              timer.parentWidget().mapToGlobal(pt),
-                              'info',
-                              complete,
-                              'up')
+    def _on_pomodoro_work_start(self, complete: Callable, skip: Callable, **kwargs) -> None:
+        def do(_):
+            timer: QToolButton = self._main_window.findChild(QToolButton, "focus.voidPomodoro")
+            pt: QPoint = timer.rect().center()
+            pt.setY(timer.rect().bottom() + 15)
+            show_tutorial_overlay(f'8 / 11: The timer will tick for 25 minutes, which is a default Pomodoro duration. '
+                                  f'Void it.',
+                                  timer.mapToGlobal(pt),
+                                  'info',
+                                  complete,
+                                  skip,
+                                  'up')
+        # We decouple it through a timer to make sure all resizing is done by the time we display the overlay
+        QtTimer('tutorial-on_pomodoro_work_start').schedule(100, do, None, True)
 
-    def _on_pomodoro_complete(self, complete: Callable, pomodoro: Pomodoro, **kwargs) -> None:
+    def _on_pomodoro_complete(self, complete: Callable, skip: Callable, pomodoro: Pomodoro, **kwargs) -> None:
         completed_count = 0
         for p in self._source_holder.get_source().pomodoros():
             if p.is_finished() or p.is_canceled():
                 completed_count += 1
         if completed_count == 1:
-            show_tutorial_overlay(f'{"You voided" if pomodoro.is_canceled() else "Congratulations! You successfully completed"} a pomodoro. '
+            workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
+            show_tutorial_overlay(f'9 / 11: {"You voided" if pomodoro.is_canceled() else "Congratulations! You successfully completed"} a pomodoro. '
                                   'Note how its icon changed. Try to complete another pomodoro, this time see what you can '
                                   'do with that Focus window. Also pay attention to the Flowkeeper icon in system tray.',
-                                  self._main_window.mapToGlobal(self._main_window.rect().center()),
+                                  _get_row_position(workitems, 0.4, 0, 2, 'up'),
                                   'info',
                                   lambda: None,
-                                  None)
+                                  skip,
+                                  'up')
         elif completed_count > 1:
-            show_tutorial_overlay('Now let\'s say you are done with this work item. You can mark it completed by '
+            show_tutorial_overlay('10 / 11: Now let\'s say you are done with this work item. You can mark it completed by '
                                   'pressing Ctrl+P, or via ✔️ icon.',
                                   self._get_toolbar_button_position('workitems_table.completeItem', 'down'),
                                   'info',
                                   complete,
+                                  skip,
                                   'down')
 
-    def _on_workitem_complete(self, complete: Callable, **kwargs) -> None:
+    def _on_workitem_complete(self, complete: Callable, skip: Callable, **kwargs) -> None:
         workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-        show_tutorial_overlay('Now as you marked work item completed you can\'t modify it anymore. The only thing you '
+        show_tutorial_overlay('11 / 11: Now as you marked work item completed you can\'t modify it anymore. The only thing you '
                               'can do is delete it. This concludes the tutorial.',
                               _get_row_position(workitems, 0.15, 0, 1, 'up'),
                               'info',
                               complete,
+                              skip,
                               'up')

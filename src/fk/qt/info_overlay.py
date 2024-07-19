@@ -17,7 +17,7 @@ from typing import Callable, Tuple
 
 from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPixmap, QMouseEvent, QFont
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy, QWidget, QPushButton
 
 
 class InfoOverlay(QFrame):
@@ -34,6 +34,7 @@ class InfoOverlay(QFrame):
                  width: int | None = None,
                  on_close: Callable[[], None] = None,
                  on_prev: Callable[[], None] = None,
+                 on_skip: Callable[[], None] = None,
                  arrow: str = None):
         super().__init__()
         self._on_close = on_close
@@ -59,11 +60,12 @@ class InfoOverlay(QFrame):
             self._timer.timeout.connect(self.close)
             self._timer.start()
 
-        widget = InfoOverlayContent(text,
+        widget = InfoOverlayContent(self,
+                                    text,
                                     icon,
                                     font_scale,
                                     on_prev,
-                                    arrow)
+                                    on_skip)
         main_layout.addWidget(widget)
 
         if arrow == 'down':
@@ -106,21 +108,21 @@ class InfoOverlay(QFrame):
 
 class InfoOverlayContent(QWidget):
     def __init__(self,
+                 parent: InfoOverlay,
                  text: str,
                  icon: str = None,
                  font_scale: float = 0.8,
                  on_prev: Callable[[], None] = None,
-                 arrow: bool = False):
+                 on_skip: Callable[[], None] = None):
         super().__init__()
 
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(6)
         self.setLayout(main_layout)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         top_layout = QHBoxLayout()
-        top_layout.setContentsMargins(12, 12, 12, 12)
         top_layout.setSpacing(6)
         main_layout.addLayout(top_layout)
 
@@ -139,6 +141,17 @@ class InfoOverlayContent(QWidget):
         main_label.setFont(font)
         top_layout.addWidget(main_label)
         top_layout.addStretch()
+
+        if on_skip is not None:
+            bottom_layout = QHBoxLayout()
+            bottom_layout.setContentsMargins(0, 8, 0, 0)
+            main_layout.addLayout(bottom_layout)
+            skip_button = QPushButton(' Skip tutorial ', self)
+            skip_button.setObjectName('skip_button')
+            skip_button.clicked.connect(on_skip)
+            skip_button.clicked.connect(lambda: parent.close())
+            bottom_layout.addStretch()
+            bottom_layout.addWidget(skip_button)
 
         if on_prev is not None:
             bottom_layout = QHBoxLayout()
@@ -168,7 +181,16 @@ def show_info_overlay(text: str,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text, absolute_position, icon, duration, 0.8, None, on_close, None, None)
+    INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+                                        absolute_position,
+                                        icon,
+                                        duration,
+                                        0.8,
+                                        None,
+                                        on_close,
+                                        None,
+                                        None,
+                                        None)
     INFO_OVERLAY_INSTANCE.show()
 
 
@@ -199,6 +221,7 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]],
                                                 width,
                                                 lambda: show_tutorial(get_step, width, False, arrow),
                                                 on_prev if TUTORIAL_STEP > 1 else None,
+                                                None,
                                                 arrow)
             INFO_OVERLAY_INSTANCE.show()
 
@@ -207,8 +230,8 @@ def show_tutorial_overlay(text: str,
                           pos: QPoint,
                           icon: str,
                           on_close: Callable[[], None] = None,
+                          on_skip: Callable[[], None] = None,
                           arrow: str = 'down'):
-    print(f'show_tutorial_overlay(text="{text}", pos={pos}, icon={icon}, on_close={on_close}, arrow={arrow})')
     if text is not None and pos is not None:
         global INFO_OVERLAY_INSTANCE
         if INFO_OVERLAY_INSTANCE is not None:
@@ -224,5 +247,6 @@ def show_tutorial_overlay(text: str,
                                             None,
                                             on_close,
                                             None,
+                                            on_skip,
                                             arrow)
         INFO_OVERLAY_INSTANCE.show()
