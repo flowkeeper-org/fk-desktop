@@ -40,8 +40,9 @@ class InfoOverlay(QFrame):
         self._on_close = on_close
         self._text = text
 
-        self.setWindowFlags(Qt.WindowType.ToolTip)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+        self.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        if arrow is None:
+            self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)

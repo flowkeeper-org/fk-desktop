@@ -61,6 +61,21 @@ python -m coverage html
 
 TODO: Explain how to run e2e tests.
 
+TODO: Explain how to build Windows and macOS installers. Also, document the signing process for Mac:
+
+1. Sign the APP via pyinstaller (see `codesign_identity` in `normal-build.spec`),
+2. Create a DMG: see `create-dmg` in `build.yml`,
+3. Sign the DMG: `codesign -s "Developer ID Application" Flowkeeper.dmg`,
+4. Notarize the DMG: 
+ - Create a keychain password for notarization (you only need to do it once):
+      ```
+      xcrun notarytool store-credentials "notary-key" --apple-id "alice@example.com" --team-id "..." --password "..."
+      ```  
+  - Submit for notarization (this will take 10 minutes):
+      ```
+      xcrun notarytool submit Flowkeeper.dmg --keychain-profile "notary-key" --wait
+      ```
+
 #### Building for Alpine Linux
 
 Flowkeeper's CI pipeline runs PyInstaller on Ubuntu and thus generates binaries which rely on glibc. 

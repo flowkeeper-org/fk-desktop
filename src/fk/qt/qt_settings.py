@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import json
+
 import keyring
 from PySide6 import QtCore
 from PySide6.QtGui import QFont
@@ -20,6 +22,9 @@ from PySide6.QtGui import QFont
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_invoker import invoke_in_main_thread
+
+
+SECRET_NAME = 'all-secrets'
 
 
 class QtSettings(AbstractSettings):
@@ -44,17 +49,28 @@ class QtSettings(AbstractSettings):
                 'new_values': values,
             }
             self._emit(events.BeforeSettingsChanged, params)
+            encrypted: dict = {}
             for name in old_values.keys():  # This is not a typo, we've just filtered this list
                 # to only contain settings which actually changed.
                 if name.endswith('!'):
-                    keyring.set_password(self._app_name, name, values[name])
+                    # We want to set all secrets at once (see explanation below in get())
+                    encrypted[name] = values[name]
                 else:
                     self._settings.setValue(name, values[name])
+            if len(encrypted) > 0:
+                keyring.set_password(self._app_name, SECRET_NAME, json.dumps(encrypted))
             self._emit(events.AfterSettingsChanged, params)
 
     def get(self, name: str) -> str:
         if name.endswith('!'):
-            value = keyring.get_password(self._app_name, name)
+            value = None
+            # MacOS keeps asking to unlock login keychain *for each* password. I couldn't find how to avoid
+            # this, and decided to squeeze *all* passwords into a single JSON secret instead.
+            json_str = keyring.get_password(self._app_name, SECRET_NAME)
+            if json_str:
+                j = json.loads(json_str)
+                if name in j:
+                    value = j[name]
             return value if value is not None else ''
         else:
             return str(self._settings.value(name, self._defaults[name]))
@@ -67,12 +83,8 @@ class QtSettings(AbstractSettings):
         for category in self._definitions.values():
             for setting in category:
                 key = setting[0]
-                if key.endswith('!'):
-                    value = keyring.get_password(self._app_name, key)
-                    if value is not None:
-                        try:
-                            keyring.delete_password(self._app_name, key)
-                        except Exception as e:
-                            # Ignore, this is a common issue with keyring module
-                            # It seems to be solved in a more recent version, which doesn't work for us
-                            pass
+        try:
+            keyring.delete_password(self._app_name, SECRET_NAME)
+        except Exception as e:
+            # Ignore, this is a common issue with keyring module.
+            pass
