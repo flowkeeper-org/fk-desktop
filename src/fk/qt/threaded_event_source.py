@@ -68,6 +68,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:
         self._wrapped.on(event_pattern, callback, last)
 
+    def unsubscribe(self, callback: Callable) -> None:
+        self._wrapped.unsubscribe(callback)
+
     def cancel(self, event_pattern: str) -> None:
         self._wrapped.cancel(event_pattern)
 

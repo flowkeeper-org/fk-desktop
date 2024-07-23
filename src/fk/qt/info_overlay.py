@@ -102,7 +102,6 @@ class InfoOverlay(QFrame):
             self._timer.stop()
         super().close()
         if self._on_close is not None:
-            print('On close', self._on_close)
             self._on_close()
         INFO_OVERLAY_INSTANCE = None
 

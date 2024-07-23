@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QWidget, QAbstractItemView, QToolButton
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged, BeforeSourceChanged
 from fk.core.events import AfterSettingsChanged, SourceMessagesProcessed, AfterBacklogCreate, \
     AfterBacklogRename, AfterWorkitemCreate, AfterWorkitemRename, AfterPomodoroAdd, AfterPomodoroRemove, \
     AfterPomodoroWorkStart, AfterPomodoroComplete, AfterWorkitemComplete
@@ -77,12 +77,14 @@ class Tutorial:
             self._subscribe()
 
     def _subscribe(self):
-        print(f'Subscribing tutorial to source_holder changes')
-        self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
+        logger.debug(f'Subscribing tutorial to source_holder changes')
+        self._source_holder.on(BeforeSourceChanged, self._before_source_changed, True)
+        self._source_holder.on(AfterSourceChanged, self._after_source_changed, True)
 
     def _unsubscribe(self):
-        print(f'Unsubscribing the tutorial')
-        self._source_holder.unsubscribe(self._on_source_changed)
+        logger.debug(f'Unsubscribing the tutorial')
+        self._source_holder.unsubscribe(self._after_source_changed)
+        self._source_holder.unsubscribe(self._before_source_changed)
         source = self._source_holder.get_source()
         if source is not None:
             source.unsubscribe(self._on_event)
@@ -105,16 +107,23 @@ class Tutorial:
             steps.append(step)
         self._settings.set({'Application.completed_tutorial_steps': ','.join(steps)})
         # Disable tutorial if we completed everything
-        print(f'Marking tutorial step {step} complete. All completed steps: {steps}')
+        logger.debug(f'Marking tutorial step {step} complete. All completed steps: {steps}')
         if len(steps) == len(self._steps):
-            print(f'Disabling the tutorial')
+            logger.debug(f'Disabling the tutorial')
             self._settings.set({'Application.show_tutorial': 'False'})
 
     def _is_to_complete(self, step: str) -> bool:
         return step not in self._settings.get('Application.completed_tutorial_steps').split(',')
 
-    def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
-        print(f'Subscribing tutorial to source events')
+    def _before_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        # Here we are dealing with the OLD source, from which we want to unsubscribe
+        if source is not None:
+            logger.debug(f'Unsubscribing tutorial from old source events')
+            for event in self._steps:
+                source.on(event, self._on_event)
+
+    def _after_source_changed(self, event: str, source: AbstractEventSource) -> None:
+        logger.debug(f'Subscribing tutorial to new source events')
         for event in self._steps:
             source.on(event, self._on_event)
 
@@ -133,15 +142,12 @@ class Tutorial:
     # The "complete" parameter is a callback, which the step can execute to mark it completed.
 
     def _on_messages(self, complete: Callable, skip: Callable, **kwargs) -> None:
-        if next(iter(self._source_holder.get_source().backlogs()), None) is None:   # I.e. there are no backlogs
-            show_tutorial_overlay('1 / 11: Welcome to Flowkeeper! Start by creating your first backlog.',
-                                  self._get_toolbar_button_position('backlogs_table.newBacklog', 'up'),
-                                  'info',
-                                  complete,
-                                  skip,
-                                  'up')
-        else:
-            complete()
+        show_tutorial_overlay('1 / 11: Welcome to Flowkeeper! Start by creating your first backlog.',
+                              self._get_toolbar_button_position('backlogs_table.newBacklog', 'up'),
+                              'info',
+                              complete,
+                              skip,
+                              'up')
 
     def _on_backlog_create(self, complete: Callable, skip: Callable, **kwargs) -> None:
         backlogs: BacklogTableView = self._main_window.findChild(BacklogTableView, "backlogs_table")
