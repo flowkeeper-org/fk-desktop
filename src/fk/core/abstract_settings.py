@@ -44,6 +44,10 @@ def _show_for_file_source(values: dict[str, str]) -> bool:
     return values['Source.type'] == 'local'
 
 
+def _hide_for_ephemeral_source(values: dict[str, str]) -> bool:
+    return values['Source.type'] != 'ephemeral'
+
+
 def _show_for_websocket_source(values: dict[str, str]) -> bool:
     return values['Source.type'] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
 
@@ -140,7 +144,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
                 ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
-                ('', 'separator', '', '', [], _always_show),
+                ('', 'separator', '', '', [], _hide_for_ephemeral_source),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),

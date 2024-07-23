@@ -420,6 +420,7 @@ class SettingsDialog(QDialog):
                 separator.setFrameShape(QFrame.Shape.HLine)
                 separator.setFrameShadow(QFrame.Shadow.Sunken)
                 separator.setFixedHeight(10)
+                self._widgets_visibility[separator] = option_visible
                 layout.addRow(separator)
                 pass
             elif len(widgets) == 1:
