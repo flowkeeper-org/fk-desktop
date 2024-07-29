@@ -49,7 +49,7 @@ class QtSettings(AbstractSettings):
                 'new_values': values,
             }
             self._emit(events.BeforeSettingsChanged, params)
-            encrypted: dict = {}
+            encrypted = dict()
             for name in old_values.keys():  # This is not a typo, we've just filtered this list
                 # to only contain settings which actually changed.
                 if name.endswith('!'):
@@ -58,20 +58,25 @@ class QtSettings(AbstractSettings):
                 else:
                     self._settings.setValue(name, values[name])
             if len(encrypted) > 0:
-                keyring.set_password(self._app_name, SECRET_NAME, json.dumps(encrypted))
+                existing = self.load_secret()
+                for e in encrypted:
+                    existing[e] = encrypted[e]
+                keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
             self._emit(events.AfterSettingsChanged, params)
+
+    def load_secret(self) -> dict[str, str]:
+        json_str = keyring.get_password(self._app_name, SECRET_NAME)
+        return json.loads(json_str) if json_str else dict()
 
     def get(self, name: str) -> str:
         if name.endswith('!'):
-            value = None
             # MacOS keeps asking to unlock login keychain *for each* password. I couldn't find how to avoid
             # this, and decided to squeeze *all* passwords into a single JSON secret instead.
-            json_str = keyring.get_password(self._app_name, SECRET_NAME)
-            if json_str:
-                j = json.loads(json_str)
-                if name in j:
-                    value = j[name]
-            return value if value is not None else ''
+            j = self.load_secret()
+            if name in j and j[name] is not None:
+                return j[name]
+            else:
+                return ''
         else:
             return str(self._settings.value(name, self._defaults[name]))
 
