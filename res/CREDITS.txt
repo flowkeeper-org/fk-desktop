@@ -16,7 +16,7 @@ We use Coverage.py by Ned Batchelder <https://github.com/nedbat/coveragepy/blob/
 
 The build pipeline automatically uploads test coverage results to coveralls.io under its "Open Source" plan <https://coveralls.io/terms>.
 
-JetBrains Qodana (Community Edition) <https://www.jetbrains.com/qodana/> provides us useful code quality metrics for every Pull Request.
+SonarCloud (Free Edition) <https://sonarcloud.io> provides us useful code quality metrics and the "code smells" GitHub badge.
 
 JetBrains PyCharm (Community Edition) <https://www.jetbrains.com/pycharm/> is our IDE of choice.
 
