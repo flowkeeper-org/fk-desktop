@@ -58,7 +58,7 @@ class QtSettings(AbstractSettings):
                     None,
                     "No keyring",
                     "Flowkeeper couldn't detect a compatible keyring for storing credentials. You can try to install one "
-                    "(for example, on KUbuntu 20.04, this can be fixed by installing gnome-keyring), or ignore this "
+                    "(for example, on Kubuntu 20.04, this can be fixed by installing gnome-keyring), or ignore this "
                     "warning. If you choose to ignore it, the following features will be disabled:\n\n"
                     "1. Data sync with flowkeeper.org,\n"
                     "2. Data sync with custom Flowkeeper Server,\n"

@@ -29,7 +29,7 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QWidget, QAbstractButton, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QAbstractButton, QAbstractItemView, QMainWindow
 
 from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
@@ -57,10 +57,12 @@ class AbstractE2eTest(ABC):
     _start: datetime
     _current_method: str
     _screenshot: Screenshot
+    _main_window: QMainWindow
 
     def __init__(self, app: Application):
         self._app = app
         self._screenshot = None
+        self._main_window = None
         app.get_settings().set(self.custom_settings())
         self._initialized = False
         self._seq = self._get_test_cases()
@@ -263,7 +265,24 @@ class AbstractE2eTest(ABC):
         return self._app
 
     def window(self) -> QWidget:
-        return self._app.activeWindow()
+        win = self._app.activeWindow()
+        if win is None:
+            win = self._app.focusWindow()
+            if win is None:
+                raise Exception('Cannot find active window')
+        return win
+
+    def main_window(self) -> QMainWindow:
+        win = self._app.activeWindow()
+        if win is None:
+            raise Exception('Cannot find main window')
+        return win
+        if self._main_window is None:
+            win = self._app.activeWindow()
+            if win is None:
+                raise Exception('Cannot find main window')
+            self._main_window = win
+        return self._main_window
 
     def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()
