@@ -25,6 +25,7 @@ class BacklogE2eTest(AbstractE2eTest):
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
             'Application.check_updates': 'False',
+            'Application.show_window_title': 'True',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
             'Application.play_alarm_sound': 'False',
@@ -90,7 +91,7 @@ class BacklogE2eTest(AbstractE2eTest):
         self.type_text(name)
         await self.instant_pause()
         # noinspection PyTypeChecker
-        search: SearchBar = self.window().findChild(SearchBar, "search")
+        search: SearchBar = self.main_window().findChild(SearchBar, "search")
         completer = search.completer()
         popup = completer.popup()
         self.keypress(Qt.Key.Key_Down, False, popup)
@@ -98,9 +99,8 @@ class BacklogE2eTest(AbstractE2eTest):
         await self.instant_pause()
 
     async def _select_backlog(self, name: str) -> int:
-        main_window = self.window()
         # noinspection PyTypeChecker
-        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        backlogs_table: BacklogTableView = self.main_window().findChild(BacklogTableView, "backlogs_table")
         backlogs_model = backlogs_table.model()
         for i in range(backlogs_model.rowCount()):
             if backlogs_model.index(i, 0).data() == name:
@@ -122,16 +122,15 @@ class BacklogE2eTest(AbstractE2eTest):
         # General checks #
         ##################
         self.info('General checks')
-        main_window = self.window()
-        assert_that(main_window.windowTitle()).is_equal_to('Flowkeeper')
+        assert_that(self.main_window().windowTitle()).is_equal_to('Flowkeeper')
 
         # noinspection PyTypeChecker
-        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        backlogs_table: BacklogTableView = self.main_window().findChild(BacklogTableView, "backlogs_table")
         backlogs_model = backlogs_table.model()
         assert_that(backlogs_model.rowCount()).is_equal_to(0)
 
         # noinspection PyTypeChecker
-        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        workitems_table: WorkitemTableView = self.main_window().findChild(WorkitemTableView, "workitems_table")
         workitems_model = workitems_table.model()
         assert_that(workitems_model.rowCount()).is_equal_to(0)
 
@@ -219,9 +218,8 @@ class BacklogE2eTest(AbstractE2eTest):
         await self._complete_workitem()
 
     async def test_02_actions_visibility(self):
-        main_window = self.window()
         # noinspection PyTypeChecker
-        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        workitems_table: WorkitemTableView = self.main_window().findChild(WorkitemTableView, "workitems_table")
 
         ############################################################
         # Check actions on a new workitem with available pomodoros #
@@ -371,11 +369,10 @@ class BacklogE2eTest(AbstractE2eTest):
         ])
 
     async def test_03_renames(self):
-        main_window = self.window()
         # noinspection PyTypeChecker
-        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        backlogs_table: BacklogTableView = self.main_window().findChild(BacklogTableView, "backlogs_table")
         # noinspection PyTypeChecker
-        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+        workitems_table: WorkitemTableView = self.main_window().findChild(WorkitemTableView, "workitems_table")
 
         ##################
         # Rename backlog #

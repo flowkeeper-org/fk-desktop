@@ -42,6 +42,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
@@ -99,7 +100,10 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings = QtSettings('flowkeeper-desktop-e2e')
             self._settings.reset_to_defaults()
             self._initialize_logger()
-            self._cryptograph = FernetCryptograph(self._settings)
+            if self._settings.is_keyring_enabled():
+                self._cryptograph = FernetCryptograph(self._settings)
+            else:
+                self._cryptograph = NoCryptograph(self._settings)
             if self.is_screenshot_mode():
                 from fk.e2e.screenshots_e2e import ScreenshotE2eTest
                 test = ScreenshotE2eTest(self)
@@ -129,7 +133,10 @@ class Application(QApplication, AbstractEventEmitter):
             else:
                 self._settings = QtSettings()
             self._initialize_logger()
-            self._cryptograph = FernetCryptograph(self._settings)
+            if self._settings.is_keyring_enabled():
+                self._cryptograph = FernetCryptograph(self._settings)
+            else:
+                self._cryptograph = NoCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close

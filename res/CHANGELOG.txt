@@ -1,11 +1,13 @@
-### v0.6.1 (TBD)
+### v0.6.1 (31 July 2024)
 - Brand new interactive tutorial.
 - The window loses its frame in Focus mode, with double-click and move.
 - The window can be pinned to stay always-on-top.
 - New appearance settings (always on top, window title in focus mode).
+- Users may now ignore "A keyring is not available" error.
 - [Technical] macOS DMG installer is now properly signed and notarized.
 - [Technical] macOS now asks to unlock login keychain only once.
 - [Technical] Screenshots collection via e2e tests.
+- [Technical] Enabled SonarCloud static code analysis + "code smells" GitHub badge.
 
 ### v0.6.0 (21 June 2024)
 - Implemented the Statistics feature AKA Pomodoro Health.
