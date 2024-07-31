@@ -29,13 +29,16 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QApplication, QWidget, QAbstractButton, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QAbstractButton, QAbstractItemView, QMainWindow
 
 from fk.desktop.application import Application
+from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
-INSTANT_DURATION = 0.1  # seconds
+INSTANT_DURATION = 0.2  # seconds
 STARTUP_DURATION = 2  # seconds
+WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
+SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +56,13 @@ class AbstractE2eTest(ABC):
     _tests: int
     _start: datetime
     _current_method: str
+    _screenshot: Screenshot
+    _main_window: QMainWindow
 
     def __init__(self, app: Application):
         self._app = app
+        self._screenshot = None
+        self._main_window = None
         app.get_settings().set(self.custom_settings())
         self._initialized = False
         self._seq = self._get_test_cases()
@@ -194,22 +201,22 @@ class AbstractE2eTest(ABC):
     def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
         self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
-    def mouse_click(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
+    def mouse_click(self, widget: QWidget, pos: QPoint = QPoint(5, 5), left_button: bool = True):
         self.do(lambda: widget.focusInEvent(QFocusEvent(
             QEvent.Type.FocusIn,
         )))
         self.do(lambda: widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonPress,
             pos,
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
+            None,
             Qt.KeyboardModifier.NoModifier,
         )))
         self.do(lambda: widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonRelease,
             pos,
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
+            None,
             Qt.KeyboardModifier.NoModifier,
         )))
 
@@ -254,11 +261,28 @@ class AbstractE2eTest(ABC):
     def get_focused(self) -> QWidget:
         return self._app.focusWidget()
 
-    def get_application(self) -> QApplication:
+    def get_application(self) -> Application:
         return self._app
 
     def window(self) -> QWidget:
-        return self._app.activeWindow()
+        win = self._app.activeWindow()
+        if win is None:
+            win = self._app.focusWindow()
+            if win is None:
+                raise Exception('Cannot find active window')
+        return win
+
+    def main_window(self) -> QMainWindow:
+        win = self._app.activeWindow()
+        if win is None:
+            raise Exception('Cannot find main window')
+        return win
+        if self._main_window is None:
+            win = self._app.activeWindow()
+            if win is None:
+                raise Exception('Cannot find main window')
+            self._main_window = win
+        return self._main_window
 
     def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()
@@ -287,6 +311,56 @@ class AbstractE2eTest(ABC):
     async def instant_pause(self) -> None:
         await asyncio.sleep(INSTANT_DURATION)
 
+    async def longer_pause(self) -> None:
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
+        await self.instant_pause()
+
     def on_exception(self, exc_type, exc_value, exc_trace):
         to_log = "".join(traceback.format_exception(exc_type, exc_value, exc_trace))
         self.info('Exception: ' + to_log)
+
+    def take_screenshot(self, name: str):
+        if self._screenshot is None:    # Lazy init, because we don't always want to take screenshots
+            self._screenshot = Screenshot()
+        self._screenshot.take_window(name, self.window())
+        self._screenshot.take_screen(name)
+
+        # Update window gallery
+        if not os.path.isfile(WINDOW_GALLERY_FILENAME):
+            with open(WINDOW_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+                f.write('''
+                    <style>
+                    .screenshot {
+                        box-shadow: 5px 5px 30px 0px rgba(0, 0, 0, 0.5);
+                        margin: 30px;
+                        width: 500px;
+                        height: auto;
+                    }
+                    </style>
+                ''')
+        with open(WINDOW_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+            f.write(f'<img class="screenshot" src="{name}-window.png" title="{name}">\n')
+
+        # Update screen gallery
+        if not os.path.isfile(SCREEN_GALLERY_FILENAME):
+            with open(SCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+                f.write('''
+                    <style>
+                    .screenshot {
+                        box-shadow: 5px 5px 30px 0px rgba(0, 0, 0, 0.5);
+                        margin: 30px;
+                        width: 1000px;
+                        height: auto;
+                    }
+                    </style>
+                ''')
+        with open(SCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+            f.write(f'<img class="screenshot" src="{name}-full.png" title="{name}">\n')
+
+    def center_window(self):
+        screen_center = self._app.primaryScreen().geometry().center()
+        fg = self.window().geometry()
+        self.window().move(screen_center - (fg.center() - fg.topLeft()))

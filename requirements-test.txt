@@ -3,3 +3,4 @@ coverage
 coveralls
 assertpy
 unittest-xml-reporting
+pillow

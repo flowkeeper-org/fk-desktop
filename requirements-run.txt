@@ -1,6 +1,4 @@
 PySide6
 semantic-version
 cryptography
-
-# It is important to use version 21.1.1, because anything more recent doesn't work in Kubuntu 22.04 out-of-the-box
-keyring==21.1.1
+keyring

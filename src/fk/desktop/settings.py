@@ -23,7 +23,7 @@ from PySide6.QtCore import QSize, QTime
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QInputDialog
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
@@ -66,6 +66,7 @@ class SettingsDialog(QDialog):
         self._buttons = buttons
 
         tabs = QTabWidget(self)
+        tabs.setObjectName('settings_tabs')
         for tab_name in data.get_categories():
             tab = self._create_tab(tabs, data.get_settings(tab_name))
             tabs.addTab(tab, tab_name)
@@ -233,12 +234,14 @@ class SettingsDialog(QDialog):
             layout = QHBoxLayout(widget)
             layout.setContentsMargins(0, 0, 0, 0)
             ed3 = QLineEdit(parent)
+            ed3.setObjectName(f'{option_id}-edit')
             ed3.setText(option_value)
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
             self._widgets_get_value[option_id] = ed3.text
             self._widgets_set_value[option_id] = ed3.setText
             layout.addWidget(ed3)
             browse_btn = QPushButton(parent)
+            browse_btn.setObjectName(f'{option_id}-button')
             browse_btn.setText('Browse...')
             browse_btn.clicked.connect(lambda: SettingsDialog.do_browse(ed3))
             layout.addWidget(browse_btn)
@@ -301,8 +304,10 @@ class SettingsDialog(QDialog):
             for a in actions:
                 shortcuts[a] = Actions.ALL[a].shortcut().toString()
             seq_edit = QKeySequenceEdit(parent)
+            seq_edit.setObjectName(f'{option_id}-edit')
             seq_edit.setKeySequence(shortcuts[actions[0]])
             reset_button = QPushButton(widget)
+            reset_button.setObjectName(f'{option_id}-button')
             reset_button.setText('Clear')
             reset_button.clicked.connect(lambda: seq_edit.clear())
 
@@ -313,6 +318,7 @@ class SettingsDialog(QDialog):
             seq_edit.keySequenceChanged.connect(on_shortcut_changed)
 
             ed8 = QComboBox(parent)
+            ed8.setObjectName(f'{option_id}-list')
             ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
             ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
             self._widgets_get_value[option_id] = lambda: json.dumps(shortcuts)
@@ -349,6 +355,7 @@ class SettingsDialog(QDialog):
             layout = QHBoxLayout(widget)
             layout.setContentsMargins(0, 0, 0, 0)
             ed10 = QLineEdit(parent)
+            ed10.setObjectName(f'{option_id}-edit')
             ed10.setText(option_value)
             ed10.setEchoMode(QLineEdit.EchoMode.Password)
 
@@ -362,6 +369,7 @@ class SettingsDialog(QDialog):
             layout.addWidget(ed10)
 
             key_view = QPushButton(parent)
+            key_view.setObjectName(f'{option_id}-button')
             key_view.setText('Show')
             key_view.clicked.connect(lambda: ed10.setEchoMode(QLineEdit.EchoMode.Password if ed10.echoMode() == QLineEdit.EchoMode.Normal else QLineEdit.EchoMode.Normal))
             key_view.clicked.connect(lambda: key_view.setText("Show" if key_view.text() == "Hide" else "Hide"))
@@ -412,6 +420,7 @@ class SettingsDialog(QDialog):
                 separator.setFrameShape(QFrame.Shape.HLine)
                 separator.setFrameShadow(QFrame.Shadow.Sunken)
                 separator.setFixedHeight(10)
+                self._widgets_visibility[separator] = option_visible
                 layout.addRow(separator)
                 pass
             elif len(widgets) == 1:

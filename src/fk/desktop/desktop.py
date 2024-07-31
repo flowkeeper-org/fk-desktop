@@ -18,6 +18,7 @@ import sys
 import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox
 
@@ -27,6 +28,7 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
+from fk.desktop.tutorial import Tutorial
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
@@ -52,11 +54,27 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
+def set_window_flags(is_focused: bool):
+    flags = default_flags
+
+    hide_frame = settings.get('Application.show_window_title') != 'True'
+    mode = get_timer_ui_mode()
+    if mode == 'focus' and is_focused and hide_frame:
+        flags = flags | Qt.WindowType.FramelessWindowHint
+
+    is_pinned = settings.get('Application.always_on_top') == 'True'
+    if is_pinned:
+        flags = flags | Qt.WindowType.WindowStaysOnTopHint
+
+    window.setWindowFlags(flags)
+
+
 def show_timer_automatically() -> None:
     global continue_workitem
     actions['focus.voidPomodoro'].setEnabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
+        set_window_flags(True)
         height = focus.size().height()
         focus.show()
         main_layout.hide()
@@ -66,11 +84,13 @@ def show_timer_automatically() -> None:
         window.adjustSize()
         focus._buttons['window.showFocus'].hide()
         focus._buttons['window.showAll'].show()
+        window.show()
     elif mode == 'minimize':
         window.hide()
 
 
 def hide_timer(event: str|None = None, **kwargs) -> None:
+    set_window_flags(False)
     main_layout.show()
     focus.show()
     left_toolbar.show()
@@ -81,6 +101,14 @@ def hide_timer(event: str|None = None, **kwargs) -> None:
     event_filter.restore_size()
     focus._buttons['window.showFocus'].show()
     focus._buttons['window.showAll'].hide()
+    window.show()
+
+    # Without this junk with Qt 6.7.0, KDE 5.18.8 on XOrg the window moves down every time its size is restored
+    pos = window.pos()
+    pos.setY(pos.y() - 1)
+    window.move(pos)
+    pos.setY(pos.y() + 1)
+    window.move(pos)
 
 
 def hide_timer_automatically() -> None:
@@ -127,14 +155,26 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
             tray.setVisible(new_value == 'True')
         elif name == 'Application.shortcuts':
             actions.update_from_settings()
+        elif name == 'Application.always_on_top':
+            set_window_flags(main_layout.isHidden())
+            window.show()
 
 
 class MainWindow:
+    def __init__(self):
+        super().__init__()
+
     def show_all(self):
         hide_timer()
 
     def show_focus(self):
         show_timer_automatically()
+
+    def pin_window(self):
+        settings.set({'Application.always_on_top': 'True'})
+
+    def unpin_window(self):
+        settings.set({'Application.always_on_top': 'False'})
 
     def show_window(self):
         window.show()
@@ -154,6 +194,8 @@ class MainWindow:
     def define_actions(actions: Actions):
         actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
         actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.pin_window)
+        actions.add('window.unpinWindow', "Unpin Flowkeeper", None, "tool-unpin", MainWindow.unpin_window)
         actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
@@ -211,6 +253,8 @@ if __name__ == "__main__":
         window: QtWidgets.QMainWindow = loader.load(file, None)
         file.close()
 
+        default_flags = window.windowFlags()
+
         # Collect actions from all widget types
         actions = Actions(window, settings)
         Application.define_actions(actions)
@@ -230,7 +274,6 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
         menu_file.addSeparator()
-        menu_file.addAction(actions['application.tutorial'])
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])
@@ -354,6 +397,10 @@ if __name__ == "__main__":
         actions.bind('workitems_table', workitems_widget.get_table())
         actions.bind('focus', focus)
         actions.bind('window', main_window)
+
+        set_window_flags(False)
+
+        tutorial = Tutorial(app.get_source_holder(), settings, window)
 
         window.show()
 

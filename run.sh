@@ -19,4 +19,5 @@
 #
 
 source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop
+PYTHONPATH=src python -m fk.desktop.desktop $@
+

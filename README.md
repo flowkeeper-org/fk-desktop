@@ -2,6 +2,7 @@
 
 ![Pipeline status](https://github.com/flowkeeper-org/fk-desktop/actions/workflows/main.yml/badge.svg?branch=main "Pipeline status")
 [![Coverage Status](https://coveralls.io/repos/github/flowkeeper-org/fk-desktop/badge.svg?branch=main)](https://coveralls.io/github/flowkeeper-org/fk-desktop?branch=main)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=flowkeeper-org_fk-desktop&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=flowkeeper-org_fk-desktop)
 
 Flowkeeper is an independent Pomodoro Technique desktop timer for power users and professional teams. It is a 
 simple tool, which focuses on doing one thing well. It is Free Software with open source. Visit 
@@ -60,6 +61,21 @@ python -m coverage html
 ```
 
 TODO: Explain how to run e2e tests.
+
+TODO: Explain how to build Windows and macOS installers. Also, document the signing process for Mac:
+
+1. Sign the APP via pyinstaller (see `codesign_identity` in `normal-build.spec`),
+2. Create a DMG: see `create-dmg` in `build.yml`,
+3. Sign the DMG: `codesign -s "Developer ID Application" Flowkeeper.dmg`,
+4. Notarize the DMG: 
+ - Create a keychain password for notarization (you only need to do it once):
+      ```
+      xcrun notarytool store-credentials "notary-key" --apple-id "alice@example.com" --team-id "..." --password "..."
+      ```  
+  - Submit for notarization (this will take 10 minutes):
+      ```
+      xcrun notarytool submit Flowkeeper.dmg --keychain-profile "notary-key" --wait
+      ```
 
 #### Building for Alpine Linux
 

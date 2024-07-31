@@ -42,6 +42,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
@@ -58,7 +59,6 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.tutorial_window import TutorialWindow
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,6 @@ class Application(QApplication, AbstractEventEmitter):
     _source_holder: EventSourceHolder | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
-    _tutorial_timer: QtTimer
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -101,9 +100,16 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings = QtSettings('flowkeeper-desktop-e2e')
             self._settings.reset_to_defaults()
             self._initialize_logger()
-            self._cryptograph = FernetCryptograph(self._settings)
-            from fk.e2e.backlog_e2e import BacklogE2eTest
-            test = BacklogE2eTest(self)
+            if self._settings.is_keyring_enabled():
+                self._cryptograph = FernetCryptograph(self._settings)
+            else:
+                self._cryptograph = NoCryptograph(self._settings)
+            if self.is_screenshot_mode():
+                from fk.e2e.screenshots_e2e import ScreenshotE2eTest
+                test = ScreenshotE2eTest(self)
+            else:
+                from fk.e2e.backlog_e2e import BacklogE2eTest
+                test = BacklogE2eTest(self)
             sys.excepthook = test.on_exception
             test.start()
         else:
@@ -127,7 +133,10 @@ class Application(QApplication, AbstractEventEmitter):
             else:
                 self._settings = QtSettings()
             self._initialize_logger()
-            self._cryptograph = FernetCryptograph(self._settings)
+            if self._settings.is_keyring_enabled():
+                self._cryptograph = FernetCryptograph(self._settings)
+            else:
+                self._cryptograph = NoCryptograph(self._settings)
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
         # Quit app on close
@@ -143,11 +152,6 @@ class Application(QApplication, AbstractEventEmitter):
         self.on(NewReleaseAvailable, self.on_new_version)
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
-
-        # Tutorial
-        self._tutorial_timer = QtTimer('Tutorial')
-        if self._settings.get('Application.show_tutorial') == 'True':
-            self._tutorial_timer.schedule(1000, self.show_tutorial, None, True)
 
         self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
@@ -222,6 +226,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def is_e2e_mode(self):
         return '--e2e' in self.arguments()
+
+    def is_screenshot_mode(self):
+        return '--screenshots' in self.arguments()
 
     def is_testing_mode(self):
         return '--testing' in self.arguments()
@@ -492,10 +499,9 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
         actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
         actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
-        actions.add('application.tutorial', "Tutorial", '', None, Application.show_tutorial)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
-        actions.add('application.stats', "Statistics", '', None, Application.show_stats)
+        actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
 
     def quit_local(self):
         Application.quit()
@@ -533,9 +539,6 @@ class Application(QApplication, AbstractEventEmitter):
                 logger.warning("Couldn't get the latest release info from GitHub")
         logger.debug('Will check GitHub releases for the latest version')
         get_latest_version(self, on_version)
-
-    def show_tutorial(self, event: str = None) -> None:
-        TutorialWindow(self.activeWindow(), self._settings).show()
 
     def show_stats(self, event: str = None) -> None:
         StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()

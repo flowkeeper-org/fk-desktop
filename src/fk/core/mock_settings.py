@@ -80,3 +80,6 @@ class MockSettings(AbstractSettings):
                     logger.debug(f' - {option_display}: {option_value}')
                     res.append(option_id)
         return res
+
+    def is_keyring_enabled(self) -> bool:
+        return True  # Storing credentials in memory is safe, as long as we don't persist them

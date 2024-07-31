@@ -33,6 +33,7 @@ from fk.qt.workitem_model import WorkitemModel
 
 class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     _application: Application
+    _menu: QMenu
 
     def __init__(self,
                  parent: QWidget,
@@ -50,7 +51,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          1)
         self._application = application
         self._configure_delegate()
-        self._init_menu(actions)
+        self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.update_actions(None)
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
@@ -74,7 +75,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         self.selectionModel().clear()
         self.upstream_selected(None)
 
-    def _init_menu(self, actions: Actions):
+    def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
         menu.addActions([
             actions['workitems_table.newItem'],
@@ -88,6 +89,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
+        return menu
 
     @staticmethod
     def define_actions(actions: Actions):
