@@ -132,6 +132,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
                 ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
+                ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),

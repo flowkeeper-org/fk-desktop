@@ -1,4 +1,4 @@
-### v0.6.1 (TBD)
+### v0.6.1 (31 July 2024)
 - Brand new interactive tutorial.
 - The window loses its frame in Focus mode, with double-click and move.
 - The window can be pinned to stay always-on-top.

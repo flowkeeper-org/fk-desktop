@@ -35,25 +35,6 @@ def _check_keyring() -> bool:
     return not isinstance(keyring.get_keyring(), keyring.backends.fail.Keyring)
 
 
-def _display_warning() -> None:
-    if QMessageBox().warning(
-            None,
-            "No keyring",
-            "Flowkeeper couldn't detect a compatible keyring for storing credentials. You can try to install one "
-            "(for example, on KUbuntu 20.04, this can be fixed by installing gnome-keyring), or ignore this "
-            "warning. If you choose to ignore it, the following features will be disabled:\n\n"
-            "1. Data sync with flowkeeper.org,\n"
-            "2. Data sync with custom Flowkeeper Server,\n"
-            "3. End-to-end data encryption.",
-            QMessageBox.StandardButton.Ignore | QMessageBox.StandardButton.Abort
-    ) == QMessageBox.StandardButton.Ignore:
-        logger.debug('Compatible keyring is not found and the user chose to ignore it. '
-                     'Encryption and websockets will be disabled.')
-    else:
-        logger.error('Compatible keyring is not found and the user chose not to ignore it. Exiting.')
-        sys.exit(1)
-
-
 class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
     _app_name: str
@@ -67,9 +48,29 @@ class QtSettings(AbstractSettings):
         if _check_keyring():
             self._keyring_enabled = True
         else:
-            _display_warning()
+            self._display_warning_if_needed()
             self._keyring_enabled = False  # We get here only if the user clicked "Ignore"
             self._disable_secrets()  # Disable and hide forbidden options
+
+    def _display_warning_if_needed(self) -> None:
+        if self.get('Application.ignore_keyring_errors') == 'False':
+            if QMessageBox().warning(
+                    None,
+                    "No keyring",
+                    "Flowkeeper couldn't detect a compatible keyring for storing credentials. You can try to install one "
+                    "(for example, on KUbuntu 20.04, this can be fixed by installing gnome-keyring), or ignore this "
+                    "warning. If you choose to ignore it, the following features will be disabled:\n\n"
+                    "1. Data sync with flowkeeper.org,\n"
+                    "2. Data sync with custom Flowkeeper Server,\n"
+                    "3. End-to-end data encryption.",
+                    QMessageBox.StandardButton.Ignore | QMessageBox.StandardButton.Abort
+            ) == QMessageBox.StandardButton.Ignore:
+                logger.debug('Compatible keyring is not found and the user chose to ignore it. '
+                             'Encryption and websockets will be disabled.')
+                self.set({'Application.ignore_keyring_errors': 'True'})
+            else:
+                logger.error('Compatible keyring is not found and the user chose not to ignore it. Exiting.')
+                sys.exit(1)
 
     def _disable_secrets(self) -> None:
         if self.is_remote_source():
