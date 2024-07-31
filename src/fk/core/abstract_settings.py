@@ -94,7 +94,7 @@ def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
 
 
 class AbstractSettings(AbstractEventEmitter, ABC):
-    # Category -> [(id, type, display, default, options)]
+    # Category -> [(id, type, display, default, options, visibility)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
     _defaults: dict[str, str]
     _callback_invoker: Callable
@@ -160,7 +160,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
                 ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
                 ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
-                ('', 'separator', '', '', [], _always_show),
+                ('Source.encryption_separator', 'separator', '', '', [], _always_show),
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
@@ -263,6 +263,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def is_team_supported(self) -> bool:
         return self.get('Source.type') != 'local' and self.get('Application.enable_teams') == 'True'
 
+    def is_remote_source(self) -> bool:
+        return self.get('Source.type') in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
+
     def get_fullname(self) -> str:
         return self.get('Source.fullname')
 
@@ -296,11 +299,24 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     return opt[n]
         raise Exception(f'Invalid option {option_id}')
 
+    def hide(self, option_id: str) -> None:
+        for cat in self._definitions.values():
+            for i, opt in enumerate(cat):
+                if opt[0] == option_id:
+                    mutable = list(opt)
+                    mutable[5] = _never_show
+                    cat[i] = tuple(mutable)
+                    return
+        raise Exception(f'Invalid option {option_id}')
+
     def get_type(self, option_id) -> str:
         return self._get_property(option_id, 1)
 
     def get_display_name(self, option_id) -> str:
         return self._get_property(option_id, 2)
+
+    def get_configuration(self, option_id) -> list[any]:
+        return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
         to_set = dict[str, str]()
@@ -315,3 +331,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Source.encryption_enabled': self.get('Source.encryption_enabled'),
             'Source.type': self.get('Source.type')
         })
+
+    @abstractmethod
+    def is_keyring_enabled(self) -> bool:
+        pass

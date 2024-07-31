@@ -14,10 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
+import logging
+import sys
 
 import keyring
 from PySide6 import QtCore
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
@@ -25,17 +28,65 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 
 
 SECRET_NAME = 'all-secrets'
+logger = logging.getLogger(__name__)
+
+
+def _check_keyring() -> bool:
+    return not isinstance(keyring.get_keyring(), keyring.backends.fail.Keyring)
+
+
+def _display_warning() -> None:
+    if QMessageBox().warning(
+            None,
+            "No keyring",
+            "Flowkeeper couldn't detect a compatible keyring for storing credentials. You can try to install one "
+            "(for example, on KUbuntu 20.04, this can be fixed by installing gnome-keyring), or ignore this "
+            "warning. If you choose to ignore it, the following features will be disabled:\n\n"
+            "1. Data sync with flowkeeper.org,\n"
+            "2. Data sync with custom Flowkeeper Server,\n"
+            "3. End-to-end data encryption.",
+            QMessageBox.StandardButton.Ignore | QMessageBox.StandardButton.Abort
+    ) == QMessageBox.StandardButton.Ignore:
+        logger.debug('Compatible keyring is not found and the user chose to ignore it. '
+                     'Encryption and websockets will be disabled.')
+    else:
+        logger.error('Compatible keyring is not found and the user chose not to ignore it. Exiting.')
+        sys.exit(1)
 
 
 class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
     _app_name: str
+    _keyring_enabled: bool
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
         font = QFont()
         self._app_name = app_name
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
         self._settings = QtCore.QSettings("flowkeeper", app_name)
+        if _check_keyring():
+            self._keyring_enabled = True
+        else:
+            _display_warning()
+            self._keyring_enabled = False  # We get here only if the user clicked "Ignore"
+            self._disable_secrets()  # Disable and hide forbidden options
+
+    def _disable_secrets(self) -> None:
+        if self.is_remote_source():
+            self.set({'Source.type': 'local'})
+
+        original = self.get_configuration('Source.type')
+        for option in list(original):
+            key = option.split(':')[0]
+            if key in ['flowkeeper.org', 'flowkeeper.pro', 'websocket']:
+                original.remove(option)
+
+        if self.get('Source.encryption_enabled') == 'True':
+            self.set({'Source.encryption_enabled': 'False'})
+
+        self.hide('Source.encryption_enabled')
+        self.hide('Source.encryption_key!')
+        self.hide('Source.encryption_separator')
 
     def set(self, values: dict[str, str]) -> None:
         old_values: dict[str, str] = dict()
@@ -58,10 +109,13 @@ class QtSettings(AbstractSettings):
                 else:
                     self._settings.setValue(name, values[name])
             if len(encrypted) > 0:
-                existing = self.load_secret()
-                for e in encrypted:
-                    existing[e] = encrypted[e]
-                keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
+                if self._keyring_enabled:
+                    existing = self.load_secret()
+                    for e in encrypted:
+                        existing[e] = encrypted[e]
+                    keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
+                else:
+                    logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
             self._emit(events.AfterSettingsChanged, params)
 
     def load_secret(self) -> dict[str, str]:
@@ -70,13 +124,16 @@ class QtSettings(AbstractSettings):
 
     def get(self, name: str) -> str:
         if name.endswith('!'):
-            # MacOS keeps asking to unlock login keychain *for each* password. I couldn't find how to avoid
-            # this, and decided to squeeze *all* passwords into a single JSON secret instead.
-            j = self.load_secret()
-            if name in j and j[name] is not None:
-                return j[name]
+            if self._keyring_enabled:
+                # MacOS keeps asking to unlock login keychain *for each* password. I couldn't find how to avoid
+                # this, and decided to squeeze *all* passwords into a single JSON secret instead.
+                j = self.load_secret()
+                if name in j and j[name] is not None:
+                    return j[name]
+                else:
+                    return ''
             else:
-                return ''
+                return self._defaults[name]
         else:
             return str(self._settings.value(name, self._defaults[name]))
 
@@ -85,11 +142,11 @@ class QtSettings(AbstractSettings):
 
     def clear(self) -> None:
         self._settings.clear()
-        for category in self._definitions.values():
-            for setting in category:
-                key = setting[0]
         try:
             keyring.delete_password(self._app_name, SECRET_NAME)
         except Exception as e:
             # Ignore, this is a common issue with keyring module.
             pass
+
+    def is_keyring_enabled(self) -> bool:
+        return self._keyring_enabled
