@@ -104,8 +104,7 @@ class BacklogE2eTest(AbstractE2eTest):
         backlogs_model = backlogs_table.model()
         for i in range(backlogs_model.rowCount()):
             if backlogs_model.index(i, 0).data() == name:
-                self.mouse_click_row(backlogs_table, i)
-                await self.instant_pause()
+                await self.mouse_click_row(backlogs_table, i)
                 return i
         return -1
 
@@ -392,8 +391,7 @@ class BacklogE2eTest(AbstractE2eTest):
         assert_that(backlog_index, 'Backlog rename via Ctrl+R').is_greater_than(-1)
 
         # Then via double-clicking
-        self.mouse_doubleclick_row(backlogs_table, backlog_index)
-        await self.instant_pause()
+        await self.mouse_doubleclick_row(backlogs_table, backlog_index)
         self.type_text('Long-term tasks')
         await self.instant_pause()
         self.keypress(Qt.Key.Key_Enter, False)
@@ -417,8 +415,7 @@ class BacklogE2eTest(AbstractE2eTest):
         assert_that(workitems_table.get_current().get_name(), 'Workitem rename via F6').is_equal_to('Rename 32')
 
         # Then via double-clicking
-        self.mouse_doubleclick_row(workitems_table, workitems_table.currentIndex().row(), 1)
-        await self.instant_pause()
+        await self.mouse_doubleclick_row(workitems_table, workitems_table.currentIndex().row(), 1)
         self.type_text('Update 32')
         await self.instant_pause()
         self.keypress(Qt.Key.Key_Enter, False)

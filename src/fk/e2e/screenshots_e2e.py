@@ -117,8 +117,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         backlogs_model = backlogs_table.model()
         for i in range(backlogs_model.rowCount()):
             if backlogs_model.index(i, 0).data() == name:
-                self.mouse_click_row(backlogs_table, i)
-                await self.instant_pause()
+                await self.mouse_click_row(backlogs_table, i)
                 return i
         return -1
 
