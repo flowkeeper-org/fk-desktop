@@ -34,6 +34,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         return {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
+            'Application.show_window_title': 'True',
             'Application.check_updates': 'False',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
@@ -117,8 +118,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         backlogs_model = backlogs_table.model()
         for i in range(backlogs_model.rowCount()):
             if backlogs_model.index(i, 0).data() == name:
-                self.mouse_click_row(backlogs_table, i)
-                await self.instant_pause()
+                await self.mouse_click_row(backlogs_table, i)
                 return i
         return -1
 

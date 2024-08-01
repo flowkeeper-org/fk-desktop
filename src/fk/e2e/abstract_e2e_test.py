@@ -29,14 +29,14 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QWidget, QAbstractButton, QAbstractItemView, QMainWindow
+from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow
 
 from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.2  # seconds
-STARTUP_DURATION = 2  # seconds
+STARTUP_DURATION = 1  # seconds
 WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
 SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
@@ -179,60 +179,46 @@ class AbstractE2eTest(ABC):
         self._append_to_system_out_for_method(f'ERROR: {e}')
         self._errors += 1
 
-    def do(self, what: Callable[[], None], delay: int = 1) -> AbstractE2eTest:
-        self._timer.timeout.disconnect()
-        self._timer.timeout.connect(lambda: self._do_once(what))
-        self._timer.start(delay)
-        return self
-
-    def _do_once(self, what: Callable[[], None]):
-        self._timer.stop()
-        what()
-
     def _get_row_position(self, widget: QAbstractItemView, row: int, col: int) -> QPoint:
-        row_rect = widget.visualRect(widget.model().index(row, col))
-        row_rect.setTop(row_rect.top() + 5)
-        row_rect.setLeft(row_rect.left() + 5)
-        return row_rect.topLeft()
+        return widget.visualRect(widget.model().index(row, col)).center()
 
-    def mouse_click_row(self, widget: QAbstractItemView, row: int, col: int = 0):
-        self.mouse_click(widget, self._get_row_position(widget, row, col))
+    async def mouse_click_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        await self.mouse_click(widget, self._get_row_position(widget, row, col))
 
-    def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
-        self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
+    async def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        await self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
-    def mouse_click(self, widget: QWidget, pos: QPoint = QPoint(5, 5), left_button: bool = True):
-        self.do(lambda: widget.focusInEvent(QFocusEvent(
+    async def mouse_click(self, widget: QWidget, pos: QPoint, left_button: bool = True):
+        widget.focusInEvent(QFocusEvent(
             QEvent.Type.FocusIn,
-        )))
-        self.do(lambda: widget.mousePressEvent(QMouseEvent(
+        ))
+        await self.instant_pause()
+        widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonPress,
             pos,
             Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
-            None,
+            Qt.MouseButton.NoButton,
             Qt.KeyboardModifier.NoModifier,
-        )))
-        self.do(lambda: widget.mousePressEvent(QMouseEvent(
+        ))
+        await self.instant_pause()
+        widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonRelease,
             pos,
             Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
-            None,
+            Qt.MouseButton.NoButton,
             Qt.KeyboardModifier.NoModifier,
-        )))
+        ))
+        await self.instant_pause()
 
-    def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
-        self.do(lambda: widget.mouseDoubleClickEvent(QMouseEvent(
+    async def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
+        widget.mouseDoubleClickEvent(QMouseEvent(
             QEvent.Type.MouseButtonDblClick,
             pos,
             Qt.MouseButton.LeftButton,
             Qt.MouseButton.NoButton,
             Qt.KeyboardModifier.NoModifier,
-        )))
-
-    def button_click(self, button_id: str):
-        # noinspection PyTypeChecker
-        button: QAbstractButton = self._app.activeWindow().findChild(QAbstractButton, button_id)
-        self.do(lambda: button.click())
+        ))
+        await self.instant_pause()
 
     def keypress(self, key: int, ctrl: bool = False, widget: QWidget = None):
         if widget is None:
@@ -267,22 +253,12 @@ class AbstractE2eTest(ABC):
     def window(self) -> QWidget:
         win = self._app.activeWindow()
         if win is None:
-            win = self._app.focusWindow()
+            win = self._main_window
             if win is None:
                 raise Exception('Cannot find active window')
-        return win
-
-    def main_window(self) -> QMainWindow:
-        win = self._app.activeWindow()
-        if win is None:
-            raise Exception('Cannot find main window')
-        return win
-        if self._main_window is None:
-            win = self._app.activeWindow()
-            if win is None:
-                raise Exception('Cannot find main window')
+        else:
             self._main_window = win
-        return self._main_window
+        return win
 
     def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()
