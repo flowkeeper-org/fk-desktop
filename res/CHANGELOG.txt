@@ -1,5 +1,5 @@
 ### v0.6.2 (1 August 2024)
-- [Bugfix] OAuth login on Windows (bug in Qt 6.7.2).
+- [Bugfix] OAuth login on Windows (QTBUG-124333).
 
 ### v0.6.1 (31 July 2024)
 - Brand new interactive tutorial.

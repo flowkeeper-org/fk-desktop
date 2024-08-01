@@ -34,6 +34,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         return {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
+            'Application.show_window_title': 'True',
             'Application.check_updates': 'False',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),

@@ -28,14 +28,14 @@ from typing import Callable
 from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
-from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent
+from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow
 
 from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
-INSTANT_DURATION = 0.05  # seconds
+INSTANT_DURATION = 0.2  # seconds
 STARTUP_DURATION = 1  # seconds
 WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
 SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
@@ -189,8 +189,20 @@ class AbstractE2eTest(ABC):
         await self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
     async def mouse_click(self, widget: QWidget, pos: QPoint, left_button: bool = True):
+        widget.focusInEvent(QFocusEvent(
+            QEvent.Type.FocusIn,
+        ))
+        await self.instant_pause()
         widget.mousePressEvent(QMouseEvent(
             QEvent.Type.MouseButtonPress,
+            pos,
+            Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        ))
+        await self.instant_pause()
+        widget.mousePressEvent(QMouseEvent(
+            QEvent.Type.MouseButtonRelease,
             pos,
             Qt.MouseButton.LeftButton if left_button else Qt.MouseButton.RightButton,
             Qt.MouseButton.NoButton,
@@ -241,22 +253,12 @@ class AbstractE2eTest(ABC):
     def window(self) -> QWidget:
         win = self._app.activeWindow()
         if win is None:
-            win = self._app.focusWindow()
+            win = self._main_window
             if win is None:
                 raise Exception('Cannot find active window')
-        return win
-
-    def main_window(self) -> QMainWindow:
-        win = self._app.activeWindow()
-        if win is None:
-            raise Exception('Cannot find main window')
-        return win
-        if self._main_window is None:
-            win = self._app.activeWindow()
-            if win is None:
-                raise Exception('Cannot find main window')
+        else:
             self._main_window = win
-        return self._main_window
+        return win
 
     def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()
