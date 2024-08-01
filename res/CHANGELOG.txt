@@ -1,3 +1,6 @@
+### v0.6.3 (2 August 2024)
+- [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
+
 ### v0.6.2 (1 August 2024)
 - [Bugfix] OAuth login on Windows (QTBUG-124333).
 
