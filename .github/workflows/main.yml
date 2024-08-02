@@ -46,3 +46,14 @@ jobs:
       - name: Trigger e2e tests (external)
         run: |
           curl --version
+  remote-pipeline:
+    runs-on: ubuntu-22.04
+    # needs: run-tests
+    steps:
+      - name: Trigger remote job
+        env:
+          REMOTE_URL: ${{ secrets.REMOTE_URL }}
+          REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
+          REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_MAIN_JOB_TOKEN }}
+        run: |
+          curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-main/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null

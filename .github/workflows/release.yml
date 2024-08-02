@@ -167,3 +167,15 @@ jobs:
         with:
           files: |
             Flowkeeper.dmg
+
+  remote-pipeline:
+    runs-on: ubuntu-22.04
+    needs: [package-macOS, package-windows, package-linux]
+    steps:
+      - name: Trigger remote job
+        env:
+          REMOTE_URL: ${{ secrets.REMOTE_URL }}
+          REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
+          REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_RELEASE_JOB_TOKEN }}
+        run: |
+          curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-release/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
