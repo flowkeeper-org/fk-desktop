@@ -266,7 +266,7 @@ jobs:
             Flowkeeper-x86.dmg
 
   remote-pipeline:
-    needs: [build-linux, build-windows, build-macOS-arm, build-macOS-x86]
+    needs: [build-windows]
     runs-on: ubuntu-22.04
     if: ${{ inputs.OS == 'all' }}
     steps:
