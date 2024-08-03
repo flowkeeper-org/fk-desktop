@@ -138,29 +138,27 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
         run: |
           # create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
 
           # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
 
           # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
           # import certificate to keychain
-          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
       - name: Package builds
         run: |
-          # There's no portable executables in macOS as such
-          # pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec -- --sign
+          pyinstaller "installer/normal-build.spec" -- --sign
       - name: Create DMG installer
         run: |
-          rm -rf dist/flowkeeper
+          rm -rf "dist/flowkeeper"
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
@@ -172,9 +170,16 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper.dmg" \
             "dist/"
-#      - name: Notarize the DMG
-#        run: |
-#          xcrun notarytool submit Flowkeeper.dmg --keychain-profile "notary-key" --wait
+      - name: Notarize the DMG
+        env:
+          NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
+          NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
+          NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
+        run: |
+          # Create the notary key
+          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
+          # Send the DMG for notarization
+          xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
       - name: Archive DMG installer
         uses: actions/upload-artifact@v3
         with:
@@ -203,14 +208,35 @@ jobs:
       - name: Generate resources
         run: |
           ./generate-resources.sh
+      - name: Install the Apple certificate and provisioning profile
+        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
+          P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # import certificate to keychain
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
       - name: Package builds
         run: |
-          # There's no portable executables in macOS as such
-          # pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
+          pyinstaller "installer/normal-build.spec" -- --sign
       - name: Create DMG installer
         run: |
-          rm -rf dist/flowkeeper
+          rm -rf "dist/flowkeeper"
           create-dmg \
             --volname "Flowkeeper Installer" \
             --volicon "res/flowkeeper.icns" \
@@ -222,6 +248,16 @@ jobs:
             --app-drop-link 600 185 \
             "Flowkeeper-x86.dmg" \
             "dist/"
+      - name: Notarize the DMG
+        env:
+          NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
+          NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
+          NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
+        run: |
+          # Create the notary key
+          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
+          # Send the DMG for notarization
+          xcrun notarytool submit "Flowkeeper-x86.dmg" --keychain-profile "notary-key" --wait
       - name: Archive DMG installer
         uses: actions/upload-artifact@v3
         with:
