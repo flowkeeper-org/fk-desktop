@@ -109,7 +109,7 @@ jobs:
           path: |
             dist\setup.exe
         
-  build-macOS:
+  build-macOS-arm:
     runs-on: macOS-latest
     if:  ${{ inputs.OS == 'macOS' || inputs.OS == 'all' }}
     steps:
@@ -155,6 +155,53 @@ jobs:
           name: dist-macOS-dmg
           path: |
             Flowkeeper.dmg
+
+  build-macOS-x86:
+    runs-on: macOS-13
+    if:  ${{ inputs.OS == 'macOS' || inputs.OS == 'all' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-test.txt
+          brew install create-dmg
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          # There's no portable executables in macOS as such
+          # pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+      - name: Create DMG installer
+        run: |
+          rm -rf dist/flowkeeper
+          create-dmg \
+            --volname "Flowkeeper Installer" \
+            --volicon "res/flowkeeper.icns" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Flowkeeper.app" 200 190 \
+            --hide-extension "Flowkeeper.app" \
+            --app-drop-link 600 185 \
+            "Flowkeeper-x86.dmg" \
+            "dist/"
+      - name: Archive DMG installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-macOS-dmg-x86
+          path: |
+            Flowkeeper-x86.dmg
 
   remote-pipeline:
     needs: [build-linux, build-windows, build-macOS]

@@ -122,7 +122,7 @@ jobs:
             dist/Flowkeeper.exe
             dist/setup.exe
 
-  package-macOS:
+  package-macOS-arm:
     runs-on: macOS-latest
     needs: run-tests
     steps:
@@ -167,6 +167,52 @@ jobs:
         with:
           files: |
             Flowkeeper.dmg
+
+  package-macOS-x86:
+    runs-on: macOS-13
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-build.txt
+          brew install create-dmg
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          # There's no portable executables in macOS as such
+          # pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+      - name: Create DMG installer
+        run: |
+          rm -rf dist/flowkeeper
+          create-dmg \
+            --volname "Flowkeeper Installer" \
+            --volicon "res/flowkeeper.icns" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Flowkeeper.app" 200 190 \
+            --hide-extension "Flowkeeper.app" \
+            --app-drop-link 600 185 \
+            "Flowkeeper-x86.dmg" \
+            "dist/"
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Flowkeeper-x86.dmg
 
   remote-pipeline:
     runs-on: ubuntu-22.04
