@@ -216,7 +216,7 @@ jobs:
 
   remote-pipeline:
     runs-on: ubuntu-22.04
-    needs: [package-macOS, package-windows, package-linux]
+    needs: [package-macOS-arm, package-macOS-x86, package-windows, package-linux]
     steps:
       - name: Trigger remote job
         env:
