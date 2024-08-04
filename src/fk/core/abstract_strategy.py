@@ -54,7 +54,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
 
     def get_name(self) -> str:
         name = self.__class__.__name__
-        # UC: Strategy names correspond to Python class names without trailing "...Strategy"
+        # UC-3: Strategy names correspond to Python class names without trailing "...Strategy"
         return name[0:len(name) - 8]
 
     def get_when(self) -> datetime.datetime:
@@ -70,7 +70,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         return self._seq
 
     def encryptable(self) -> bool:
-        # UC: All strategies should be e2e-encrypted by default
+        # UC-3: All strategies should be e2e-encrypted by default
         return True
 
     @abstractmethod

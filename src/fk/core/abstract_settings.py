@@ -149,28 +149,28 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
-                # UC: Setting "Server URL" is only shown for the "Self-hosted server" data source
+                # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
-                # UC: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
+                # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
                 ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
                     "basic:Simple username and password",
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
-                # UC: Setting "User email" is only shown for the "Simple username and password" authentication type
+                # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
                 ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
-                # UC: Setting "Password" is only shown for the "Simple username and password" authentication type
+                # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
-                # UC: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
+                # UC-2: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
                 ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
-                # UC: Button "Delete my account" is only shown if the user is signed in
+                # UC-2: Button "Delete my account" is only shown if the user is signed in
                 ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
                 ('Source.encryption_separator', 'separator', '', '', [], _always_show),
-                # UC: Setting "End-to-end encryption" is only shown if the data source is "Local file", "Self-hosted server" or "Ephemeral"
+                # UC-2: Setting "End-to-end encryption" is only shown if the data source is "Local file", "Self-hosted server" or "Ephemeral"
                 ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
-                # UC: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
+                # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
             ],
@@ -206,9 +206,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "image:Image",
                     "gradient:Gradient",
                 ], _always_show),
-                # UC: Setting "Background image" is only shown if "Header background" = "Image"
+                # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
-                # UC: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
+                # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
                 ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
@@ -226,7 +226,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.font_header_size', 'int', 'Title font size', str(int(24.0 / 9 * default_font_size)), [3, 72], _always_show),
             ],
             'Audio': [
-                # UC: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
+                # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
                 ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
                 ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
@@ -267,7 +267,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_username(self) -> str:
-        # UC: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user.
+        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user.
         if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
             return 'user@local.host'
         else:
@@ -313,7 +313,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         raise Exception(f'Invalid option {option_id}')
 
     def hide(self, option_id: str) -> None:
-        # UC: Some of the settings can be hidden in runtime in addition to the "normal" checks
+        # UC-2: Some of the settings can be hidden in runtime in addition to the "normal" checks
         for cat in self._definitions.values():
             for i, opt in enumerate(cat):
                 if opt[0] == option_id:

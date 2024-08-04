@@ -39,7 +39,7 @@ def auto_seal(workitems: Iterable[Workitem],
                 remaining_time = pomodoro.total_remaining_time()
                 if remaining_time + delta < 0:
                     # TODO: Introduce the concept of "fake now", so that we don't need to compare against wall clock
-                    # UC: If a pomodoro finished offline in the past (now - delta), it is completed automatically
+                    # UC-1: If a pomodoro finished offline in the past (now - delta), it is completed automatically
                     # This pomodoro has finished, i.e. work + rest happened in the past
                     # This used to produce a warning, but since version 0.3.1 this is a normal
                     # thing, as all pomodoros are completed implictly.
@@ -54,7 +54,7 @@ def auto_seal(workitems: Iterable[Workitem],
                 elif pomodoro.is_working():
                     remaining_time = pomodoro.remaining_time_in_current_state()
                     if remaining_time + delta < 0:
-                        # UC: If a pomodoro work finished offline in the past (now - delta), the rest starts automatically
+                        # UC-1: If a pomodoro work finished offline in the past (now - delta), the rest starts automatically
                         # This pomodoro should've transitioned to "rest" in the past, but it hasn't
                         # quite expired yet
                         executor(StartRestStrategy,

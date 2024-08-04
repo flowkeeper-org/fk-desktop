@@ -72,8 +72,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
         logger.debug(f'Data file content changed: {filename}')
-
-        # When we execute strategies here, events are emitted.
+        # UC-1: File event source: If file watching is enabled, the strategies with the sequence > last_seq are executed
+        # UC-3: Any event source fires all events for the incremental processing
         # TODO: Check file locks here?
         with open(filename, encoding='UTF-8') as file:
             for line in file:
@@ -89,12 +89,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._last_seq = seq
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug(f" - {strategy}")
+                        # UC-1: For any event source, whenever it executes a strategy with seq_num != last_seq + 1, and "ignore sequence" settings is disables, it fails
                         self.execute_prepared_strategy(strategy)
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
+        # UC-2: File event source auto-seals running pomodoros at the end of any file read, including file watch case
+        # TODO: It would be more semantically correct if we seal pomodoros at the next strategy, and not at the very end
         self.auto_seal()
 
     def _get_filename(self) -> str:
@@ -109,9 +112,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
         else:
             self._process_from_existing(fail_early)
 
+    # This method is called when we repair an existing data source
     def _process_from_existing(self, fail_early: bool) -> None:
-        # This method is called when we repair an existing data source
-        # All events are muted during processing
+        # UC-2: File event source can be created from the existing pre-parsed strategies.
+        #  It behaves just like normal "read file", but without the deserialization checks.
+        #  It checks sequences, auto-seals and triggers SourceMessagesRequested events.
+        #  All events are muted during processing.
         self._emit(events.SourceMessagesRequested, dict())
         self.mute()
         is_first = True
@@ -152,6 +158,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 s = self.get_init_strategy(self._emit)
                 f.write(f'{self._serializer.serialize(s)}\n')
                 logger.info(f'Created empty data file {filename}')
+                # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist
 
         is_first = True
         seq = 1
@@ -172,6 +179,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         seq = strategy.get_sequence()
                         if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
                             self._sequence_error(self._last_seq, seq)
+                    # UC-3: Strategies may start with any sequence number
                     self._last_seq = seq
                     self.execute_prepared_strategy(strategy)
                 except Exception as ex:
@@ -181,9 +189,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         raise ex
         logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
+        # UC-1: Any event source auto-seals pomodoros at the end of the parsing round, including incremental parsing
         self.auto_seal()
         logger.debug('FileEventSource: Sealed, will unmute events now')
 
+        # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
@@ -199,6 +209,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # 5. Restart and remove failing strategies
         # Perform 4 -- 5 in the loop
         # It will overwrite existing data file and will create a backup with "-backup-<date>" suffix
+
+        # UC-1: File event source can repair any broken source file. It removes duplicates, creates missing data objects on first reference, renumbers strategies, and deletes failing ones.
+        # UC-1: After the repair, the file source is guaranteed to load successfully without errors or warnings
+        # UC-3: File source repair generates backup files with "-backup-<date>" suffix
 
         log = list()
         changes: int = 0
@@ -379,7 +393,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         if changes > 0:
             log.append(f'Made {changes} changes in total')
-
+            # UC-2: File event source repair won't do any changes if the source file is correct
             # Rename the original file
             date = round(time.time() * 1000)
             backup_filename = f"{filename}-backup-{date}"
@@ -395,11 +409,13 @@ class FileEventSource(AbstractEventSource[TRoot]):
             log.append(f'No changes were made')
 
         self._watcher = original_watcher
+        # UC-3: File event source repair returns the log of all changes it made
         return log
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
-        # then append to both files at the same time.
+        #  then append to both files at the same time.
+        # UC-2: For file source, new strategies get appended to the file immediately after execution
         with open(self._get_filename(), 'a', encoding='UTF-8') as f:
             for s in strategies:
                 f.write(self._serializer.serialize(s) + '\n')
@@ -416,7 +432,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         #    The last strategy's sequence ID will stay the same, and the previous IDs will
         #    be recalculated backwards.
         # 3. Timestamps will correspond to the latest modification dates.
-        # TODO: Implement
+        # TODO: Implement and expose through a Settings button. A similar implementation exists for the export use case.
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> FileEventSource[TRoot]:

@@ -35,7 +35,7 @@ class AbstractCryptograph(ABC):
             self._generate_key()
 
     def _generate_key(self) -> None:
-        # UC: Launching FK for the first time, a random e2e encryption key is generated
+        # UC-2: Launching FK for the first time, a random e2e encryption key is generated
         key = ''.join(
             secrets.choice(string.ascii_letters + string.digits) for _ in range(20)
         )

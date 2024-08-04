@@ -31,7 +31,7 @@ def _callback_display(callback) -> str:
 class AbstractEventEmitter:
     _muted: bool
     _connections_1: dict[str, list[Callable]]
-    # UC: Certain event consumers can be notified at the end
+    # UC-2: Certain event consumers can be notified at the end
     _connections_2: dict[str, list[Callable]]
     _last: set[Callable]
     _callback_invoker: Callable
@@ -52,7 +52,7 @@ class AbstractEventEmitter:
         regex = re.compile(event_pattern.replace('*', '.*'))
         for event in self._connections_1:   # _connections_2 has the same list
             if regex.match(event):
-                # UC: Event consumers are notified in the order of subscription
+                # UC-2: Event consumers are notified in the order of subscription
                 if not last and callback not in self._connections_1[event]:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event}')

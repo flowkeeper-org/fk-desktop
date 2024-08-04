@@ -50,6 +50,7 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
+        # UC-2: An exception is raised if we try to create a User, Backlog or Workitem with a duplicate UID within its direct parent
         if self._backlog_uid in user:
             raise Exception(f'Backlog "{self._backlog_uid}" already exists')
 
@@ -89,6 +90,8 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
+
+        # UC-2: Trying to delete a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
@@ -98,6 +101,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
         }
         emit(events.BeforeBacklogDelete, params, self._carry)
 
+        # UC-1: Deleting a backlog will first delete all children workitems recursively
         # First delete all workitems recursively
         for workitem in list(backlog.values()):
             self.execute_another(emit,
@@ -109,6 +113,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
         # Now we can delete the backlog itself
         del user[self._backlog_uid]
 
+        # UC-3: The strategies which do something recursively, wrap inner logic in the Before/After events
         emit(events.AfterBacklogDelete, params, self._carry)
         return None, None
 
@@ -137,6 +142,7 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
+        # UC-2: Trying to rename a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
