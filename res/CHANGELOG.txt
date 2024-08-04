@@ -1,5 +1,9 @@
-### v0.6.3 (2 August 2024)
+### v0.6.3 (3 August 2024)
 - [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
+- [Technical] GitHub pipeline now signs and notarizes macOS builds.
+- [Technical] A macOS build for x86.
+- [Technical] Simplified the code for events prioritization.
+- [Technical] Listed all testable Use Cases.
 
 ### v0.6.2 (1 August 2024)
 - [Bugfix] OAuth login on Windows (QTBUG-124333).

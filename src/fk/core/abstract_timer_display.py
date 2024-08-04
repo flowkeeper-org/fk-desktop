@@ -54,6 +54,7 @@ class AbstractTimerDisplay:
         old_mode = self._mode
         if old_mode != mode:
             # Check forbidden mode transitions
+            # UC: Timer displays (tray and focus) will throw an error if we transition from resting to working, or from idle to ready, or from undefined to ready
             if (old_mode == 'resting' and mode == 'working') or \
                     (old_mode == 'idle' and mode == 'ready') or \
                     (old_mode == 'undefined' and mode == 'ready'):
@@ -87,14 +88,17 @@ class AbstractTimerDisplay:
         self.tick(pomodoro, state_text, self._timer.get_completion())
 
     def _on_work_start(self, **kwargs) -> None:
+        # UC: Timer display goes into "working" state when work period starts
         self._continue_workitem = self._timer.get_running_workitem()
         self._set_mode('working')
 
     def _on_work_complete(self, **kwargs) -> None:
+        # UC: Timer display goes into "resting" state when work period completes
         self._continue_workitem = self._timer.get_running_workitem()
         self._set_mode('resting')
 
     def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
+        # UC: Timer display goes into "ready for next pomodoro" state when rest completes, and the workitem has startable pomodoros
         if self._continue_workitem is not None and workitem.is_startable():
             self._set_mode('ready')
         else:
@@ -102,11 +106,13 @@ class AbstractTimerDisplay:
             self._set_mode('idle')
 
     def _on_workitem_complete_or_delete(self, workitem: Workitem, **kwargs) -> None:
+        # UC: Timer display goes into idle state if the active workitem is deleted or completed
         if workitem == self._continue_workitem:
             self._continue_workitem = None
             self._set_mode('idle')
 
     def _on_pomodoro_remove(self, workitem: Workitem, **kwargs) -> None:
+        # UC: Timer display goes into idle state from "ready for next pomodoro" state if that pomodoro is deleted
         if workitem == self._continue_workitem \
                 and self._timer.is_idling() \
                 and not workitem.is_startable():

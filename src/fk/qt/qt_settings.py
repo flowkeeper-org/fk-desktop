@@ -85,6 +85,8 @@ class QtSettings(AbstractSettings):
         if self.get('Source.encryption_enabled') == 'True':
             self.set({'Source.encryption_enabled': 'False'})
 
+        # TODO: Reimplement this via some bool variable on the AbstractSettings class, e.g. "is_encryption_disabled"
+        #  and updating the corresponding visibility checks. This would be a more elegant solution.
         self.hide('Source.encryption_enabled')
         self.hide('Source.encryption_key!')
         self.hide('Source.encryption_separator')

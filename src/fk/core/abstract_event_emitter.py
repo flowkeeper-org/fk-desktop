@@ -30,61 +30,68 @@ def _callback_display(callback) -> str:
 
 class AbstractEventEmitter:
     _muted: bool
-    _connections: dict[str, list[Callable]]
+    _connections_1: dict[str, list[Callable]]
+    # UC: Certain event consumers can be notified at the end
+    _connections_2: dict[str, list[Callable]]
     _last: set[Callable]
     _callback_invoker: Callable
 
     def __init__(self, allowed_events: list[str], callback_invoker: Callable):
         self._muted = False
         self._callback_invoker = callback_invoker
-        self._connections = dict()
+        self._connections_1 = dict()
+        self._connections_2 = dict()
         self._last = set()
         for event in allowed_events:
-            self._connections[event] = list[Callable]()
+            self._connections_1[event] = list[Callable]()
+            self._connections_2[event] = list[Callable]()
 
     # Event subscriptions. Here event_pattern can contain * characters
     # and other regex syntax.
     def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:
         regex = re.compile(event_pattern.replace('*', '.*'))
-        for event in self._connections:
+        for event in self._connections_1:   # _connections_2 has the same list
             if regex.match(event):
-                # Ordered set semantics
-                if callback not in self._connections[event]:
+                # UC: Event consumers are notified in the order of subscription
+                if not last and callback not in self._connections_1[event]:
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event}{" as the LAST handler" if last else ""}')
-                    self._connections[event].append(callback)
-        if last:
-            self._last.add(callback)
+                        logger.debug(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event}')
+                    self._connections_1[event].append(callback)
+                elif last and callback not in self._connections_2[event]:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f' # {_callback_display(callback)} subscribed to {self.__class__.__name__}.{event} as the LAST handler')
+                    self._connections_2[event].append(callback)
 
     def cancel(self, event_pattern: str) -> None:
         regex = re.compile(event_pattern.replace('*', '.*'))
-        for event in self._connections:
+        for event in self._connections_1:
             if regex.match(event):
-                self._connections[event].clear()
+                self._connections_1[event].clear()
+                self._connections_2[event].clear()
 
     def unsubscribe(self, callback: Callable) -> None:
-        for callables in self._connections.values():
+        for callables in self._connections_1.values():
+            if callback in callables:
+                callables.remove(callback)
+        for callables in self._connections_2.values():
             if callback in callables:
                 callables.remove(callback)
 
     def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
         if not self._is_muted():
-            first = True
-            while True:
-                for callback in self._connections[event]:
-                    if (first and callback in self._last) or (not first and callback not in self._last):
-                        continue
-                    params['event'] = event
-                    if carry is not None:
-                        params['carry'] = carry
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(f' ! {_callback_display(callback)}(' + str(params) + ')')
-                    self._callback_invoker(callback, **params)
-                if not first:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
-                    return
-                first = False
+            params['event'] = event
+            if carry is not None:
+                params['carry'] = carry
+            for callback in self._connections_1[event]:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f' ! {_callback_display(callback)}(' + str(params) + ')')
+                self._callback_invoker(callback, **params)
+            for callback in self._connections_2[event]:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f' ! {_callback_display(callback)}(' + str(params) + ')')
+                self._callback_invoker(callback, **params)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
 
     def _is_muted(self) -> bool:
         return self._muted
