@@ -30,6 +30,8 @@ class MockSettings(AbstractSettings):
 
     def __init__(self, filename=None, username=None, source_type="local"):
         super().__init__('Arial', 10, invoke_direct)
+        # UC-3: Mock settings used for testing predefine a fixed encryption key
+        # UC-3: Mock settings do not persist between application / test restarts
         self._settings = {
             'Source.type': source_type,
             'FileEventSource.filename': filename,

@@ -432,7 +432,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
         #    The last strategy's sequence ID will stay the same, and the previous IDs will
         #    be recalculated backwards.
         # 3. Timestamps will correspond to the latest modification dates.
-        # TODO: Implement and expose through a Settings button. A similar implementation exists for the export use case.
+        # TODO: Implement and expose through a Settings button.
+        #  A similar implementation exists for the export use case (see compressed_strategies()).
         pass
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> FileEventSource[TRoot]:

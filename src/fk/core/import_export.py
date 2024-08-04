@@ -49,6 +49,7 @@ def _export_message_processed(source: AbstractEventSource[TRoot],
     serialized = export_serializer.serialize(strategy)
     export_file.write(f'{serialized}\n')
     if another._estimated_count % every == 0:
+        # UC-2: Export progress is displayed through the progress bar
         progress_callback(another._estimated_count, source._estimated_count)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f' - {another._estimated_count} out of {source._estimated_count}')
@@ -64,6 +65,7 @@ def _export_completed(source: AbstractEventSource[TRoot],
 
 def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[AbstractStrategy]:
     """The minimal list of strategies required to get the same end result"""
+    # UC-2: Export can compress strategies to the bare minimum without losing crucial timestamps.
 
     seq = 1
     for user in source.get_data().values():
@@ -116,6 +118,7 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
 def merge_strategies(source: AbstractEventSource[TRoot],
                      data: TRoot) -> Iterable[AbstractStrategy]:
     """The list of strategies required to merge self with another, used in import"""
+    # UC-2: Import can be done incrementally ("smart import"). Such an import should never delete anything. Items with the same UIDs will be merged together.
 
     # Prepare maps to speed up imports, otherwise we'll have to loop a lot
     existing_backlogs = dict[str, Backlog]()
@@ -172,6 +175,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                     existing_workitem = existing_workitems[workitem.get_uid()]
                     if workitem.get_name() != existing_workitem.get_name():
                         if workitem.get_last_modified_date() > existing_workitem.get_last_modified_date():
+                            # UC-3: Smart import will rename any named data objects if their last modification date is later in the imported file
                             yield RenameWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
                                                          [workitem.get_uid(), workitem.get_name()],
                                                          source.get_settings())
@@ -185,6 +189,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
                 if num_pomodoros_to_add > 0:
+                    # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
                     yield AddPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
                                               [workitem.get_uid(), str(num_pomodoros_to_add)],
                                               source.get_settings())
@@ -204,6 +209,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                     source.get_settings())
                             seq += 1
                             if p_new.is_canceled():
+                                # UC-2: Smart import would result in the max(existing, imported) number of completed and voided pomodoros for each workitem
                                 yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
                                                            [workitem.get_uid()],
                                                            source.get_settings())
@@ -275,6 +281,8 @@ def create_export_serializer(source: AbstractEventSource[TRoot], encrypt=False) 
     if encrypt:
         return SimpleSerializer(source.get_settings(), source._cryptograph)
     else:
+        # UC-2: The user can choose to export data unencrypted
+        # UC-2: The user can choose to export data encrypted. The current e2e encryption key is used.
         return SimpleSerializer(source.get_settings(), NoCryptograph(source.get_settings()))
 
 
@@ -305,6 +313,7 @@ def _merge_sources(existing_source,
                    completion_callback: Callable[[int], None]) -> None:
     # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
     count = 0
+    # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
         existing_source.execute_prepared_strategy(strategy, False, True)
@@ -319,8 +328,11 @@ def import_classic(source: AbstractEventSource[TRoot],
                    start_callback: Callable[[int], None],
                    progress_callback: Callable[[int, int], None],
                    completion_callback: Callable[[int], None]) -> None:
+    # UC-1: Classic import replays strategies from the input file as-is and can therefore delete objects
+    # UC-1: Classic import will create duplicates for pomodoros on non-sealed workitems
     # Note that this method ignores sequences and will import even "broken" files
     if not path.isfile(filename):
+        # UC-3: Imports should fail if a non-existent filename is supplied
         raise Exception(f'File {filename} not found')
 
     with open(filename, 'rb') as f:
@@ -334,6 +346,7 @@ def import_classic(source: AbstractEventSource[TRoot],
     i = 0
 
     if user_identity not in source.users():
+        # UC-3: Before classic import, if a user configured in Settings is not in the data model, it is created automatically
         i += 1
         strategy = CreateUserStrategy(i,
                                       datetime.datetime.now(datetime.timezone.utc),
@@ -350,13 +363,16 @@ def import_classic(source: AbstractEventSource[TRoot],
 
     # With encrypt=True it will try to deserialize as much as possible
     export_serializer = create_export_serializer(source, True)
+    # UC-2: Classic import will try to import as many strategies as possible, even if the file is encrypted with another key
 
     with open(filename, encoding='UTF-8') as f:
         for line in f:
             try:
                 strategy = export_serializer.deserialize(line)
                 strategy.replace_user_identity(user_identity)
+                # UC-3: Classic import replaces user identity on the imported strategies with the current user
                 if strategy is None or type(strategy) is CreateUserStrategy:
+                    # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
                 source.execute_prepared_strategy(strategy, False, True)
