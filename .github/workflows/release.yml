@@ -276,14 +276,16 @@ jobs:
           files: |
             Flowkeeper-x86.dmg
 
-  remote-pipeline:
+  sign-windows:
     runs-on: ubuntu-22.04
-    needs: [package-macOS-arm, package-macOS-x86, package-windows, package-linux]
+    needs: package-windows
     steps:
-      - name: Trigger remote job
+      - name: Trigger remote EXE signing job
         env:
           REMOTE_URL: ${{ secrets.REMOTE_URL }}
           REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
           REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_RELEASE_JOB_TOKEN }}
         run: |
           curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-release/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
+          # TODO: This curl will return a queue reference. Wait here till it starts and finishes. Handle timeouts and errors.
+          # Write a little Python script for that, e.g. https://pypi.org/project/python-jenkins/ or https://pypi.org/project/jenkinsapi/
