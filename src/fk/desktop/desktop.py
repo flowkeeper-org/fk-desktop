@@ -426,6 +426,9 @@ if __name__ == "__main__":
 
     except Exception as exc:
         logger.error("FATAL: Exception on startup", exc_info=exc)
+        if '--version' in sys.argv:
+            # We don't want to display anything blocking here
+            exit(2)
         res = QMessageBox().critical(None,
                                      "Startup error",
                                      f"Something unexpected has happened during Flowkeeper startup. It is most likely "
