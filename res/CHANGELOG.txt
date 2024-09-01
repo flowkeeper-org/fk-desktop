@@ -1,4 +1,5 @@
 ### v0.6.3 (2 August 2024)
+- Temporarily disabled data sync and e2e encryption features
 - [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
 - [Technical] GitHub pipeline now signs and notarizes macOS builds.
 - [Technical] GitHub pipeline now signs Windows binaries automatically.
