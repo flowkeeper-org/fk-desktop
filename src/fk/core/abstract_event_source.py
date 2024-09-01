@@ -130,10 +130,12 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
+        # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
         res = strategy.execute(self._emit, self.get_data())
         self._emit(events.AfterMessageProcessed, params)
         if res is not None and res[0] == 'auto-seal':
             # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
+            # UC-3: Certain strategies may request the "auto-seal" BEFORE they execute
             self.auto_seal()
             res = strategy.execute(self._emit, self.get_data())
             if res is not None and res[0] == 'auto-seal':
@@ -141,6 +143,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._estimated_count += 1
         if persist:
             self._append([strategy])
+            # UC-2: Strategy sequence is incremented only after it is persisted
             self._last_seq = strategy.get_sequence()   # Only save it if all went well
 
     def execute(self,
@@ -157,7 +160,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         s = strategy_class(
             self._last_seq + 1,
             when,
-            self._settings.get_username(),
+            self._settings.get_username(),  # UC-2: Strategy owner is taken from the source settings
             params,
             self._settings,
             carry)

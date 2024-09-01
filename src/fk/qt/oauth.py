@@ -16,10 +16,10 @@
 import base64
 import json
 import logging
+import webbrowser
 from typing import Callable
 
 from PySide6.QtCore import QUrl, QObject
-from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager
 from PySide6.QtNetworkAuth import QAbstractOAuth, QOAuth2AuthorizationCodeFlow, QOAuthHttpServerReplyHandler
 
@@ -71,6 +71,13 @@ def get_id_token(parent: QObject, callback: Callable[[AuthenticationRecord], Non
     _perform_flow(parent, callback, refresh_token)
 
 
+def open_url(url: QUrl | str) -> None:
+    if isinstance(url, QUrl):
+        webbrowser.open(url.toString(), 2)
+    else:
+        webbrowser.open(url, 2)
+
+
 def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], None], refresh_token: str | None):
     global MGR, HANDLER
     if MGR is None:
@@ -83,7 +90,7 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
         flow.setRefreshToken(refresh_token)
     # We are adding the client secret on the server side
     # flow.setClientIdentifierSharedKey(client_secret)
-    flow.authorizeWithBrowser.connect(QDesktopServices.openUrl)
+    flow.authorizeWithBrowser.connect(open_url)
     flow.setReplyHandler(HANDLER)
     flow.setModifyParametersFunction(_fix_parameters)
     flow.granted.connect(lambda: _granted(flow, callback))

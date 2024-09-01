@@ -24,6 +24,7 @@ def generate_uid() -> str:
 
 
 def generate_unique_name(prefix: str, names: Iterable) -> str:
+    # UC-3: An incremental index is appended to the new backlog / WI name, if there's an existing duplicate
     check = prefix
     n = 1
     while check in names:
@@ -55,6 +56,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
 
     # Default implementation delegates to the parent
     def get_owner(self) -> 'User':
+        # UC-3: All data objects are owned by a User, or delegated to their parent
         return self._parent.get_owner() if self._parent is not None else None
 
     def get_parent(self) -> TParent:
@@ -78,6 +80,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
 
     # Call this every time something changes
     def item_updated(self, date: datetime.datetime = None):
+        # UC-2: Update timestamps propagate to parents. The latest timestamp is kept, they can't decrease.
         if date is None:
             date = datetime.datetime.now(datetime.timezone.utc)
         # Some actions may happen retroactively, e.g. a Pomodoro might be auto-sealed "in the past"

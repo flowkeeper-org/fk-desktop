@@ -1,3 +1,13 @@
+### v0.6.3 (1 September 2024)
+- Added settings to disable data sync and e2e encryption features
+- [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
+- [Technical] GitHub pipeline now signs and notarizes macOS builds.
+- [Technical] GitHub pipeline now signs Windows binaries automatically.
+- [Technical] A macOS build for x86.
+- [Technical] Simplified the code for events prioritization.
+- [Technical] Listed all testable Use Cases.
+- [Technical] Created a farm of VMs for running e2e tests, tested as-is.
+
 ### v0.6.2 (1 August 2024)
 - [Bugfix] OAuth login on Windows (QTBUG-124333).
 

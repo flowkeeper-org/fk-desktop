@@ -49,17 +49,22 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
 
+        # UC-3: When the user changes data source settings, a couple of Before / AfterSourceChanged events fires
         self._emit(BeforeSourceChanged, {
             'source': self._source
         })
 
         # Unsubscribe everyone from the orphan source, so that we don't receive double events
         if self._source is not None:
+            # UC-1: Before a new event source is created, the old one unsubscribes all listeners and disconnects
+            # TODO: This doesn't happen when this EventSourceHolder is disposed or closed. It's an issue with the
+            #  export wizards and similar scenarios. Extract this into some "dispose" service and call it explicitly.
             self._source.cancel('*')
             self._source.disconnect()
 
         producer = get_event_source_factory().get_producer(source_type)
         logger.debug(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
+        # UC-3: An empty new data structure is created for each new event source request
         self._source = producer(
             self._settings,
             self._cryptograph,

@@ -29,14 +29,20 @@ def auto_seal(workitems: Iterable[Workitem],
               executor: Callable[[Type[AbstractStrategy], list[str], bool, datetime.datetime], None]) -> None:
     # If there are pomodoros which should have been completed X seconds ago, but are not,
     # then void them automatically.
+    # TODO: Instead of explicit auto-sealing mechanism, create a notion of the "current pomodoro" / timer in the
+    #  data model. This way we don't need to iterate over workitems, and can auto-seal them on every strategy.
+    #  No need for the "auto-seal delta".
+    #  This should make it faster, and work more correctly with scenarios where we delete stuff.
     for workitem in workitems:
         for pomodoro in workitem.values():
             if pomodoro.is_running():
                 remaining_time = pomodoro.total_remaining_time()
                 if remaining_time + delta < 0:
+                    # TODO: Introduce the concept of "fake now", so that we don't need to compare against wall clock
+                    # UC-1: If a pomodoro finished offline in the past (now - delta), it is completed automatically
                     # This pomodoro has finished, i.e. work + rest happened in the past
                     # This used to produce a warning, but since version 0.3.1 this is a normal
-                    # thing, as all pomodoros are completed implic
+                    # thing, as all pomodoros are completed implictly.
                     executor(FinishPomodoroInternalStrategy,
                              [workitem.get_uid()],
                              False,
@@ -48,13 +54,13 @@ def auto_seal(workitems: Iterable[Workitem],
                 elif pomodoro.is_working():
                     remaining_time = pomodoro.remaining_time_in_current_state()
                     if remaining_time + delta < 0:
+                        # UC-1: If a pomodoro work finished offline in the past (now - delta), the rest starts automatically
                         # This pomodoro should've transitioned to "rest" in the past, but it hasn't
                         # quite expired yet
                         executor(StartRestStrategy,
                                  [workitem.get_uid(), str(pomodoro.get_rest_duration())],
                                  False,
                                  pomodoro.planned_end_of_work())
-
                         # TODO: This leaves the timer in "Rest: 00:00" state and nothing gets scheduled
                         logger.warning(f'Warning - automatically started rest on '
                                        f'{workitem.get_name()} '

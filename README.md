@@ -91,6 +91,10 @@ via pip from inside the venv, as we'd normally do.
 `python3 -m venv venv --system-site-packages`
 3. The rest of the steps are the same as for any other Linux OS
 
+### CI/CD Pipeline
+
+![Schematics of the Flowkeeper CI/CD pipeline](fk-pipeline.svg "Flowkeeper CI/CD pipeline")
+
 ## Technical details
 
 ### Data structue

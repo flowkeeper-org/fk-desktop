@@ -41,6 +41,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
                          settings,
                          cryptograph)
         self._data = root
+        # UC-3: Ephemeral data source is not persisted across executions
         self._content = list()
 
     def start(self, mute_events=True) -> None:
@@ -49,6 +50,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         if mute_events:
             self.mute()
 
+        # UC-3: Ephemeral source always starts with a CreateUser strategy, based on the username from the settings
         strategy = self.get_init_strategy(self._emit)
         self._content.append(f'{strategy}')
         self.execute_prepared_strategy(strategy)

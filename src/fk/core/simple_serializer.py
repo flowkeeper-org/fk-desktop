@@ -66,6 +66,8 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
 
         # Empty strings and comments are special cases
         if plaintext.strip() == '' or plaintext.startswith('#'):
+            # UC-3: For all event sources, empty lines and #comments are ignored
+            # UC-3: Empty lines and comments do not survive export, repair or data compaction
             return None
 
         m = self.REGEX.search(plaintext)

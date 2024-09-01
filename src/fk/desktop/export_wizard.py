@@ -17,7 +17,6 @@ import pathlib
 import sys
 from os import path
 
-from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QWizard, QCheckBox, QLineEdit, \
     QHBoxLayout, QPushButton, QProgressBar, QWidget
 
@@ -27,6 +26,7 @@ from fk.core.file_event_source import FileEventSource
 from fk.core.import_export import export
 from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
+from fk.qt.oauth import open_url
 from fk.qt.qt_settings import QtSettings
 
 
@@ -128,7 +128,7 @@ class PageExportProgress(QWizardPage):
         self.label.setText('Done. You can now close this window.')
         layout_h = QHBoxLayout()
         open_file = QPushButton("Open exported file")
-        open_file.clicked.connect(lambda: QDesktopServices.openUrl(
+        open_file.clicked.connect(lambda: open_url(
             pathlib.Path(path.abspath(self._filename)).as_uri()))
         layout_h.addWidget(open_file)
         layout_h.addStretch()

@@ -26,7 +26,6 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.qt_invoker import invoke_in_main_thread
 
-
 SECRET_NAME = 'all-secrets'
 logger = logging.getLogger(__name__)
 
@@ -45,12 +44,21 @@ class QtSettings(AbstractSettings):
         self._app_name = app_name
         super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
         self._settings = QtCore.QSettings("flowkeeper", app_name)
-        if _check_keyring():
-            self._keyring_enabled = True
-        else:
+
+        keyring_feature_enabled = self.get('Application.feature_keyring') == 'True'
+        self._keyring_enabled = keyring_feature_enabled and _check_keyring()
+
+        if keyring_feature_enabled and not self._keyring_enabled:
+            # Display the warning only if keyring check failed
             self._display_warning_if_needed()
-            self._keyring_enabled = False  # We get here only if the user clicked "Ignore"
-            self._disable_secrets()  # Disable and hide forbidden options
+
+        if not self._keyring_enabled:
+            self._disable_connected_sources()  # Disable and hide forbidden source types
+            self._disable_secrets()  # Disable and hide forbidden encryption settings
+
+        connect_feature_enabled = self.get('Application.feature_connect') == 'True'
+        if not connect_feature_enabled:
+            self._disable_connected_sources()
 
     def _display_warning_if_needed(self) -> None:
         if self.get('Application.ignore_keyring_errors') == 'False':
@@ -72,7 +80,7 @@ class QtSettings(AbstractSettings):
                 logger.error('Compatible keyring is not found and the user chose not to ignore it. Exiting.')
                 sys.exit(1)
 
-    def _disable_secrets(self) -> None:
+    def _disable_connected_sources(self) -> None:
         if self.is_remote_source():
             self.set({'Source.type': 'local'})
 
@@ -82,9 +90,12 @@ class QtSettings(AbstractSettings):
             if key in ['flowkeeper.org', 'flowkeeper.pro', 'websocket']:
                 original.remove(option)
 
+    def _disable_secrets(self) -> None:
         if self.get('Source.encryption_enabled') == 'True':
             self.set({'Source.encryption_enabled': 'False'})
 
+        # TODO: Reimplement this via some bool variable on the AbstractSettings class, e.g. "is_encryption_disabled"
+        #  and updating the corresponding visibility checks. This would be a more elegant solution.
         self.hide('Source.encryption_enabled')
         self.hide('Source.encryption_key!')
         self.hide('Source.encryption_separator')
