@@ -1,3 +1,8 @@
+### v0.7.0 (2 September 2024)
+- Disabled data sync and e2e encryption features.
+- Removed public references to any semi-implemented features.
+- Documented the full manual UAT test suite and executed it.
+
 ### v0.6.3 (1 September 2024)
 - Added settings to disable data sync and e2e encryption features
 - [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
