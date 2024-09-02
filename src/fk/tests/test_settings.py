@@ -42,9 +42,9 @@ class TestSettings(TestCase):
 
     def test_defaults(self):
         val1 = self.settings.get('Pomodoro.default_work_duration')
-        self.assertEquals(val1, str(25 * 60))
+        self.assertEqual(val1, str(25 * 60))
         val2 = self.settings.get('Application.timer_ui_mode')
-        self.assertEquals(val2, 'focus')
+        self.assertEqual(val2, 'focus')
 
     def test_invalid_setting(self):
         self.assertRaises(Exception,
@@ -52,7 +52,7 @@ class TestSettings(TestCase):
 
     def test_categories(self):
         categories = self.settings.get_categories()
-        self.assertEquals(len(categories), 5)
+        self.assertEqual(len(categories), 5)
         self.assertIn('General', categories)
         self.settings.set({
             'Pomodoro.default_work_duration': '10',
@@ -62,15 +62,15 @@ class TestSettings(TestCase):
         for s in general:
             if s[0] == 'Pomodoro.default_work_duration':
                 found = True
-                self.assertEquals(s[1], 'duration')
-                self.assertEquals(s[3], '10')
+                self.assertEqual(s[1], 'duration')
+                self.assertEqual(s[3], '10')
         self.assertTrue(found)
 
     def test_get_set(self):
         self.settings.set({
             'Pomodoro.default_work_duration': '11',
         })
-        self.assertEquals(self.settings.get('Pomodoro.default_work_duration'), '11')
+        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), '11')
 
     def test_clear(self):
         # What's the difference between this and reset_to_defaults()?
@@ -78,17 +78,17 @@ class TestSettings(TestCase):
             'Pomodoro.default_work_duration': '12',
         })
         self.settings.clear()
-        self.assertEquals(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
+        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
 
     def test_reset(self):
         self.settings.set({
             'Pomodoro.default_work_duration': '13',
         })
         self.settings.reset_to_defaults()
-        self.assertEquals(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
+        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
 
     def test_location(self):
-        self.assertEquals(self.settings.location(), 'N/A')
+        self.assertEqual(self.settings.location(), 'N/A')
 
     def test_shortcuts(self):
         self.settings.set({
@@ -97,17 +97,17 @@ class TestSettings(TestCase):
             'Pomodoro.default_rest_duration': '15',
             'Source.fullname': 'John Doe',
         })
-        self.assertEquals(self.settings.get_username(), 'user@local.host')
-        self.assertEquals(self.settings.get_work_duration(), 14)
-        self.assertEquals(self.settings.get_rest_duration(), 15)
-        self.assertEquals(self.settings.get_fullname(), 'John Doe')
+        self.assertEqual(self.settings.get_username(), 'user@local.host')
+        self.assertEqual(self.settings.get_work_duration(), 14)
+        self.assertEqual(self.settings.get_rest_duration(), 15)
+        self.assertEqual(self.settings.get_fullname(), 'John Doe')
         self.assertFalse(self.settings.is_team_supported(), False)
         self.settings.set({
             'Source.type': 'flowkeeper.org',
             'WebsocketEventSource.username': 'alice@example.org',
             'Application.enable_teams': 'True',
         })
-        self.assertEquals(self.settings.get_username(), 'alice@example.org')
+        self.assertEqual(self.settings.get_username(), 'alice@example.org')
         self.assertTrue(self.settings.is_team_supported())
 
     def test_visibility(self):

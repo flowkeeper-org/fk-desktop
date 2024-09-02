@@ -61,7 +61,8 @@ def auto_seal(workitems: Iterable[Workitem],
                                  [workitem.get_uid(), str(pomodoro.get_rest_duration())],
                                  False,
                                  pomodoro.planned_end_of_work())
-                        # TODO: This leaves the timer in "Rest: 00:00" state and nothing gets scheduled
+                        # TODO: If we fall into the auto-seal delta, this leaves the timer in
+                        #  "Rest: 00:00" state and nothing gets scheduled
                         logger.warning(f'Warning - automatically started rest on '
                                        f'{workitem.get_name()} '
                                        f'(transition happened when the client was offline)')

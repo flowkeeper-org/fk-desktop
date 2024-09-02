@@ -151,8 +151,8 @@ class TestBacklogs(TestCase):
                 self.assertIn('backlog_uid', kwargs)
                 self.assertIn('backlog_name', kwargs)
                 self.assertTrue(type(kwargs['backlog_owner']) is User)
-                self.assertEquals(kwargs['backlog_uid'], '123-456-789-1')
-                self.assertEquals(kwargs['backlog_name'], 'First backlog')
+                self.assertEqual(kwargs['backlog_uid'], '123-456-789-1')
+                self.assertEqual(kwargs['backlog_name'], 'First backlog')
             elif event == 'AfterBacklogCreate':
                 self.assertIn('backlog', kwargs)
                 self.assertTrue(type(kwargs['backlog']) is Backlog)
@@ -161,7 +161,7 @@ class TestBacklogs(TestCase):
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'First backlog'])
         self.source.auto_seal()
         state = 2
-        self.assertEquals(len(fired), 4)
+        self.assertEqual(len(fired), 4)
 
     def test_events_delete_backlog(self):
         # Here we shall also test the recursive deletion
@@ -171,7 +171,7 @@ class TestBacklogs(TestCase):
             if event == 'BeforeBacklogDelete' or event == 'AfterBacklogDelete':
                 self.assertIn('backlog', kwargs)
                 self.assertTrue(type(kwargs['backlog']) is Backlog)
-                self.assertEquals(kwargs['backlog'].get_name(), 'First backlog')
+                self.assertEqual(kwargs['backlog'].get_name(), 'First backlog')
             elif event == 'BeforeWorkitemDelete' or event == 'AfterWorkitemDelete':
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
@@ -186,20 +186,20 @@ class TestBacklogs(TestCase):
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(DeleteBacklogStrategy, ['123-456-789-1'])
         self.source.auto_seal()
-        self.assertEquals(len(fired), 12)  # Note that although we had a cascade delete, only one strategy got executed
+        self.assertEqual(len(fired), 12)  # Note that although we had a cascade delete, only one strategy got executed
         # The events must arrive in the right order, too
-        self.assertEquals(fired[0], 'BeforeMessageProcessed')
-        self.assertEquals(fired[1], 'BeforeBacklogDelete')
-        self.assertEquals(fired[2], 'BeforeMessageProcessed')  # auto=True
-        self.assertEquals(fired[3], 'BeforeWorkitemDelete')
-        self.assertEquals(fired[4], 'AfterWorkitemDelete')
-        self.assertEquals(fired[5], 'AfterMessageProcessed')  # auto=True
-        self.assertEquals(fired[6], 'BeforeMessageProcessed')  # auto=True
-        self.assertEquals(fired[7], 'BeforeWorkitemDelete')
-        self.assertEquals(fired[8], 'AfterWorkitemDelete')
-        self.assertEquals(fired[9], 'AfterMessageProcessed')  # auto=True
-        self.assertEquals(fired[10], 'AfterBacklogDelete')
-        self.assertEquals(fired[11], 'AfterMessageProcessed')        
+        self.assertEqual(fired[0], 'BeforeMessageProcessed')
+        self.assertEqual(fired[1], 'BeforeBacklogDelete')
+        self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto=True
+        self.assertEqual(fired[3], 'BeforeWorkitemDelete')
+        self.assertEqual(fired[4], 'AfterWorkitemDelete')
+        self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto=True
+        self.assertEqual(fired[6], 'BeforeMessageProcessed')  # auto=True
+        self.assertEqual(fired[7], 'BeforeWorkitemDelete')
+        self.assertEqual(fired[8], 'AfterWorkitemDelete')
+        self.assertEqual(fired[9], 'AfterMessageProcessed')  # auto=True
+        self.assertEqual(fired[10], 'AfterBacklogDelete')
+        self.assertEqual(fired[11], 'AfterMessageProcessed')        
         # Automatic voiding of pomodoros will be tested when we cover the lifecycles
 
     def test_events_rename_backlog(self):
@@ -210,16 +210,16 @@ class TestBacklogs(TestCase):
                 self.assertIn('backlog', kwargs)
                 self.assertIn('old_name', kwargs)
                 self.assertIn('new_name', kwargs)
-                self.assertEquals(kwargs['old_name'], 'Before')
-                self.assertEquals(kwargs['new_name'], 'After')
+                self.assertEqual(kwargs['old_name'], 'Before')
+                self.assertEqual(kwargs['new_name'], 'After')
                 self.assertTrue(type(kwargs['backlog']) is Backlog)                    
         self.source.execute(CreateBacklogStrategy, ['123-456-789-1', 'Before'])
         self.source.auto_seal()
         self.source.on('*', on_event)
         self.source.execute(RenameBacklogStrategy, ['123-456-789-1', 'After'])
         self.source.auto_seal()
-        self.assertEquals(len(fired), 4)
-        self.assertEquals(fired[0], 'BeforeMessageProcessed')
-        self.assertEquals(fired[1], 'BeforeBacklogRename')
-        self.assertEquals(fired[2], 'AfterBacklogRename')
-        self.assertEquals(fired[3], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 4)
+        self.assertEqual(fired[0], 'BeforeMessageProcessed')
+        self.assertEqual(fired[1], 'BeforeBacklogRename')
+        self.assertEqual(fired[2], 'AfterBacklogRename')
+        self.assertEqual(fired[3], 'AfterMessageProcessed')

@@ -44,7 +44,7 @@ class AudioPlayer(QObject):
         self._settings = settings
         self._reset()
         timer.on("Timer*Complete", self._play_audio)
-        timer.on("TimerWorkStart", self._start_ticking)
+        timer.on(PomodoroTimer.TimerWorkStart, self._start_ticking)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):

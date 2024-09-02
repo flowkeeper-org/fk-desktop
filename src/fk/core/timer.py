@@ -29,8 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 # This timer never goes below 0
-# TODO: Currently we use source.on() to subscribe to its events
-# See how we can use this class instead, i.e. timer.on()
 class PomodoroTimer(AbstractEventEmitter):
     _tick_timer: AbstractTimer
     _transition_timer: AbstractTimer
