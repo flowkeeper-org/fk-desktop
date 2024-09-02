@@ -65,8 +65,6 @@ pomodoros is less than 1, or if the workitem with specified UID is not found or 
 pomodoros is less than 1, or if the workitem with specified UID is not found or sealed, or if 
 there's not enough startable (`new` state) pomodoros in the workitem. Emits 
 `BeforePomodoroRemove` / `AfterPomodoroRemove` events.
-- `CompletePomodoroStrategy("<WORKITEM_UID>", "<TARGET_STATE>")` - **DEPRECATED** If the target
-state is `canceled`, it works as a synonym for `VoidPomodoroStrategy`, otherwise it is ignored.
 - `VoidPomodoroStrategy("<WORKITEM_UID>")` - Fails if the workitem with specified UID is not 
 found or sealed, or has no running pomodoros. Emits `BeforePomodoroComplete` / 
 `AfterPomodoroComplete` events with target state `canceled`.
@@ -76,7 +74,14 @@ specified work duration is `0`, then the default value at the pomodoro creation 
 If a Workitem is not yet running, it switches into `running` state, emitting a pair of 
 `BeforeWorkitemStart` / `AfterWorkitemStart` events. As long as it doesn't fail, this strategy 
 emits `BeforePomodoroWorkStart` / `AfterPomodoroWorkStart` events.
-- `StartRestStrategy("<WORKITEM_UID>", "<REST_DURATION_IN_SECONDS>")` - Fails if the workitem 
+
+"Internal" strategies, triggered by the timer and auto-seal mechanism. Those are not registered
+in the strategy factory / event sources, thus cannot appear in persisted form:
+
+- `FinishPomodoroInternalStrategy("<WORKITEM_UID>")` - Fails if the workitem with specified UID is not 
+found or sealed, or has no running pomodoros. Emits `BeforePomodoroComplete` / 
+`AfterPomodoroComplete` events with target state `finished`.
+- `StartRestInternalStrategy("<WORKITEM_UID>", "<REST_DURATION_IN_SECONDS>")` - Fails if the workitem 
 with specified UID is not found or is not running, or has no in-work (`work` state) pomodoros. 
 If the specified rest duration is `0`, then the default value at the pomodoro creation moment 
 is used. Emits `BeforePomodoroRestStart` / `AfterPomodoroRestStart` events.

@@ -27,7 +27,7 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, StartRestStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
@@ -102,11 +102,6 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                         yield VoidPomodoroStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
                                                    [workitem.get_uid()],
                                                    source.get_settings())
-                        seq += 1
-                    elif pomodoro.is_finished():
-                        yield StartRestStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
-                                                [workitem.get_uid(), '1'],
-                                                source.get_settings())
                         seq += 1
                 if workitem.is_sealed():
                     yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
@@ -213,11 +208,6 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                 yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
                                                            [workitem.get_uid()],
                                                            source.get_settings())
-                                seq += 1
-                            if p_new.is_finished():
-                                yield StartRestStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
-                                                        [workitem.get_uid(), '1'],
-                                                        source.get_settings())
                                 seq += 1
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):

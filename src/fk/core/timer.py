@@ -22,7 +22,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import StartRestStrategy, FinishPomodoroInternalStrategy
+from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
@@ -175,11 +175,12 @@ class PomodoroTimer(AbstractEventEmitter):
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
             rest_duration = self._source_holder.get_settings().get('Pomodoro.default_rest_duration')
-            logger.debug(f"Will execute StartRestStrategy('{target_workitem.get_name()}', '{rest_duration}')")
+            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}', '{rest_duration}')")
             self._source_holder.get_source().execute(
-                StartRestStrategy,
-                [target_workitem.get_uid(), rest_duration])
-            logger.debug(f"PomodoroTimer: Executed StartRestStrategy")
+                StartRestInternalStrategy,
+                [target_workitem.get_uid(), rest_duration],
+                persist=False)
+            logger.debug(f"PomodoroTimer: Executed StartRestInternalStrategy")
         elif target_state == 'finished':
             logger.debug(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
             self._source_holder.get_source().execute(

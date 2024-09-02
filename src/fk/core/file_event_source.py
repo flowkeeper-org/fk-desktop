@@ -30,7 +30,7 @@ from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, StartRestStrategy, VoidPomodoroStrategy, \
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
     RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant
@@ -334,7 +334,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 elif t is RenameWorkitemStrategy or \
                         t is CompleteWorkitemStrategy or \
                         t is StartWorkStrategy or \
-                        t is StartRestStrategy or \
                         t is AddPomodoroStrategy or \
                         t is VoidPomodoroStrategy or \
                         t is RemovePomodoroStrategy:

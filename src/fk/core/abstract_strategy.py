@@ -34,10 +34,6 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     _user_identity: str
     _carry: any
 
-    # TODO: Add strategy source, i.e. where it originates from. This will allow us have master / slave clients and
-    #  maintain consistency even if they all go offline and then reconnect (this may happen during the server restarts).
-    #  Alternatively, if we expire all pomodoros implicitly (no StartRestStrategy strategy), then we don't send
-    #  anything automatically, so we don't have the problem anymore.
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,

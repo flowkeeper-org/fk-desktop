@@ -18,7 +18,7 @@ import logging
 from typing import Iterable, Callable, Type
 
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.pomodoro_strategies import StartRestStrategy, FinishPomodoroInternalStrategy
+from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def auto_seal(workitems: Iterable[Workitem],
                         # UC-1: If a pomodoro work finished offline in the past (now - delta), the rest starts automatically
                         # This pomodoro should've transitioned to "rest" in the past, but it hasn't
                         # quite expired yet
-                        executor(StartRestStrategy,
+                        executor(StartRestInternalStrategy,
                                  [workitem.get_uid(), str(pomodoro.get_rest_duration())],
                                  False,
                                  pomodoro.planned_end_of_work())
