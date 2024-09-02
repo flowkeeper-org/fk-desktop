@@ -9,7 +9,7 @@ simple tool, which focuses on doing one thing well. It is Free Software with ope
 
 Visit [flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
 
-![Flowkeeper screenshot](fk-simple.png "Flowkeeper screenshot")
+![Flowkeeper screenshot](doc/fk-simple.png "Flowkeeper screenshot")
 
 ## Building
 
