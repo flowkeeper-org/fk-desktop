@@ -43,5 +43,11 @@ to subclass `AbstractEventSource`. All UI updates should be based on those event
   - `TimerWorkComplete(timer: PomodoroTimer)`
   - `TimerRestComplete(timer: PomodoroTimer, pomodoro: Pomodoro, workitem: Workitem)`
 
-The listeners can also pass the `carry` parameter -- TODO: Explain it. The mandatory `event` parameter for the callbacks 
+The listeners can also pass the `carry` parameter. It is used for carrying some metadata through
+the strategy -- event sequence. For example, when a user creates a workitem, the `CreateWorkitemStrategy`
+is executed with `carry="edit"`, the core data model is updated, and the `WorkitemModel` gets updated, 
+too. After that, the `AfterWorkitemCreate` event fires, carrying the `edit` parameter. In the 
+corresponding listener, we make the new table row editable, so that the user can update it immediately.
+
+The mandatory `event` parameter for the callbacks 
 contains the event name.

@@ -91,8 +91,7 @@ token's format, leaving it to the authentication implementation.
 - `Replay("<AFTER_SEQUENCE>")` - Used for requesting the replay of the strategies from the
 server, starting from, but not including, `#AFTER_SEQUENCE`. The server may respond with one
 or more messages with event history. 
-- `ReplayCompleted()` - Not a true strategy (TODO -- Fix it), used by the server to signal the
-last strategy in the replayed list.
+- `ReplayCompleted("")` - Used by the server to signal the last strategy in the replayed list.
 - `Error("<ERROR_CODE>", "<ERROR_MESSAGE>")` - Sent by the server to report an error, e.g. wrong
 credentials passed to `Authenticate` strategy. Flowkeeper Desktop raises a UI exception when
 executing this strategy. This results in a message popup and a request to file a bug in GitHub.

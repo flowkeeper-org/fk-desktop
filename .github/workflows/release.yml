@@ -287,5 +287,5 @@ jobs:
           REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_RELEASE_JOB_TOKEN }}
         run: |
           curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-release/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
-          # TODO: This curl will return a queue reference. Wait here till it starts and finishes. Handle timeouts and errors.
+          # This curl will return a queue reference. Wait here till it starts and finishes. Handle timeouts and errors.
           # Write a little Python script for that, e.g. https://pypi.org/project/python-jenkins/ or https://pypi.org/project/jenkinsapi/
