@@ -74,7 +74,7 @@
        <item>
         <widget class="QLabel" name="description">
          <property name="text">
-          <string>Flowkeeper is an independent and free Pomodoro Technique desktop timer for power users and professional teams.</string>
+          <string>Flowkeeper is an independent and free Pomodoro Technique desktop timer for power users.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

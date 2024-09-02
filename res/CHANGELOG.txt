@@ -2,6 +2,7 @@
 - Disabled data sync and e2e encryption features.
 - Removed public references to any semi-implemented features.
 - Documented the full manual UAT test suite and executed it.
+- [Technical] Split the README.md into several files
 
 ### v0.6.3 (1 September 2024)
 - Added settings to disable data sync and e2e encryption features
