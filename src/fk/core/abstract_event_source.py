@@ -167,9 +167,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self.execute_prepared_strategy(s, auto, persist)
 
     def auto_seal(self) -> None:
-        delta = float(self._settings.get('Pomodoro.auto_seal_after'))
         auto_seal(self.workitems(),
-                  delta,
                   lambda strategy_class, params, persist, when: self.execute(strategy_class,
                                                                              params,
                                                                              persist=persist,
