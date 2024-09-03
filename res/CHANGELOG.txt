@@ -3,6 +3,7 @@
 - Removed public references to any semi-implemented features.
 - Documented the full manual UAT test suite and executed it.
 - [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
+- [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.
 - [Technical] Removed CompletePomodoro and StartRest strategies.
 - [Technical] Removed "Auto-seal items after" setting.
 - [Technical] Split the README.md into several files.

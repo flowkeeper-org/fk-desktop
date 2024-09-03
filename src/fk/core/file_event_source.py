@@ -74,8 +74,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
         logger.debug(f'Data file content changed: {filename}')
         # UC-1: File event source: If file watching is enabled, the strategies with the sequence > last_seq are executed
         # UC-3: Any event source fires all events for the incremental processing
-        # TODO: Check file locks here?
-        with open(filename, encoding='UTF-8') as file:
+        # We open the file as r+ to make sure that another process finished writing and
+        # released the file handler. By default, OSes won't allow concurrent writes to the
+        # file, so if something is still writing into it, then this call will fail.
+        with open(filename, 'r+', encoding='UTF-8') as file:
             for line in file:
                 try:
                     strategy = self._serializer.deserialize(line)
