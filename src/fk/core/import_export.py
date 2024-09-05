@@ -164,7 +164,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                  [workitem.get_uid(), backlog.get_uid(), workitem.get_name()],
                                                  source.get_settings())
                     seq += 1
-                    existing_workitem = existing_workitems[workitem.get_uid()]
+                    existing_workitem = source.find_workitem(workitem.get_uid())
                 else:
                     # Check if it was renamed
                     existing_workitem = existing_workitems[workitem.get_uid()]

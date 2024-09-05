@@ -117,6 +117,15 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def pomodoros(self) -> Iterable[Pomodoro]:
         return self._wrapped.pomodoros()
 
+    def find_workitem(self, uid: str) -> Workitem | None:
+        return self._wrapped.find_workitem(uid)
+
+    def find_backlog(self, uid: str) -> Backlog | None:
+        return self._wrapped.find_backlog(uid)
+
+    def find_user(self, identity: str) -> User | None:
+        return self._wrapped.find_user(identity)
+
     def disconnect(self):
         self._wrapped.disconnect()
 
@@ -131,3 +140,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def get_last_sequence(self):
         return self._wrapped.get_last_sequence()
+
+    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[AbstractEventSource[TRoot]]:
+        return self._wrapped.get_init_strategy(emit)

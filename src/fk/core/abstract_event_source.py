@@ -188,6 +188,21 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             for workitem in backlog.values():
                 yield workitem
 
+    def find_workitem(self, uid: str) -> Workitem | None:
+        for workitem in self.workitems():
+            if workitem.get_uid() == uid:
+                return workitem
+
+    def find_backlog(self, uid: str) -> Backlog | None:
+        for backlog in self.backlogs():
+            if backlog.get_uid() == uid:
+                return backlog
+
+    def find_user(self, identity: str) -> User | None:
+        for user in self.users():
+            if user.get_identity() == identity:
+                return user
+
     def pomodoros(self) -> Iterable[Pomodoro]:
         for workitem in self.workitems():
             for pomodoro in workitem.values():
