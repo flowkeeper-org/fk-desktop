@@ -2,6 +2,7 @@
 - Disabled data sync and e2e encryption features.
 - Removed public references to any semi-implemented features.
 - Documented the full manual UAT test suite and executed it.
+- The whole in the timer widget now displays correctly.
 - [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
 - [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.
 - [Bugfix] Fixed an "Invalid key" bug in Import.

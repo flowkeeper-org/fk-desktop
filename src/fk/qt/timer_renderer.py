@@ -14,7 +14,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtCore import QRect
+from PySide6.QtGui import QColor, QPainterPath, QPen
 
 
 class TimerRenderer(QtCore.QObject):
@@ -32,6 +33,7 @@ class TimerRenderer(QtCore.QObject):
     _pen_width: int
     _hue_from: int
     _hue_to: int
+    _pen_border: QPen
 
     def __init__(self,
                  parent: QtWidgets.QWidget | None,
@@ -55,10 +57,17 @@ class TimerRenderer(QtCore.QObject):
         self._pen_width = pen_width
         self._hue_from = hue_from
         self._hue_to = hue_to
+
+        self._pen_border = QPen()
+        self._pen_border.setWidth(pen_width)
+        if bg_pen is not None:
+            self._pen_border.setColor(bg_pen)
+
         self.reset()
 
     def set_colors(self, fg_color: QColor, bg_color: QColor):
         self._bg_pen = fg_color
+        self._pen_border.setColor(fg_color)
         self._bg_brush = bg_color
         self._font_color = fg_color
 
@@ -74,9 +83,19 @@ class TimerRenderer(QtCore.QObject):
         self._text = text
         self._is_set = True
 
-    def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
-        painter.setPen(self._bg_pen)
-        painter.setBrush(self._bg_brush)
+    def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
+        # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly
+        full = QPainterPath()
+        full.addRect(entire)
+        hole = QPainterPath()
+        w = self._pen_width / 2
+        hole_rect = QRect(rect.x() + w, rect.y() + w, rect.width() - 2 * w, rect.height() - 2 * w)
+        hole.addEllipse(hole_rect)
+        full = full.subtracted(hole)
+        painter.setClipPath(full)
+
+    def clear_pie_outline(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
+        painter.setPen(self._pen_border)
         painter.drawEllipse(rect)
 
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
@@ -102,6 +121,24 @@ class TimerRenderer(QtCore.QObject):
             rect.height() - int(2 * rh * self._margin),
         )
 
+        if self._team_value is not None:
+            # Team
+            team_width = rw * (1 - 2 * self._margin) * self._thickness / 2
+            team_height = rh * (1 - 2 * self._margin) * self._thickness / 2
+        else:
+            team_width = 0
+            team_height = 0
+
+        if self._thickness < 0.5:
+            # Hole
+            hole_rect = QtCore.QRect(
+                my_rect.left() + my_width + team_width,
+                my_rect.top() + my_height + team_height,
+                my_rect.width() - 2 * (my_width + team_width),
+                my_rect.height() - 2 * (my_height + team_height),
+            )
+            self.clear_pie(painter, hole_rect, rect)
+
         my_hue = int((self._hue_to - self._hue_from) * self._my_value + self._hue_from)
         if self._bg_pen is None:
             my_color_pen = QtGui.QPen(QtGui.QColor().fromHsl(my_hue, 255, 220))
@@ -115,16 +152,13 @@ class TimerRenderer(QtCore.QObject):
 
         if self._team_value is not None:
             # Team
-            team_width = rw * (1 - 2 * self._margin) * self._thickness / 2
-            team_height = rh * (1 - 2 * self._margin) * self._thickness / 2
-
             team_rect = QtCore.QRect(
                 my_rect.left() + my_width,
                 my_rect.top() + my_height,
                 my_rect.width() - 2 * my_width,
                 my_rect.height() - 2 * my_height,
             )
-            self.clear_pie(painter, team_rect)
+            self.clear_pie(painter, team_rect, rect)
 
             team_hue = int((self._hue_to - self._hue_from) * self._team_value + self._hue_from)
             team_color_pen = QtGui.QPen(QtGui.QColor().fromHsl(team_hue, 255, 220))
@@ -133,19 +167,10 @@ class TimerRenderer(QtCore.QObject):
             painter.setPen(team_color_pen)
             painter.setBrush(team_color_brush)
             painter.drawPie(team_rect, int(5760 * (1.0 - self._team_value) + 1440), int(5760 * self._team_value))
-        else:
-            team_width = 0
-            team_height = 0
 
         if self._thickness < 0.5:
-            # Hole
-            hole_rect = QtCore.QRect(
-                my_rect.left() + my_width + team_width,
-                my_rect.top() + my_height + team_height,
-                my_rect.width() - 2 * (my_width + team_width),
-                my_rect.height() - 2 * (my_height + team_height),
-            )
-            self.clear_pie(painter, hole_rect)
+            # Draw the hole outline
+            self.clear_pie_outline(painter, hole_rect, rect)
 
         if self._text:
             painter.setPen(self._font_color)
