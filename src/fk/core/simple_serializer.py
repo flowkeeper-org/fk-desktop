@@ -70,6 +70,10 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
             # UC-3: Empty lines and comments do not survive export, repair or data compaction
             return None
 
+        # TODO: Remove this once the server is updated
+        if plaintext == 'ReplayCompleted()':
+            return STRATEGIES['ReplayCompleted'](0, None, None, [], self._settings, self._cryptograph)
+
         m = self.REGEX.search(plaintext)
         if m is not None:
             name = m.group(4)
