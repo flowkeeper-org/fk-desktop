@@ -44,6 +44,7 @@ class BacklogWidget(QWidget):
 
         tb = ConfigurableToolBar(self, actions, "backlogs_toolbar")
         tb.addAction(actions['backlogs_table.newBacklog'])
+        tb.addAction(actions['backlogs_table.newBacklogFromIncomplete'])
         tb.addAction(actions['backlogs_table.deleteBacklog'])
         tb.addAction(actions['backlogs_table.renameBacklog'])
         layout.addWidget(tb)

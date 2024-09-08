@@ -255,6 +255,7 @@ class BacklogE2eTest(AbstractE2eTest):
         def assert_backlog_actions_enabled():
             self.assert_actions_enabled([
                 'backlogs_table.newBacklog',
+                'backlogs_table.newBacklogFromIncomplete',
                 'backlogs_table.renameBacklog',
                 'backlogs_table.deleteBacklog',
                 'workitems_table.newItem',

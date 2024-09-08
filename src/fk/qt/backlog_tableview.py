@@ -26,7 +26,9 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.user import User
+from fk.core.workitem_strategies import CreateWorkitemStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.actions import Actions
@@ -81,6 +83,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         menu: QMenu = QMenu()
         menu.addActions([
             actions['backlogs_table.newBacklog'],
+            actions['backlogs_table.newBacklogFromIncomplete'],
             actions['backlogs_table.renameBacklog'],
             actions['backlogs_table.deleteBacklog'],
             # Uncomment to troubleshoot
@@ -101,13 +104,20 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
 
+        is_incomplete = is_backlog_selected and next(selected.get_incomplete_workitems(), None) is not None
+
         heartbeat = self._application.get_heartbeat()
         source = self._application.get_source_holder().get_source()
         is_online = heartbeat.is_online() or source is None or not source.can_connect()
         logger.debug(f' - Online: {is_online}')
         logger.debug(f' - Backlog selected: {is_backlog_selected}')
+        logger.debug(f' - Has incomplete workitems: {is_incomplete}')
         logger.debug(f' - Heartbeat: {heartbeat}')
+
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
+        self._actions['backlogs_table.newBacklogFromIncomplete'].setEnabled(is_backlog_selected and
+                                                                            is_online and
+                                                                            is_incomplete)
         self._actions['backlogs_table.renameBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.deleteBacklog'].setEnabled(is_backlog_selected and is_online)
         self._actions['backlogs_table.dumpBacklog'].setEnabled(is_backlog_selected)
@@ -129,17 +139,67 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('backlogs_table.newBacklog', "New Backlog", 'Ctrl+N', "tool-add", BacklogTableView.create_backlog)
-        actions.add('backlogs_table.renameBacklog', "Rename Backlog", 'Ctrl+R', "tool-rename", BacklogTableView.rename_selected_backlog)
-        actions.add('backlogs_table.deleteBacklog', "Delete Backlog", 'F8', "tool-delete", BacklogTableView.delete_selected_backlog)
-        actions.add('backlogs_table.dumpBacklog', "Dump (DEBUG)", 'Ctrl+D', None, BacklogTableView.dump_selected_backlog)
+        actions.add('backlogs_table.newBacklog',
+                    "New Backlog",
+                    'Ctrl+N',
+                    "tool-add",
+                    BacklogTableView.create_backlog)
+        actions.add('backlogs_table.newBacklogFromIncomplete',
+                    "New Backlog From Incomplete",
+                    'Ctrl+M',
+                    "tool-add-prefilled",
+                    BacklogTableView.create_backlog_from_incomplete)
+        actions.add('backlogs_table.renameBacklog',
+                    "Rename Backlog",
+                    'Ctrl+R',
+                    "tool-rename",
+                    BacklogTableView.rename_selected_backlog)
+        actions.add('backlogs_table.deleteBacklog',
+                    "Delete Backlog",
+                    'F8',
+                    "tool-delete",
+                    BacklogTableView.delete_selected_backlog)
+        actions.add('backlogs_table.dumpBacklog',
+                    "Dump (DEBUG)",
+                    'Ctrl+D',
+                    None,
+                    BacklogTableView.dump_selected_backlog)
 
     # Actions
 
-    def create_backlog(self) -> None:
+    def create_backlog(self) -> str:
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
         new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
-        self._source.execute(CreateBacklogStrategy, [generate_uid(), new_name], carry='edit')
+        new_uid = generate_uid()
+        self._source.execute(CreateBacklogStrategy, [new_uid, new_name], carry='edit')
+        return new_uid
+
+    def create_backlog_from_incomplete(self) -> str:
+        selected = self.get_current()
+        # A sanity check, just in case
+        if selected is None:
+            logger.error(f'Trying to create a backlog from incomplete, while there is none selected. Actions '
+                         f'visibility should prevent this from happening.')
+            return
+
+        added_workitems = 0
+        new_backlog_uid = self.create_backlog()
+        for workitem in selected.get_incomplete_workitems():
+            new_workitem_uid = generate_uid()
+            self._source.execute(CreateWorkitemStrategy,
+                                 [new_workitem_uid, new_backlog_uid, workitem.get_name()],
+                                 carry="")  # Note that we don't carry "edit" in this case
+            added_workitems += 1
+            pomodoros_to_add = len(list(workitem.get_incomplete_pomodoros()))
+            if pomodoros_to_add > 0:
+                self._source.execute(AddPomodoroStrategy,
+                                     [new_workitem_uid, str(pomodoros_to_add)])
+
+        if added_workitems == 0:
+            logger.warning(f'Created a backlog from incomplete, but without any workitems. Actions '
+                           f'visibility should prevent this from happening.')
+
+        return new_backlog_uid
 
     def rename_selected_backlog(self) -> None:
         index: QModelIndex = self.currentIndex()
