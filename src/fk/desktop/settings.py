@@ -180,12 +180,16 @@ class SettingsDialog(QDialog):
 
     @staticmethod
     def do_browse(edit: QLineEdit) -> None:
+        SettingsDialog.do_browse_simple(edit.text(), edit.setText)
+
+    @staticmethod
+    def do_browse_simple(preselected: str, callback: Callable[[str], None]) -> None:
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.FileMode.AnyFile)
-        dlg.selectFile(edit.text())
+        dlg.selectFile(preselected)
         if dlg.exec_():
             selected: str = dlg.selectedFiles()[0]
-            edit.setText(selected)
+            callback(selected)
 
     @staticmethod
     def display_key_warning(name: str) -> bool:
