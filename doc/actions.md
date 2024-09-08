@@ -3,8 +3,8 @@
 ## Application
 - ('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
 - ('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
-- ('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
-- ('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
+- ('application.import', "Import data...", 'Ctrl+I', None, Application.show_import_wizard)
+- ('application.export', "Export data...", 'Ctrl+E', None, Application.show_export_wizard)
 - ('application.about', "About", '', None, Application.show_about)
 
 ## BacklogTableView

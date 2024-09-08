@@ -274,6 +274,7 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
+        menu_file.addAction(actions['application.workSummary'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()

@@ -49,6 +49,7 @@ from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.desktop.stats_window import StatsWindow
+from fk.desktop.work_summary_window import WorkSummaryWindow
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
@@ -529,11 +530,12 @@ class Application(QApplication, AbstractEventEmitter):
     def define_actions(actions: Actions):
         actions.add('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
-        actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
-        actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
+        actions.add('application.import', "Import data...", 'Ctrl+I', None, Application.show_import_wizard)
+        actions.add('application.export', "Export data...", 'Ctrl+E', None, Application.show_export_wizard)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
+        actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
 
     def quit_local(self):
         Application.quit()
@@ -574,6 +576,9 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_stats(self, event: str = None) -> None:
         StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()
+
+    def show_work_summary(self, event: str = None) -> None:
+        WorkSummaryWindow(self.activeWindow(), self._source_holder.get_source()).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
