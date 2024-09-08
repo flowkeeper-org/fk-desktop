@@ -167,7 +167,5 @@ class QtSettings(AbstractSettings):
         scheme = QApplication.styleHints().colorScheme()
         if scheme == Qt.ColorScheme.Dark:
             return 'dark'
-        elif scheme == Qt.ColorScheme.Light:
-            return 'light'
         else:
             return 'mixed'

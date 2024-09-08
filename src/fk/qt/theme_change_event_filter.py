@@ -41,8 +41,8 @@ class ThemeChangeEventFilter(QMainWindow):
         self._last_value = QApplication.styleHints().colorScheme()
 
     def eventFilter(self, widget: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.Type.ThemeChange:
-            if widget == self._window:
+        if event.type() == QEvent.Type.ThemeChange and widget == self._window:
+            if self._settings.get('Application.theme') == 'auto':
                 new_theme = QApplication.styleHints().colorScheme()
                 logger.debug(f'Theme changed from {self._last_value} to {new_theme}')
                 if new_theme != self._last_value:
