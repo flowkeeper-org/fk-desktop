@@ -30,6 +30,7 @@ from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
+from fk.core.import_export import compressed_strategies
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
     RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
@@ -222,13 +223,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self._watcher = None
 
         # Read strategies and repair in one pass
-        filename = self._get_filename()
         strategies: deque[AbstractStrategy] = deque()
         all_users: dict[str, set[str]] = dict()
         all_backlogs: dict[str, set[str]] = dict()
         all_workitems: set[str] = set()
         repaired_backlog: str | None = None
-        with open(filename, encoding='UTF-8') as f:
+        with open(self._get_filename(), encoding='UTF-8') as f:
             for line in f:
                 try:
                     s = self._serializer.deserialize(line)
@@ -395,23 +395,27 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if changes > 0:
             log.append(f'Made {changes} changes in total')
             # UC-2: File event source repair won't do any changes if the source file is correct
-            # Rename the original file
-            date = round(time.time() * 1000)
-            backup_filename = f"{filename}-backup-{date}"
-            os.rename(filename, backup_filename)
-            log.append(f'Created backup file {backup_filename}')
-
-            # Write it back
-            with open(filename, 'w', encoding='UTF-8') as f:
-                for s in strategies:
-                    f.write(self._serializer.serialize(s) + '\n')
-            log.append(f'Overwritten original file {filename}')
+            self._overwrite_file(strategies, log)
         else:
             log.append(f'No changes were made')
 
         self._watcher = original_watcher
         # UC-3: File event source repair returns the log of all changes it made
         return log
+
+    def _overwrite_file(self, strategies: Iterable[AbstractStrategy], log: list[str]) -> str:
+        filename = self._get_filename()
+        date = round(time.time() * 1000)
+        backup_filename = f"{filename}-backup-{date}"
+        os.rename(filename, backup_filename)
+        log.append(f'Created backup file {backup_filename}')
+
+        # Write it back
+        with open(filename, 'w', encoding='UTF-8') as f:
+            for s in strategies:
+                f.write(self._serializer.serialize(s) + '\n')
+        log.append(f'Overwritten original file {filename}')
+        return backup_filename
 
     def _append(self, strategies: list[AbstractStrategy]) -> None:
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
@@ -427,15 +431,43 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def get_data(self) -> TRoot:
         return self._data
 
-    def compress(self) -> None:
+    def _count_valid_strategies(self) -> int:
+        valid_count = 0
+        with open(self._get_filename(), encoding='UTF-8') as f:
+            for line in f:
+                try:
+                    self._serializer.deserialize(line)
+                    valid_count += 1
+                except Exception as ex:
+                    pass    # We just want to count valid strategies in the original file
+        return valid_count
+
+    def compress(self) -> list[str]:
         # 1. Creates a full log copy in <base>-complete.<ext>, if it doesn't exist yet.
         # 2. Rewrites the data file by recreating the CURRENT list of backlogs / workitems.
         #    The last strategy's sequence ID will stay the same, and the previous IDs will
         #    be recalculated backwards.
         # 3. Timestamps will correspond to the latest modification dates.
-        # TODO: Implement and expose through a Settings button.
-        #  A similar implementation exists for the export use case (see compressed_strategies()).
-        pass
+
+        # UC-1: File event source can compress source files. It removes inaccessible strategies (deleted, encrypted, repeated, etc.), invisible to the end user, and renumbers strategies.
+        # UC-1: After compression, the file source is guaranteed to load successfully, faster, and without errors or warnings
+        # UC-3: File source compression generates backup files with "-backup-<date>" suffix
+
+        log = list()
+
+        valid_count = self._count_valid_strategies()
+        strategies = list(compressed_strategies(self))
+        savings = valid_count - len(strategies)
+        if valid_count > 0 and savings > 0:
+            savings_percentage = round(100.0 * savings / valid_count)
+            log.append(f'The compressed file contains {savings_percentage}% fewer strategies')
+            # UC-3: File event source compression won't do any changes if there's no savings
+            self._overwrite_file(strategies, log)
+        else:
+            log.append(f'No changes were made - the data is already compressed')
+
+        # UC-3: File event source compression returns the log with the % of strategy savings
+        return log
 
     def clone(self, new_root: TRoot, existing_strategies: Iterable[AbstractStrategy] | None = None) -> FileEventSource[TRoot]:
         return FileEventSource[TRoot](self._settings,

@@ -138,6 +138,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def repair(self):
         return self._wrapped.repair()
 
+    def compress(self):
+        return self._wrapped.compress()
+
     def get_last_sequence(self):
         return self._wrapped.get_last_sequence()
 

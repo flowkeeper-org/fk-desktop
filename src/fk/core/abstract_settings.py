@@ -150,6 +150,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
+                ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources

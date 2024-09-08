@@ -391,6 +391,7 @@ class Application(QApplication, AbstractEventEmitter):
     def show_settings_dialog(self):
         SettingsDialog(self._settings, {
             'FileEventSource.repair': self.repair_file_event_source,
+            'FileEventSource.compress': self.compress_file_event_source,
             'Application.eyecandy_gradient_generate': self.generate_gradient,
             'WebsocketEventSource.authenticate': self.sign_in,
             'WebsocketEventSource.logout': self.sign_out,
@@ -415,13 +416,44 @@ class Application(QApplication, AbstractEventEmitter):
                 == QMessageBox.StandardButton.Ok:
             cast: FileEventSource = self._source_holder.get_source()
             log = cast.repair()
-            if log[-1] != 'No changes were made':
+            if 'No changes were made' in log[-1]:
                 # Reload the source
                 self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
                                           "Please save this log for future reference. "
                                           "You can find all new items by searching (CTRL+F) for [Repaired] string.",
+                                          "\n".join(log))
+            return False
+
+    def compress_file_event_source(self, _, callback: Callable) -> bool:
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Confirmation",
+                                 f"Are you sure you want to compress the data source? "
+                                 f"This action will\n"
+                                 f"1. Recreate the strategies based on the current data that you see,\n"
+                                 f"2. Update timestamps with the latest modification date/time,\n"
+                                 f"3. Renumber / reindex data,\n"
+                                 f"4. Remove anything that you deleted,\n"
+                                 f"5. Create a backup file and overwrite the original data source one,\n"
+                                 f"6. Display a detailed log of what it did.\n"
+                                 f"\n"
+                                 f"As a result you will still see the same data as you do now, but the underlying "
+                                 f"history might be lost. This might affect statistics and any other features relying "
+                                 f"on detailed historical data.\n\n"
+                                 f"We recommend using this feature only if your loading times became uncomfortably "
+                                 f"long, or if you deleted something and want it to be gone forever.",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel) \
+                == QMessageBox.StandardButton.Ok:
+            cast: FileEventSource = self._source_holder.get_source()
+            log = cast.compress()
+            if 'No changes were made' in log[-1]:
+                # Reload the source
+                self._source_holder.request_new_source()
+            QInputDialog.getMultiLineText(None,
+                                          "The file is compressed",
+                                          None,
                                           "\n".join(log))
             return False
 
