@@ -41,6 +41,7 @@ from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
+from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
 from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -98,7 +99,7 @@ def hide_timer(event: str|None = None, **kwargs) -> None:
     window.setMinimumHeight(0)
     window.setMaximumWidth(16777215)
     window.setMinimumWidth(0)
-    event_filter.restore_size()
+    resize_event_filter.restore_size()
     focus._buttons['window.showFocus'].show()
     focus._buttons['window.showAll'].hide()
     window.show()
@@ -384,9 +385,12 @@ if __name__ == "__main__":
         # Restore window config from settings
         update_tables_visibility()
 
-        event_filter = ResizeEventFilter(window, main_layout, settings)
-        window.installEventFilter(event_filter)
+        resize_event_filter = ResizeEventFilter(window, main_layout, settings)
+        window.installEventFilter(resize_event_filter)
         window.move(app.primaryScreen().geometry().center() - window.frameGeometry().center())
+
+        theme_change_event_filter = ThemeChangeEventFilter(window, settings)
+        window.installEventFilter(theme_change_event_filter)
 
         main_window = MainWindow()
 

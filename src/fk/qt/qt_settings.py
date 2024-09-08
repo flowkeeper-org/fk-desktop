@@ -19,8 +19,8 @@ import sys
 
 import keyring
 from PySide6 import QtCore
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtGui import QFont, Qt
+from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
@@ -100,11 +100,11 @@ class QtSettings(AbstractSettings):
         self.hide('Source.encryption_key!')
         self.hide('Source.encryption_separator')
 
-    def set(self, values: dict[str, str]) -> None:
+    def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()
         for name in values.keys():
             old_value = self.get(name)
-            if old_value != values[name]:
+            if old_value != values[name] or force_fire:
                 old_values[name] = old_value
         if len(old_values.keys()) > 0:
             params = {
@@ -162,3 +162,12 @@ class QtSettings(AbstractSettings):
 
     def is_keyring_enabled(self) -> bool:
         return self._keyring_enabled
+
+    def get_auto_theme(self) -> str:
+        scheme = QApplication.styleHints().colorScheme()
+        if scheme == Qt.ColorScheme.Dark:
+            return 'dark'
+        elif scheme == Qt.ColorScheme.Light:
+            return 'light'
+        else:
+            return 'mixed'

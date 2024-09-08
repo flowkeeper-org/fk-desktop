@@ -4,6 +4,7 @@
 - Documented the full manual UAT test suite and executed it.
 - The hole in the timer widget now displays correctly.
 - New "Compress" action in the File source settings (click it for details).
+- New "Detect automatically (Default)" theme.
 - Added "New Backlog From Incomplete" action to speed up planning.
 - [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
 - [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.

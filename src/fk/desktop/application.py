@@ -260,13 +260,13 @@ class Application(QApplication, AbstractEventEmitter):
         return variables
 
     def get_icon_theme(self):
-        theme = self._settings.get('Application.theme')
+        theme = self._settings.get_theme()
         return self.get_theme_variables(theme)['ICON_THEME']
 
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
-        theme = self._settings.get('Application.theme')
+        theme = self._settings.get_theme()
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
@@ -598,6 +598,6 @@ class Application(QApplication, AbstractEventEmitter):
             webbrowser.open(f"https://flowkeeper.org/#download")
 
     def is_dark_theme(self):
-        theme = self._settings.get('Application.theme')
+        theme = self._settings.get_theme()
         bg_color_str = self.get_theme_variables(theme)['PRIMARY_BG_COLOR']
         return QColor(bg_color_str).lightness() < 128

@@ -184,10 +184,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', 'False', [], _always_show),
-                ('Application.theme', 'choice', 'Theme', 'mixed', [
+                ('Application.theme', 'choice', 'Theme', 'auto', [
+                    "auto:Detect automatically (Default)",
                     "light:Light",
                     "dark:Dark",
-                    "mixed:Mixed (Default)",
+                    "mixed:Mixed dark & light",
                     "desert:Desert",
                     "beach:Beach volley",
                     "terra:Terra",
@@ -252,7 +253,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
-    def set(self, values: dict[str, str]) -> None:
+    def set(self, values: dict[str, str], force_fire=False) -> None:
         pass
 
     @abstractmethod
@@ -351,3 +352,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     @abstractmethod
     def is_keyring_enabled(self) -> bool:
         pass
+
+    @abstractmethod
+    def get_auto_theme(self) -> str:
+        pass
+
+    def get_theme(self) -> str:
+        raw = self.get('Application.theme')
+        return self.get_auto_theme() if raw == 'auto' else raw
