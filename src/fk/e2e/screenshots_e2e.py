@@ -31,7 +31,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             os.unlink(SCREEN_GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
-        return {
+        custom = {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
             'Application.show_window_title': 'True',
@@ -47,6 +47,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
         }
+        if os.name == 'nt':
+            custom['Application.font_main_size'] = '10'
+            custom['Application.font_header_family'] = 'Segoe UI Light'
+        return custom
 
     def teardown(self) -> None:
         super().teardown()

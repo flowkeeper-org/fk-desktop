@@ -164,7 +164,7 @@ class Screenshot:
                $bmp.Dispose()
             }}
             
-            $bounds = [Drawing.Rectangle]::FromLTRB(0, 0, 1000, 900)
+            $bounds = [Drawing.Rectangle]::FromLTRB(0, 0, 1920, 1080)
             screenshot $bounds "{filename}"
         '''
         subprocess.run(["powershell",
