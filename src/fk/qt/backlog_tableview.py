@@ -28,6 +28,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.user import User
+from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CreateWorkitemStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
@@ -73,8 +74,16 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         super()._on_source_changed(event, source)
         self.selectionModel().clear()
         self.upstream_selected(None)
+
         source.on(AfterBacklogCreate, self._on_new_backlog)
         source.on(SourceMessagesProcessed, self._on_messages)
+
+        # This is done to update the "New backlog from incomplete" action, which depends on the child workitems
+        source.on("AfterWorkitem*",
+                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+        source.on("AfterPomodoro*",
+                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+
         heartbeat = self._application.get_heartbeat()
         heartbeat.on(events.WentOffline, self._lock_ui)
         heartbeat.on(events.WentOnline, self._unlock_ui)
@@ -97,6 +106,13 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         super().upstream_selected(user)
         self._actions['backlogs_table.newBacklog'].setEnabled(user is not None)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+
+    def _update_actions_if_needed(self, workitem: Workitem):
+        if workitem is not None:
+            updated: Backlog = workitem.get_parent()
+            current = self.get_current()
+            if updated == current:
+                self.update_actions(current)
 
     def update_actions(self, selected: Backlog) -> None:
         logger.debug(f'Backlog table - update_actions({selected})')

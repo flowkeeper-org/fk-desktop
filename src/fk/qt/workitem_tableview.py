@@ -65,13 +65,18 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                                       PomodoroDelegate(self,
                                                        self._application.get_icon_theme()))
 
+    def _update_actions_if_needed(self, workitem: Workitem):
+        current = self.get_current()
+        if workitem == current:
+            self.update_actions(current)
+
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on("AfterWorkitem*",
-                  lambda workitem, **kwargs: self.update_actions(workitem))
+                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
         source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self.update_actions(workitem))
+                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
         self.selectionModel().clear()
         self.upstream_selected(None)
 
