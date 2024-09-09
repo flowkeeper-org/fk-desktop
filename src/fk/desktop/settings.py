@@ -324,7 +324,7 @@ class SettingsDialog(QDialog):
 
             ed8 = QComboBox(parent)
             ed8.setObjectName(f'{option_id}-list')
-            ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
+            ed8.addItems([f'{Actions.ALL[a].text()}' for a in actions])
             ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
             self._widgets_get_value[option_id] = lambda: json.dumps(shortcuts)
             self._widgets_set_value[option_id] = lambda txt: logger.error('Changing shortcuts programmatically is not implemented yet')

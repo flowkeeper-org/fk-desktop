@@ -300,6 +300,12 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
+        self.keypress(Qt.Key.Key_F3)
+        await self.longer_pause()
+        self.take_screenshot('16-work-summary')
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
+
         self.get_application().get_settings().set({
             'Application.theme': 'dark',
             'Application.eyecandy_type': 'default',
