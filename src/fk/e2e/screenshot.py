@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class Screenshot:
     _method: Callable[[str], None]
+    _spectacle_works: bool
 
     def __init__(self):
         self._method = None
@@ -45,37 +46,50 @@ class Screenshot:
             Screenshot._take_powershell,
             Screenshot._take_screencapture,
         ]:
-            file = f'test-results/check-{random.randint(100000, 999999)}.png'
-            try:
-                m(file)
-                im = Image.open(file)
-                if im.getbbox():
-                    logger.info(f'Screenshot method {m.__name__} works')
-                    self._method = m
-                    break
-                else:
-                    logger.warning(f'Taking screenshot via {m.__name__} resulted in an empty image')
-            except Exception as e:
-                logger.warning(f'Taking screenshot via {m.__name__} failed')
-            finally:
-                if os.path.exists(file):
-                    os.unlink(file)
+            if Screenshot._check_method(m):
+                self._method = m
+                break
+        self._spectacle_works = self._check_method(Screenshot._take_spectacle_active)
+
+    @staticmethod
+    def _check_method(method: Callable[[str], None]) -> bool:
+        file = f'test-results/check-{random.randint(100000, 999999)}.png'
+        try:
+            method(file)
+            im = Image.open(file)
+            if im.getbbox():
+                logger.info(f'Screenshot method {method.__name__} works')
+                return True
+            else:
+                logger.warning(f'Taking screenshot via {method.__name__} resulted in an empty image')
+        except Exception as e:
+            logger.warning(f'Taking screenshot via {method.__name__} failed')
+        finally:
+            if os.path.exists(file):
+                os.unlink(file)
+        return False
 
     def take_screen(self, name: str) -> str:
         if self._method is None:
             logger.warning(f'Tried to take screenshot {name}, but couldn\'t find how to do it')
         else:
             filename = f'test-results/{name}-full.png'
-            logger.debug(f'Taking full-screen screenshot {filename} via {self._method.__name__}')
+            logger.debug(f'Taking full-screen screenshot {filename} using {self._method.__name__}')
             return self._method(filename)
 
     def take_window(self, name: str, window: QWidget) -> str:
-        if self._method is None:
-            logger.warning(f'Tried to take screenshot {name}, but couldn\'t find how to do it')
-        else:
-            filename = f'test-results/{name}-window.png'
-            logger.debug(f'Taking screenshot {filename} of window {window.objectName()} via {self._method.__name__}')
-            window.grab().save(filename)
+        # First take a screenshot using Qt built-in feature -- this always works, but it
+        # can't capture window's border.
+        filename = f'test-results/{name}-window.png'
+        logger.debug(f'Taking screenshot {filename} of window {window.objectName()} using Qt')
+        window.grab().save(filename)
+
+        # Then, if Spectacle is available, take another one with a nice shadow border.
+        # Even on Linux this only works with XOrg, but _check_method() should take care of it.
+        if self._spectacle_works:
+            filename = f'test-results/{name}-window-border.png'
+            logger.debug(f'Taking screenshot {filename} of window {window.objectName()} using Spectacle')
+            self._take_spectacle_active(filename)
 
     @staticmethod
     def _take_scrot(filename: str) -> None:
@@ -132,6 +146,15 @@ class Screenshot:
     def _take_spectacle(filename: str) -> None:
         subprocess.run(["spectacle",
                         "--fullscreen",
+                        "--background",
+                        "--nonotify",
+                        "--output",
+                        filename])
+
+    @staticmethod
+    def _take_spectacle_active(filename: str) -> None:
+        subprocess.run(["spectacle",
+                        "--activewindow",
                         "--background",
                         "--nonotify",
                         "--output",
