@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Callable
@@ -22,6 +23,10 @@ from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 
 logger = logging.getLogger(__name__)
+
+
+def _is_gnome() -> bool:
+    return os.environ.get('DESKTOP_SESSION', 'N/A') == 'gnome'
 
 
 def _always_show(_) -> bool:
@@ -183,7 +188,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', 'False', [], _always_show),
+                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome()), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
@@ -198,7 +203,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "purple:Purple rain",
                     "highlight:Highlight",
                 ], _always_show),
-                ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], _always_show),
+                ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
                 ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
