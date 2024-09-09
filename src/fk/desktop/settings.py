@@ -41,9 +41,10 @@ class SettingsDialog(QDialog):
     _buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None
 
     def __init__(self,
+                 parent: QWidget,
                  data: AbstractSettings,
                  buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None = None):
-        super().__init__()
+        super().__init__(parent)
         self._data = data
         self._buttons_mapping = buttons_mapping
         self._widgets_get_value = dict()

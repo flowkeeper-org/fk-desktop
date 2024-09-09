@@ -7,10 +7,12 @@
 - New "Detect automatically (Default)" theme.
 - Added "New Backlog From Incomplete" action to speed up planning.
 - New "Work Summary" feature for making human-readable reports like time sheets.
+- Special appearance defaults for Gnome to match its quirks.
 - Minor improvements in Statistics (different bar colors, better theming)
 - [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
 - [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.
 - [Bugfix] Fixed an "Invalid key" bug in Import.
+- [Bugfix] Fixed a bug where workitem actions' visibility was wrong after external changes.
 - [Technical] Removed CompletePomodoro and StartRest strategies.
 - [Technical] Removed "Auto-seal items after" setting.
 - [Technical] Split the README.md into several files.
