@@ -41,9 +41,10 @@ class SettingsDialog(QDialog):
     _buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None
 
     def __init__(self,
+                 parent: QWidget,
                  data: AbstractSettings,
                  buttons_mapping: dict[str, Callable[[dict[str, str], Callable], bool]] | None = None):
-        super().__init__()
+        super().__init__(parent)
         self._data = data
         self._buttons_mapping = buttons_mapping
         self._widgets_get_value = dict()
@@ -180,12 +181,16 @@ class SettingsDialog(QDialog):
 
     @staticmethod
     def do_browse(edit: QLineEdit) -> None:
+        SettingsDialog.do_browse_simple(edit.text(), edit.setText)
+
+    @staticmethod
+    def do_browse_simple(preselected: str, callback: Callable[[str], None]) -> None:
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.FileMode.AnyFile)
-        dlg.selectFile(edit.text())
+        dlg.selectFile(preselected)
         if dlg.exec_():
             selected: str = dlg.selectedFiles()[0]
-            edit.setText(selected)
+            callback(selected)
 
     @staticmethod
     def display_key_warning(name: str) -> bool:
@@ -319,7 +324,7 @@ class SettingsDialog(QDialog):
 
             ed8 = QComboBox(parent)
             ed8.setObjectName(f'{option_id}-list')
-            ed8.addItems([f'{Actions.ALL[a].text()} ({a})' for a in actions])
+            ed8.addItems([f'{Actions.ALL[a].text()}' for a in actions])
             ed8.currentIndexChanged.connect(lambda v: seq_edit.setKeySequence(shortcuts[actions[ed8.currentIndex()]]))
             self._widgets_get_value[option_id] = lambda: json.dumps(shortcuts)
             self._widgets_set_value[option_id] = lambda txt: logger.error('Changing shortcuts programmatically is not implemented yet')

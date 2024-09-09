@@ -47,11 +47,11 @@ class MockSettings(AbstractSettings):
         else:
             return self._defaults[name]
 
-    def set(self, values: dict[str, str]) -> None:
+    def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()
         for name in values.keys():
             old_value = self.get(name) if name in self._settings else None
-            if old_value != values[name]:
+            if old_value != values[name] or force_fire:
                 old_values[name] = old_value
         params = {
             'old_values': old_values,
@@ -85,3 +85,6 @@ class MockSettings(AbstractSettings):
 
     def is_keyring_enabled(self) -> bool:
         return True  # Storing credentials in memory is safe, as long as we don't persist them
+
+    def get_auto_theme(self) -> str:
+        return 'mixed'

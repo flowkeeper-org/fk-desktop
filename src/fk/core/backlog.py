@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Iterable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.pomodoro import Pomodoro
@@ -41,6 +42,11 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
                 if pomodoro.is_running():
                     return workitem, pomodoro
         return None, None
+
+    def get_incomplete_workitems(self) -> Iterable[Workitem]:
+        for workitem in self._children.values():
+            if not workitem.is_sealed():
+                yield workitem
 
     def is_today(self) -> bool:
         # "Today" = Created within the last 12 hours

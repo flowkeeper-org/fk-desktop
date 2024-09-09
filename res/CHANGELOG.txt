@@ -1,3 +1,22 @@
+### v0.7.0 (2 September 2024)
+- Disabled data sync and e2e encryption features.
+- Removed public references to any semi-implemented features.
+- Documented the full manual UAT test suite and executed it.
+- The hole in the timer widget now displays correctly.
+- New "Compress" action in the File source settings (click it for details).
+- New "Detect automatically (Default)" theme.
+- Added "New Backlog From Incomplete" action to speed up planning.
+- New "Work Summary" feature for making human-readable reports like time sheets.
+- Special appearance defaults for Gnome to match its quirks.
+- Minor improvements in Statistics (different bar colors, better theming)
+- [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
+- [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.
+- [Bugfix] Fixed an "Invalid key" bug in Import.
+- [Bugfix] Fixed a bug where workitem actions' visibility was wrong after external changes.
+- [Technical] Removed CompletePomodoro and StartRest strategies.
+- [Technical] Removed "Auto-seal items after" setting.
+- [Technical] Split the README.md into several files.
+
 ### v0.6.3 (1 September 2024)
 - Added settings to disable data sync and e2e encryption features
 - [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.

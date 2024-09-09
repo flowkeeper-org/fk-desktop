@@ -81,6 +81,28 @@ class ReplayStrategy(AbstractStrategy):
         return None, None
 
 
+# ReplayCompleted()
+@strategy
+class ReplayCompletedStrategy(AbstractStrategy):
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        # Send only
+        return None, None
+
+
 # Error("401", "User not found")
 @strategy
 class ErrorStrategy(AbstractStrategy):

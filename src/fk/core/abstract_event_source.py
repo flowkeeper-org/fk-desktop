@@ -167,9 +167,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self.execute_prepared_strategy(s, auto, persist)
 
     def auto_seal(self) -> None:
-        delta = float(self._settings.get('Pomodoro.auto_seal_after'))
         auto_seal(self.workitems(),
-                  delta,
                   lambda strategy_class, params, persist, when: self.execute(strategy_class,
                                                                              params,
                                                                              persist=persist,
@@ -189,6 +187,21 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         for backlog in self.backlogs():
             for workitem in backlog.values():
                 yield workitem
+
+    def find_workitem(self, uid: str) -> Workitem | None:
+        for workitem in self.workitems():
+            if workitem.get_uid() == uid:
+                return workitem
+
+    def find_backlog(self, uid: str) -> Backlog | None:
+        for backlog in self.backlogs():
+            if backlog.get_uid() == uid:
+                return backlog
+
+    def find_user(self, identity: str) -> User | None:
+        for user in self.users():
+            if user.get_identity() == identity:
+                return user
 
     def pomodoros(self) -> Iterable[Pomodoro]:
         for workitem in self.workitems():

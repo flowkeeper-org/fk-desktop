@@ -272,12 +272,6 @@ class AbstractE2eTest(ABC):
     def start(self) -> None:
         self._timer.start(STARTUP_DURATION * 1000)
 
-    def restart(self) -> None:
-        # TODO: This needs to be tested
-        os.execv(__file__, sys.argv)
-        # or
-        os.execv(sys.executable, ['python'] + sys.argv)
-
     def setup(self) -> None:
         pass
 

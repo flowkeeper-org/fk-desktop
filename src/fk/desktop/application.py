@@ -49,6 +49,7 @@ from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
 from fk.desktop.stats_window import StatsWindow
+from fk.desktop.work_summary_window import WorkSummaryWindow
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
@@ -248,7 +249,8 @@ class Application(QApplication, AbstractEventEmitter):
     def get_source_holder(self):
         return self._source_holder
 
-    def get_theme_variables(self, theme: str):
+    def get_theme_variables(self) -> dict[str, str]:
+        theme = self._settings.get_theme()
         var_file = QFile(f":/style-{theme}.json")
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
@@ -260,20 +262,18 @@ class Application(QApplication, AbstractEventEmitter):
         return variables
 
     def get_icon_theme(self):
-        theme = self._settings.get('Application.theme')
-        return self.get_theme_variables(theme)['ICON_THEME']
+        return self.get_theme_variables()['ICON_THEME']
 
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
-        theme = self._settings.get('Application.theme')
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
         qss = template_file.readAll().toStdString()
         template_file.close()
 
-        variables = self.get_theme_variables(theme)
+        variables = self.get_theme_variables()
 
         for name in variables:
             value = variables[name]
@@ -389,13 +389,17 @@ class Application(QApplication, AbstractEventEmitter):
             self._initialize_logger()
 
     def show_settings_dialog(self):
-        SettingsDialog(self._settings, {
-            'FileEventSource.repair': self.repair_file_event_source,
-            'Application.eyecandy_gradient_generate': self.generate_gradient,
-            'WebsocketEventSource.authenticate': self.sign_in,
-            'WebsocketEventSource.logout': self.sign_out,
-            'WebsocketEventSource.delete_account': self.delete_account,
-        }).show()
+        SettingsDialog(
+            self.activeWindow(),  # TODO: To avoid that... shall we make all those functions part of the main window?
+            self._settings,
+            {
+                'FileEventSource.repair': self.repair_file_event_source,
+                'FileEventSource.compress': self.compress_file_event_source,
+                'Application.eyecandy_gradient_generate': self.generate_gradient,
+                'WebsocketEventSource.authenticate': self.sign_in,
+                'WebsocketEventSource.logout': self.sign_out,
+                'WebsocketEventSource.delete_account': self.delete_account,
+            }).show()
 
     def repair_file_event_source(self, _, callback: Callable) -> bool:
         if QMessageBox().warning(self.activeWindow(),
@@ -415,13 +419,44 @@ class Application(QApplication, AbstractEventEmitter):
                 == QMessageBox.StandardButton.Ok:
             cast: FileEventSource = self._source_holder.get_source()
             log = cast.repair()
-            if log[-1] != 'No changes were made':
+            if 'No changes were made' in log[-1]:
                 # Reload the source
                 self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
                                           "Please save this log for future reference. "
                                           "You can find all new items by searching (CTRL+F) for [Repaired] string.",
+                                          "\n".join(log))
+            return False
+
+    def compress_file_event_source(self, _, callback: Callable) -> bool:
+        if QMessageBox().warning(self.activeWindow(),
+                                 "Confirmation",
+                                 f"Are you sure you want to compress the data source? "
+                                 f"This action will\n"
+                                 f"1. Recreate the strategies based on the current data that you see,\n"
+                                 f"2. Update timestamps with the latest modification date/time,\n"
+                                 f"3. Renumber / reindex data,\n"
+                                 f"4. Remove anything that you deleted,\n"
+                                 f"5. Create a backup file and overwrite the original data source one,\n"
+                                 f"6. Display a detailed log of what it did.\n"
+                                 f"\n"
+                                 f"As a result you will still see the same data as you do now, but the underlying "
+                                 f"history might be lost. This might affect statistics and any other features relying "
+                                 f"on detailed historical data.\n\n"
+                                 f"We recommend using this feature only if your loading times became uncomfortably "
+                                 f"long, or if you deleted something and want it to be gone forever.",
+                                 QMessageBox.StandardButton.Ok,
+                                 QMessageBox.StandardButton.Cancel) \
+                == QMessageBox.StandardButton.Ok:
+            cast: FileEventSource = self._source_holder.get_source()
+            log = cast.compress()
+            if 'No changes were made' in log[-1]:
+                # Reload the source
+                self._source_holder.request_new_source()
+            QInputDialog.getMultiLineText(None,
+                                          "The file is compressed",
+                                          None,
                                           "\n".join(log))
             return False
 
@@ -497,11 +532,12 @@ class Application(QApplication, AbstractEventEmitter):
     def define_actions(actions: Actions):
         actions.add('application.settings', "Settings", 'F10', None, Application.show_settings_dialog)
         actions.add('application.quit', "Quit", 'Ctrl+Q', None, Application.quit_local)
-        actions.add('application.import', "Import...", 'Ctrl+I', None, Application.show_import_wizard)
-        actions.add('application.export', "Export...", 'Ctrl+E', None, Application.show_export_wizard)
+        actions.add('application.import', "Import data...", 'Ctrl+I', None, Application.show_import_wizard)
+        actions.add('application.export', "Export data...", 'Ctrl+E', None, Application.show_export_wizard)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
+        actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
 
     def quit_local(self):
         Application.quit()
@@ -541,7 +577,13 @@ class Application(QApplication, AbstractEventEmitter):
         get_latest_version(self, on_version)
 
     def show_stats(self, event: str = None) -> None:
-        StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()
+        StatsWindow(self.activeWindow(),
+                    self.get_header_font(),
+                    self.get_theme_variables(),
+                    self._source_holder.get_source()).show()
+
+    def show_work_summary(self, event: str = None) -> None:
+        WorkSummaryWindow(self.activeWindow(), self._source_holder.get_source()).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')
@@ -566,6 +608,5 @@ class Application(QApplication, AbstractEventEmitter):
             webbrowser.open(f"https://flowkeeper.org/#download")
 
     def is_dark_theme(self):
-        theme = self._settings.get('Application.theme')
-        bg_color_str = self.get_theme_variables(theme)['PRIMARY_BG_COLOR']
+        bg_color_str = self.get_theme_variables()['PRIMARY_BG_COLOR']
         return QColor(bg_color_str).lightness() < 128

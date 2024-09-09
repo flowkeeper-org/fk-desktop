@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
@@ -31,7 +32,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             os.unlink(SCREEN_GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
-        return {
+        custom = {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
             'Application.show_window_title': 'True',
@@ -46,7 +47,12 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_height': '680',
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
+            'Application.theme': 'mixed',
         }
+        if os.name == 'nt':
+            custom['Application.font_main_size'] = '10'
+            custom['Application.font_header_family'] = 'Segoe UI Light'
+        return custom
 
     def teardown(self) -> None:
         super().teardown()
@@ -235,20 +241,69 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._void_pomodoro()
         await self._complete_workitem()
 
-        await self._find_workitem('Slides for the demo')
-        await self._start_pomodoro()
-        await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
-        await self._start_pomodoro()
-        await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
-        await self._complete_workitem()
-
         await self._find_workitem('Order coffee capsules')
         await self._complete_workitem()
 
         await self._find_workitem('Call Alex in the afternoon')
         await self._complete_workitem()
+
+        await self._find_workitem('Slides for the demo')
+        await self._start_pomodoro()
+        await self._wait_mid_pomodoro()
+        await self._void_pomodoro()
+
+        # Take two "main" screenshots right in the middle of this pomodoro
+        settings = self.get_application().get_settings()
+        old_value_work = settings.get('Pomodoro.default_work_duration')
+        old_value_rest = settings.get('Pomodoro.default_rest_duration')
+        old_value_style = settings.get('Application.timer_ui_mode')
+        old_value_theme = settings.get('Application.theme')
+        old_gradient = settings.get('Application.eyecandy_gradient')
+        settings.set({
+            'Pomodoro.default_work_duration': '1500',
+            'Pomodoro.default_rest_duration': '300',
+            'Application.timer_ui_mode': 'keep',
+            'Application.theme': 'light',
+            'Application.eyecandy_gradient': 'HiddenJaguar',
+        })
+
+        # Start a Pomodoro in the past
+        source = self.get_application().get_source_holder().get_source()
+        workitem_id = None
+        for w in source.workitems():
+            if w.get_name() == 'Slides for the demo':
+                workitem_id = w.get_uid()
+        source.execute_prepared_strategy(StartWorkStrategy(
+            1,
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=670),
+            'user@local.host',
+            [workitem_id, '1500'],
+            settings))
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+
+        self.take_screenshot('18-main-light')
+
+        settings.set({
+            'Application.theme': 'dark',
+            'Application.eyecandy_gradient': old_gradient,
+        })
+        await self.longer_pause()
+        self.take_screenshot('19-main-dark')
+
+        await self._void_pomodoro()
+        await self._complete_workitem()
+
+        settings.set({
+            'Pomodoro.default_work_duration': old_value_work,
+            'Pomodoro.default_rest_duration': old_value_rest,
+            'Application.timer_ui_mode': old_value_style,
+            'Application.theme': old_value_theme,
+            'Application.eyecandy_gradient': old_gradient,
+        })
+        await self.longer_pause()
 
         await self._find_workitem('Generate new screenshots')
 
@@ -293,6 +348,12 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Enter)
         await self.instant_pause()
         self.take_screenshot('12-export')
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
+
+        self.keypress(Qt.Key.Key_F3)
+        await self.longer_pause()
+        self.take_screenshot('16-work-summary')
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 

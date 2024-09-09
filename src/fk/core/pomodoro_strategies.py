@@ -91,10 +91,9 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
 
 
-# StartRest("123-456-789", "300")
+# Not available externally, not registered as a strategy
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
-@strategy
-class StartRestStrategy(AbstractStrategy[Tenant]):
+class StartRestInternalStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _rest_duration: float
 
@@ -287,38 +286,6 @@ class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
         _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._carry, self._when)
         return None, None
 
-
-# CompletePomodoro("123-456-789", "finished")
-# Legacy, for compatibility purposes only. To be removed in the future.
-@strategy
-class CompletePomodoroStrategy(AbstractStrategy[Tenant]):
-    _uid: str
-    _state: str
-
-    def __init__(self,
-                 seq: int,
-                 when: datetime.datetime,
-                 user_identity: str,
-                 params: list[str],
-                 settings: AbstractSettings,
-                 carry: any = None):
-        super().__init__(seq, when, user_identity, params, settings, carry)
-        self._uid = params[0]
-        self._state = params[1]
-
-    def execute(self,
-                emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
-        if self._state == 'canceled':
-            another = VoidPomodoroStrategy(self.get_sequence(),
-                                           self.get_when(),
-                                           self.get_user_identity(),
-                                           [self._uid],
-                                           self._settings,
-                                           self._carry)
-            return another.execute(emit, data)
-        else:
-            return None, None   # Since version 0.3.1 we always complete pomodoros implicitly
 
 # RemovePomodoro("123-456-789", "1")
 @strategy

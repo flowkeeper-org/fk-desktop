@@ -46,7 +46,6 @@ echo "3. Copied application files"
 
 # 4. Create a desktop shortcut
 mkdir -p deb/usr/share/applications
-#cp ../installer/flowkeeper.desktop deb/usr/share/applications/
 cat ../installer/flowkeeper.desktop | envsubst > deb/usr/share/applications/flowkeeper.desktop
 echo "4. Created a desktop shortcut:"
 cat deb/usr/share/applications/flowkeeper.desktop
@@ -67,7 +66,6 @@ echo "6. Create a relative symlink in /usr/local/bin"
 
 # 7. Create metadata
 mkdir deb/DEBIAN
-# cp ../installer/debian-control deb/DEBIAN/control
 cat ../installer/debian-control | envsubst > deb/DEBIAN/control
 echo "7. Created metadata"
 cat deb/DEBIAN/control

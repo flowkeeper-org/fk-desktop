@@ -203,9 +203,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 
     def _set_border_color(self):
-        self._border_color = self._application.get_theme_variables(
-            self._settings.get('Application.theme')
-        ).get('FOCUS_BORDER_COLOR', '#000000')
+        self._border_color = self._application.get_theme_variables()['FOCUS_BORDER_COLOR']
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.theme' in new_values:

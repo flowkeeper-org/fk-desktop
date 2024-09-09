@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Iterable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import generate_uid
@@ -114,3 +115,8 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                f'{indent} - State: {self._state}\n' \
                f'{indent} - Work started: {self._date_work_started}\n' \
                f'{indent} - Work ended: {self._date_work_ended}'
+
+    def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
+        for pomodoro in self._children.values():
+            if pomodoro.is_startable():
+                yield pomodoro

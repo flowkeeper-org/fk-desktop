@@ -20,8 +20,8 @@ from typing import Callable
 from PySide6 import QtUiTools
 from PySide6.QtCharts import QChart, QBarSet, QBarCategoryAxis, QValueAxis, QChartView, QStackedBarSeries
 from PySide6.QtCore import Qt, QObject, QFile, QMargins
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QLabel, QToolButton
+from PySide6.QtGui import QAction, QPainter, QColor, QFont
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QToolButton
 
 from fk.core.abstract_event_source import AbstractEventSource
 
@@ -44,11 +44,20 @@ class StatsWindow(QObject):
     _axis_y: QValueAxis
     _bars: dict[str, QBarSet]
 
-    def __init__(self, parent: QWidget, application: QApplication, source: AbstractEventSource):
+    _color_highlight: QColor
+    _color_primary: QColor
+    _color_secondary: QColor
+
+    def __init__(self,
+                 parent: QWidget,
+                 header_font: QFont,
+                 theme_variables: dict[str, str],
+                 source: AbstractEventSource):
         super().__init__(parent)
         self._source = source
         self._period = 'week'
         self._reset_to(self._period)
+        self._init_colors(theme_variables)
 
         file = QFile(":/stats.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
@@ -56,9 +65,11 @@ class StatsWindow(QObject):
         self._stats_window: QMainWindow = QtUiTools.QUiLoader().load(file, parent)
         file.close()
 
+        # noinspection PyTypeChecker
         self._header_text = self._stats_window.findChild(QLabel, "statsHeaderText")
-        self._header_text.setFont(application.get_header_font())
+        self._header_text.setFont(header_font)
 
+        # noinspection PyTypeChecker
         self._header_subtext = self._stats_window.findChild(QLabel, "statsHeaderSubtext")
         self._period_actions = {
             'year': self._create_checkable_action('year', 'Ctrl+Y'),
@@ -73,7 +84,7 @@ class StatsWindow(QObject):
         self._next_action = self._create_simple_action('next', self._next)
         self._next_action.setShortcut('Right')
 
-        close_action = QAction(self._stats_window, 'Close')
+        close_action = QAction('Close', self._stats_window)
         close_action.triggered.connect(self._stats_window.close)
         close_action.setShortcut('Esc')
         self._stats_window.addAction(close_action)
@@ -84,6 +95,7 @@ class StatsWindow(QObject):
         f = axis_x.labelsFont()
         f.setPointSize(round(f.pointSize() * 0.8))
         axis_x.setLabelsFont(f)
+        axis_x.setGridLineVisible(False)
         self._axis_x = axis_x
         axis_y = QValueAxis(self)
         self._axis_y = axis_y
@@ -96,20 +108,41 @@ class StatsWindow(QObject):
         self._series.attachAxis(self._axis_y)
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
         chart.setMargins(QMargins(10, 0, 10, 0))
-        # chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         self._update_chart('week', self._to)
 
+        # noinspection PyTypeChecker
         layout: QVBoxLayout = self._stats_window.findChild(QVBoxLayout, "statsGraph")
         view = QChartView(chart, self._stats_window)
         view.setObjectName('statsView')
-        chart.setTheme(QChart.ChartTheme.ChartThemeDark if application.is_dark_theme() else QChart.ChartTheme.ChartThemeLight)
+        view.setRenderHint(QPainter.RenderHint.Antialiasing)
+
         chart.setBackgroundVisible(False)
         chart.setPlotAreaBackgroundVisible(False)
         layout.addWidget(view)
 
+    def _init_colors(self, theme_variables: dict[str, str]) -> None:
+        self._color_primary = QColor(theme_variables['TABLE_TEXT_COLOR'])
+        self._color_secondary = QColor(theme_variables['SELECTION_BG_COLOR'])
+        self._color_highlight = QColor(theme_variables['FOCUS_TEXT_COLOR'])
+
+    def _style_chart(self) -> None:
+        self._bars['finished'].setColor(QColor('dodgerblue'))
+        self._bars['startable'].setColor(QColor('lightgray'))
+        self._bars['canceled'].setColor(QColor('orangered'))
+
+        self._bars['finished'].setBorderColor(self._color_highlight)
+        self._bars['startable'].setBorderColor(self._color_highlight)
+        self._bars['canceled'].setBorderColor(self._color_highlight)
+
+        self._chart.legend().setLabelColor(self._color_primary)
+        self._axis_x.setLabelsColor(QColor(self._color_primary))
+        self._axis_y.setLabelsColor(QColor(self._color_primary))
+
+        self._axis_y.setGridLineColor(QColor(self._color_secondary))
+
     def _time_delta_for_period(self, period: str, date: datetime.datetime, left: bool):
-        date = self._drop_time(date, period, True)
+        date = StatsWindow._drop_time(date, period, True)
         if period == 'week':
             return datetime.timedelta(days=(-7 if left else 7))
         elif period == 'year':
@@ -151,7 +184,8 @@ class StatsWindow(QObject):
         else:
             raise Exception(f'Unexpected period: {period}')
 
-    def _drop_time(self, date: datetime.datetime, period: str, start: bool):
+    @staticmethod
+    def _drop_time(date: datetime.datetime, period: str, start: bool):
         if period == 'week':
             return datetime.datetime(date.year,
                                      date.month,
@@ -206,34 +240,39 @@ class StatsWindow(QObject):
             raise Exception(f'Unexpected period: {period}')
 
     def _prev(self):
-        self._to = self._drop_time(self._to, self._period, False)
+        self._to = StatsWindow._drop_time(self._to, self._period, False)
         self._to += self._substep_delta_for_period(self._period, self._to, True)
         self._update_chart(self._period, self._to)
 
     def _next(self):
-        self._to = self._drop_time(self._to, self._period, False)
+        self._to = StatsWindow._drop_time(self._to, self._period, False)
         self._to += self._substep_delta_for_period(self._period, self._to, False)
         self._update_chart(self._period, self._to)
 
-    def _format_date(self, date: datetime.datetime):
+    @staticmethod
+    def _format_date(date: datetime.datetime):
         return date.strftime('%d %b %Y, %H:%M')
 
     def _update_chart(self, period: str, to: datetime.datetime) -> None:
         self._period = period
-        _from: datetime.datetime = to + self._time_delta_for_period(period, to, True) + datetime.timedelta(minutes=1)
-        self._header_subtext.setText(f'Average over {self._format_date(_from)} to {self._format_date(to)}')
+        _from: datetime.datetime = (to +
+                                    self._time_delta_for_period(period, to, True) +
+                                    datetime.timedelta(minutes=1))
+        header_subtext = f'Average over {StatsWindow._format_date(_from)} to {StatsWindow._format_date(to)}'
+        self._header_subtext.setText(header_subtext)
 
         d = self.extract_data(period, _from, to)
 
         completed_count = sum(d[1])
         total_count = completed_count + sum(d[2]) + sum(d[3])
         if total_count > 0:
-            self._header_text.setText(f'Completed {completed_count} out of {total_count} ({round(100 * completed_count / total_count)}%)')
+            completion = round(100 * completed_count / total_count)
+            header_text = f'Completed {completed_count} out of {total_count} ({completion}%)'
         else:
-            self._header_text.setText(f'No data')
+            header_text = 'No data'
+        self._header_text.setText(header_text)
 
         self._axis_y.setRange(0, max(d[4]))
-        # self._axis_y.setRange(0, 20)
         self._axis_x.clear()
         self._axis_x.append(d[0])
 
@@ -242,6 +281,7 @@ class StatsWindow(QObject):
             'canceled': QBarSet("Voided", self),
             'startable': QBarSet("Not started", self),
         }
+
         self._series.clear()
         self._series.append(self._bars['finished'])
         self._series.append(self._bars['canceled'])
@@ -251,7 +291,10 @@ class StatsWindow(QObject):
         [self._bars['canceled'].append(i) for i in d[2]]
         [self._bars['startable'].append(i) for i in d[3]]
 
+        self._style_chart()
+
     def _create_checkable_action(self, name: str, shortcut: str) -> QAction:
+        # noinspection PyTypeChecker
         button: QToolButton = self._stats_window.findChild(QToolButton, name)
         action = QAction(button.text(), self)
         action.setCheckable(True)
@@ -261,6 +304,7 @@ class StatsWindow(QObject):
         return action
 
     def _create_simple_action(self, name: str, callback: Callable) -> QAction:
+        # noinspection PyTypeChecker
         button: QToolButton = self._stats_window.findChild(QToolButton, name)
         action = QAction(button.text(), self)
         button.setDefaultAction(action)
@@ -268,7 +312,7 @@ class StatsWindow(QObject):
         return action
 
     def _reset_to(self, period):
-        self._to = self._drop_time(datetime.datetime.now(datetime.timezone.utc).astimezone(), period, False)
+        self._to = StatsWindow._drop_time(datetime.datetime.now(datetime.timezone.utc).astimezone(), period, False)
 
     def select_period(self, period: str) -> None:
         for name in self._period_actions:
@@ -277,7 +321,8 @@ class StatsWindow(QObject):
         self._reset_to(period)
         self._update_chart(period, self._to)
 
-    def _rotate(self, lst: list, n: int) -> list:
+    @staticmethod
+    def _rotate(lst: list, n: int) -> list:
         return lst[n + 1:] + lst[:n + 1]
 
     def extract_data(self, group: str, period_from: datetime.datetime, period_to: datetime.datetime):
@@ -299,10 +344,10 @@ class StatsWindow(QObject):
         else:
             raise Exception(f'Grouping by {group} is not implemented')
 
-        list_finished = [0 for c in cats]
-        list_canceled = [0 for c in cats]
-        list_ready = [0 for c in cats]
-        list_total = [0 for c in cats]
+        list_finished = [0 for _ in cats]
+        list_canceled = list_finished.copy()
+        list_ready = list_finished.copy()
+        list_total = list_finished.copy()
 
         for p in self._source.pomodoros():
             finished = p.is_finished()
@@ -337,11 +382,11 @@ class StatsWindow(QObject):
                 list_ready[index] += 1
             list_total[index] += 1
 
-        r = [self._rotate(cats, rotate_around), \
-             self._rotate(list_finished, rotate_around), \
-             self._rotate(list_canceled, rotate_around), \
-             self._rotate(list_ready, rotate_around), \
-             self._rotate(list_total, rotate_around)]
+        r = [StatsWindow._rotate(cats, rotate_around),
+             StatsWindow._rotate(list_finished, rotate_around),
+             StatsWindow._rotate(list_canceled, rotate_around),
+             StatsWindow._rotate(list_ready, rotate_around),
+             StatsWindow._rotate(list_total, rotate_around)]
 
         if group == 'month6':
             # Truncate to half a year

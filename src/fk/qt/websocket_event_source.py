@@ -33,8 +33,8 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
-from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, ErrorStrategy, PongStrategy, \
-    PingStrategy
+from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, PongStrategy, \
+    PingStrategy, ReplayCompletedStrategy
 from fk.qt.oauth import get_id_token, AuthenticationRecord
 from fk.qt.qt_timer import QtTimer
 
@@ -119,18 +119,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f" - {line}")
             try:
-                # TODO: Check for strategy class type here instead
-                if line == 'ReplayCompleted()':
+                s = self._serializer.deserialize(line)
+                if s is None:
+                    continue
+                elif type(s) is ReplayCompletedStrategy:
                     if self._mute_requested:
                         to_unmute = True
                     to_emit = True
                     break
-                s = self._serializer.deserialize(line)
-                if s is None:
-                    continue
-                elif type(s) is ErrorStrategy:
-                    self._received_error = True
-                    s.execute(self._emit, self._data)  # This will throw an exception
                 elif type(s) is PongStrategy:
                     # A special case where we want to ignore the sequence
                     self.execute_prepared_strategy(s)

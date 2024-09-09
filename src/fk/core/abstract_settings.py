@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, Callable
@@ -22,6 +23,10 @@ from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 
 logger = logging.getLogger(__name__)
+
+
+def _is_gnome() -> bool:
+    return os.environ.get('DESKTOP_SESSION', 'N/A') == 'gnome'
 
 
 def _always_show(_) -> bool:
@@ -115,7 +120,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Pomodoro.auto_seal_after', 'duration', 'Auto-seal items after', str(5), [1, 120], _always_show),
                 ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
@@ -133,8 +137,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
                 ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
-                ('Application.feature_connect', 'bool', 'Enable Connect feature', 'True', [], _never_show),
-                ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'True', [], _never_show),
+                ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
+                ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
@@ -151,6 +155,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
+                ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
@@ -183,11 +188,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', 'False', [], _always_show),
-                ('Application.theme', 'choice', 'Theme', 'mixed', [
+                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome()), [], _always_show),
+                ('Application.theme', 'choice', 'Theme', 'auto', [
+                    "auto:Detect automatically (Default)",
                     "light:Light",
                     "dark:Dark",
-                    "mixed:Mixed (Default)",
+                    "mixed:Mixed dark & light",
                     "desert:Desert",
                     "beach:Beach volley",
                     "terra:Terra",
@@ -197,7 +203,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "purple:Purple rain",
                     "highlight:Highlight",
                 ], _always_show),
-                ('Application.quit_on_close', 'bool', 'Quit on close', 'False', [], _always_show),
+                ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
                 ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
                 ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
@@ -252,7 +258,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self._callback_invoker(fn, **kwargs)
 
     @abstractmethod
-    def set(self, values: dict[str, str]) -> None:
+    def set(self, values: dict[str, str], force_fire=False) -> None:
         pass
 
     @abstractmethod
@@ -351,3 +357,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     @abstractmethod
     def is_keyring_enabled(self) -> bool:
         pass
+
+    @abstractmethod
+    def get_auto_theme(self) -> str:
+        pass
+
+    def get_theme(self) -> str:
+        raw = self.get('Application.theme')
+        return self.get_auto_theme() if raw == 'auto' else raw

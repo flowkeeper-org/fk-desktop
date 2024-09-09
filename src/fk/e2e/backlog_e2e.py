@@ -252,7 +252,7 @@ class BacklogE2eTest(AbstractE2eTest):
         # focus.nextPomodoro
         # focus.completeItem
         # focus.showFilter
-        def assert_backlog_actions_enabled():
+        def assert_backlog_actions_enabled(new_from_incomplete: bool):
             self.assert_actions_enabled([
                 'backlogs_table.newBacklog',
                 'backlogs_table.renameBacklog',
@@ -260,8 +260,10 @@ class BacklogE2eTest(AbstractE2eTest):
                 'workitems_table.newItem',
                 'workitems_table.showCompleted',
             ])
+            if new_from_incomplete:
+                self.assert_actions_enabled(['backlogs_table.newBacklogFromIncomplete'])
 
-        assert_backlog_actions_enabled()
+        assert_backlog_actions_enabled(True)
         self.assert_actions_enabled([
             'workitems_table.renameItem',
             'workitems_table.deleteItem',
@@ -283,7 +285,7 @@ class BacklogE2eTest(AbstractE2eTest):
         assert_that(workitem.get_name()).is_equal_to('Workitem 51')
         assert_that(len(workitem)).is_equal_to(0)
 
-        assert_backlog_actions_enabled()
+        assert_backlog_actions_enabled(True)
         self.assert_actions_enabled([
             'workitems_table.renameItem',
             'workitems_table.deleteItem',
@@ -307,7 +309,7 @@ class BacklogE2eTest(AbstractE2eTest):
         for p in workitem.values():
             assert_that(p.is_startable()).is_false()
 
-        assert_backlog_actions_enabled()
+        assert_backlog_actions_enabled(True)
         self.assert_actions_enabled([
             'workitems_table.renameItem',
             'workitems_table.deleteItem',
@@ -334,7 +336,7 @@ class BacklogE2eTest(AbstractE2eTest):
                 can_start += 1
         assert_that(can_start).is_equal_to(1)
 
-        assert_backlog_actions_enabled()
+        assert_backlog_actions_enabled(True)
         self.assert_actions_enabled([
             'workitems_table.deleteItem',
         ])
@@ -356,7 +358,7 @@ class BacklogE2eTest(AbstractE2eTest):
         workitem = workitems_table.get_current()
         assert_that(workitem, 'Selecting another backlog should deselect workitem').is_none()
 
-        assert_backlog_actions_enabled()
+        assert_backlog_actions_enabled(True)
         self.assert_actions_disabled([
             'workitems_table.deleteItem',
             'workitems_table.addPomodoro',
