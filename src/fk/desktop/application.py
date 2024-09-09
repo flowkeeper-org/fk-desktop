@@ -389,14 +389,17 @@ class Application(QApplication, AbstractEventEmitter):
             self._initialize_logger()
 
     def show_settings_dialog(self):
-        SettingsDialog(self._settings, {
-            'FileEventSource.repair': self.repair_file_event_source,
-            'FileEventSource.compress': self.compress_file_event_source,
-            'Application.eyecandy_gradient_generate': self.generate_gradient,
-            'WebsocketEventSource.authenticate': self.sign_in,
-            'WebsocketEventSource.logout': self.sign_out,
-            'WebsocketEventSource.delete_account': self.delete_account,
-        }).show()
+        SettingsDialog(
+            self.activeWindow(),  # TODO: To avoid that... shall we make all those functions part of the main window?
+            self._settings,
+            {
+                'FileEventSource.repair': self.repair_file_event_source,
+                'FileEventSource.compress': self.compress_file_event_source,
+                'Application.eyecandy_gradient_generate': self.generate_gradient,
+                'WebsocketEventSource.authenticate': self.sign_in,
+                'WebsocketEventSource.logout': self.sign_out,
+                'WebsocketEventSource.delete_account': self.delete_account,
+            }).show()
 
     def repair_file_event_source(self, _, callback: Callable) -> bool:
         if QMessageBox().warning(self.activeWindow(),
