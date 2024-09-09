@@ -249,7 +249,8 @@ class Application(QApplication, AbstractEventEmitter):
     def get_source_holder(self):
         return self._source_holder
 
-    def get_theme_variables(self, theme: str):
+    def get_theme_variables(self) -> dict[str, str]:
+        theme = self._settings.get_theme()
         var_file = QFile(f":/style-{theme}.json")
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
@@ -261,20 +262,18 @@ class Application(QApplication, AbstractEventEmitter):
         return variables
 
     def get_icon_theme(self):
-        theme = self._settings.get_theme()
-        return self.get_theme_variables(theme)['ICON_THEME']
+        return self.get_theme_variables()['ICON_THEME']
 
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
-        theme = self._settings.get_theme()
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
         qss = template_file.readAll().toStdString()
         template_file.close()
 
-        variables = self.get_theme_variables(theme)
+        variables = self.get_theme_variables()
 
         for name in variables:
             value = variables[name]
@@ -575,7 +574,10 @@ class Application(QApplication, AbstractEventEmitter):
         get_latest_version(self, on_version)
 
     def show_stats(self, event: str = None) -> None:
-        StatsWindow(self.activeWindow(), self, self._source_holder.get_source()).show()
+        StatsWindow(self.activeWindow(),
+                    self.get_header_font(),
+                    self.get_theme_variables(),
+                    self._source_holder.get_source()).show()
 
     def show_work_summary(self, event: str = None) -> None:
         WorkSummaryWindow(self.activeWindow(), self._source_holder.get_source()).show()
@@ -603,6 +605,5 @@ class Application(QApplication, AbstractEventEmitter):
             webbrowser.open(f"https://flowkeeper.org/#download")
 
     def is_dark_theme(self):
-        theme = self._settings.get_theme()
-        bg_color_str = self.get_theme_variables(theme)['PRIMARY_BG_COLOR']
+        bg_color_str = self.get_theme_variables()['PRIMARY_BG_COLOR']
         return QColor(bg_color_str).lightness() < 128
