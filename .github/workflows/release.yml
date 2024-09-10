@@ -79,6 +79,44 @@ jobs:
             dist/flowkeeper.deb
             dist/flowkeeper.tar.gz
 
+  package-linux-legacy:
+    runs-on: ubuntu-20.04
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-build.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+          cd dist
+          tar -czf flowkeeper.tar.gz flowkeeper
+          cd ..
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/Flowkeeper-legacy
+            dist/flowkeeper-legacy.deb
+            dist/flowkeeper-legacy.tar.gz
+
   package-windows:
     runs-on: windows-latest
     needs: run-tests
