@@ -109,6 +109,11 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Rename files to avoid conflicts
+        run: |
+          mv dist/Flowkeeper dist/Flowkeeper-legacy
+          mv dist/flowkeeper.deb dist/flowkeeper-legacy.deb
+          mv dist/flowkeeper.tar.gz dist/flowkeeper-legacy.tar.gz
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
