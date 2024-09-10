@@ -87,13 +87,13 @@ jobs:
       - name: Archive portable build
         uses: actions/upload-artifact@v3
         with:
-          name: dist-linux-standalone
+          name: dist-linux-legacy-standalone
           path: |
             dist/Flowkeeper-legacy
       - name: Archive one-folder build
         uses: actions/upload-artifact@v3
         with:
-          name: dist-linux-one-folder
+          name: dist-linux-legacy-one-folder
           path: |
             dist/flowkeeper-legacy
       - name: Create DEB installer
@@ -102,7 +102,7 @@ jobs:
       - name: Archive DEB installer
         uses: actions/upload-artifact@v3
         with:
-          name: dist-linux-deb
+          name: dist-linux-legacy-deb
           path: |
             dist/flowkeeper-legacy.deb
 
