@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import os
+
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
     QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton
 
@@ -116,6 +118,9 @@ class PageImportProgress(QWizardPage):
         self.start()
 
     def finish(self):
+        if self.progress.maximum() == 0:
+            # This is a subtle workaround to avoid "forever animated" progress bars on Windows
+            self.progress.setMaximum(1)
         self.progress.setValue(self.progress.maximum())
         self._import_complete = True
         self.label.setText('Done. You can now close this window.')
@@ -155,7 +160,10 @@ class ImportWizard(QWizard):
         self.addPage(self.page_progress)
         self.option_filename = None
         # Account for a Qt bug which shrinks dialogs opened on non-primary displays
-        self.setMinimumSize(550, 400)
+        self.setMinimumSize(500, 350)
+        if os.name == 'nt':
+            # AeroStyle is default on Windows 11, but it looks all white (another Qt bug?) The Classic style looks fine.
+            self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
 
     def set_filename(self, filename):
         self.option_filename = filename

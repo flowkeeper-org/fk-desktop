@@ -1,4 +1,5 @@
-PySide6==6.7.1
+# Stay at 6.7.0 due to a macOS bug in 6.7.1 and 6.7.2, which says "No QtMultimedia backends found"
+PySide6==6.7.0
 semantic-version
 cryptography
 keyring
