@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import os
 import pathlib
 import sys
 from os import path
@@ -22,8 +23,9 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QApplication, QW
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.file_event_source import FileEventSource
+from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.import_export import export
+from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.oauth import open_url
@@ -123,6 +125,9 @@ class PageExportProgress(QWizardPage):
         self.start()
 
     def finish(self):
+        if self.progress.maximum() == 0:
+            # This is a subtle workaround to avoid "forever animated" progress bars on Windows
+            self.progress.setMaximum(1)
         self.progress.setValue(self.progress.maximum())
         self._export_complete = True
         self.label.setText('Done. You can now close this window.')
@@ -171,7 +176,10 @@ class ExportWizard(QWizard):
         self.option_compressed = False
         self.option_encrypted = source.get_settings().is_e2e_encryption_enabled()
         # Account for a Qt bug which shrinks dialogs opened on non-primary displays
-        self.setMinimumSize(550, 400)
+        self.setMinimumSize(500, 350)
+        if os.name == 'nt':
+            # AeroStyle is default on Windows 11, but it looks all white (another Qt bug?) The Classic style looks fine.
+            self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
 
     def set_filename(self, filename):
         self.option_filename = filename
@@ -185,7 +193,8 @@ class ExportWizard(QWizard):
 
 if __name__ == '__main__':
     app = QApplication([])
-    src = FileEventSource[Tenant](QtSettings())
+    settings = QtSettings()
+    src = EphemeralEventSource[Tenant](settings, NoCryptograph(settings), Tenant(settings))
     src.start()
     wizard = ExportWizard(src, None)
     wizard.show()

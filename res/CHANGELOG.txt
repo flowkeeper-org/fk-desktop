@@ -1,3 +1,6 @@
+### v0.7.1 (13 September 2024)
+- [Bugfix] Fixed import/export wizard look & feel on Windows 11 with Qt 6.7.x.
+
 ### v0.7.0 (2 September 2024)
 - Disabled data sync and e2e encryption features.
 - Removed public references to any semi-implemented features.
