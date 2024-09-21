@@ -8,6 +8,6 @@ dist
 .DS_Store
 htmlcov
 src/fk/desktop/resources.py
-test-results
+test-results*
 Flowkeeper.dmg
 notary-key.txt
