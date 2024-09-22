@@ -52,7 +52,7 @@ class MinimalCommon:
 
         sys.exit(self._app.exec())
 
-    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
         logger.debug(f'MinimalCommon: Will call {self._callback}')
         self._callback(source.get_data())
 

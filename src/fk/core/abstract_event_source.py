@@ -124,7 +124,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     # This will initiate connection, which will trigger replay
     @abstractmethod
-    def start(self, mute_events: bool = True) -> None:
+    def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         pass
 
     def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
@@ -244,3 +244,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def get_last_sequence(self):
         return self._last_seq
+
+    @abstractmethod
+    def get_id(self) -> str:
+        pass

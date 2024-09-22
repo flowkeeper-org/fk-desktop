@@ -19,6 +19,7 @@ import logging
 import os
 import time
 from collections import deque
+from hashlib import md5
 from os import path
 from typing import TypeVar, Iterable
 
@@ -109,9 +110,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def _is_watch_changes(self) -> bool:
         return self.get_config_parameter("FileEventSource.watch_changes") == "True"
 
-    def start(self, mute_events: bool = True, fail_early: bool = False) -> None:
+    def start(self, mute_events: bool = True, last_seq: int = 0, fail_early: bool = False) -> None:
         if self._existing_strategies is None:
-            self._process_from_file(mute_events)
+            self._process_from_file(mute_events, last_seq)
         else:
             self._process_from_existing(fail_early)
 
@@ -147,9 +148,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     raise ex
         self.auto_seal()
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self}, None)
+        self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
-    def _process_from_file(self, mute_events=True) -> None:
+    def _process_from_file(self, mute_events=True, from_seq=0) -> None:
         # This method is called when we read the history
         self._emit(events.SourceMessagesRequested, dict(), None)
         if mute_events:
@@ -184,7 +185,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             self._sequence_error(self._last_seq, seq)
                     # UC-3: Strategies may start with any sequence number
                     self._last_seq = seq
-                    self.execute_prepared_strategy(strategy)
+                    if seq > from_seq:
+                        self.execute_prepared_strategy(strategy)
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
@@ -199,7 +201,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:
             self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self})
+        self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
     def repair(self) -> list[str]:
         # This method attempts some basic repairs, trying to save as much
@@ -485,3 +487,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return False
+
+    def get_id(self) -> str:
+        filename = self._get_filename()
+        h = md5(filename.encode('utf-8')).hexdigest()
+        return f'file-{h}'

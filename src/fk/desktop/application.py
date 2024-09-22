@@ -36,6 +36,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.caching_event_source import CachingEventSource
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -209,7 +210,8 @@ class Application(QApplication, AbstractEventEmitter):
         get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
-            return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
+            inner_source = WebsocketEventSource[Tenant](settings, cryptograph, self, root)
+            return CachingEventSource(inner_source, self)
 
         get_event_source_factory().register_producer('websocket', websocket_source_producer)
         get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)

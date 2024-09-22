@@ -40,7 +40,7 @@ class UserModel(QtGui.QStandardItemModel):
         source.on(events.AfterUserRename, self._user_renamed)
         source.on(events.SourceMessagesProcessed, self._on_messages)
 
-    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
         self.load(source.get_data())
 
     def _user_added(self, event: str, user: User) -> None:

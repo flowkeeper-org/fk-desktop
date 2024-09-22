@@ -365,3 +365,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def get_theme(self) -> str:
         raw = self.get('Application.theme')
         return self.get_auto_theme() if raw == 'auto' else raw
+
+    def get_url(self) -> str:
+        source_type = self.get('Source.type')
+        if source_type == 'websocket':
+            return self.get('WebsocketEventSource.url')
+        elif source_type == 'flowkeeper.org':
+            return 'wss://app.flowkeeper.org/ws'
+        elif source_type == 'flowkeeper.pro':
+            return 'wss://app.flowkeeper.pro/ws'
+        else:
+            raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")

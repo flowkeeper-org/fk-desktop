@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import TypeVar, Iterable
 
 from fk.core import events
@@ -44,7 +45,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
         # UC-3: Ephemeral data source is not persisted across executions
         self._content = list()
 
-    def start(self, mute_events=True) -> None:
+    def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         logger.debug(f'Ephemeral event source -- starting. Muting events -- {mute_events}')
         self._emit(events.SourceMessagesRequested, dict())
         if mute_events:
@@ -57,7 +58,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
         if mute_events:
             self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self})
+        self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
     def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         for s in strategies:
@@ -86,3 +87,6 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
     def dump(self):
         for s in self._content:
             logger.debug(s)
+
+    def get_id(self) -> str:
+        return f'ephemeral-{uuid.uuid4()}'

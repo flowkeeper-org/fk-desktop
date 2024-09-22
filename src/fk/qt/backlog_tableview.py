@@ -146,7 +146,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         elif carry == 'select':
             self.select(backlog)
 
-    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
         user = source.get_data().get_current_user()
         self.upstream_selected(user)
         last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')

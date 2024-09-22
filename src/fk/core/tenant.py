@@ -50,3 +50,13 @@ class Tenant(AbstractDataContainer[User, None]):
 
     def get_current_user(self) -> User:
         return self[self._settings.get_username()]
+
+    def __getstate__(self):
+        # Don't pickle the settings
+        d = self.__dict__.copy()
+        del d['_settings']
+        return d
+
+    def __setstate__(self, d):
+        d['_settings'] = None
+        self.__dict__ = d

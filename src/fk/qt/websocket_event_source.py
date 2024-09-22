@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime
 import enum
 import logging
+from hashlib import md5
 from typing import TypeVar
 
 from PySide6 import QtWebSockets, QtCore
@@ -40,6 +41,35 @@ from fk.qt.qt_timer import QtTimer
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
+
+'''
+A rough idea about how this works:
+
+on_source_changed -- source.start()
+ - last_seq = 0
+  - source.connect()
+   - ws.open(...)
+   
+on ws.connected -- source.replay()
+ - auth()
+  - replay_after_auth()
+   - Send auth. strategy
+   - Send replay strategy (last_seq)
+   
+on ws.message -- source.on_message()
+ - Process strategies
+  - update last_seq
+ - on ReplayCompleted
+  - unmute, if needed
+  - emit SourceMessagesProcessed
+  
+on ws.disconnected -- source.connection_lost()
+ - set timer to reconnect. on timer:
+  - source.connect() (see source.start above)
+   - ws.open(...)
+ 
+on ws.<error> -- log
+'''
 
 
 class WebsocketEventSource(AbstractEventSource[TRoot]):
@@ -66,6 +96,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._received_error = False
         self._reconnect_timer = QtTimer("WS Reconnect")
         self._ws = QtWebSockets.QWebSocket()
+
+        # Message callbacks
         self._ws.connected.connect(lambda: self.replay())
         self._ws.disconnected.connect(lambda: self._connection_lost())
         self._ws.textMessageReceived.connect(lambda msg: self._on_message(msg))
@@ -90,20 +122,12 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def connect(self, params: dict | None = None) -> None:
         self._connection_attempt += 1
-        source_type = self.get_config_parameter('Source.type')
-        if source_type == 'websocket':
-            url = self.get_config_parameter('WebsocketEventSource.url')
-        elif source_type == 'flowkeeper.org':
-            url = 'wss://app.flowkeeper.org/ws'
-        elif source_type == 'flowkeeper.pro':
-            url = 'wss://app.flowkeeper.pro/ws'
-        else:
-            raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
+        url = self.get_settings().get_url()
         logger.debug(f'Connecting to {url}, attempt {self._connection_attempt}')
         self._ws.open(QtCore.QUrl(url))
 
-    def start(self, mute_events=True) -> None:
-        self._last_seq = 0
+    def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
+        self._last_seq = last_seq
         self._mute_requested = mute_events
         self.connect()
 
@@ -147,7 +171,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         if to_unmute:
             self.unmute()
         if to_emit:
-            self._emit(events.SourceMessagesProcessed, {'source': self})
+            self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
     def _authenticate_with_google_and_replay(self) -> None:
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
@@ -237,3 +261,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return True
+
+    def get_id(self) -> str:
+        url = self.get_settings().get_url()
+        username = self.get_settings().get_username()
+        h = md5((url + username).encode('utf-8')).hexdigest()
+        return f'websocket-{h}'

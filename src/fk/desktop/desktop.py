@@ -131,7 +131,7 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def on_messages(event: str, source: AbstractEventSource) -> None:
+def on_messages(event: str, source: AbstractEventSource, carry: any = None) -> None:
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         show_timer_automatically()
 
