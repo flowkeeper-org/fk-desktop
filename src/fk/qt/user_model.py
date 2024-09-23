@@ -71,8 +71,8 @@ class UserModel(QtGui.QStandardItemModel):
             txt = f'{user.get_name()}'
         else:
             txt = f'{user.get_name()}: {state}, {remaining} left'
-        col1.setData(txt, Qt.DisplayRole)
-        col1.setData(font, Qt.FontRole)
+        col1.setData(txt, Qt.ItemDataRole.DisplayRole)
+        col1.setData(font, Qt.ItemDataRole.FontRole)
         col1.setData(user, 500)
         col1.setData('title', 501)
         col1.setData(txt, Qt.ItemDataRole.ToolTipRole)

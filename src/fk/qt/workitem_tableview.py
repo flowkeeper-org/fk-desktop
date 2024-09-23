@@ -29,6 +29,7 @@ from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
+from fk.qt.workitem_text_delegate import WorkitemTextDelegate
 
 
 class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
@@ -61,6 +62,9 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
             self._configure_delegate()
 
     def _configure_delegate(self):
+        self.setItemDelegateForColumn(1,
+                                      WorkitemTextDelegate(self,
+                                                           self._application.get_icon_theme()))
         self.setItemDelegateForColumn(2,
                                       PomodoroDelegate(self,
                                                        self._application.get_icon_theme()))
@@ -116,9 +120,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def upstream_selected(self, backlog: Backlog) -> None:
         super().upstream_selected(backlog)
         self._actions['workitems_table.newItem'].setEnabled(backlog is not None)
-        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self._resize()
 
     def update_actions(self, selected: Workitem) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
@@ -217,7 +219,13 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
 
     def _toggle_show_completed_workitems(self, checked: bool) -> None:
         self.model().show_completed(checked)
+        self._resize()
+        self._source.set_config_parameters({'Application.show_completed': str(checked)})
+
+    def _resize(self) -> None:
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self._source.set_config_parameters({'Application.show_completed': str(checked)})
+        # TODO: Make this configurable and release as a new feature.
+        #  It results in visible blinking on Kubuntu 20.04, so cannot be enabled by default.
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)

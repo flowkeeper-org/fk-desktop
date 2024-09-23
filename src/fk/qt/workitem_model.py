@@ -65,7 +65,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         # for i in range(self.rowCount()):
         #     item: QStandardItem = self.item(i, 2)
         #     workitem: Workitem = item.data(500)
-        #     item.setData(QSize(len(workitem) * rh, rh), Qt.SizeHintRole)
+        #     item.setData(QSize(len(workitem) * rh, rh), Qt.ItemDataRole.SizeHintRole)
         #     self.setItem(i, 2, item)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
@@ -127,16 +127,16 @@ class WorkitemModel(QtGui.QStandardItemModel):
             font = self._font_sealed
 
         col1 = QtGui.QStandardItem()
-        col1.setData('' if workitem.is_planned() else '*', Qt.DisplayRole)
-        col1.setData(font, Qt.FontRole)
+        col1.setData('' if workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
+        col1.setData(font, Qt.ItemDataRole.FontRole)
         col1.setData(workitem, 500)
         col1.setData('planned', 501)
         col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 0, col1)
 
         col2 = QtGui.QStandardItem()
-        col2.setData(workitem.get_name(), Qt.DisplayRole)
-        col2.setData(font, Qt.FontRole)
+        col2.setData(workitem.get_name(), Qt.ItemDataRole.DisplayRole)
+        col2.setData(font, Qt.ItemDataRole.FontRole)
         col2.setData(workitem, 500)
         col2.setData('title', 501)
         col2.setData(workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
@@ -149,12 +149,15 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col3 = QtGui.QStandardItem()
         # Here we rely on the fact that dict.values() stores values in the FIFO order,
         # i.e. acts like a list. I'm not sure if it is guaranteed, but seems to work.
-        col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
-        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
+        col3.setData(','.join([str(p) for p in workitem.values()]), Qt.ItemDataRole.DisplayRole)
+        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
         col3.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 2, col3)
+
+    def get_row_height(self):
+        return self._row_height
 
     def load(self, backlog: Backlog) -> None:
         logger.debug(f'WorkitemModel.load({backlog})')
