@@ -47,8 +47,7 @@ class Tag(AbstractDataItem['Tags']):
         self._workitems.add(workitem)
 
     def remove_workitem(self, workitem: Workitem) -> None:
-        if workitem in self._workitems:
-            self._workitems.remove(workitem)
+        self._workitems.remove(workitem)
 
     def dump(self, indent: str = '') -> str:
         return f'{super().dump(indent)}\n' \

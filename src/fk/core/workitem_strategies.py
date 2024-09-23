@@ -91,8 +91,13 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         # Update tags
         for tag in get_tags(self._workitem_name):
             if tag not in user.get_tags():
-                user.get_tags()[tag] = Tag(tag, user, self._when)
-            user.get_tags()[tag].add_workitem(workitem)
+                new_tag = Tag(tag, user, self._when)
+                user.get_tags()[tag] = new_tag
+                emit(events.TagCreated, {"tag": new_tag}, self._carry)
+            tag_object = user.get_tags()[tag]
+            if workitem not in tag_object.get_workitems():
+                tag_object.add_workitem(workitem)
+                emit(events.TagContentChanged, {"tag": tag_object}, self._carry)
 
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
@@ -153,8 +158,16 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         workitem.item_updated(self._when)   # Update Backlog
 
         # Update tags
+        tags_to_delete = set[Tag]()
         for tag in user.get_tags().values():
-            tag.remove_workitem(workitem)
+            if workitem in tag.get_workitems():
+                tag.remove_workitem(workitem)
+                emit(events.TagContentChanged, {"tag": tag}, self._carry)
+                if len(tag.get_workitems()) == 0:
+                    tags_to_delete.add(tag)
+        for tag_to_delete in tags_to_delete:
+            del user.get_tags()[tag_to_delete.get_uid()]
+            emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
 
         del workitem.get_parent()[self._workitem_uid]
 
@@ -220,12 +233,27 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
             if new_tag not in old_tags:
                 # A new tag was added
                 if new_tag not in user.get_tags():
-                    user.get_tags()[new_tag] = Tag(new_tag, user, self._when)
-                user.get_tags()[new_tag].add_workitem(workitem)
+                    new_tag_object = Tag(new_tag, user, self._when)
+                    user.get_tags()[new_tag] = new_tag_object
+                    emit(events.TagCreated, {"tag": new_tag_object}, self._carry)
+                tag_object = user.get_tags()[new_tag]
+                if workitem not in tag_object.get_workitems():
+                    tag_object.add_workitem(workitem)
+                    emit(events.TagContentChanged, {"tag": tag_object}, self._carry)
+        tags_to_delete = set[Tag]()
         for old_tag in old_tags:
             if old_tag not in new_tags:
                 # An old tag was removed
-                user.get_tags()[old_tag].remove_workitem(workitem)
+                if old_tag in user.get_tags():
+                    old_tag_object = user.get_tags()[old_tag]
+                    if workitem in old_tag_object.get_workitems():
+                        old_tag_object.remove_workitem(workitem)
+                        emit(events.TagDeleted, {"tag": old_tag_object}, self._carry)
+                        if len(old_tag_object.get_workitems()) == 0:
+                            tags_to_delete.add(old_tag_object)
+        for tag_to_delete in tags_to_delete:
+            del user.get_tags()[tag_to_delete.get_uid()]
+            emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
 
         emit(events.AfterWorkitemRename, params, self._carry)
 
