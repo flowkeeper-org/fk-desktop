@@ -78,6 +78,46 @@ class TestWorkitems(TestCase):
         workitem2 = backlog['w12']
         self.assertEqual(workitem2.get_name(), 'Second workitem')
 
+    def test_create_workitems_with_tags(self):
+        user, backlog = self._standard_backlog()
+        self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', '#Second workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w13', 'b1', '#Third #workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w14', 'b1', 'Fourth #workitem and some more #workitem text'])
+        self.source.execute(CreateWorkitemStrategy, ['w15', 'b1', 'Fifth #workitem.'])
+        self.source.execute(CreateWorkitemStrategy, ['w16', 'b1', 'Six #workitem and #workitems'])
+        self.source.auto_seal()
+        self.assertIn('w11', backlog)
+        self.assertIn('w12', backlog)
+        self.assertIn('w13', backlog)
+        self.assertIn('w14', backlog)
+        self.assertIn('w15', backlog)
+        self.assertIn('w16', backlog)
+        workitem1: Workitem = backlog['w11']
+        self._assert_workitem(workitem1, user, backlog)
+        workitem2 = backlog['w12']
+        self.assertEqual(workitem2.get_name(), '#Second workitem')
+        workitem3 = backlog['w13']
+        self.assertEqual(workitem3.get_name(), '#Third #workitem')
+        workitem4 = backlog['w14']
+        self.assertEqual(workitem4.get_name(), 'Fourth #workitem and some more #workitem text')
+        workitem5 = backlog['w15']
+        self.assertEqual(workitem5.get_name(), 'Fifth #workitem.')
+        workitem6 = backlog['w16']
+        self.assertEqual(workitem6.get_name(), 'Six #workitem and #workitems')
+        tags = user.get_tags()
+        self.assertEqual(len(tags.keys()), 4)
+        self.assertIn('workitem', tags)
+        self.assertIn('second', tags)
+        self.assertIn('third', tags)
+        self.assertIn('workitems', tags)
+        workitems = tags['workitem'].get_workitems()
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(workitem3, workitems)
+        self.assertIn(workitem4, workitems)
+        self.assertIn(workitem5, workitems)
+        self.assertIn(workitem6, workitems)
+
     def test_execute_prepared(self):
         user, backlog = self._standard_backlog()
         s = CreateWorkitemStrategy(2,

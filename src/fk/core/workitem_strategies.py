@@ -14,16 +14,28 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
-from typing import Callable
+import re
+from typing import Callable, Set
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
+from fk.core.tag import Tag
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
+
+
+TAG_REGEX = re.compile('#(\\w+)')
+
+
+def get_tags(name: str) -> Set[str]:
+    res = set[str]()
+    for t in TAG_REGEX.finditer(name):
+        res.add(t.group(1).lower())
+    return res
 
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
@@ -75,6 +87,13 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         )
         backlog[self._workitem_uid] = workitem
         workitem.item_updated(self._when)   # This will also update the Backlog
+
+        # Update tags
+        for tag in get_tags(self._workitem_name):
+            if tag not in user.get_tags():
+                user.get_tags()[tag] = Tag(tag, user, self._when)
+            user.get_tags()[tag].add_workitem(workitem)
+
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
         }, self._carry)
@@ -128,9 +147,17 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
             'workitem': workitem
         }
         emit(events.BeforeWorkitemDelete, params, self._carry)
-        void_running_pomodoro(self, emit, data, workitem)
+
+        void_running_pomodoro(self, emit, data, workitem)   # Void pomodoros
+
         workitem.item_updated(self._when)   # Update Backlog
+
+        # Update tags
+        for tag in user.get_tags().values():
+            tag.remove_workitem(workitem)
+
         del workitem.get_parent()[self._workitem_uid]
+
         emit(events.AfterWorkitemDelete, params, self._carry)
         return None, None
 
@@ -181,8 +208,25 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
             'new_name': self._new_workitem_name,
         }
         emit(events.BeforeWorkitemRename, params, self._carry)
+
+        old_tags = get_tags(workitem.get_name())
+        new_tags = get_tags(self._new_workitem_name)
+
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
+
+        # Update tags
+        for new_tag in new_tags:
+            if new_tag not in old_tags:
+                # A new tag was added
+                if new_tag not in user.get_tags():
+                    user.get_tags()[new_tag] = Tag(new_tag, user, self._when)
+                user.get_tags()[new_tag].add_workitem(workitem)
+        for old_tag in old_tags:
+            if old_tag not in new_tags:
+                # An old tag was removed
+                user.get_tags()[old_tag].remove_workitem(workitem)
+
         emit(events.AfterWorkitemRename, params, self._carry)
 
 

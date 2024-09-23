@@ -64,7 +64,8 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
     def _configure_delegate(self):
         self.setItemDelegateForColumn(1,
                                       WorkitemTextDelegate(self,
-                                                           self._application.get_icon_theme()))
+                                                           self._application.get_icon_theme(),
+                                                           self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
         self.setItemDelegateForColumn(2,
                                       PomodoroDelegate(self,
                                                        self._application.get_icon_theme()))

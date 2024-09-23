@@ -26,18 +26,20 @@ DATE_REGEX = re.compile('([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])')
 
 class WorkitemTextDelegate(QtWidgets.QItemDelegate):
     _theme: str
+    _text_color: str
 
     def _get_renderer(self, name):
         return QtSvg.QSvgRenderer(f':/icons/{self._theme}/24x24/pomodoro-{name}.svg')
 
-    def __init__(self, parent: QtCore.QObject = None, theme: str = 'mixed'):
+    def __init__(self, parent: QtCore.QObject = None, theme: str = 'mixed', text_color: str = '#000'):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._theme = theme
+        self._text_color = text_color
 
     def _format_html(self, s: str) -> str:
         s = TAG_REGEX.sub('<span style="background-color: #999; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
         s = DATE_REGEX.sub('<span style="background-color: #77F; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
-        return f'<span style="color: #fff;">{s}</span>'
+        return f'<span style="color: {self._text_color};">{s}</span>'
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         painter.save()
@@ -57,7 +59,6 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:
-        original = super().sizeHint(option, index)
-        original.setHeight(original.height() + 8)
-        print(original)
-        return original
+        size = super().sizeHint(option, index)
+        size.setHeight(size.height() + 6)
+        return size
