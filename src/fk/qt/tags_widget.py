@@ -16,7 +16,7 @@
 import logging
 from typing import Collection
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLabel
+from PySide6.QtWidgets import QWidget, QLabel, QFrame
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import TagCreated, TagDeleted, SourceMessagesProcessed
@@ -27,33 +27,30 @@ from fk.qt.flow_layout import FlowLayout
 logger = logging.getLogger(__name__)
 
 
-class TagsWidget(QWidget):
+class TagsWidget(QFrame):
     _application: Application
     _source: AbstractEventSource
-    _layout: FlowLayout
 
     def __init__(self, parent: QWidget, application: Application):
         super().__init__(parent)
         self._application = application
         self._source = None
-        self.setObjectName('tags')
-        self.setContentsMargins(10, 0, 10, 10)
 
-        self._layout = FlowLayout(self)
-        self._layout.setObjectName(f"tags_layout")
-        self.setLayout(self._layout)
+        self.setObjectName('tags_table')
+        self.setContentsMargins(10, 10, 10, 10)
+        self.setLayout(FlowLayout(self))
 
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
     def _add_tag(self, tag: Tag, event: str = None) -> None:
         widget = QLabel(f'#{tag.get_uid()}', self)
-        widget.setObjectName(f'tag-label')
-        self._layout.addWidget(widget)
+        widget.setObjectName(f'tag_label')
+        self.layout().addWidget(widget)
 
     def _delete_tag(self, tag: Tag, event: str) -> None:
         for widget in self._get_child_widgets():
             if widget.text() == f'#{tag.get_uid()}':
-                self._layout.removeWidget(widget)
+                self.layout().removeWidget(widget)
                 widget.deleteLater()
                 break
 

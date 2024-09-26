@@ -1,5 +1,5 @@
 # PySide6 port of the widgets/layouts/flowlayout example from Qt v6.x
-# Copied it from here:
+# Copied with minor modifications from here:
 # https://doc-snapshots.qt.io/qtforpython-6.2/examples/example_widgets_layouts_flowlayout.html
 
 from PySide6.QtCore import Qt, QMargins, QPoint, QRect, QSize
@@ -9,10 +9,6 @@ from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget, QLayoutItem
 class FlowLayout(QLayout):
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        if parent is not None:
-            self.setContentsMargins(QMargins(0, 0, 0, 0))
-
         self._item_list = []
 
     def __del__(self):

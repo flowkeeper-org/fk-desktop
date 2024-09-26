@@ -57,12 +57,12 @@ QTableView::item:selected {
     border: none;
 }
 
-#users_table {
+#users_table, #tags_table {
     border-top: 1px solid $BORDER_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#backlogs_table, #users_table, #backlogs_widget {
+#backlogs_table, #users_table, #tags_table, #backlogs_widget {
     background-color: $SECONDARY_BG_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
@@ -114,7 +114,7 @@ InfoOverlay #overlay_text, #prev_button {
     color: "#000000";
 }
 
-#tag-label {
+#tag_label {
     background-color: $TOOLBAR_CHECKED_BG_COLOR;
     color: $FOCUS_TEXT_COLOR;
     border-radius: 5px;
