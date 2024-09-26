@@ -115,8 +115,9 @@ InfoOverlay #overlay_text, #prev_button {
 }
 
 #tag_label {
-    background-color: $TOOLBAR_CHECKED_BG_COLOR;
-    color: $FOCUS_TEXT_COLOR;
+    background: none;
+    color: $TABLE_TEXT_COLOR;
     border-radius: 5px;
     border: 1px solid $BORDER_COLOR;
+    font-weight: bold;
 }

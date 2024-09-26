@@ -38,7 +38,7 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
 
     def _format_html(self, s: str) -> str:
         s = TAG_REGEX.sub('<b>\\1</b>', s)
-        s = DATE_REGEX.sub('<b>\\1</b>', s)
+        # s = DATE_REGEX.sub('<b>\\1</b>', s)
         return f'<span style="color: {self._text_color};">{s}</span>'
 
     def _format_html_old(self, s: str) -> str:

@@ -36,6 +36,10 @@ class FlowLayout(QLayout):
         for i in range(len(self._item_list)):
             if self._item_list[i].widget() == widget:
                 self._item_list.pop(i)
+                return
+
+    def widgets(self):
+        return [self._item_list[i].widget() for i in range(len(self._item_list))]
 
     def expandingDirections(self):
         return Qt.Orientation(0)

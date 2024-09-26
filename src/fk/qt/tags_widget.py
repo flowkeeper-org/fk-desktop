@@ -48,24 +48,18 @@ class TagsWidget(QFrame):
         self.layout().addWidget(widget)
 
     def _delete_tag(self, tag: Tag, event: str) -> None:
-        for widget in self._get_child_widgets():
+        for widget in self.layout().widgets():
             if widget.text() == f'#{tag.get_uid()}':
                 self.layout().removeWidget(widget)
                 widget.deleteLater()
                 break
 
     def _init_tags(self, source: AbstractEventSource, event: str = None) -> None:
-        for widget in self._get_child_widgets():
-            self.children().remove(widget)
+        for widget in self.layout().widgets():
+            self.layout().removeWidget(widget)
+            widget.deleteLater()
         for tag in source.get_data().get_current_user().get_tags().values():
             self._add_tag(tag)
-
-    def _get_child_widgets(self) -> Collection[QLabel]:
-        res = list[QWidget]()
-        for widget in self.children():
-            if widget.objectName().startswith('tag-'):
-                res.append(widget)
-        return res
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self._source = source
