@@ -41,6 +41,7 @@ from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
+from fk.qt.tags_widget import TagsWidget
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
 from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
@@ -296,6 +297,10 @@ if __name__ == "__main__":
         # Users table
         users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
         left_layout.addWidget(users_table)
+
+        # Tags
+        tags_widget: TagsWidget = TagsWidget(window, app)
+        left_layout.addWidget(tags_widget)
 
         # noinspection PyTypeChecker
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")

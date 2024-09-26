@@ -113,3 +113,10 @@ InfoOverlay #overlay_text, #prev_button {
     background-color: "#f7f8fa";
     color: "#000000";
 }
+
+#tag-label {
+    background-color: $TOOLBAR_CHECKED_BG_COLOR;
+    color: $FOCUS_TEXT_COLOR;
+    border-radius: 5px;
+    border: 1px solid $BORDER_COLOR;
+}
