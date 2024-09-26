@@ -241,6 +241,7 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
                     tag_object.add_workitem(workitem)
                     emit(events.TagContentChanged, {"tag": tag_object}, self._carry)
         tags_to_delete = set[Tag]()
+        fired_for = set[Tag]()
         for old_tag in old_tags:
             if old_tag not in new_tags:
                 # An old tag was removed
@@ -249,11 +250,13 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
                     if workitem in old_tag_object.get_workitems():
                         old_tag_object.remove_workitem(workitem)
                         emit(events.TagDeleted, {"tag": old_tag_object}, self._carry)
+                        fired_for.add(old_tag_object)
                         if len(old_tag_object.get_workitems()) == 0:
                             tags_to_delete.add(old_tag_object)
         for tag_to_delete in tags_to_delete:
             del user.get_tags()[tag_to_delete.get_uid()]
-            emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
+            if tag_to_delete not in fired_for:
+                emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
 
         emit(events.AfterWorkitemRename, params, self._carry)
 

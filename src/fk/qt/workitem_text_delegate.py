@@ -37,6 +37,11 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         self._text_color = text_color
 
     def _format_html(self, s: str) -> str:
+        s = TAG_REGEX.sub('<b>\\1</b>', s)
+        s = DATE_REGEX.sub('<b>\\1</b>', s)
+        return f'<span style="color: {self._text_color};">{s}</span>'
+
+    def _format_html_old(self, s: str) -> str:
         s = TAG_REGEX.sub('<span style="background-color: #999; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
         s = DATE_REGEX.sub('<span style="background-color: #77F; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
         return f'<span style="color: {self._text_color};">{s}</span>'
@@ -48,8 +53,6 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         # painter.drawText(QRect(0, 4, option.rect.width(), option.rect.height()),
         #                  Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap,
         #                  index.data())
-
-        # print(option.rect)
         document = QTextDocument(self)
         document.setTextWidth(option.rect.width())
         document.setHtml(self._format_html(index.data()))

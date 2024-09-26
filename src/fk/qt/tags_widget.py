@@ -54,8 +54,8 @@ class TagsWidget(QWidget):
         for widget in self._get_child_widgets():
             if widget.text() == f'#{tag.get_uid()}':
                 self._layout.removeWidget(widget)
-                print(f'Removed {widget.text()}')
-                return
+                widget.deleteLater()
+                break
 
     def _init_tags(self, source: AbstractEventSource, event: str = None) -> None:
         for widget in self._get_child_widgets():

@@ -3,7 +3,7 @@
 # https://doc-snapshots.qt.io/qtforpython-6.2/examples/example_widgets_layouts_flowlayout.html
 
 from PySide6.QtCore import Qt, QMargins, QPoint, QRect, QSize
-from PySide6.QtWidgets import QLayout, QSizePolicy
+from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget, QLayoutItem
 
 
 class FlowLayout(QLayout):
@@ -29,14 +29,17 @@ class FlowLayout(QLayout):
     def itemAt(self, index):
         if 0 <= index < len(self._item_list):
             return self._item_list[index]
-
         return None
 
     def takeAt(self, index):
         if 0 <= index < len(self._item_list):
             return self._item_list.pop(index)
-
         return None
+
+    def removeWidget(self, widget: QWidget):
+        for i in range(len(self._item_list)):
+            if self._item_list[i].widget() == widget:
+                self._item_list.pop(i)
 
     def expandingDirections(self):
         return Qt.Orientation(0)
