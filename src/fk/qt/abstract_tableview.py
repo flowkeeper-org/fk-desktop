@@ -192,7 +192,11 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def deselect(self) -> None:
         self.selectionModel().clearSelection()
+
+        # We have to block signals here to avoid triggering AfterSelectionChanged, which would screw up the
+        # backlog / tags mutually exclusive selection logic
         self.selectionModel().blockSignals(True)
         self.setCurrentIndex(QModelIndex())
         self.selectionModel().blockSignals(False)
+
         self.update_actions(None)
