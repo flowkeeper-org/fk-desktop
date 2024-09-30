@@ -380,6 +380,10 @@ class SettingsDialog(QDialog):
             key_view.clicked.connect(lambda: key_view.setText("Show" if key_view.text() == "Hide" else "Hide"))
             layout.addWidget(key_view)
             return [widget]
+        elif option_type == 'label':
+            ed11 = QLabel(parent)
+            ed11.setText(option_value)
+            return [ed11]
         else:
             return []
 

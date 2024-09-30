@@ -94,6 +94,10 @@ def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_rest_sound'] == 'True'
 
 
+def _show_if_madelene(values: dict[str, str]) -> bool:
+    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.mp3'
+
+
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
 
@@ -240,7 +244,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Lobo Loco - Madelene (ID 1315).mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_copyright', 'label', '', 'Embedded music - "Madelene (ID 1315)"\n(C) Lobo Loco <https://www.musikbrause.de>,\nCC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
