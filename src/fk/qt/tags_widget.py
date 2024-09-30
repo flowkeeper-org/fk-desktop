@@ -62,8 +62,14 @@ class TagsWidget(QFrame, AbstractEventEmitter):
                 return w.objectName()
         return None
 
+    def deselect(self) -> None:
+        for w in self.layout().widgets():
+            if type(w) is QPushButton and w.isChecked():
+                w.blockSignals(True)
+                w.setChecked(False)
+                w.blockSignals(False)
+
     def _on_tag_toggled(self, widget: QPushButton, is_checked: bool, tag: Tag) -> None:
-        #print(f'_on_tag_toggled({widget.objectName()}, {is_checked}, {tag})')
         if is_checked:
             # We selected a tag -- see if we need to deselect anything else
             before = None

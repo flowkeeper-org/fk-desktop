@@ -189,3 +189,10 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                 self.scrollTo(index)
                 return index
         raise Exception(f"Trying to select a table item {data}, which does not exist")
+
+    def deselect(self) -> None:
+        self.selectionModel().clearSelection()
+        self.selectionModel().blockSignals(True)
+        self.setCurrentIndex(QModelIndex())
+        self.selectionModel().blockSignals(False)
+        self.update_actions(None)

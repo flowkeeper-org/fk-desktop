@@ -31,6 +31,7 @@ class BacklogWidget(QWidget):
     _backlogs_table: BacklogTableView
     _tags: TagsWidget
     _source_holder: EventSourceHolder
+    _last_selection: Backlog | Tag | None
 
     def __init__(self,
                  parent: QWidget,
@@ -40,6 +41,7 @@ class BacklogWidget(QWidget):
         super().__init__(parent)
         self.setObjectName('backlogs_widget')
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+        self._last_selection = None
 
         self._source_holder = source_holder
         layout = QVBoxLayout(self)
@@ -63,9 +65,16 @@ class BacklogWidget(QWidget):
         # Synchronize Backlogs and Tags selections
         self._backlogs_table.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
         self._tags.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
+        self._backlogs_table.on(AfterSelectionChanged, lambda event, before, after: print(f'Backlog selection changed: {after}'))
+        self._tags.on(AfterSelectionChanged, lambda event, before, after: print(f'Tag selection changed: {after}'))
 
     def _on_selection(self, backlog_or_tag: Backlog | Tag):
         print(f'_on_selection({backlog_or_tag})')
+        if type(backlog_or_tag) is Backlog and type(self._last_selection) is Tag:
+            self._tags.deselect()
+        elif type(backlog_or_tag) is Tag and type(self._last_selection) is Backlog:
+            self._backlogs_table.deselect()
+        self._last_selection = backlog_or_tag
 
     def get_table(self) -> BacklogTableView:
         return self._backlogs_table
