@@ -298,10 +298,6 @@ if __name__ == "__main__":
         users_table: UserTableView = UserTableView(window, app, app.get_source_holder(), actions)
         left_layout.addWidget(users_table)
 
-        # Tags
-        tags_widget: TagsWidget = TagsWidget(window, app)
-        left_layout.addWidget(tags_widget)
-
         # noinspection PyTypeChecker
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 

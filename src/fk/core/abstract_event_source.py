@@ -29,6 +29,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.tag import Tag
 from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
@@ -186,6 +187,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             for backlog in user.values():
                 yield backlog
 
+    def tags(self) -> Iterable[Tag]:
+        for user in self.get_data().values():
+            for tag in user.get_tags().values():
+                yield tag
+
     def workitems(self) -> Iterable[Workitem]:
         for backlog in self.backlogs():
             for workitem in backlog.values():
@@ -200,6 +206,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         for backlog in self.backlogs():
             if backlog.get_uid() == uid:
                 return backlog
+
+    def find_tag(self, uid: str) -> Tag | None:
+        for tag in self.tags():
+            if tag.get_uid() == uid:
+                return tag
 
     def find_user(self, identity: str) -> User | None:
         for user in self.users():

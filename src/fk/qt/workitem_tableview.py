@@ -22,6 +22,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
 from fk.desktop.application import Application
@@ -32,7 +33,7 @@ from fk.qt.workitem_model import WorkitemModel
 from fk.qt.workitem_text_delegate import WorkitemTextDelegate
 
 
-class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
+class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
     _application: Application
     _menu: QMenu
 
@@ -47,7 +48,7 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                          'workitems_table',
                          actions,
                          'Loading, please wait...',
-                         '← Select a backlog.',
+                         '← Select a backlog or tag.',
                          'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
                          1)
         self._application = application
@@ -118,9 +119,9 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
                     True,
                     actions.get_settings().get('Application.show_completed') == 'True')
 
-    def upstream_selected(self, backlog: Backlog) -> None:
-        super().upstream_selected(backlog)
-        self._actions['workitems_table.newItem'].setEnabled(backlog is not None)
+    def upstream_selected(self, backlog_or_tag: Backlog | Tag) -> None:
+        super().upstream_selected(backlog_or_tag)
+        self._actions['workitems_table.newItem'].setEnabled(type(backlog_or_tag) is Backlog)
         self._resize()
 
     def update_actions(self, selected: Workitem) -> None:
@@ -139,9 +140,12 @@ class WorkitemTableView(AbstractTableView[Backlog, Workitem]):
 
     def create_workitem(self) -> None:
         model = self.model()
-        backlog: Backlog = model.get_backlog()
-        if backlog is None:
-            raise Exception("Trying to create a workitem while there's no backlog selected")
+        backlog_or_tag: Backlog | Tag = model.get_backlog_or_tag()
+        if backlog_or_tag is None:
+            raise Exception("Trying to create a workitem while there's no backlog nor tag selected")
+        if type(backlog_or_tag) is Tag:
+            raise Exception("Trying to create a workitem directly in a tag -- shouldn't be possible")
+        backlog: Backlog = backlog_or_tag
         new_name = generate_unique_name("Do something", backlog.names())
         self._source.execute(CreateWorkitemStrategy,
                              [generate_uid(), backlog.get_uid(), new_name],

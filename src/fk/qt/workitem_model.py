@@ -23,6 +23,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged
+from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy
 
@@ -34,7 +35,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
-    _backlog: Backlog | None
+    _backlog_or_tag: Backlog | Tag | None
     _row_height: int
     _show_completed: bool
 
@@ -46,7 +47,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
-        self._backlog = None
+        self._backlog_or_tag = None
         self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
         self._update_row_height()
         self.itemChanged.connect(lambda item: self._handle_rename(item))
@@ -96,13 +97,13 @@ class WorkitemModel(QtGui.QStandardItemModel):
                     )
 
     def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
-        if workitem.get_parent() == self._backlog:
+        if type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag:
             item = QtGui.QStandardItem('')
             self.appendRow(item)
             self.set_row(self.rowCount() - 1, workitem)
 
     def _workitem_deleted(self, workitem: Workitem, **kwargs) -> None:
-        if workitem.get_parent() == self._backlog:
+        if type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag:
             for i in range(self.rowCount()):
                 wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
                 if wi == workitem:
@@ -159,13 +160,14 @@ class WorkitemModel(QtGui.QStandardItemModel):
     def get_row_height(self):
         return self._row_height
 
-    def load(self, backlog: Backlog) -> None:
-        logger.debug(f'WorkitemModel.load({backlog})')
+    def load(self, backlog_or_tag: Backlog | Tag) -> None:
+        logger.debug(f'WorkitemModel.load({backlog_or_tag})')
         self.clear()
-        self._backlog = backlog
-        if backlog is not None:
+        self._backlog_or_tag = backlog_or_tag
+        if backlog_or_tag is not None:
             i = 0
-            for workitem in backlog.values():
+            workitems = backlog_or_tag.values() if type(backlog_or_tag) is Backlog else backlog_or_tag.get_workitems()
+            for workitem in workitems:
                 if not self._show_completed and workitem.is_sealed():
                     continue
                 item = QtGui.QStandardItem('')
@@ -178,7 +180,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
     def show_completed(self, show: bool) -> None:
         self._show_completed = show
-        self.load(self._backlog)
+        self.load(self._backlog_or_tag)
 
-    def get_backlog(self) -> Backlog | None:
-        return self._backlog
+    def get_backlog_or_tag(self) -> Backlog | Tag | None:
+        return self._backlog_or_tag

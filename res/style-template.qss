@@ -114,10 +114,16 @@ InfoOverlay #overlay_text, #prev_button {
     color: "#000000";
 }
 
-#tag_label {
+.tag_label {
     background: none;
     color: $TABLE_TEXT_COLOR;
     border-radius: 5px;
     border: 1px solid $BORDER_COLOR;
-    font-weight: bold;
+    padding: 0px 6px 0px 6px;
+}
+
+.tag_label:checked {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
 }

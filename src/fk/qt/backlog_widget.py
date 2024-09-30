@@ -16,15 +16,20 @@
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
+from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
+from fk.core.tag import Tag
 from fk.desktop.application import Application
+from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.configurable_toolbar import ConfigurableToolBar
+from fk.qt.tags_widget import TagsWidget
 
 
 class BacklogWidget(QWidget):
     _backlogs_table: BacklogTableView
+    _tags: TagsWidget
     _source_holder: EventSourceHolder
 
     def __init__(self,
@@ -52,5 +57,18 @@ class BacklogWidget(QWidget):
         self._backlogs_table = BacklogTableView(self, application, source_holder, actions)
         layout.addWidget(self._backlogs_table)
 
-    def get_table(self):
+        self._tags: TagsWidget = TagsWidget(self, application)
+        layout.addWidget(self._tags)
+
+        # Synchronize Backlogs and Tags selections
+        self._backlogs_table.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
+        self._tags.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
+
+    def _on_selection(self, backlog_or_tag: Backlog | Tag):
+        print(f'_on_selection({backlog_or_tag})')
+
+    def get_table(self) -> BacklogTableView:
         return self._backlogs_table
+
+    def get_tags(self) -> TagsWidget:
+        return self._tags

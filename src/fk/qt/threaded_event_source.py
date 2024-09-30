@@ -24,6 +24,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.tag import Tag
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.qt_invoker import invoke_in_main_thread
@@ -111,6 +112,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def backlogs(self) -> Iterable[Backlog]:
         return self._wrapped.backlogs()
 
+    def tags(self) -> Iterable[Tag]:
+        return self._wrapped.tags()
+
     def workitems(self) -> Iterable[Workitem]:
         return self._wrapped.workitems()
 
@@ -119,6 +123,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def find_workitem(self, uid: str) -> Workitem | None:
         return self._wrapped.find_workitem(uid)
+
+    def find_tag(self, uid: str) -> Tag | None:
+        return self._wrapped.find_tag(uid)
 
     def find_backlog(self, uid: str) -> Backlog | None:
         return self._wrapped.find_backlog(uid)
