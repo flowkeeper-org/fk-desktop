@@ -113,6 +113,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             raise Exception(f'WebSocket {s}: {e}')
 
     def _connection_lost(self) -> None:
+        # TODO: Is there a way to update the Heartbeat facility, so that the widgets are notified quicker?
+        #  Same for connect() -- update Heartbeat.
         next_reconnect = min(max(500, int(pow(1.5, self._connection_attempt))), 30000)
         if self._received_error:
             logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
@@ -222,12 +224,11 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
 
-    def _append(self, strategies: list[AbstractStrategy]) -> None:
-        for s in strategies:
-            to_send = self._serializer.serialize(s)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'Sending strategy {to_send}')
-            self._ws.sendTextMessage(to_send)
+    def append(self, strategies: list[AbstractStrategy]) -> None:
+        to_send = '\n'.join([self._serializer.serialize(s) for s in strategies])
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Sending strategies: \n{to_send}')
+        self._ws.sendTextMessage(to_send)
 
     def get_name(self) -> str:
         return "Websocket"
@@ -242,7 +243,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                                            new_root)
 
     def disconnect(self):
-        self._ws.disconnected.disconnect()
+        self._ws.disconnected.disconnect()  # Otherwise we'll reopen it in _connection_lost()
         self._ws.close()
 
     def send_ping(self) -> str | None:

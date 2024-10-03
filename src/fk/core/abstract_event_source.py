@@ -119,7 +119,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     # Assuming those strategies have been already executed. We do not replay them here.
     # Override
     @abstractmethod
-    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
+    def append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         pass
 
     # This will initiate connection, which will trigger replay
@@ -142,7 +142,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
         if persist:
-            self._append([strategy])
+            self.append([strategy])
             # UC-2: Strategy sequence is incremented only after it is persisted
             self._last_seq = strategy.get_sequence()   # Only save it if all went well
 

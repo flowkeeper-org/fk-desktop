@@ -1,3 +1,9 @@
+### v1.0.0 (TBD)
+- Enabled websocket data sources, including flowkeeper.org.
+- Implemented local caching / offline mode for websocket data sources.
+- Configurable caching for local file source to speed up loading.
+- [Technical] Improved performance of sending actions to the server.
+
 ### v0.7.1 (13 September 2024)
 - [Bugfix] Fixed import/export wizard look & feel on Windows 11 with Qt 6.7.x.
 - [Bugfix] Fixed "No QtMultimedia backends found" issue on macOS.

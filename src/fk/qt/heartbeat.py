@@ -96,6 +96,7 @@ class Heartbeat(AbstractEventEmitter):
             if not self.is_online():
                 if diff_ms <= self._threshold_ms:
                     self._state = 'online'
+                    # TODO: Push this state into the source, too
                     self._emit(events.WentOnline, {
                         'ping': diff_ms,
                     })

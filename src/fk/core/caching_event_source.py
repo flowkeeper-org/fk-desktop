@@ -24,6 +24,7 @@ from typing import TypeVar, Generic
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_event_source_wrapper import AbstractEventSourceWrapper
+from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.events import SourceMessagesProcessed
 from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
@@ -89,6 +90,8 @@ class CachingEventSource(AbstractEventSourceWrapper[TRoot]):
         return 0
 
     def save_cache(self) -> None:
+        # Call this on timer, too
+        # Call this just before exiting, too
         print(f'Saving data to cache: {self._cache_filename}')
         with open(self._cache_filename, 'wb') as f:
             cached = CachedData(self.get_data(), self._wrapped.get_last_sequence())
@@ -97,6 +100,8 @@ class CachingEventSource(AbstractEventSourceWrapper[TRoot]):
 
     def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         restored_seq = self.restore_cache()
+        # TODO: Now replay the redo log
+        # Redo log is emptied when the cache is up-to-date AND all strategies from redo log are sent to the server
         if restored_seq > 0:
             self._wrapped._emit(events.SourceMessagesProcessed,
                        {'source': self._wrapped},
@@ -104,3 +109,9 @@ class CachingEventSource(AbstractEventSourceWrapper[TRoot]):
             last_seq = restored_seq
             print(f'Emitted SourceMessagesProcessed from cache')
         self._wrapped.start(mute_events, last_seq)
+
+    def append(self, strategies: list[AbstractStrategy]) -> None:
+        # TODO: Check connection state here. If we are offline -- append it to redo log, otherwise use _wrapped.
+        #  Add some is_connected() to the AbstractEventSource.
+        #  Subscribe to connection state, and replay the redo log on WentOnline
+        self._wrapped.append(strategies)

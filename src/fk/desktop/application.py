@@ -556,7 +556,7 @@ class Application(QApplication, AbstractEventEmitter):
         AboutWindow(self.activeWindow()).show()
 
     def toggle_toolbar(self, state: bool):
-        self._settings.set({ 'Application.show_toolbar': str(state) })
+        self._settings.set({'Application.show_toolbar': str(state)})
 
     def get_heartbeat(self) -> Heartbeat:
         return self._heartbeat

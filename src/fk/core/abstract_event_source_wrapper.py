@@ -47,8 +47,8 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
     def get_name(self) -> str:
         return self._wrapped.get_name()
 
-    def _append(self, strategies: list[AbstractStrategy]) -> None:
-        return self._wrapped._append(strategies)
+    def append(self, strategies: list[AbstractStrategy]) -> None:
+        return self._wrapped.append(strategies)
 
     def clone(self, new_root: TRoot) -> Self[TRoot]:
         return self._wrapped.clone(new_root)

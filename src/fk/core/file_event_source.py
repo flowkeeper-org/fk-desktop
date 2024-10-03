@@ -419,7 +419,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         log.append(f'Overwritten original file {filename}')
         return backup_filename
 
-    def _append(self, strategies: list[AbstractStrategy]) -> None:
+    def append(self, strategies: list[AbstractStrategy]) -> None:
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
         #  then append to both files at the same time.
         # UC-2: For file source, new strategies get appended to the file immediately after execution
