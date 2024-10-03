@@ -43,7 +43,6 @@ class TagsWidget(QFrame, AbstractEventEmitter):
         self._source = None
 
         self.setObjectName('tags_table')
-        self.setContentsMargins(10, 10, 10, 10)
         self.setLayout(FlowLayout(self))
 
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)

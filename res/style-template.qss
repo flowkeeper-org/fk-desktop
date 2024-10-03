@@ -127,3 +127,7 @@ InfoOverlay #overlay_text, #prev_button {
     background-color: $SELECTION_BG_COLOR;
     border: none;
 }
+
+#tags_table {
+    padding: 10px 10px 10px 10px;
+}

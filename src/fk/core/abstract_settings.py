@@ -251,6 +251,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
+                ('Application.audio_output', 'choice', 'Output device', '#default', ['#default:Default'], _always_show),
             ],
         }
         for lst in self._definitions.values():
@@ -370,3 +372,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def get_theme(self) -> str:
         raw = self.get('Application.theme')
         return self.get_auto_theme() if raw == 'auto' else raw
+
+    def update_default(self, name: str, value: str) -> None:
+        self._defaults[name] = value
