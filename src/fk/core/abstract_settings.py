@@ -111,7 +111,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
-                 callback_invoker: Callable):
+                 callback_invoker: Callable,
+                 is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingsChanged,
             events.AfterSettingsChanged,
@@ -192,7 +193,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome()), [], _always_show),
+                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
