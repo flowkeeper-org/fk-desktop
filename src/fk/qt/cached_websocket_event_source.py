@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import atexit
 from typing import TypeVar, Generic
 
 from PySide6.QtWidgets import QApplication
@@ -22,13 +23,18 @@ from PySide6.QtWidgets import QApplication
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_timer import AbstractTimer
 from fk.core.caching_mixin import CachingMixin
+from fk.qt.qt_timer import QtTimer
 from fk.qt.websocket_event_source import WebsocketEventSource
 
 TRoot = TypeVar('TRoot')
 
 
 class CachedWebsocketEventSource(CachingMixin, WebsocketEventSource, Generic[TRoot]):
+
+    _save_timer: AbstractTimer
+
     def __init__(self,
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
@@ -38,3 +44,15 @@ class CachedWebsocketEventSource(CachingMixin, WebsocketEventSource, Generic[TRo
                          cryptograph=cryptograph,
                          application=application,
                          root=root)
+        self._save_timer = QtTimer('WebsocketEventSource_save_cache')
+        self._save_timer.schedule(10000,
+                                  lambda params: self.save_cache(),
+                                  None,
+                                  False)
+        atexit.register(self.save_cache)
+
+    def disconnect(self):
+        # TODO: Make sure this timer is stopped when we change the source
+        self._save_timer.cancel()
+        atexit.unregister(self.save_cache)
+        super(CachedWebsocketEventSource, self).disconnect()

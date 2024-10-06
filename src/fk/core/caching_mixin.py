@@ -22,8 +22,6 @@ from abc import ABC
 from pathlib import Path
 from typing import TypeVar, Generic, Iterable
 
-from more_itertools import tail
-
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_source import AbstractEventSource
@@ -105,13 +103,15 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         return 0
 
     def save_cache(self) -> None:
-        # Call this on timer, too
-        # Call this just before exiting, too
-        logger.debug(f'Saving data to cache: {self._cache_filename}')
-        with open(self._cache_filename, 'wb') as f:
-            cached = CachedData(super(CachingMixin, self).get_data(), super(CachingMixin, self).get_last_sequence())
-            pickle.dump(cached, f, protocol=pickle.HIGHEST_PROTOCOL)
-            logger.debug(f'Saved.')
+        if self._last_seq_in_cache != self.get_last_sequence():
+            logger.debug(f'Saving data to cache: {self._cache_filename} / '
+                         f'{self._last_seq_in_cache} / '
+                         f'{self.get_last_sequence()}')
+            with open(self._cache_filename, 'wb') as f:
+                cached = CachedData(self.get_data(), self.get_last_sequence())
+                pickle.dump(cached, f, protocol=pickle.HIGHEST_PROTOCOL)
+                logger.debug(f'Saved.')
+            self._last_seq_in_cache = self.get_last_sequence()
 
     def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         restored_seq = self.restore_cache()
@@ -120,8 +120,8 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
 
         def redo_log_processed(from_seq: int = 0, last_redo_seq: int = 1) -> None:
             logger.debug(f'Redo log processed, requested seq: {from_seq}, '
-                  f'restored seq: {restored_seq}, '
-                  f'last redo seq: {last_redo_seq}')
+                         f'restored seq: {restored_seq}, '
+                         f'last redo seq: {last_redo_seq}')
             # Redo log is emptied when the cache is up-to-date AND all strategies from redo log are sent to the server
             if restored_seq > 0:
                 super(CachingMixin, self)._emit(events.SourceMessagesProcessed,
@@ -140,10 +140,6 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         self._redo_log.start(mute_events, restored_seq)
 
     def append(self, strategies: Iterable[AbstractStrategy]) -> None:
-        # We check connection state here. If we are offline -- append it to redo log, otherwise use _wrapped.
-        # Subscribe to connection state, and replay the redo log on WentOnline, if redo log last sequence > 1
-        # After we replay redo log, empty the log. While replaying it, fix the sequence numbers accordingly.
-        #
         # Question -- what happens with other clients as we replay it? Shall we do it in some "batch" mode,
         # which would mute events on the other side and then "reload the source"? This would be pretty poor in
         # 90% cases, where we couldn't send only one or two strategies. So better just send it as-is.
