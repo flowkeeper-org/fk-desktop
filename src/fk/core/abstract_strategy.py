@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import Callable, Type, Generic, TypeVar
+from typing import Callable, Type, Generic, TypeVar, Self
 
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
@@ -64,6 +64,10 @@ class AbstractStrategy(ABC, Generic[TRoot]):
 
     def get_sequence(self) -> int:
         return self._seq
+
+    def with_sequence(self, new_seq: int) -> Self:
+        self._seq = new_seq
+        return self
 
     def encryptable(self) -> bool:
         # UC-3: All strategies should be e2e-encrypted by default

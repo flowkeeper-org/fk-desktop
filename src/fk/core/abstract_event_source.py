@@ -47,6 +47,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     _estimated_count: int
     _ignore_invalid_sequences: bool
     _ignore_errors: bool
+    _online: bool
 
     def __init__(self,
                  serializer: AbstractSerializer,
@@ -90,6 +91,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
             events.PongReceived,
+            events.WentOnline,
+            events.WentOffline,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help us do master/slave for strategies.
         self._serializer = serializer
@@ -97,12 +100,38 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._last_seq = 0
         self._estimated_count = 0
+        self._online = False
         self._ignore_invalid_sequences = settings.get('Source.ignore_invalid_sequence') == 'True'
         self._ignore_errors = settings.get('Source.ignore_errors') == 'True'
+
+    # TODO: Create ConnectedEventSource and move it there
+    def went_online(self, ping: int = 0) -> None:
+        if not self._online:
+            logger.debug(f'Went online')
+            self._emit(events.WentOnline, {
+                'ping': ping,
+            }, force=True)
+        self._online = True
+
+    def went_offline(self, after: int = 0, last_received: datetime.datetime = None) -> None:
+        if self._online:
+            logger.debug('Went offline')
+            self._emit(events.WentOffline, {
+                'after': after,
+                'last_received': last_received,
+            }, force=True)  # We always fire connection state events
+        self._online = False
+
+    def is_online(self) -> bool:
+        return self._online
 
     # Override
     @abstractmethod
     def get_data(self) -> TRoot:
+        pass
+
+    @abstractmethod
+    def set_data(self, data: TRoot) -> None:
         pass
 
     # Override
@@ -119,7 +148,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     # Assuming those strategies have been already executed. We do not replay them here.
     # Override
     @abstractmethod
-    def append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
+    def append(self, strategies: Iterable[AbstractStrategy[TRoot]]) -> None:
         pass
 
     # This will initiate connection, which will trigger replay

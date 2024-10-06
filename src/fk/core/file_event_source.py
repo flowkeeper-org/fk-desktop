@@ -156,42 +156,23 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if mute_events:
             self.mute()
 
-        filename = self._get_filename()
-        if not path.isfile(filename):
-            with open(filename, 'w', encoding='UTF-8') as f:
-                s = self.get_init_strategy(self._emit)
-                f.write(f'{self._serializer.serialize(s)}\n')
-                logger.info(f'Created empty data file {filename}')
-                # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist
-
-        is_first = True
         seq = 1
-        logger.info(f'FileEventSource: Reading file {filename}')
-        with open(filename, encoding='UTF-8') as f:
-            # TODO: If we wrap this for into a generator, we'll be able to reuse a this entire loop
-            #  with _process_from_existing() and _on_file_change()
-            for line in f:
-                try:
-                    strategy = self._serializer.deserialize(line)
-                    if strategy is None:
-                        continue
-                    self._last_strategy = strategy
-
-                    if is_first:
-                        is_first = False
-                    else:
-                        seq = strategy.get_sequence()
-                        if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
-                            self._sequence_error(self._last_seq, seq)
-                    # UC-3: Strategies may start with any sequence number
-                    self._last_seq = seq
-                    if seq > from_seq:
-                        self.execute_prepared_strategy(strategy)
-                except Exception as ex:
-                    if self._ignore_errors:
-                        logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
-                    else:
-                        raise ex
+        for strategy in self.read_strategies():
+            try:
+                self._last_strategy = strategy
+                if type(strategy) is not CreateUserStrategy:
+                    seq = strategy.get_sequence()
+                    if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                        self._sequence_error(self._last_seq, seq)
+                # UC-3: Strategies may start with any sequence number
+                self._last_seq = seq
+                if seq > from_seq:
+                    self.execute_prepared_strategy(strategy)
+            except Exception as ex:
+                if self._ignore_errors:
+                    logger.warning(f'Error processing strategy {strategy} (ignored)', exc_info=ex)
+                else:
+                    raise ex
         logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
         # UC-1: Any event source auto-seals pomodoros at the end of the parsing round, including incremental parsing
@@ -202,6 +183,31 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if mute_events:
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
+
+    def read_strategies(self) -> Iterable[AbstractStrategy]:
+        filename = self._get_filename()
+        if not path.isfile(filename):
+            with open(filename, 'w', encoding='UTF-8') as f:
+                s = self.get_init_strategy(self._emit)
+                f.write(f'{self._serializer.serialize(s)}\n')
+                logger.info(f'Created empty data file {filename}')
+                # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist
+
+        logger.info(f'FileEventSource: Reading file {filename}')
+        with open(filename, encoding='UTF-8') as f:
+            # TODO: If we wrap this for into a generator, we'll be able to reuse a this entire loop
+            #  with _process_from_existing() and _on_file_change()
+            for line in f:
+                try:
+                    strategy = self._serializer.deserialize(line)
+                    if strategy is None:
+                        continue
+                    yield strategy
+                except Exception as ex:
+                    if self._ignore_errors:
+                        logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
+                    else:
+                        raise ex
 
     def repair(self) -> list[str]:
         # This method attempts some basic repairs, trying to save as much
@@ -419,7 +425,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         log.append(f'Overwritten original file {filename}')
         return backup_filename
 
-    def append(self, strategies: list[AbstractStrategy]) -> None:
+    def append(self, strategies: Iterable[AbstractStrategy]) -> None:
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
         #  then append to both files at the same time.
         # UC-2: For file source, new strategies get appended to the file immediately after execution
@@ -432,6 +438,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def get_data(self) -> TRoot:
         return self._data
+
+    def set_data(self, data: TRoot) -> None:
+        self._data = data
 
     def _count_valid_strategies(self) -> int:
         valid_count = 0

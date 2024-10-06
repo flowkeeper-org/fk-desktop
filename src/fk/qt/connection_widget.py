@@ -55,10 +55,9 @@ class ConnectionWidget(QToolButton):
         self.setVisible(source.can_connect())
         if source.can_connect():
             logger.debug('ConnectionWidget._on_source_changed: Connectable source')
-            heartbeat = self._application.get_heartbeat()
-            self._update_connection_state(heartbeat.is_online())
-            heartbeat.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
-            heartbeat.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
+            self._update_connection_state(source.is_online())
+            source.on(events.WentOnline, lambda event, **kwargs: self._update_connection_state(True))
+            source.on(events.WentOffline, lambda event, **kwargs: self._update_connection_state(False))
         else:
             logger.debug('ConnectionWidget._on_source_changed: Offline source')
             self.setIcon(QIcon.fromTheme('conn-unknown'))

@@ -36,7 +36,6 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.caching_event_source import CachingEventSource
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -54,6 +53,7 @@ from fk.desktop.work_summary_window import WorkSummaryWindow
 from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
+from fk.qt.cached_websocket_event_source import CachedWebsocketEventSource
 from fk.qt.heartbeat import Heartbeat
 from fk.qt.oauth import authenticate, AuthenticationRecord
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
@@ -160,8 +160,6 @@ class Application(QApplication, AbstractEventEmitter):
 
         # Heartbeat
         self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
-        self._heartbeat.on(events.WentOffline, self._on_went_offline)
-        self._heartbeat.on(events.WentOnline, self._on_went_online)
 
     def _initialize_logger(self):
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -210,8 +208,10 @@ class Application(QApplication, AbstractEventEmitter):
         get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
-            inner_source = WebsocketEventSource[Tenant](settings, cryptograph, self, root)
-            return CachingEventSource(inner_source, self)
+            return CachedWebsocketEventSource[Tenant](settings=settings,
+                                                      cryptograph=cryptograph,
+                                                      application=self,
+                                                      root=root)
 
         get_event_source_factory().register_producer('websocket', websocket_source_producer)
         get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
@@ -221,6 +221,8 @@ class Application(QApplication, AbstractEventEmitter):
         try:
             logger.debug(f'Application: Received AfterSourceChanged for {source}')
             logger.debug(f'Application: Starting the event source')
+            source.on(events.WentOffline, self._on_went_offline)
+            source.on(events.WentOnline, self._on_went_online)
             source.start()
             logger.debug(f'Application: Event source started successfully')
         except Exception as e:
@@ -329,7 +331,8 @@ class Application(QApplication, AbstractEventEmitter):
         logger.error(f"Global exception handler. Full log: {to_log}")
         if (QMessageBox().critical(self.activeWindow(),
                                    "Unexpected error",
-                                   f"{exc_type.__name__}: {exc_value}\nWe will appreciate it if you click Open to report it on GitHub.",
+                                   f"{exc_type.__name__}: {exc_value}\n\n"
+                                   f"We will appreciate it if you click Open to report it on GitHub.",
                                    QMessageBox.StandardButton.Ok,
                                    QMessageBox.StandardButton.Open)
                 == QMessageBox.StandardButton.Open):

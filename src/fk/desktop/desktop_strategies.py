@@ -251,3 +251,8 @@ class DeleteAccountStrategy(AbstractStrategy):
                 data: Tenant) -> (str, any):
         # Send only
         return None, None
+
+
+# TODO: Reserve some future strategies or semantics to avoid throwing errors when we enable the server
+#  Example: CreateUser(), StartWork(), CompleteWorkitem(), DeleteWorkitem(), DeleteBacklog(), and VoidPomodoro()
+#  from other users. Those will arrive unencrypted.

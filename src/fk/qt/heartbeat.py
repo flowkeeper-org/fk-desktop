@@ -26,7 +26,7 @@ from fk.qt.qt_timer import QtTimer
 logger = logging.getLogger(__name__)
 
 
-class Heartbeat(AbstractEventEmitter):
+class Heartbeat():
     _timer: AbstractTimer
     _source_holder: EventSourceHolder
     _state: str
@@ -39,9 +39,6 @@ class Heartbeat(AbstractEventEmitter):
     _last_ping_ms: int
 
     def __init__(self, source_holder: EventSourceHolder, every_ms: int, threshold_ms: int):
-        AbstractEventEmitter.__init__(self,
-                                      [events.WentOnline, events.WentOffline],
-                                      source_holder.get_settings().invoke_callback)
         self._source_holder = source_holder
         self._every_ms = every_ms
         self._threshold_ms = threshold_ms
@@ -77,10 +74,7 @@ class Heartbeat(AbstractEventEmitter):
             diff_ms = (now - self._last_sent_time).total_seconds() * 1000
             if diff_ms > self._threshold_ms and self._last_received_uid != self._last_sent_uid:
                 self._state = 'offline'
-                self._emit(events.WentOffline, {
-                    'after': diff_ms,
-                    'last_received': self._last_received_time,
-                })
+                self._source_holder.get_source().went_offline(diff_ms, self._last_received_time)
         self._last_sent_uid = self._source_holder.get_source().send_ping()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f' -> Ping {self._last_sent_uid}')
@@ -96,10 +90,7 @@ class Heartbeat(AbstractEventEmitter):
             if not self.is_online():
                 if diff_ms <= self._threshold_ms:
                     self._state = 'online'
-                    # TODO: Push this state into the source, too
-                    self._emit(events.WentOnline, {
-                        'ping': diff_ms,
-                    })
+                    self._source_holder.get_source().went_online(diff_ms)
         else:
             logger.warning(f'Received unexpected pong {uid}')
         self._last_received_uid = uid

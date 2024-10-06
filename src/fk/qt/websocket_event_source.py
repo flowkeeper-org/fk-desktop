@@ -19,7 +19,7 @@ import datetime
 import enum
 import logging
 from hashlib import md5
-from typing import TypeVar
+from typing import TypeVar, Iterable
 
 from PySide6 import QtWebSockets, QtCore
 from PySide6.QtNetwork import QAbstractSocket
@@ -28,6 +28,7 @@ from PySide6.QtWidgets import QApplication
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
+from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -35,7 +36,7 @@ from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, PongStrategy, \
-    PingStrategy, ReplayCompletedStrategy
+    PingStrategy, ReplayCompletedStrategy, ErrorStrategy
 from fk.qt.oauth import get_id_token, AuthenticationRecord
 from fk.qt.qt_timer import QtTimer
 
@@ -109,12 +110,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._ws.peerVerifyError.connect(lambda e: self._on_error('peer verify error', e))
 
     def _on_error(self, s: str, e: enum) -> None:
+        self.went_offline()    # Are we sure about it? Is connection lost on every error?
         if type(e) != QAbstractSocket.SocketError:
             raise Exception(f'WebSocket {s}: {e}')
 
     def _connection_lost(self) -> None:
         # TODO: Is there a way to update the Heartbeat facility, so that the widgets are notified quicker?
         #  Same for connect() -- update Heartbeat.
+        self.went_offline()
         next_reconnect = min(max(500, int(pow(1.5, self._connection_attempt))), 30000)
         if self._received_error:
             logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
@@ -123,6 +126,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             self._reconnect_timer.schedule(next_reconnect, self.connect, None, True)
 
     def connect(self, params: dict | None = None) -> None:
+        self.went_offline()
         self._connection_attempt += 1
         url = self.get_settings().get_url()
         logger.debug(f'Connecting to {url}, attempt {self._connection_attempt}')
@@ -146,6 +150,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                 logger.debug(f" - {line}")
             try:
                 s = self._serializer.deserialize(line)
+                if type(s) is not ErrorStrategy:
+                    self.went_online()
                 if s is None:
                     continue
                 elif type(s) is ReplayCompletedStrategy:
@@ -224,7 +230,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
 
-    def append(self, strategies: list[AbstractStrategy]) -> None:
+    def append(self, strategies: Iterable[AbstractStrategy]) -> None:
+        if not self._online:
+            raise Exception('Trying to send data to offline websocket')
         to_send = '\n'.join([self._serializer.serialize(s) for s in strategies])
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Sending strategies: \n{to_send}')
@@ -236,6 +244,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def get_data(self) -> TRoot:
         return self._data
 
+    def set_data(self, data: TRoot) -> None:
+        self._data = data
+
     def clone(self, new_root: TRoot) -> WebsocketEventSource[TRoot]:
         return WebsocketEventSource[TRoot](self._settings,
                                            self._cryptograph,
@@ -243,6 +254,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                                            new_root)
 
     def disconnect(self):
+        self.went_offline()
         self._ws.disconnected.disconnect()  # Otherwise we'll reopen it in _connection_lost()
         self._ws.close()
 
@@ -260,6 +272,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._ws.sendTextMessage(ps)
         return uid
 
+    # TODO: Create a class for that, e.g. AbstractConnectedEventSource
     def can_connect(self):
         return True
 

@@ -84,9 +84,8 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         source.on("AfterPomodoro*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
 
-        heartbeat = self._application.get_heartbeat()
-        heartbeat.on(events.WentOffline, self._lock_ui)
-        heartbeat.on(events.WentOnline, self._unlock_ui)
+        source.on(events.WentOffline, self._lock_ui)
+        source.on(events.WentOnline, self._unlock_ui)
 
     def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
@@ -122,13 +121,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
         is_incomplete = is_backlog_selected and next(selected.get_incomplete_workitems(), None) is not None
 
-        heartbeat = self._application.get_heartbeat()
         source = self._application.get_source_holder().get_source()
-        is_online = heartbeat.is_online() or source is None or not source.can_connect()
+        is_online = source is None or not source.can_connect() or source.is_online()
         logger.debug(f' - Online: {is_online}')
         logger.debug(f' - Backlog selected: {is_backlog_selected}')
         logger.debug(f' - Has incomplete workitems: {is_incomplete}')
-        logger.debug(f' - Heartbeat: {heartbeat}')
 
         self._actions['backlogs_table.newBacklog'].setEnabled(is_online)
         self._actions['backlogs_table.newBacklogFromIncomplete'].setEnabled(is_backlog_selected and

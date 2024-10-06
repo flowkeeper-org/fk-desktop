@@ -77,8 +77,8 @@ class AbstractEventEmitter:
             if callback in callables:
                 callables.remove(callback)
 
-    def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
-        if not self._is_muted():
+    def _emit(self, event: str, params: dict[str, any], carry: any = None, force: bool = False) -> None:
+        if not self._is_muted() or force:
             params['event'] = event
             if carry is not None:
                 params['carry'] = carry

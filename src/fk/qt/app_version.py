@@ -50,7 +50,7 @@ def _success(reply: QNetworkReply, callback: Callable[[Version, str], None]) -> 
 
 
 def _error(err: QNetworkReply.NetworkError, callback: Callable[[Version, str], None]) -> None:
-    logger.warning('Warning -- cannot get the latest Flowkeeper version info from GitHub:', exc_info=err)
+    logger.warning(f'Warning -- cannot get the latest Flowkeeper version info from GitHub: {err}')
     callback(None, None)
 
 

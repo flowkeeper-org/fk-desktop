@@ -44,10 +44,13 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
     def get_data(self) -> TRoot:
         return self._wrapped.get_data()
 
+    def set_data(self, data: TRoot) -> None:
+        self._wrapped.set_data(data)
+
     def get_name(self) -> str:
         return self._wrapped.get_name()
 
-    def append(self, strategies: list[AbstractStrategy]) -> None:
+    def append(self, strategies: Iterable[AbstractStrategy]) -> None:
         return self._wrapped.append(strategies)
 
     def clone(self, new_root: TRoot) -> Self[TRoot]:
@@ -139,3 +142,15 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
 
     def get_id(self) -> str:
         return self._wrapped.get_id()
+
+    def is_online(self) -> bool:
+        return self._wrapped.is_online()
+
+    def went_online(self, ping: int = 0) -> None:
+        self._wrapped.went_online(ping)
+
+    def went_offline(self, after: int = 0, last_received: datetime.datetime = None) -> None:
+        self._wrapped.went_offline(after, last_received)
+
+    def is_online(self) -> bool:
+        return self._wrapped.is_online()
