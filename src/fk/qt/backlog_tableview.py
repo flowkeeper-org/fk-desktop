@@ -84,8 +84,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         source.on("AfterPomodoro*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
 
-        source.on(events.WentOffline, self._lock_ui)
-        source.on(events.WentOnline, self._unlock_ui)
+        # TODO: Check if it's a caching source. There's no need to lock UI for caching sources.
+        # source.on(events.WentOffline, self._lock_ui)
+        # source.on(events.WentOnline, self._unlock_ui)
 
     def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()

@@ -1,6 +1,7 @@
 ### v1.0.0 (TBD)
 - Enabled websocket data sources, including flowkeeper.org.
-- Implemented local caching / offline mode for websocket data sources.
+- Offline mode for websocket data sources.
+- Local caching to support offline mode and improve performance.
 - Configurable caching for local file source to speed up loading.
 - [Technical] Improved performance of sending actions to the server.
 
