@@ -293,9 +293,16 @@ def import_(source: AbstractEventSource[TRoot],
                        ignore_errors,
                        start_callback,
                        progress_callback,
-                       lambda total: _merge_sources(source, new_source, completion_callback))  # Step 2 is done there
+                       lambda total: _merge_sources(source,
+                                                    new_source,
+                                                    completion_callback))  # Step 2 is done there
     else:
-        import_classic(source, filename, ignore_errors, start_callback, progress_callback, completion_callback)
+        import_classic(source,
+                       filename,
+                       ignore_errors,
+                       start_callback,
+                       progress_callback,
+                       completion_callback)
 
 
 def _merge_sources(existing_source,
@@ -305,7 +312,9 @@ def _merge_sources(existing_source,
     count = 0
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
+    new_username = existing_source.get_settings().get_username()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
+        strategy.replace_user_identity(new_username)
         existing_source.execute_prepared_strategy(strategy, False, True)
         count += 1
     existing_source.unmute()

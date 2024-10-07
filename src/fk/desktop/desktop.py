@@ -378,7 +378,7 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         tool_settings: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolSettings")
-        tool_settings.setIcon(QIcon.fromTheme('tool-settings'))
+        tool_settings.setIcon(QIcon.fromTheme('tool-menu'))
         tool_settings.clicked.connect(lambda: menu_file.exec(
             tool_settings.parentWidget().mapToGlobal(tool_settings.geometry().center())
         ))

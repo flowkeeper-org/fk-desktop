@@ -34,6 +34,7 @@ from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.actions import Actions
 from fk.qt.backlog_model import BacklogModel
+from fk.qt.cached_websocket_event_source import CachedWebsocketEventSource
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         is_incomplete = is_backlog_selected and next(selected.get_incomplete_workitems(), None) is not None
 
         source = self._application.get_source_holder().get_source()
-        is_online = source is None or not source.can_connect() or source.is_online()
+        is_online = (source is None
+                     or not source.can_connect()
+                     or source.is_online()
+                     or type(source) is CachedWebsocketEventSource)
         logger.debug(f' - Online: {is_online}')
         logger.debug(f' - Backlog selected: {is_backlog_selected}')
         logger.debug(f' - Has incomplete workitems: {is_incomplete}')
