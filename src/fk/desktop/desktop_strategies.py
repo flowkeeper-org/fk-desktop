@@ -155,6 +155,7 @@ class ErrorStrategy(AbstractStrategy):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': 'user@local.host',
+                'WebsocketEventSource.userpic': '',
                 'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token!': '',
             })

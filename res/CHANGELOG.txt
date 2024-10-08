@@ -3,6 +3,7 @@
 - Offline mode for websocket data sources.
 - Local caching to support offline mode and improve performance.
 - Configurable caching for local file source to speed up loading.
+- User picture is used to display connection state.
 - [Technical] Improved performance of sending actions to the server.
 
 ### v0.7.1 (13 September 2024)

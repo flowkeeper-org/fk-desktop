@@ -508,11 +508,13 @@ class Application(QApplication, AbstractEventEmitter):
             self._settings.set({
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
+                'WebsocketEventSource.userpic': auth.picture,
                 'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
             })
             callback('WebsocketEventSource.auth_type', 'google')
             callback('WebsocketEventSource.username', auth.email)
+            callback('WebsocketEventSource.userpic', auth.picture)
             callback('WebsocketEventSource.consent', 'False')
             callback('WebsocketEventSource.refresh_token!', auth.refresh_token)
             callback('WebsocketEventSource.logout', f'Sign out <{auth.email}>')
@@ -523,11 +525,13 @@ class Application(QApplication, AbstractEventEmitter):
         self._settings.set({
             'WebsocketEventSource.auth_type': 'google',
             'WebsocketEventSource.username': 'user@local.host',
+            'WebsocketEventSource.userpic': '',
             'WebsocketEventSource.consent': 'False',
             'WebsocketEventSource.refresh_token!': '',
         })
         callback('WebsocketEventSource.auth_type', 'google')
         callback('WebsocketEventSource.username', 'user@local.host')
+        callback('WebsocketEventSource.userpic', '')
         callback('WebsocketEventSource.consent', 'False')
         callback('WebsocketEventSource.refresh_token!', '')
         callback('WebsocketEventSource.logout', f'Sign out')

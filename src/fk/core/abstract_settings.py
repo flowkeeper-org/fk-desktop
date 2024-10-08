@@ -21,6 +21,7 @@ from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+from fk.core.userpic import DEFAULT_USERPIC
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _show_for_websocket_source),
                 # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
+                ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
                 ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
@@ -280,6 +282,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             return 'user@local.host'
         else:
             return self.get('WebsocketEventSource.username')
+
+    def get_userpic(self) -> str:
+        pic = self.get('WebsocketEventSource.userpic')
+        return pic if pic != '' else DEFAULT_USERPIC
 
     def is_team_supported(self) -> bool:
         return self.get('Source.type') != 'local' and self.get('Application.enable_teams') == 'True'
