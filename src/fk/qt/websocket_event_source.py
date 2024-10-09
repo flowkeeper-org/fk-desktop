@@ -35,6 +35,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
+from fk.core.user_strategies import CreateUserStrategy
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, PongStrategy, \
     PingStrategy, ReplayCompletedStrategy, ErrorStrategy
 from fk.qt.oauth import get_id_token, AuthenticationRecord
@@ -160,7 +161,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                         to_unmute = True
                     to_emit = True
                     break
-                elif type(s) is PongStrategy:
+                elif type(s) in [PongStrategy, CreateUserStrategy]:
                     # A special case where we want to ignore the sequence
                     self.execute_prepared_strategy(s)
                 elif s.get_sequence() is not None and s.get_sequence() > self._last_seq:
