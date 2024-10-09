@@ -17,16 +17,19 @@ from PySide6.QtWidgets import QWidget, QHeaderView
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder
-from fk.core.events import SourceMessagesProcessed
+from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.desktop.application import AfterSourceChanged, Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
+from fk.qt.user_delegate import UserDelegate
 from fk.qt.user_model import UserModel
 
 
 class UserTableView(AbstractTableView[Tenant, User]):
+    _application: Application
+
     def __init__(self,
                  parent: QWidget,
                  application: Application,
@@ -41,7 +44,10 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          'Select a tenant.\nYou should never see this message. Please report a bug in GitHub.',
                          'There are no users.\nYou should never see this message. Please report a bug in GitHub.',
                          0)
+        self._application = application
+        self._configure_delegate()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
         self.update_actions(None)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
@@ -63,3 +69,17 @@ class UserTableView(AbstractTableView[Tenant, User]):
 
     def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
         self.upstream_selected(source.get_data())
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        if 'Application.theme' in new_values:
+            self._configure_delegate()
+
+    def _configure_delegate(self):
+        self.setItemDelegateForColumn(0,
+                                      UserDelegate(self,
+                                                   self._application.get_icon_theme(),
+                                                   self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
+
+    def _update_row_height(self):
+        self._row_height = int(self._actions.get_settings().get('Application.table_row_height')) + 10
+        self.verticalHeader().setDefaultSectionSize(self._row_height)

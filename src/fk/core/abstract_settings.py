@@ -127,7 +127,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
-                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
                 ('Application.completed_tutorial_steps', 'str', 'Completed tutrial steps', '', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
@@ -142,7 +141,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'True', [], _never_show),
             ],
             'Connection': [
-                ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
+                ('Source.fullname', 'str', 'User full name', '', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
@@ -152,6 +151,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
                 ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
+                ('', 'separator', '', '', [], _show_for_websocket_source),
+                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _show_for_websocket_source),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
                 ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
@@ -182,6 +183,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
+            ],
+            'Teamwork': [
+                ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
             ],
             'Appearance': [
                 ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
@@ -294,7 +298,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self.get('Source.type') in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
 
     def get_fullname(self) -> str:
-        return self.get('Source.fullname')
+        if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
+            return 'Local User'
+        else:
+            return self.get('Source.fullname')
 
     def get_work_duration(self) -> float:
         return float(self.get('Pomodoro.default_work_duration'))

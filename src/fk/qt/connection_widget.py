@@ -50,12 +50,14 @@ class ConnectionWidget(QToolButton):
         self._userpic = QPixmap()
         self._userpic.loadFromData(base64.b64decode(self._application.get_settings().get_userpic()))
         username = self._application.get_settings().get_username()
+        fullname = self._application.get_settings().get_fullname()
         if is_connected:
-            self.setToolTip(f'Connected - {username}\nClick to reconnect')
+            state = 'Connected'
             self.topLevelWidget().setWindowTitle(f'Flowkeeper - {username} - Online')
         else:
-            self.setToolTip(f'Disconnected - {username}\nClick to reconnect')
+            state = 'Disconnected'
             self.topLevelWidget().setWindowTitle(f'Flowkeeper - {username} - Offline')
+        self.setToolTip(f'Data sync - {state}\n{username}\n({fullname})\nClick to reconnect')
         self.repaint()
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):

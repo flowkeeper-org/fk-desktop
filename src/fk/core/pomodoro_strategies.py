@@ -90,6 +90,9 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
 
+    def encryptable(self) -> bool:
+        return self._settings.get('Team.share_state') == 'False'
+
 
 # Not available externally, not registered as a strategy
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
@@ -263,6 +266,9 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
         user: User = data[self._user_identity]
         _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._carry, self._when)
         return None, None
+
+    def encryptable(self) -> bool:
+        return self._settings.get('Team.share_state') == 'False'
 
 
 # Not available externally, not registered as a strategy

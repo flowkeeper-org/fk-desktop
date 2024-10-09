@@ -146,13 +146,12 @@ class ErrorStrategy(AbstractStrategy):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             ) == QMessageBox.StandardButton.Yes:
                 logger.debug('Obtained consent for Flowkeeper Server, will re-authenticate')
-                # TODO: Recreate the source. This will trigger re-authentication, this time with
-                #  "true" parameter, meaning that the user has already given their consent.
                 self._settings.set({
                     'WebsocketEventSource.consent': 'True',
                 })
         elif self._error_message == 'Deleted':
             self._settings.set({
+                'Source.fullname': '',
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': 'user@local.host',
                 'WebsocketEventSource.userpic': '',

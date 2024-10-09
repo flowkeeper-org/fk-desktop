@@ -299,7 +299,7 @@ class Application(QApplication, AbstractEventEmitter):
             self._font_header = QFont()
             new_size = int(self._font_header.pointSize() * 24.0 / 9)
             self._font_header.setPointSize(new_size)
-    
+
         self._font_main = QFont(self._settings.get('Application.font_main_family'),
                                 int(self._settings.get('Application.font_main_size')))
 
@@ -505,16 +505,23 @@ class Application(QApplication, AbstractEventEmitter):
 
     def sign_in(self, _, callback: Callable) -> bool:
         def save(auth: AuthenticationRecord):
-            self._settings.set({
+            to_set = {
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
-                'WebsocketEventSource.userpic': auth.picture,
                 'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
-            })
+            }
+            if auth.picture:
+                to_set['WebsocketEventSource.userpic'] = auth.picture
+            if auth.fullname:
+                to_set['Source.fullname'] = auth.fullname
+            self._settings.set(to_set)
             callback('WebsocketEventSource.auth_type', 'google')
             callback('WebsocketEventSource.username', auth.email)
-            callback('WebsocketEventSource.userpic', auth.picture)
+            if auth.picture:
+                callback('WebsocketEventSource.userpic', auth.picture)
+            if auth.fullname:
+                callback('Source.fullname', auth.fullname)
             callback('WebsocketEventSource.consent', 'False')
             callback('WebsocketEventSource.refresh_token!', auth.refresh_token)
             callback('WebsocketEventSource.logout', f'Sign out <{auth.email}>')
@@ -523,12 +530,14 @@ class Application(QApplication, AbstractEventEmitter):
 
     def sign_out(self, _, callback: Callable) -> bool:
         self._settings.set({
+            'Source.fullname': '',
             'WebsocketEventSource.auth_type': 'google',
             'WebsocketEventSource.username': 'user@local.host',
             'WebsocketEventSource.userpic': '',
             'WebsocketEventSource.consent': 'False',
             'WebsocketEventSource.refresh_token!': '',
         })
+        callback('Source.fullname', '')
         callback('WebsocketEventSource.auth_type', 'google')
         callback('WebsocketEventSource.username', 'user@local.host')
         callback('WebsocketEventSource.userpic', '')

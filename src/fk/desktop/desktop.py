@@ -159,6 +159,9 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.always_on_top':
             set_window_flags(main_layout.isHidden())
             window.show()
+        elif name == 'Application.enable_teams':
+            action_teams.setEnabled(new_value == 'True')
+            tool_teams.setVisible(new_value == 'True')
 
 
 class MainWindow:

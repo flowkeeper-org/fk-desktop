@@ -68,14 +68,14 @@ class UserModel(QtGui.QStandardItemModel):
 
         col1 = QtGui.QStandardItem()
         if state == 'Idle':
-            txt = f'{user.get_name()}'
+            display = f'{user.get_name()}'
         else:
-            txt = f'{user.get_name()}: {state}, {remaining} left'
-        col1.setData(txt, Qt.DisplayRole)
+            display = f'{user.get_name()}: {state}, {remaining} left'
+        col1.setData(display, Qt.DisplayRole)
         col1.setData(font, Qt.FontRole)
         col1.setData(user, 500)
         col1.setData('title', 501)
-        col1.setData(txt, Qt.ItemDataRole.ToolTipRole)
+        col1.setData(f'{display}\n({user.get_uid()})', Qt.ItemDataRole.ToolTipRole)
         col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 0, col1)
 

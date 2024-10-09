@@ -123,6 +123,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
         else:
             logger.warning(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
+            # TODO: Bug -- if we ask for consent, and reconnect in the meantime, the app crashes
             self._reconnect_timer.schedule(next_reconnect, self.connect, None, True)
 
     def connect(self, params: dict | None = None) -> None:

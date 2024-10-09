@@ -68,6 +68,9 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
         }, self._carry)
         return None, None
 
+    def encryptable(self) -> bool:
+        return self._settings.get('Team.share_state') == 'False'
+
 
 # DeleteUser("alice@example.com", "")
 @strategy
@@ -114,6 +117,9 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
         emit(events.AfterUserDelete, params, self._carry)
         return None, None
 
+    def encryptable(self) -> bool:
+        return self._settings.get('Team.share_state') == 'False'
+
 
 # RenameUser("alice@example.com", "Alice Cooper")
 @strategy
@@ -158,3 +164,6 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
         user.item_updated(self._when)
         emit(events.AfterUserRename, params, self._carry)
         return None, None
+
+    def encryptable(self) -> bool:
+        return self._settings.get('Team.share_state') == 'False'

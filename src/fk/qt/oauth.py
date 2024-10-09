@@ -40,6 +40,7 @@ class AuthenticationRecord:
     type: str
     email: str
     picture: str
+    fullname: str
     refresh_token: str
     access_token: str
     id_token: str
@@ -48,6 +49,7 @@ class AuthenticationRecord:
         return (f'AuthenticationRecord({self.type}):\n'
                 f' - Email: {self.email}\n'
                 f' - Profile picture: {self.picture}\n'
+                f' - Full name: {self.fullname}\n'
                 f' - Refresh token: {self.refresh_token}\n'
                 f' - Access token: {self.access_token}\n'
                 f' - ID token: {self.id_token}')
@@ -110,15 +112,12 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
 def _picture_to_base64(url: str):
     if url:
         logger.debug(f'Loading user profile picture from {url}')
-        print(f'Loading user profile picture from {url}')
         data = urlopen(url).read()
         logger.debug(f'Resizing picture to 32x32')
-        print(f'Resizing picture to 32x32')
         pixmap = QPixmap()
         pixmap.loadFromData(data)
         image = pixmap.scaled(32, 32).toImage()
         logger.debug(f'Extracting image as base64')
-        print(f'Extracting image as base64')
         output = QByteArray()
         buffer = QBuffer(output)
         buffer.open(QIODevice.OpenModeFlag.WriteOnly)
@@ -132,7 +131,7 @@ def _extract_user_info(id_token: str) -> (str, str):
     b = bytes(id_token.split('.')[1], 'iso8859-1')
     t = json.loads(base64.decodebytes(b + b'===='))
     logger.debug(f'Extracted JWT info: {t.keys()}')
-    return t['email'], _picture_to_base64(t.get('picture', ''))
+    return t['email'], _picture_to_base64(t.get('picture', '')), t.get('name', '')
 
 
 def _error(err, flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[AuthenticationRecord], None]):
@@ -143,7 +142,7 @@ def _granted(flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[Authenticat
     logger.debug(f'Access granted. Extra tokens: {flow.extraTokens().keys()}')
     id_token = flow.extraTokens().get('id_token', None)
     auth = AuthenticationRecord()
-    auth.email, auth.picture = _extract_user_info(id_token)
+    auth.email, auth.picture, auth.fullname = _extract_user_info(id_token)
     auth.type = 'google'
     auth.access_token = flow.token()
     auth.id_token = id_token
