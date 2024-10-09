@@ -39,6 +39,7 @@ class Tenant(AbstractDataContainer[User, None]):
             ADMIN_USER,
             'System',
             datetime.datetime.now(datetime.timezone.utc),
+            True,
             True
         )
 

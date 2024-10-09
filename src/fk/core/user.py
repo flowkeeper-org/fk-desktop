@@ -24,15 +24,18 @@ from fk.core.pomodoro import Pomodoro
 
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
+    _is_local_user: bool
 
     def __init__(self,
                  data: 'Tenant',
                  identity: str,
                  name: str,
                  create_date: datetime.datetime,
-                 is_system_user: bool):
+                 is_system_user: bool,
+                 is_local_user: bool):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
+        self._is_local_user = is_local_user
 
     def __str__(self):
         return f'User "{self.get_name()} <{self.get_uid()}>"'
@@ -42,6 +45,9 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
 
     def is_system_user(self) -> bool:
         return self._is_system_user
+
+    def is_local_user(self) -> bool:
+        return self._is_local_user
 
     def get_running_pomodoro(self) -> Pomodoro | None:
         for b in self.values():
@@ -63,4 +69,5 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
 
     def dump(self, indent: str = '') -> str:
         return f'{super().dump(indent)}\n' \
-               f'{indent} - System user: {self._is_system_user}'
+               f'{indent} - System user: {self._is_system_user}\n' \
+               f'{indent} - Local user: {self._is_local_user}'

@@ -60,7 +60,12 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
             'user_identity': self._target_user_identity,
             'user_name': self._user_name,
         }, self._carry)
-        user = User(data, self._target_user_identity, self._user_name, self._when, False)
+        user = User(data,
+                    self._target_user_identity,
+                    self._user_name,
+                    self._when,
+                    False,
+                    self._settings.get_username() == self._target_user_identity)
         data[self._target_user_identity] = user
         user.item_updated(self._when)   # This will also update the Tenant
         emit(events.AfterUserCreate, {

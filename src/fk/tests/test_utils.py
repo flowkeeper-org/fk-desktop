@@ -47,7 +47,8 @@ def test_user(n: int) -> User:
         TEST_USERNAMES[n],
         f'Test User #{n}',
         predefined_datetime(0),
-        False)
+        False,
+        True)
 
 
 def test_users() -> dict[str, User]:
