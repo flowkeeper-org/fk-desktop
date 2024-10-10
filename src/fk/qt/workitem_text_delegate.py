@@ -14,14 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
+from html import escape
 
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 from PySide6.QtCore import QSize, Qt, QRect
 from PySide6.QtGui import QTextDocument
 
+from fk.core.workitem import Workitem
 
 TAG_REGEX = re.compile('#(\\w+)')
-DATE_REGEX = re.compile('([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])')
 
 
 class WorkitemTextDelegate(QtWidgets.QItemDelegate):
@@ -36,27 +37,25 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         self._theme = theme
         self._text_color = text_color
 
-    def _format_html(self, s: str) -> str:
-        s = TAG_REGEX.sub('<b>\\1</b>', s)
-        # s = DATE_REGEX.sub('<b>\\1</b>', s)
-        return f'<span style="color: {self._text_color};">{s}</span>'
-
-    def _format_html_old(self, s: str) -> str:
-        s = TAG_REGEX.sub('<span style="background-color: #999; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
-        s = DATE_REGEX.sub('<span style="background-color: #77F; color: #fff;">&nbsp;\\1&nbsp;</span>', s)
-        return f'<span style="color: {self._text_color};">{s}</span>'
+    def _format_html(self, workitem: Workitem) -> str:
+        text = workitem.get_name()
+        text = TAG_REGEX.sub('<b>\\1</b>', escape(text, False))
+        return (f'<span '
+                f'style="color: {self._text_color}; '
+                f'text-decoration: {"line-through" if workitem.is_sealed() else "none"}; '
+                f'font-weight: {"bold" if workitem.is_running() else "normal"};">'
+                f'{text}'
+                f'</span>')
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         painter.save()
         painter.translate(option.rect.topLeft())
 
-        # painter.drawText(QRect(0, 4, option.rect.width(), option.rect.height()),
-        #                  Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap,
-        #                  index.data())
         document = QTextDocument(self)
         document.setTextWidth(option.rect.width())
-        document.setHtml(self._format_html(index.data()))
-        # document.setPlainText(index.data())
+
+        workitem: Workitem = index.data(500)
+        document.setHtml(self._format_html(workitem))
         document.drawContents(painter)
 
         painter.restore()

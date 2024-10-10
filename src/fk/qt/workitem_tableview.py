@@ -59,14 +59,24 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.theme' in new_values:
+        if 'Application.theme' in new_values or 'Application.feature_tags' in new_values:
             self._configure_delegate()
+            self._resize()
+
+    def _is_tags_enabled(self) -> bool:
+        return self._application.get_settings().get('Application.feature_tags') == 'True'
 
     def _configure_delegate(self):
-        self.setItemDelegateForColumn(1,
-                                      WorkitemTextDelegate(self,
-                                                           self._application.get_icon_theme(),
-                                                           self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
+        # Workitem text -- HTML or no delegate
+        if self._is_tags_enabled():
+            self.setItemDelegateForColumn(1,
+                                          WorkitemTextDelegate(self,
+                                                               self._application.get_icon_theme(),
+                                                               self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
+        else:
+            self.setItemDelegateForColumn(1, None)
+
+        # Pomodoros display
         self.setItemDelegateForColumn(2,
                                       PomodoroDelegate(self,
                                                        self._application.get_icon_theme()))
@@ -231,6 +241,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        # TODO: Make this configurable and release as a new feature.
-        #  It results in visible blinking on Kubuntu 20.04, so cannot be enabled by default.
-        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+
+        # Resizing to contents results in visible blinking on Kubuntu 20.04, so cannot be enabled by default.
+        self.verticalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.ResizeToContents if self._is_tags_enabled() else QHeaderView.ResizeMode.Fixed)

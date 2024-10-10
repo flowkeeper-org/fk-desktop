@@ -41,7 +41,6 @@ from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
-from fk.qt.tags_widget import TagsWidget
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
 from fk.qt.tray_icon import TrayIcon
 from fk.qt.user_tableview import UserTableView
