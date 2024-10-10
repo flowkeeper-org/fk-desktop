@@ -73,7 +73,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self.load(None)
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
-        source.on(AfterWorkitemRename, self._pomodoro_changed)
+        source.on(AfterWorkitemRename, self._workitem_renamed)
         source.on(AfterWorkitemComplete, self._pomodoro_changed)
         source.on(AfterWorkitemStart, self._pomodoro_changed)
         source.on('AfterPomodoro*', self._pomodoro_changed)
@@ -96,19 +96,46 @@ class WorkitemModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
+    def _workitem_belongs_here(self, workitem: Workitem) -> bool:
+        return (type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag
+                or
+                type(self._backlog_or_tag) is Tag and self._backlog_or_tag.get_uid() in workitem.get_tags())
+
+    def _add_workitem(self, workitem: Workitem) -> None:
+        item = QtGui.QStandardItem('')
+        self.appendRow(item)
+        self.set_row(self.rowCount() - 1, workitem)
+
+    def _find_workitem(self, workitem: Workitem) -> int:
+        for i in range(self.rowCount()):
+            wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
+            if wi == workitem:
+                return i
+        return -1
+
+    def _remove_if_found(self, workitem: Workitem) -> None:
+        i = self._find_workitem(workitem)
+        if i >= 0:
+            self.removeRow(i)
+
     def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
-        if type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag:
-            item = QtGui.QStandardItem('')
-            self.appendRow(item)
-            self.set_row(self.rowCount() - 1, workitem)
+        if self._workitem_belongs_here(workitem):
+            self._add_workitem(workitem)
 
     def _workitem_deleted(self, workitem: Workitem, **kwargs) -> None:
-        if type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag:
-            for i in range(self.rowCount()):
-                wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
-                if wi == workitem:
-                    self.removeRow(i)
-                    return
+        if self._workitem_belongs_here(workitem):
+            self._remove_if_found(workitem)
+
+    def _workitem_renamed(self, workitem: Workitem, old_name: str, new_name: str, **kwargs) -> None:
+        if type(self._backlog_or_tag) is Tag:
+            if self._backlog_or_tag.get_uid() in workitem.get_tags():
+                # This workitem should be in this list
+                if self._find_workitem(workitem) < 0:
+                    self._add_workitem(workitem)
+            else:
+                # This workitem should not be in this list
+                self._remove_if_found(workitem)
+        self._pomodoro_changed(workitem)
 
     def _pomodoro_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
@@ -166,7 +193,11 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._backlog_or_tag = backlog_or_tag
         if backlog_or_tag is not None:
             i = 0
-            workitems = backlog_or_tag.values() if type(backlog_or_tag) is Backlog else backlog_or_tag.get_workitems()
+            if type(backlog_or_tag) is Backlog:
+                workitems = backlog_or_tag.values()
+            else:
+                workitems = sorted(backlog_or_tag.get_workitems(),
+                                   key=lambda a: a.get_last_modified_date())
             for workitem in workitems:
                 if not self._show_completed and workitem.is_sealed():
                     continue

@@ -47,7 +47,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
 
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
-    def _add_tag(self, tag: Tag, event: str = None) -> None:
+    def _add_tag(self, tag: Tag, event: str = None, carry: any = None) -> None:
         widget = QPushButton(f'#{tag.get_uid()}', self)
         widget.setObjectName(tag.get_uid())
         widget.setProperty('class', 'tag_label')
@@ -95,7 +95,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
             self._emit(BeforeSelectionChanged, params)
             self._emit(AfterSelectionChanged, params)
 
-    def _delete_tag(self, tag: Tag, event: str) -> None:
+    def _delete_tag(self, tag: Tag, event: str, carry: any = None) -> None:
         for widget in self.layout().widgets():
             if widget.objectName() == tag.get_uid():
                 if widget.isChecked():

@@ -14,8 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
-import re
-from typing import Callable, Set
+from typing import Callable
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
@@ -26,16 +25,6 @@ from fk.core.tag import Tag
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
-
-
-TAG_REGEX = re.compile('#(\\w+)')
-
-
-def get_tags(name: str) -> Set[str]:
-    res = set[str]()
-    for t in TAG_REGEX.finditer(name):
-        res.add(t.group(1).lower())
-    return res
 
 
 # CreateWorkitem("123-456-789", "234-567-890", "Wake up")
@@ -89,7 +78,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         workitem.item_updated(self._when)   # This will also update the Backlog
 
         # Update tags
-        for tag in get_tags(self._workitem_name):
+        for tag in workitem.get_tags():
             if tag not in user.get_tags():
                 new_tag = Tag(tag, user, self._when)
                 user.get_tags()[tag] = new_tag
@@ -222,11 +211,10 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
         }
         emit(events.BeforeWorkitemRename, params, self._carry)
 
-        old_tags = get_tags(workitem.get_name())
-        new_tags = get_tags(self._new_workitem_name)
-
+        old_tags = workitem.get_tags()
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
+        new_tags = workitem.get_tags()
 
         # Update tags
         for new_tag in new_tags:

@@ -16,11 +16,16 @@
 from __future__ import annotations
 
 import datetime
+import re
+from collections.abc import Set
 from typing import Iterable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
+
+
+TAG_REGEX = re.compile('#(\\w+)')
 
 
 class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
@@ -120,3 +125,9 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         for pomodoro in self._children.values():
             if pomodoro.is_startable():
                 yield pomodoro
+
+    def get_tags(self) -> Set[str]:
+        res = set[str]()
+        for t in TAG_REGEX.finditer(self._name):
+            res.add(t.group(1).lower())
+        return res
