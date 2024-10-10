@@ -4,7 +4,7 @@ import os
 import random
 
 from PySide6.QtCore import Qt, QPoint, QSize
-from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox
+from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
@@ -128,6 +128,16 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 return i
         return -1
 
+    async def _select_tag(self, name: str) -> bool:
+        main_window = self.window()
+        # noinspection PyTypeChecker
+        tag_widget: QPushButton = main_window.findChild(QPushButton, f"#{name.lower()}")
+        if tag_widget is not None:
+            tag_widget.click()
+            return True
+        else:
+            return False
+
     async def test_01_screenshots(self):
         main_window = self.window()
         self.center_window()
@@ -195,6 +205,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_alarm_sound")
         sound_alarm_check.setChecked(True)
         await self.instant_pause()
+        sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_rest_sound")
+        sound_alarm_check.setChecked(True)
+        await self.instant_pause()
         sound_file_edit: QLineEdit = self.window().findChild(QLineEdit, "Application.alarm_sound_file-edit")
         sound_file_edit.selectAll()
         await self.instant_pause()
@@ -205,18 +218,18 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
-        await self._new_workitem('Generate new screenshots', 2)
+        await self._new_workitem('Generate new screenshots for #Flowkeeper', 2)
         await self._new_workitem('Reply to Peter', 1)
-        await self._new_workitem('Slides for the demo', 3)
-        await self._new_workitem('Deprecate StartRest strategy', 2)
-        await self._new_workitem('Auto-seal in the web frontend', 2)
+        await self._new_workitem('Slides for #Flowkeeper demo', 3)
+        await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2)
+        await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2)
         await self._new_workitem('Order coffee capsules')
-        await self._new_workitem('Call Alex in the afternoon')
+        await self._new_workitem('#Followup: Call Alex in the afternoon')
 
         ####################################
         # Complete pomodoros and workitems #
         ####################################
-        await self._find_workitem('Generate new screenshots')
+        await self._find_workitem('Generate new screenshots for #Flowkeeper')
         await self._start_pomodoro()
         self.center_window()
         await self.instant_pause()
@@ -244,13 +257,21 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._find_workitem('Order coffee capsules')
         await self._complete_workitem()
 
-        await self._find_workitem('Call Alex in the afternoon')
+        await self._find_workitem('#Followup: Call Alex in the afternoon')
         await self._complete_workitem()
 
-        await self._find_workitem('Slides for the demo')
+        await self._find_workitem('Slides for #Flowkeeper demo')
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
         await self._void_pomodoro()
+
+        # Tags
+        await self._select_tag('Flowkeeper')
+        await self.instant_pause()
+        self.take_screenshot('20-tags')
+        await self.instant_pause()
+        await self._find_workitem('Slides for #Flowkeeper demo')
+        await self.instant_pause()
 
         # Take two "main" screenshots right in the middle of this pomodoro
         settings = self.get_application().get_settings()
@@ -271,7 +292,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         source = self.get_application().get_source_holder().get_source()
         workitem_id = None
         for w in source.workitems():
-            if w.get_name() == 'Slides for the demo':
+            if w.get_name() == 'Slides for #Flowkeeper demo':
                 workitem_id = w.get_uid()
         source.execute_prepared_strategy(StartWorkStrategy(
             1,
@@ -305,7 +326,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         })
         await self.longer_pause()
 
-        await self._find_workitem('Generate new screenshots')
+        await self._find_workitem('Generate new screenshots for #Flowkeeper')
 
         backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 400)))
@@ -357,6 +378,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
+        # Themes
         self.get_application().get_settings().set({
             'Application.theme': 'dark',
             'Application.eyecandy_type': 'default',

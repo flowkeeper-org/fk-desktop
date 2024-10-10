@@ -48,18 +48,13 @@ class TagsWidget(QFrame, AbstractEventEmitter):
         application.get_source_holder().on(AfterSourceChanged, self._on_source_changed)
 
     def _add_tag(self, tag: Tag, event: str = None, carry: any = None) -> None:
-        widget = QPushButton(f'#{tag.get_uid()}', self)
-        widget.setObjectName(tag.get_uid())
+        name = f'#{tag.get_uid()}'
+        widget = QPushButton(name, self)
+        widget.setObjectName(name)
         widget.setProperty('class', 'tag_label')
         widget.setCheckable(True)
         widget.toggled.connect(lambda is_checked: self._on_tag_toggled(widget, is_checked, tag))
         self.layout().addWidget(widget)
-
-    def get_selection(self) -> str | None:
-        for w in self.layout().widgets():
-            if type(w) is QPushButton and w.isChecked():
-                return w.objectName()
-        return None
 
     def deselect(self) -> None:
         for w in self.layout().widgets():
@@ -75,7 +70,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
             previously_checked: QPushButton = None
             for w in self.layout().widgets():
                 if type(w) is QPushButton and w != widget and w.isChecked():
-                    before = self._find_tag(w.objectName())
+                    before = self._find_tag(w.objectName()[1:])
                     previously_checked = w
                     break
 
@@ -100,7 +95,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
 
     def _delete_tag(self, tag: Tag, event: str, carry: any = None) -> None:
         for widget in self.layout().widgets():
-            if widget.objectName() == tag.get_uid():
+            if widget.objectName()[1:] == tag.get_uid():
                 if widget.isChecked():
                     # The tag was selected -- deselect it and fire events properly
                     params = {

@@ -1,4 +1,4 @@
-### v0.8.0 (TBD)
+### v0.8.0 (11 October 2024)
 - You can now use #tags in work items. You can turn it off in Settings > General.
 - When #tags are enabled, work item text wraps if it doesn't fit on one line.
 - Embedded resting music - "Madelene" by Lobo Loco, with kind permission from its author (CC-BY-NC-ND).
