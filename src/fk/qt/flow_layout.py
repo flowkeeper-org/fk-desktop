@@ -36,6 +36,7 @@ class FlowLayout(QLayout):
         for i in range(len(self._item_list)):
             if self._item_list[i].widget() == widget:
                 self._item_list.pop(i)
+                widget.setParent(None)  # Otherwise setGeometry won't work
                 self.setGeometry(self.geometry())
                 return
 

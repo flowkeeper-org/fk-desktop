@@ -72,9 +72,11 @@ class TagsWidget(QFrame, AbstractEventEmitter):
         if is_checked:
             # We selected a tag -- see if we need to deselect anything else
             before = None
+            previously_checked: QPushButton = None
             for w in self.layout().widgets():
                 if type(w) is QPushButton and w != widget and w.isChecked():
                     before = self._find_tag(w.objectName())
+                    previously_checked = w
                     break
 
             params = {
@@ -82,9 +84,10 @@ class TagsWidget(QFrame, AbstractEventEmitter):
                 'after': self._find_tag(tag.get_uid()),
             }
             self._emit(BeforeSelectionChanged, params)
-            w.blockSignals(True)
-            w.setChecked(False)
-            w.blockSignals(False)
+            if previously_checked is not None:
+                previously_checked.blockSignals(True)
+                previously_checked.setChecked(False)
+                previously_checked.blockSignals(False)
             self._emit(AfterSelectionChanged, params)
         else:
             # We deselected a tag
