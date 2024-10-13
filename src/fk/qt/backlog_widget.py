@@ -67,12 +67,12 @@ class BacklogWidget(QWidget):
         self._backlogs_table.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
         self._tags.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
 
-        self._tags.setVisible(application.get_settings().get('Application.feature_tags') == 'True')
+        self._tags.update_visibility(application.get_settings().get('Application.feature_tags') == 'True')
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.feature_tags' in new_values:
-            self._tags.setVisible(new_values['Application.feature_tags'] == 'True')
+            self._tags.update_visibility(new_values['Application.feature_tags'] == 'True')
 
     def _on_selection(self, backlog_or_tag: Backlog | Tag):
         if type(backlog_or_tag) is Backlog and type(self._last_selection) is Tag:

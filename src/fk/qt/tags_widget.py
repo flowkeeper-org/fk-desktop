@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class TagsWidget(QFrame, AbstractEventEmitter):
     _application: Application
     _source: AbstractEventSource
+    _should_be_visible: bool
 
     def __init__(self, parent: QWidget, application: Application):
         super().__init__(parent,
@@ -41,6 +42,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
                          callback_invoker=application.get_settings().invoke_callback)
         self._application = application
         self._source = None
+        self._should_be_visible = True
 
         self.setObjectName('tags_table')
         self.setLayout(FlowLayout(self))
@@ -55,6 +57,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
         widget.setCheckable(True)
         widget.toggled.connect(lambda is_checked: self._on_tag_toggled(widget, is_checked, tag))
         self.layout().addWidget(widget)
+        self.update_visibility()
 
     def deselect(self) -> None:
         for w in self.layout().widgets():
@@ -108,9 +111,21 @@ class TagsWidget(QFrame, AbstractEventEmitter):
                 self.layout().removeWidget(widget)
                 widget.deleteLater()
                 break
+        self.update_visibility()
 
     def _find_tag(self, uid: str) -> Tag:
         return self._source.find_tag(uid)
+
+    def update_visibility(self, from_settings: bool = None) -> None:
+        tag_exists = False
+        for w in self.layout().widgets():
+            if type(w) is QPushButton:
+                tag_exists = True
+
+        if from_settings is not None:
+            self._should_be_visible = from_settings
+
+        self.setVisible(tag_exists and self._should_be_visible)
 
     def _init_tags(self, source: AbstractEventSource, event: str = None) -> None:
         for widget in self.layout().widgets():
@@ -118,6 +133,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
             widget.deleteLater()
         for tag in source.get_data().get_current_user().get_tags().values():
             self._add_tag(tag)
+        self.update_visibility()
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self._source = source
