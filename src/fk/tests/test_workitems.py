@@ -231,7 +231,7 @@ class TestWorkitems(TestCase):
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
         self.source.auto_seal()
         self.assertRaises(Exception,
-                          lambda: self.source.execute(StartWorkStrategy, ['w11', '1']))
+                          lambda: self.source.execute(StartWorkStrategy, ['w11', '1', '1']))
 
     # Next -- Test all workitem-specific stuff (check coverage)
     # - Lifecycle, including automatic voiding and completion of pomodoros (check all situations)
@@ -288,7 +288,7 @@ class TestWorkitems(TestCase):
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second item'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
-        self.source.execute(StartWorkStrategy, ['w11', '1'])
+        self.source.execute(StartWorkStrategy, ['w11', '1', '1'])
         self.source.auto_seal()
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(DeleteWorkitemStrategy, ['w11'])
@@ -323,7 +323,7 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second item'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
-        self.source.execute(StartWorkStrategy, ['w11', '1'])
+        self.source.execute(StartWorkStrategy, ['w11', '1', '1'])
         self.source.auto_seal()
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])

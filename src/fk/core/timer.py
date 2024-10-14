@@ -172,11 +172,10 @@ class PomodoroTimer(AbstractEventEmitter):
         if target_state == 'rest':
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
-            rest_duration = self._source_holder.get_settings().get('Pomodoro.default_rest_duration')
-            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}', '{rest_duration}')")
+            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}')")
             self._source_holder.get_source().execute(
                 StartRestInternalStrategy,
-                [target_workitem.get_uid(), rest_duration],
+                [target_workitem.get_uid()],
                 persist=False)
             logger.debug(f"PomodoroTimer: Executed StartRestInternalStrategy")
         elif target_state == 'finished':

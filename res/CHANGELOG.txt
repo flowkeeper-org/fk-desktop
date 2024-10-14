@@ -4,6 +4,7 @@
 - Embedded resting music - "Madelene" by Lobo Loco, with kind permission from its author (CC-BY-NC-ND).
 - Selectable audio output in Settings > Audio.
 - Flowkeeper displays window title in the focus mode on Wayland automatically.
+- [Technical] StartWork strategy now also carries planned rest duration.
 
 ### v0.7.1 (13 September 2024)
 - [Bugfix] Fixed import/export wizard look & feel on Windows 11 with Qt 6.7.x.

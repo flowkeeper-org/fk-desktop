@@ -298,7 +298,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             1,
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=670),
             'user@local.host',
-            [workitem_id, '1500'],
+            [workitem_id, '1500', '300'],
             settings))
         await self._wait_mid_pomodoro()
         await self._wait_mid_pomodoro()

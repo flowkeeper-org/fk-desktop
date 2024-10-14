@@ -232,9 +232,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
 
     def _next_pomodoro(self) -> None:
+        settings = self._source_holder.get_settings()
         self._source_holder.get_source().execute(StartWorkStrategy, [
             self._continue_workitem.get_uid(),
-            self._source_holder.get_settings().get('Pomodoro.default_work_duration'),
+            settings.get('Pomodoro.default_work_duration'),
+            settings.get('Pomodoro.default_rest_duration'),
         ])
 
     def _complete_item(self) -> None:

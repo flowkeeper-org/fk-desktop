@@ -84,9 +84,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
+            settings = self._source_holder.get_settings()
             self._source_holder.get_source().execute(StartWorkStrategy, [
                 self._continue_workitem.get_uid(),
-                self._source_holder.get_settings().get('Pomodoro.default_work_duration'),
+                settings.get('Pomodoro.default_work_duration'),
+                settings.get('Pomodoro.default_rest_duration'),
             ])
         else:
             if self.parent().isHidden():

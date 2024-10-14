@@ -95,7 +95,7 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                         yield StartWorkStrategy(seq,
                                                 pomodoro.get_last_modified_date() - datetime.timedelta(seconds=1),
                                                 user.get_identity(),
-                                                [workitem.get_uid(), '1'],
+                                                [workitem.get_uid(), '1', '1'],
                                                 source.get_settings())
                         seq += 1
                     if pomodoro.is_canceled():
@@ -200,7 +200,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                             yield StartWorkStrategy(seq,
                                                     p_new.get_last_modified_date() - datetime.timedelta(seconds=1),
                                                     user.get_identity(),
-                                                    [workitem.get_uid(), '1'],
+                                                    [workitem.get_uid(), '1', '1'],
                                                     source.get_settings())
                             seq += 1
                             if p_new.is_canceled():
