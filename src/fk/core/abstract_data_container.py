@@ -74,12 +74,12 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         else:
             return default
 
-    def dump(self, indent: str = '') -> str:
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         if len(self._children) > 0:
-            children = f'\n{indent} --------\n'.join(child.dump(indent + ' - ') for child in self._children.values())
+            children = f'\n'.join(child.dump(indent + '  ', mask_uid) for child in self._children.values())
         else:
             children = f'{indent} - <None>'
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - Name: {self._name}\n' \
-               f'{indent} - Children: {len(self._children)}\n' \
+        return f'{super().dump(indent, mask_uid)}\n' \
+               f'{indent}  Name: {self._name}\n' \
+               f'{indent}  Children:\n' \
                f'{children}'

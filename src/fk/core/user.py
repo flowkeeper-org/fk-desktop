@@ -67,6 +67,6 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - System user: {self._is_system_user}'
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid)}\n' \
+               f'{indent}  System user: {self._is_system_user}'

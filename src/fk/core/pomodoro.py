@@ -73,6 +73,12 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def get_state(self) -> str:
         return self._state
 
+    def get_work_start_date(self) -> datetime.datetime:
+        return self._date_work_started
+
+    def get_rest_start_date(self) -> datetime.datetime:
+        return self._date_rest_started
+
     def update_rest_duration(self, rest_duration: float) -> None:
         if self.is_startable() or self.is_working():
             self._rest_duration = rest_duration
@@ -188,12 +194,12 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def get_parent(self) -> 'Workitem':
         return self._parent
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - State: {self._state}\n' \
-               f'{indent} - Is planned: {self._is_planned}\n' \
-               f'{indent} - Work duration: {self._work_duration}\n' \
-               f'{indent} - Rest duration: {self._rest_duration}\n' \
-               f'{indent} - Work started: {self._date_work_started}\n' \
-               f'{indent} - Rest started: {self._date_rest_started}\n' \
-               f'{indent} - Completed: {self._date_completed}'
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, True)}\n' \
+               f'{indent}  State: {self._state}\n' \
+               f'{indent}  Is planned: {self._is_planned}\n' \
+               f'{indent}  Work duration: {self._work_duration}\n' \
+               f'{indent}  Rest duration: {self._rest_duration}\n' \
+               f'{indent}  Work started: {self._date_work_started}\n' \
+               f'{indent}  Rest started: {self._date_rest_started}\n' \
+               f'{indent}  Completed: {self._date_completed}'

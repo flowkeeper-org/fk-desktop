@@ -49,6 +49,6 @@ class Tag(AbstractDataItem['Tags']):
     def remove_workitem(self, workitem: Workitem) -> None:
         self._workitems.remove(workitem)
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid)}\n' \
                f'{indent} - Name: {self.get_uid()}'

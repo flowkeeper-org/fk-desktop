@@ -115,11 +115,11 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         self._state = 'running'
         self._date_work_started = when
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - State: {self._state}\n' \
-               f'{indent} - Work started: {self._date_work_started}\n' \
-               f'{indent} - Work ended: {self._date_work_ended}'
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid)}\n' \
+               f'{indent}  State: {self._state}\n' \
+               f'{indent}  Work started: {self._date_work_started}\n' \
+               f'{indent}  Work ended: {self._date_work_ended}'
 
     def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
         for pomodoro in self._children.values():
