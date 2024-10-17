@@ -9,6 +9,10 @@ simple tool, which focuses on doing one thing well. It is Free Software with ope
 
 Visit [flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
 
+If you used it, I will appreciate it if you take a minute to 
+[provide some feedback](https://www.producthunt.com/products/flowkeeper/reviews/new). 
+Your constructive criticism is welcome!
+
 ![Flowkeeper screenshot](doc/fk-simple.png "Flowkeeper screenshot")
 
 ## Building

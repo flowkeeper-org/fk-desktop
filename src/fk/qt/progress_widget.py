@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.tag import Tag
 
 
 class ProgressWidget(QWidget):
@@ -42,11 +43,12 @@ class ProgressWidget(QWidget):
         source.on("AfterWorkitem*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
         source.on("AfterPomodoro*", lambda workitem, **kwargs: self.update_progress(workitem.get_parent()))
 
-    def update_progress(self, backlog: Backlog | None) -> None:
+    def update_progress(self, backlog_or_tag: Backlog | Tag | None) -> None:
         total: int = 0
         done: int = 0
-        if backlog:
-            for wi in backlog.values():
+        if backlog_or_tag:
+            workitems = backlog_or_tag.values() if type(backlog_or_tag) is Backlog else backlog_or_tag.get_workitems()
+            for wi in workitems:
                 for p in wi.values():
                     total += 1
                     if p.is_finished() or p.is_canceled():

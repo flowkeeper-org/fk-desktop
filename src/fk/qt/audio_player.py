@@ -16,13 +16,13 @@
 import logging
 
 from PySide6.QtCore import QObject
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QMediaDevices, QAudioDevice
 from PySide6.QtWidgets import QWidget
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import SourceMessagesProcessed
+from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.core.timer import PomodoroTimer
 
 logger = logging.getLogger(__name__)
@@ -46,14 +46,31 @@ class AudioPlayer(QObject):
         timer.on("Timer*Complete", self._play_audio)
         timer.on(PomodoroTimer.TimerWorkStart, self._start_ticking)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         if self._audio_player.isPlaying():
             self._audio_player.stop()
-        source.on(SourceMessagesProcessed, self._on_messages)
+        source.on(SourceMessagesProcessed, lambda event, source: self._start_what_is_needed())
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        needs_reset = False
+        for key in new_values.keys():
+            if key in ['Application.play_alarm_sound', 'Application.alarm_sound_file', 'Application.alarm_sound_volume',
+                       'Application.play_rest_sound', 'Application.rest_sound_file', 'Application.rest_sound_volume',
+                       'Application.play_tick_sound', 'Application.tick_sound_file', 'Application.tick_sound_volume',
+                       'Application.audio_output']:
+                needs_reset = True
+        if needs_reset:
+            self._reset()
+            self._start_what_is_needed()
 
     def _reset(self):
-        self._audio_output = QAudioOutput()
+        found: QAudioDevice = None
+        for device in QMediaDevices.audioOutputs():
+            if device.id().toStdString() == self._settings.get('Application.audio_output'):
+                found = device
+        self._audio_output = QAudioOutput(found)
         self._audio_player = QMediaPlayer(self.parent())
         self._audio_player.setAudioOutput(self._audio_output)
 
@@ -111,7 +128,7 @@ class AudioPlayer(QObject):
             self._audio_player.setLoops(1)
             self._audio_player.play()     # This will substitute the bell sound
 
-    def _on_messages(self, event: str, source: AbstractEventSource) -> None:
+    def _start_what_is_needed(self) -> None:
         if self._timer.is_working():
             self._start_ticking()
         elif self._timer.is_resting():

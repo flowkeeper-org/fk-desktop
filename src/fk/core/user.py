@@ -20,10 +20,12 @@ import datetime
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.tags import Tags
 
 
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
+    _tags: Tags
 
     def __init__(self,
                  data: 'Tenant',
@@ -33,6 +35,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
                  is_system_user: bool):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
+        self._tags = Tags(self)
 
     def __str__(self):
         return f'User "{self.get_name()} <{self.get_uid()}>"'
@@ -52,15 +55,18 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
                             return p
 
     # Returns (state, total remaining). State can be Focus, Rest and Idle
-    def get_state(self) -> (str, int):
+    def get_state(self, when: datetime.datetime) -> (str, int):
         p = self.get_running_pomodoro()
         if p is not None and p.is_working():
-            return f"Focus", p.remaining_minutes_in_current_state()
+            return f"Focus", p.remaining_minutes_in_current_state(when)
         elif p is not None and p.is_resting():
-            return "Rest", p.remaining_minutes_in_current_state()
+            return "Rest", p.remaining_minutes_in_current_state(when)
         else:
             return "Idle", 0
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - System user: {self._is_system_user}'
+    def get_tags(self) -> Tags:
+        return self._tags
+
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid)}\n' \
+               f'{indent}  System user: {self._is_system_user}'

@@ -47,11 +47,11 @@ class BacklogItem(QtGui.QStandardItem):
         self.update_font()
 
     def update_display(self):
-        self.setData(self._backlog.get_name(), Qt.DisplayRole)
+        self.setData(self._backlog.get_name(), Qt.ItemDataRole.DisplayRole)
 
     def update_font(self):
         font = font_today if self._backlog.is_today() else font_new
-        self.setData(font, Qt.FontRole)
+        self.setData(font, Qt.ItemDataRole.FontRole)
 
     def __lt__(self, other: BacklogItem):
         return self._backlog.get_last_modified_date() < other._backlog.get_last_modified_date()

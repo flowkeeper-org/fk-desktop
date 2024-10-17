@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
+from fk.core.tag import Tag
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.configurable_toolbar import ConfigurableToolBar
@@ -66,8 +67,8 @@ class WorkitemWidget(QWidget):
     def get_table(self) -> WorkitemTableView:
         return self._workitems_table
 
-    def upstream_selected(self, backlog: Backlog | None) -> None:
-        self._workitems_table.upstream_selected(backlog)
+    def upstream_selected(self, backlog_or_tag: Backlog | Tag | None) -> None:
+        self._workitems_table.upstream_selected(backlog_or_tag)
 
     def on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.show_toolbar' in new_values:

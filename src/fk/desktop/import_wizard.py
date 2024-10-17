@@ -16,9 +16,10 @@
 import os
 
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
-    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton
+    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton, QTextEdit
 
 from fk.core.event_source_holder import EventSourceHolder
+from fk.core.file_event_source import FileEventSource
 from fk.core.import_export import import_
 from fk.desktop.settings import SettingsDialog
 
@@ -82,6 +83,7 @@ class PageImportSettings(QWizardPage):
 
 class PageImportProgress(QWizardPage):
     label: QLabel
+    repair_log: QLabel
     layout_v: QVBoxLayout
     progress: QProgressBar
     _source_holder: EventSourceHolder
@@ -104,13 +106,19 @@ class PageImportProgress(QWizardPage):
         self._ignore_errors = ignore_errors
         self._import_type_smart = import_type_smart
         #self.setTitle("Importing...")
-        self.layout_v = QVBoxLayout()
-        self.label = QLabel("Data import is in progress. Please do not close this window until it completes.")
+        self.layout_v = QVBoxLayout(self)
+
+        self.label = QLabel("Data import is in progress. Please do not close this window until it completes.", self)
         self.label.setWordWrap(True)
         self.layout_v.addWidget(self.label)
-        self.progress = QProgressBar()
+
+        self.progress = QProgressBar(self)
         self.progress.setValue(0)
         self.layout_v.addWidget(self.progress)
+
+        self.repair_log = QTextEdit(self)
+        self.layout_v.addWidget(self.repair_log)
+
         self.setLayout(self.layout_v)
         self.setFinalPage(True)
 
@@ -124,6 +132,13 @@ class PageImportProgress(QWizardPage):
         self.progress.setValue(self.progress.maximum())
         self._import_complete = True
         self.label.setText('Done. You can now close this window.')
+
+        # Repair it, if file source
+        repair_result = self._source_holder.get_source().repair()
+        if repair_result is not None:
+            log = "\n".join(repair_result)
+            self.repair_log.setText(f'The result was cleaned up:\n{log}')
+
         self._source_holder.request_new_source()
         self.completeChanged.emit()
 

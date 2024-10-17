@@ -57,12 +57,12 @@ QTableView::item:selected {
     border: none;
 }
 
-#users_table {
+#users_table, #tags_table {
     border-top: 1px solid $BORDER_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#backlogs_table, #users_table, #backlogs_widget {
+#backlogs_table, #users_table, #tags_table, #backlogs_widget {
     background-color: $SECONDARY_BG_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
@@ -112,4 +112,22 @@ InfoOverlay #overlay_text, #prev_button {
 #image1, #image2, #image3, #image4, #image5, #pages, #title1, #title2, #title3, #title4, #title5 {
     background-color: "#f7f8fa";
     color: "#000000";
+}
+
+.tag_label {
+    background: none;
+    color: $TABLE_TEXT_COLOR;
+    border-radius: 5px;
+    border: 1px solid $BORDER_COLOR;
+    padding: 0px 6px 0px 6px;
+}
+
+.tag_label:checked {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
+}
+
+#tags_table {
+    padding: 10px 10px 10px 10px;
 }

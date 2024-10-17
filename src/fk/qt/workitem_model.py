@@ -23,6 +23,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged
+from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy
 
@@ -34,7 +35,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
-    _backlog: Backlog | None
+    _backlog_or_tag: Backlog | Tag | None
     _row_height: int
     _show_completed: bool
 
@@ -46,7 +47,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
-        self._backlog = None
+        self._backlog_or_tag = None
         self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
         self._update_row_height()
         self.itemChanged.connect(lambda item: self._handle_rename(item))
@@ -65,14 +66,14 @@ class WorkitemModel(QtGui.QStandardItemModel):
         # for i in range(self.rowCount()):
         #     item: QStandardItem = self.item(i, 2)
         #     workitem: Workitem = item.data(500)
-        #     item.setData(QSize(len(workitem) * rh, rh), Qt.SizeHintRole)
+        #     item.setData(QSize(len(workitem) * rh, rh), Qt.ItemDataRole.SizeHintRole)
         #     self.setItem(i, 2, item)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
-        source.on(AfterWorkitemRename, self._pomodoro_changed)
+        source.on(AfterWorkitemRename, self._workitem_renamed)
         source.on(AfterWorkitemComplete, self._pomodoro_changed)
         source.on(AfterWorkitemStart, self._pomodoro_changed)
         source.on('AfterPomodoro*', self._pomodoro_changed)
@@ -95,19 +96,46 @@ class WorkitemModel(QtGui.QStandardItemModel):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
 
+    def _workitem_belongs_here(self, workitem: Workitem) -> bool:
+        return (type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag
+                or
+                type(self._backlog_or_tag) is Tag and self._backlog_or_tag.get_uid() in workitem.get_tags())
+
+    def _add_workitem(self, workitem: Workitem) -> None:
+        item = QtGui.QStandardItem('')
+        self.appendRow(item)
+        self.set_row(self.rowCount() - 1, workitem)
+
+    def _find_workitem(self, workitem: Workitem) -> int:
+        for i in range(self.rowCount()):
+            wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
+            if wi == workitem:
+                return i
+        return -1
+
+    def _remove_if_found(self, workitem: Workitem) -> None:
+        i = self._find_workitem(workitem)
+        if i >= 0:
+            self.removeRow(i)
+
     def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
-        if workitem.get_parent() == self._backlog:
-            item = QtGui.QStandardItem('')
-            self.appendRow(item)
-            self.set_row(self.rowCount() - 1, workitem)
+        if self._workitem_belongs_here(workitem):
+            self._add_workitem(workitem)
 
     def _workitem_deleted(self, workitem: Workitem, **kwargs) -> None:
-        if workitem.get_parent() == self._backlog:
-            for i in range(self.rowCount()):
-                wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
-                if wi == workitem:
-                    self.removeRow(i)
-                    return
+        if self._workitem_belongs_here(workitem):
+            self._remove_if_found(workitem)
+
+    def _workitem_renamed(self, workitem: Workitem, old_name: str, new_name: str, **kwargs) -> None:
+        if type(self._backlog_or_tag) is Tag:
+            if self._backlog_or_tag.get_uid() in workitem.get_tags():
+                # This workitem should be in this list
+                if self._find_workitem(workitem) < 0:
+                    self._add_workitem(workitem)
+            else:
+                # This workitem should not be in this list
+                self._remove_if_found(workitem)
+        self._pomodoro_changed(workitem)
 
     def _pomodoro_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
@@ -127,16 +155,16 @@ class WorkitemModel(QtGui.QStandardItemModel):
             font = self._font_sealed
 
         col1 = QtGui.QStandardItem()
-        col1.setData('' if workitem.is_planned() else '*', Qt.DisplayRole)
-        col1.setData(font, Qt.FontRole)
+        col1.setData('' if workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
+        col1.setData(font, Qt.ItemDataRole.FontRole)
         col1.setData(workitem, 500)
         col1.setData('planned', 501)
         col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 0, col1)
 
         col2 = QtGui.QStandardItem()
-        col2.setData(workitem.get_name(), Qt.DisplayRole)
-        col2.setData(font, Qt.FontRole)
+        col2.setData(workitem.get_name(), Qt.ItemDataRole.DisplayRole)
+        col2.setData(font, Qt.ItemDataRole.FontRole)
         col2.setData(workitem, 500)
         col2.setData('title', 501)
         col2.setData(workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
@@ -149,20 +177,28 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col3 = QtGui.QStandardItem()
         # Here we rely on the fact that dict.values() stores values in the FIFO order,
         # i.e. acts like a list. I'm not sure if it is guaranteed, but seems to work.
-        col3.setData(','.join([str(p) for p in workitem.values()]), Qt.DisplayRole)
-        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.SizeHintRole)
+        col3.setData(','.join([str(p) for p in workitem.values()]), Qt.ItemDataRole.DisplayRole)
+        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
         col3.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.setItem(i, 2, col3)
 
-    def load(self, backlog: Backlog) -> None:
-        logger.debug(f'WorkitemModel.load({backlog})')
+    def get_row_height(self):
+        return self._row_height
+
+    def load(self, backlog_or_tag: Backlog | Tag) -> None:
+        logger.debug(f'WorkitemModel.load({backlog_or_tag})')
         self.clear()
-        self._backlog = backlog
-        if backlog is not None:
+        self._backlog_or_tag = backlog_or_tag
+        if backlog_or_tag is not None:
             i = 0
-            for workitem in backlog.values():
+            if type(backlog_or_tag) is Backlog:
+                workitems = backlog_or_tag.values()
+            else:
+                workitems = sorted(backlog_or_tag.get_workitems(),
+                                   key=lambda a: a.get_last_modified_date())
+            for workitem in workitems:
                 if not self._show_completed and workitem.is_sealed():
                     continue
                 item = QtGui.QStandardItem('')
@@ -175,7 +211,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
     def show_completed(self, show: bool) -> None:
         self._show_completed = show
-        self.load(self._backlog)
+        self.load(self._backlog_or_tag)
 
-    def get_backlog(self) -> Backlog | None:
-        return self._backlog
+    def get_backlog_or_tag(self) -> Backlog | Tag | None:
+        return self._backlog_or_tag

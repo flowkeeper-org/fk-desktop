@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 from abc import ABC, abstractmethod
 from typing import Callable
 
@@ -21,7 +22,7 @@ class AbstractTimer(ABC):
     @abstractmethod
     def schedule(self,
                  ms: float,
-                 callback: Callable[[dict], None],
+                 callback: Callable[[dict, datetime.datetime], None],
                  params: dict | None,
                  once: bool = False) -> None:
         pass

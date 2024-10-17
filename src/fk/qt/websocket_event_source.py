@@ -86,9 +86,12 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             logger.warning(f'WebSocket disconnected due to an error reported by the server. Will not try to reconnect.')
         else:
             logger.warning(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
-            self._reconnect_timer.schedule(next_reconnect, self.connect, None, True)
+            self._reconnect_timer.schedule(next_reconnect,
+                                           lambda _1, _2: self.connect(),
+                                           None,
+                                           True)
 
-    def connect(self, params: dict | None = None) -> None:
+    def connect(self) -> None:
         self._connection_attempt += 1
         source_type = self.get_config_parameter('Source.type')
         if source_type == 'websocket':
@@ -134,6 +137,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
+                    self.auto_seal(s.get_when())
                     self.execute_prepared_strategy(s)
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
@@ -237,3 +241,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def can_connect(self):
         return True
+
+    def repair(self) -> list[str] | None:
+        return None

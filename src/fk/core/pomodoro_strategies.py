@@ -26,11 +26,12 @@ from fk.core.user import User
 from fk.core.workitem import Workitem
 
 
-# StartWork("123-456-789", "1500")
+# StartWork("123-456-789", "1500", ["300"])
 @strategy
 class StartWorkStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _work_duration: float
+    _rest_duration: float
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
@@ -45,6 +46,10 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._work_duration = float(params[1])
+        if len(params) == 3:
+            self._rest_duration = float(params[2])
+        else:
+            self._rest_duration = 0.0
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -72,10 +77,12 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         for pomodoro in workitem.values():
             if pomodoro.is_startable():
                 work_duration = self._work_duration if self._work_duration != 0 else pomodoro.get_work_duration()
+                rest_duration = self._rest_duration if self._rest_duration != 0.0 else pomodoro.get_rest_duration()
                 params = {
                     'pomodoro': pomodoro,
                     'workitem': workitem,
                     'work_duration': work_duration,
+                    'rest_duration': rest_duration,
                 }
                 if not workitem.is_running():
                     emit(events.BeforeWorkitemStart, params, self._carry)
@@ -83,6 +90,7 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
                     emit(events.AfterWorkitemStart, params, self._carry)
                 emit(events.BeforePomodoroWorkStart, params, self._carry)
                 pomodoro.update_work_duration(work_duration)
+                pomodoro.update_rest_duration(rest_duration)
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
                 emit(events.AfterPomodoroWorkStart, params, self._carry)
@@ -95,7 +103,6 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 # The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
 class StartRestInternalStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
-    _rest_duration: float
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
@@ -109,7 +116,6 @@ class StartRestInternalStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
-        self._rest_duration = float(params[1])
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -131,14 +137,12 @@ class StartRestInternalStrategy(AbstractStrategy[Tenant]):
         # should've been done for the StartWork earlier.
         for pomodoro in workitem.values():
             if pomodoro.is_working():
-                rest_duration = self._rest_duration if self._rest_duration != 0 else pomodoro.get_rest_duration()
                 params = {
                     'pomodoro': pomodoro,
                     'workitem': workitem,
-                    'rest_duration': rest_duration,
+                    'rest_duration': pomodoro.get_rest_duration(),
                 }
                 emit(events.BeforePomodoroRestStart, params, self._carry)
-                pomodoro.update_rest_duration(rest_duration)
                 pomodoro.start_rest(self._when)
                 pomodoro.item_updated(self._when)
                 emit(events.AfterPomodoroRestStart, params, self._carry)

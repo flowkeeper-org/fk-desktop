@@ -86,3 +86,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
     def dump(self):
         for s in self._content:
             logger.debug(s)
+
+    def repair(self) -> list[str] | None:
+        return None
+

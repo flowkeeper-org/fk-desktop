@@ -21,6 +21,7 @@ from typing import Callable
 
 from PySide6.QtCore import QSize, QTime
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
+from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
@@ -54,6 +55,7 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Settings")
 
         self._init_gradients()
+        self._init_audio_outputs()
         self._init_sign_out_button()
 
         buttons = QDialogButtonBox(self)
@@ -110,6 +112,18 @@ class SettingsDialog(QDialog):
                     if m is not None:
                         display_name = f'{m.group(1)} {m.group(2)}'
                         choice.append(f'{preset.name}:{display_name}')
+                break
+
+    def _init_audio_outputs(self):
+        for d in self._data._definitions['Audio']:
+            if d[0] == 'Application.audio_output':
+                choice = d[4]
+                choice.clear()
+                for output in QMediaDevices.audioOutputs():
+                    name = output.id().toStdString()
+                    choice.append(f'{name}:{output.description()}')
+                    if output.isDefault():
+                        self._data.update_default('Application.audio_output', name)
                 break
 
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
@@ -380,6 +394,10 @@ class SettingsDialog(QDialog):
             key_view.clicked.connect(lambda: key_view.setText("Show" if key_view.text() == "Hide" else "Hide"))
             layout.addWidget(key_view)
             return [widget]
+        elif option_type == 'label':
+            ed11 = QLabel(parent)
+            ed11.setText(option_value)
+            return [ed11]
         else:
             return []
 

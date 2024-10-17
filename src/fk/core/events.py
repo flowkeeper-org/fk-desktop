@@ -52,6 +52,10 @@ AfterPomodoroRestStart = "AfterPomodoroRestStart"
 BeforePomodoroComplete = "BeforePomodoroComplete"
 AfterPomodoroComplete = "AfterPomodoroComplete"
 
+TagCreated = "TagCreated"
+TagDeleted = "TagDeleted"
+TagContentChanged = "TagContentChanged"
+
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"
 

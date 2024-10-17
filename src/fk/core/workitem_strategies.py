@@ -21,6 +21,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
+from fk.core.tag import Tag
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
@@ -75,6 +76,18 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         )
         backlog[self._workitem_uid] = workitem
         workitem.item_updated(self._when)   # This will also update the Backlog
+
+        # Update tags
+        for tag in workitem.get_tags():
+            if tag not in user.get_tags():
+                new_tag = Tag(tag, user, self._when)
+                user.get_tags()[tag] = new_tag
+                emit(events.TagCreated, {"tag": new_tag}, self._carry)
+            tag_object = user.get_tags()[tag]
+            if workitem not in tag_object.get_workitems():
+                tag_object.add_workitem(workitem)
+                emit(events.TagContentChanged, {"tag": tag_object}, self._carry)
+
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
         }, self._carry)
@@ -128,9 +141,25 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
             'workitem': workitem
         }
         emit(events.BeforeWorkitemDelete, params, self._carry)
-        void_running_pomodoro(self, emit, data, workitem)
+
+        void_running_pomodoro(self, emit, data, workitem)   # Void pomodoros
+
         workitem.item_updated(self._when)   # Update Backlog
+
+        # Update tags
+        tags_to_delete = set[Tag]()
+        for tag in user.get_tags().values():
+            if workitem in tag.get_workitems():
+                tag.remove_workitem(workitem)
+                emit(events.TagContentChanged, {"tag": tag}, self._carry)
+                if len(tag.get_workitems()) == 0:
+                    tags_to_delete.add(tag)
+        for tag_to_delete in tags_to_delete:
+            del user.get_tags()[tag_to_delete.get_uid()]
+            emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
+
         del workitem.get_parent()[self._workitem_uid]
+
         emit(events.AfterWorkitemDelete, params, self._carry)
         return None, None
 
@@ -181,8 +210,40 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
             'new_name': self._new_workitem_name,
         }
         emit(events.BeforeWorkitemRename, params, self._carry)
+
+        old_tags = workitem.get_tags()
         workitem.set_name(self._new_workitem_name)
         workitem.item_updated(self._when)
+        new_tags = workitem.get_tags()
+
+        # Update tags
+        for new_tag in new_tags:
+            if new_tag not in old_tags:
+                # A new tag was added
+                if new_tag not in user.get_tags():
+                    new_tag_object = Tag(new_tag, user, self._when)
+                    user.get_tags()[new_tag] = new_tag_object
+                    emit(events.TagCreated, {"tag": new_tag_object}, self._carry)
+                tag_object = user.get_tags()[new_tag]
+                if workitem not in tag_object.get_workitems():
+                    tag_object.add_workitem(workitem)
+                    emit(events.TagContentChanged, {"tag": tag_object}, self._carry)
+        tags_to_delete = set[Tag]()
+        fired_for = set[Tag]()
+        for old_tag in old_tags:
+            if old_tag not in new_tags:
+                # An old tag was removed
+                if old_tag in user.get_tags():
+                    old_tag_object = user.get_tags()[old_tag]
+                    if workitem in old_tag_object.get_workitems():
+                        old_tag_object.remove_workitem(workitem)
+                        emit(events.TagContentChanged, {"tag": old_tag_object}, self._carry)
+                        if len(old_tag_object.get_workitems()) == 0:
+                            tags_to_delete.add(old_tag_object)
+        for tag_to_delete in tags_to_delete:
+            del user.get_tags()[tag_to_delete.get_uid()]
+            emit(events.TagDeleted, {"tag": tag_to_delete}, self._carry)
+
         emit(events.AfterWorkitemRename, params, self._carry)
 
 
