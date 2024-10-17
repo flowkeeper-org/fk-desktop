@@ -5,7 +5,10 @@
 - Selectable audio output in Settings > Audio.
 - [Technical] Flowkeeper displays window title in the focus mode on Wayland automatically.
 - [Technical] StartWork strategy now also carries planned rest duration.
+- [Technical] Smart import now preserves timestamps and history.
+- [Technical] We can now import stuff which happened in the past.
 - [Bugfix] Fixed "user already exists" import error.
+- [Bugfix] Fixed incorrect pomodoro states after import.
 - [Bugfix] Fixed incorrect timestamps in smart import.
 - [Bugfix] Fixed incorrect work / rest durations in smart import.
 

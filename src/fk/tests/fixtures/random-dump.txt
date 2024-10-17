@@ -53,14 +53,14 @@
         Owner: user@local.host
         Parent UID: 03b5a76f-cb96-4b88-ad93-68f1540b9208
         Create date: 2024-09-13 09:49:04+00:00
-        Last modified: 2024-09-13 16:52:12+00:00
-        State: canceled
+        Last modified: 2024-09-13 16:50:13+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-13 16:20:13+00:00
         Rest started: None
-        Completed: 2024-09-13 16:52:12+00:00
+        Completed: 2024-09-13 16:50:13+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -633,14 +633,14 @@
         Owner: user@local.host
         Parent UID: 5875cca0-9bb9-4c77-8431-3b9e77bf719f
         Create date: 2024-09-16 09:30:27+00:00
-        Last modified: 2024-09-16 13:56:55+00:00
-        State: canceled
+        Last modified: 2024-09-16 13:51:35+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-16 13:21:35+00:00
         Rest started: None
-        Completed: 2024-09-16 13:56:55+00:00
+        Completed: 2024-09-16 13:51:35+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -910,14 +910,14 @@
         Owner: user@local.host
         Parent UID: 87b61dd6-f14d-4462-96f1-04609db1381e
         Create date: 2024-09-18 09:33:05+00:00
-        Last modified: 2024-09-18 11:26:00+00:00
-        State: canceled
+        Last modified: 2024-09-18 11:24:21+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-18 10:54:21+00:00
         Rest started: None
-        Completed: 2024-09-18 11:26:00+00:00
+        Completed: 2024-09-18 11:24:21+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -1774,14 +1774,14 @@
         Owner: user@local.host
         Parent UID: ccb77c03-959e-4b9f-b8d0-5c8c61eef798
         Create date: 2024-09-24 09:06:00+00:00
-        Last modified: 2024-09-24 13:20:13+00:00
-        State: canceled
+        Last modified: 2024-09-24 13:17:44+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-24 12:47:44+00:00
         Rest started: None
-        Completed: 2024-09-24 13:20:13+00:00
+        Completed: 2024-09-24 13:17:44+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -2375,14 +2375,14 @@
         Owner: user@local.host
         Parent UID: 89298218-0fae-4646-8672-8154c94ad4ae
         Create date: 2024-09-26 10:05:57+00:00
-        Last modified: 2024-09-26 11:56:22+00:00
-        State: canceled
+        Last modified: 2024-09-26 11:53:49+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-26 11:23:49+00:00
         Rest started: None
-        Completed: 2024-09-26 11:56:22+00:00
+        Completed: 2024-09-26 11:53:49+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -2696,14 +2696,14 @@
         Owner: user@local.host
         Parent UID: 1bd75f6c-d242-4612-b945-2d2a96113f33
         Create date: 2024-09-27 09:05:28+00:00
-        Last modified: 2024-09-27 13:58:47+00:00
-        State: canceled
+        Last modified: 2024-09-27 13:53:50+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-27 13:23:50+00:00
         Rest started: None
-        Completed: 2024-09-27 13:58:47+00:00
+        Completed: 2024-09-27 13:53:50+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -2926,14 +2926,14 @@
         Owner: user@local.host
         Parent UID: 75f5dcdf-9336-46e5-8088-ebb9a4531d96
         Create date: 2024-09-30 08:58:40+00:00
-        Last modified: 2024-09-30 11:50:45+00:00
-        State: canceled
+        Last modified: 2024-09-30 11:48:06+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-09-30 11:18:06+00:00
         Rest started: None
-        Completed: 2024-09-30 11:50:45+00:00
+        Completed: 2024-09-30 11:48:06+00:00
       State: finished
       Work started: 2024-09-30 11:18:06+00:00
       Work ended: 2024-09-30 11:50:45+00:00
@@ -3045,14 +3045,14 @@
         Owner: user@local.host
         Parent UID: b5918f3f-a14c-4715-97e9-f84352c03349
         Create date: 2024-10-01 09:16:28+00:00
-        Last modified: 2024-10-01 11:37:23+00:00
-        State: canceled
+        Last modified: 2024-10-01 11:36:24+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-01 11:06:24+00:00
         Rest started: None
-        Completed: 2024-10-01 11:37:23+00:00
+        Completed: 2024-10-01 11:36:24+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -3177,14 +3177,14 @@
         Owner: user@local.host
         Parent UID: 187b60af-aff1-488e-95d3-49012d72d8fd
         Create date: 2024-10-02 09:17:12+00:00
-        Last modified: 2024-10-02 13:59:43+00:00
-        State: canceled
+        Last modified: 2024-10-02 13:56:24+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-02 13:26:24+00:00
         Rest started: None
-        Completed: 2024-10-02 13:59:43+00:00
+        Completed: 2024-10-02 13:56:24+00:00
       State: finished
       Work started: 2024-10-02 11:53:19+00:00
       Work ended: 2024-10-02 13:59:43+00:00
@@ -3518,14 +3518,14 @@
         Owner: user@local.host
         Parent UID: ef25c8b8-fa50-4441-bc09-d29c9cea55a7
         Create date: 2024-10-03 09:39:10+00:00
-        Last modified: 2024-10-03 13:36:47+00:00
-        State: canceled
+        Last modified: 2024-10-03 13:35:06+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-03 13:05:06+00:00
         Rest started: None
-        Completed: 2024-10-03 13:36:47+00:00
+        Completed: 2024-10-03 13:35:06+00:00
       State: finished
       Work started: 2024-10-03 11:00:45+00:00
       Work ended: 2024-10-03 13:36:47+00:00
@@ -3835,14 +3835,14 @@
         Owner: user@local.host
         Parent UID: ea63f8c6-fe6b-4ac5-bd76-e5a8d7a81772
         Create date: 2024-10-04 09:38:58+00:00
-        Last modified: 2024-10-04 11:59:19+00:00
-        State: canceled
+        Last modified: 2024-10-04 11:58:06+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-04 11:28:06+00:00
         Rest started: None
-        Completed: 2024-10-04 11:59:19+00:00
+        Completed: 2024-10-04 11:58:06+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host
@@ -4429,14 +4429,14 @@
         Owner: user@local.host
         Parent UID: cccb9b17-6836-4201-a7b3-95b739b9052f
         Create date: 2024-10-09 10:00:24+00:00
-        Last modified: 2024-10-09 12:34:44+00:00
-        State: canceled
+        Last modified: 2024-10-09 12:31:43+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-09 12:01:43+00:00
         Rest started: None
-        Completed: 2024-10-09 12:34:44+00:00
+        Completed: 2024-10-09 12:31:43+00:00
       State: finished
       Work started: 2024-10-09 10:03:06+00:00
       Work ended: 2024-10-09 12:34:44+00:00
@@ -4547,14 +4547,14 @@
         Owner: user@local.host
         Parent UID: 083f43db-d95b-4734-bbdb-21accd093360
         Create date: 2024-10-10 09:14:56+00:00
-        Last modified: 2024-10-10 12:59:40+00:00
-        State: canceled
+        Last modified: 2024-10-10 12:58:14+00:00
+        State: finished
         Is planned: True
         Work duration: 1500.0
         Rest duration: 300.0
         Work started: 2024-10-10 12:28:14+00:00
         Rest started: None
-        Completed: 2024-10-10 12:59:40+00:00
+        Completed: 2024-10-10 12:58:14+00:00
       - Type: Pomodoro
         UID: <MASKED>
         Owner: user@local.host

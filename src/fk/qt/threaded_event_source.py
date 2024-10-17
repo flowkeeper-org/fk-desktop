@@ -103,8 +103,8 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                                   persist: bool = False) -> None:
         self._wrapped.execute_prepared_strategy(strategy, auto, persist)
 
-    def auto_seal(self) -> None:
-        self._wrapped.auto_seal()
+    def auto_seal(self, when: datetime.datetime | None = None) -> None:
+        self._wrapped.auto_seal(when)
 
     def users(self) -> Iterable[User]:
         return self._wrapped.users()
@@ -142,7 +142,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def can_connect(self):
         return self._wrapped.can_connect()
 
-    def repair(self):
+    def repair(self) -> list[str] | None:
         return self._wrapped.repair()
 
     def compress(self):

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
+from pathlib import Path
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -28,7 +29,9 @@ from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.qt.threaded_event_source import ThreadedEventSource
 
-TEMP_FILENAME = 'src/fk/tests/fixtures/flowkeeper-data-TEMP.txt'
+TEMP_DIR = 'src/fk/tests/fixtures/'
+TEMP_FILE = 'flowkeeper-data-TEMP.txt'
+TEMP_FILENAME = f'{TEMP_DIR}{TEMP_FILE}'
 RAND_FILENAME = 'src/fk/tests/fixtures/random.txt'
 RAND_DUMP_FILENAME = 'src/fk/tests/fixtures/random-dump.txt'
 
@@ -48,12 +51,15 @@ class TestImport(TestCase):
     source_rand: FileEventSource
     data_rand: dict[str, User]
 
-    def setUp(self) -> None:
-        self.settings_temp = MockSettings(filename=TEMP_FILENAME)
-        self.cryptograph_temp = FernetCryptograph(self.settings_temp)
+    def _init_source_temp(self):
         self.source_temp = FileEventSource[Tenant](self.settings_temp, self.cryptograph_temp, Tenant(self.settings_temp))
         self.source_temp.start()
         self.data_temp = self.source_temp.get_data()
+
+    def setUp(self) -> None:
+        self.settings_temp = MockSettings(filename=TEMP_FILENAME)
+        self.cryptograph_temp = FernetCryptograph(self.settings_temp)
+        self._init_source_temp()
 
         self.settings_rand = MockSettings(filename=RAND_FILENAME)
         self.cryptograph_rand = FernetCryptograph(self.settings_rand)
@@ -65,7 +71,8 @@ class TestImport(TestCase):
         self._register_source_producers()
 
     def tearDown(self) -> None:
-        os.unlink(TEMP_FILENAME)
+        for p in Path(TEMP_DIR).glob(f'{TEMP_FILE}*'):
+            p.unlink()
 
     def _register_source_producers(self):
         def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
@@ -84,10 +91,11 @@ class TestImport(TestCase):
         self.assertEqual(len(user_rand), 22)
 
         dump = user_rand.dump()
+        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
-    def _execute_import(self, ignore_errors: bool, merge: bool) -> (int, int):
+    def _execute_import(self, ignore_errors: bool, merge: bool, repair: bool = True) -> (int, int):
         total_start = 0
 
         def set_total_start(total):
@@ -96,9 +104,12 @@ class TestImport(TestCase):
 
         total_end = 0
 
-        def set_total_end(total):
+        def finish(total):
             nonlocal total_end
             total_end = total
+            if repair:
+                self.source_temp.repair()
+                self._init_source_temp()
 
         def nothing(*args):
             pass
@@ -109,7 +120,7 @@ class TestImport(TestCase):
                 merge,
                 set_total_start,
                 nothing,
-                set_total_end)
+                finish)
 
         return total_start, total_end
 
@@ -146,12 +157,11 @@ class TestImport(TestCase):
 
     def test_import_smart_ok(self):
         total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 720)
+        self.assertEqual(total_end, 707)
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
         dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
-        print(dump_imported)
         self.assertEqual(dump_imported, dump_original)
 
     def test_import_smart_twice_ok(self):

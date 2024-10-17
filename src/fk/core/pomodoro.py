@@ -139,29 +139,29 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def get_rest_duration(self) -> float:
         return self._rest_duration
 
-    def total_remaining_time(self) -> float:
+    def total_remaining_time(self, when: datetime.datetime) -> float:
         # Total remaining time in seconds. Can be negative, if it has expired. Can be None, if it hasn't started yet.
-        remaining_in_current = self.remaining_time_in_current_state()
+        remaining_in_current = self.remaining_time_in_current_state(when)
         if self.is_working():
             return remaining_in_current + self._rest_duration
         else:
             return remaining_in_current
 
-    def remaining_time_in_current_state(self) -> float:
+    def remaining_time_in_current_state(self, when: datetime.datetime) -> float:
         # Remaining time in the current state in seconds.
         # Can be negative, if it has expired.
         # Will be 0 if it hasn't started yet.
         if self.is_working():
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
             return (self.planned_end_of_work() - now).total_seconds()
         elif self.is_resting():
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
             return (self.planned_end_of_rest() - now).total_seconds()
         else:
             return 0
 
-    def remaining_minutes_in_current_state(self) -> str:
-        m = self.remaining_time_in_current_state() / 60
+    def remaining_minutes_in_current_state(self, when: datetime.datetime) -> str:
+        m = self.remaining_time_in_current_state(when) / 60
         if m < 1:
             return "Less than a minute"
         else:

@@ -116,7 +116,8 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
 
 def merge_strategies(source: AbstractEventSource[TRoot],
                      data: TRoot) -> Iterable[AbstractStrategy]:
-    """The list of strategies required to merge self with another, used in import"""
+    """The list of strategies required to merge self with another, used in import. Here source is the "into" / combined
+    source, and "data" is the result of loading import file into a new empty source."""
     # UC-2: Import can be done incrementally ("smart import"). Such an import should never delete anything. Items with the same UIDs will be merged together.
 
     # Prepare maps to speed up imports, otherwise we'll have to loop a lot
@@ -179,11 +180,15 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                          [workitem.get_uid(), workitem.get_name()],
                                                          source.get_settings())
                             seq += 1
-                    if existing_workitem.has_running_pomodoro():
-                        yield VoidPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid()],
-                                                   source.get_settings())
-                        seq += 1
+
+                    # # TODO: I'm not sure why we do this. Commenting out for now.
+                    # running = existing_workitem.get_running_pomodoro()
+                    # if running is not None:
+                    #     # TODO: Also check that this pomodoro is to be voided
+                    #     yield VoidPomodoroStrategy(seq, running.get_last_modified_date(), user.get_identity(),
+                    #                                [workitem.get_uid()],
+                    #                                source.get_settings())
+                    #     seq += 1
 
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
@@ -300,9 +305,16 @@ def import_(source: AbstractEventSource[TRoot],
                        ignore_errors,
                        start_callback,
                        progress_callback,
-                       lambda total: _merge_sources(source, new_source, completion_callback))  # Step 2 is done there
+                       lambda total: _merge_sources(source,  # Step 2 is done there
+                                                    new_source,
+                                                    completion_callback))
     else:
-        import_classic(source, filename, ignore_errors, start_callback, progress_callback, completion_callback)
+        import_classic(source,
+                       filename,
+                       ignore_errors,
+                       start_callback,
+                       progress_callback,
+                       completion_callback)
 
 
 def _merge_sources(existing_source,
@@ -313,8 +325,11 @@ def _merge_sources(existing_source,
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
+        print(existing_source._serializer.serialize(strategy))
+        existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
         existing_source.execute_prepared_strategy(strategy, False, True)
         count += 1
+    existing_source.auto_seal()
     existing_source.unmute()
     completion_callback(count)
 
@@ -372,6 +387,7 @@ def import_classic(source: AbstractEventSource[TRoot],
                     # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
+                source.auto_seal(strategy.get_when())
                 source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)
@@ -381,6 +397,5 @@ def import_classic(source: AbstractEventSource[TRoot],
                 else:
                     raise e
 
-    source.auto_seal()
     source.unmute()
     completion_callback(total)

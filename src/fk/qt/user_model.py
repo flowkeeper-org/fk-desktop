@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
+
 from PySide6 import QtGui, QtCore
 from PySide6.QtCore import Qt
 
@@ -63,7 +65,7 @@ class UserModel(QtGui.QStandardItemModel):
                 return
 
     def set_row(self, i: int, user: User) -> None:
-        state, remaining = user.get_state()
+        state, remaining = user.get_state(datetime.datetime.now(datetime.timezone.utc))
         font = self._font_busy if state == 'Focus' else self._font_normal
 
         col1 = QtGui.QStandardItem()

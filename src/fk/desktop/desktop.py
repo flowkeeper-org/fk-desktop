@@ -245,7 +245,7 @@ if __name__ == "__main__":
         pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: hide_timer_automatically())
         pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: show_timer_automatically())
 
-        loader = QtUiTools.QUiLoader()
+        loader = QtUiTools.QUiLoader(app)
 
         # Load main window
         file = QtCore.QFile(":/core.ui")
