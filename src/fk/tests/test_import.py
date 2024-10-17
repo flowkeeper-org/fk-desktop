@@ -91,11 +91,10 @@ class TestImport(TestCase):
         self.assertEqual(len(user_rand), 22)
 
         dump = user_rand.dump()
-        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
-    def _execute_import(self, ignore_errors: bool, merge: bool, repair: bool = True) -> (int, int):
+    def _execute_import(self, ignore_errors: bool, merge: bool, repair: bool = True, half: int = 0) -> (int, int):
         total_start = 0
 
         def set_total_start(total):
@@ -115,7 +114,7 @@ class TestImport(TestCase):
             pass
 
         import_(self.source_temp,
-                RAND_FILENAME,
+                RAND_FILENAME if half == 0 else f'{RAND_FILENAME}-{half}',
                 ignore_errors,
                 merge,
                 set_total_start,
@@ -155,20 +154,45 @@ class TestImport(TestCase):
                 workitem_rand = backlog_rand[w]
                 self.assertEqual(workitem_temp.get_name(), workitem_rand.get_name())
 
-    def test_import_smart_ok(self):
-        total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 707)
-
+    def _compare_imported_and_original_dumps(self):
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
         dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
         self.assertEqual(dump_imported, dump_original)
 
+    def test_import_smart_ok(self):
+        total_start, total_end = self._execute_import(False, True)
+        self.assertEqual(total_end, 707)
+        self._compare_imported_and_original_dumps()
+
     def test_import_smart_twice_ok(self):
         self._execute_import(False, False)
         self._execute_import(False, True)
+        self._compare_imported_and_original_dumps()
 
-        # Unlike "classic" import, the smart one should not create any duplicates
-        # TODO
+    def test_import_smart_in_halves_correct_order(self):
+        fn1 = f'{RAND_FILENAME}-1'
+        fn2 = f'{RAND_FILENAME}-2'
+        try:
+            # 1. Split the file in two halves
+            with open(RAND_FILENAME, encoding='UTF-8') as r:
+                i = 0
+                with open(fn1, 'w', encoding='UTF-8') as w1, open(fn2, 'w', encoding='UTF-8') as w2:
+                    for line in r:
+                        if i == 0:
+                            w2.write(line)
+                        if i < 300:
+                            w1.write(line)
+                        else:
+                            w2.write(line)
+                        i += 1
 
-    # TODO: Redo those tests with importing half of random.txt
+            # 2. Import them
+            self._execute_import(False, True, half=1)
+            self._execute_import(False, True, half=2)
+            self._compare_imported_and_original_dumps()
+        except Exception as e:
+            raise e
+        finally:
+            os.unlink(fn1)
+            os.unlink(fn2)

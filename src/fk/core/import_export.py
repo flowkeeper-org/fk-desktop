@@ -325,7 +325,6 @@ def _merge_sources(existing_source,
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
-        print(existing_source._serializer.serialize(strategy))
         existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
         existing_source.execute_prepared_strategy(strategy, False, True)
         count += 1
