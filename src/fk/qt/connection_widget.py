@@ -81,7 +81,9 @@ class ConnectionWidget(QToolButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        painter.setBrush(QBrush(self._userpic))
+        if self._userpic is not None:
+            # This may happen if we draw faster than getting new event source
+            painter.setBrush(QBrush(self._userpic))
         painter.drawEllipse(2, 2, self.width() - 3, self.height() - 3)
 
         dot_size = 12
