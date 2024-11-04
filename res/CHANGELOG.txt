@@ -1,6 +1,6 @@
-### v0.8.0 (14 October 2024)
+### v0.8.0 (4 November 2024)
 - You can now use #tags in work items. You can turn it off in Settings > General.
-- When #tags are enabled, work item text wraps if it doesn't fit on one line.
+- When #tags are enabled, work item text wraps if it doesn't fit on one line. This is the default behavior.
 - Embedded resting music - "Madelene" by Lobo Loco, with kind permission from its author (CC-BY-NC-ND).
 - Selectable audio output in Settings > Audio.
 - [Technical] Flowkeeper displays window title in the focus mode on Wayland automatically.
