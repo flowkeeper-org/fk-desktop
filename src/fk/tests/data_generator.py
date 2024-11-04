@@ -14,11 +14,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
-import random
 import sys
 from typing import Iterable
 
-from fk.core.abstract_data_item import generate_uid, generate_unique_name
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.mock_settings import MockSettings
@@ -28,6 +27,7 @@ from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.tests.test_utils import one_of, shuffle, randint, rand_normal
 
 PROJECTS = ['#Alpha', '#Beta', '#Gamma', '#Delta', '#Omega']
 
@@ -41,12 +41,7 @@ NOUNS = ['screenshot', 'bug', 'code', 'function', 'website',
 
 
 def lorem_ipsum() -> str:
-    return f'{random.choice(VERBS)} {random.choice(NOUNS)} for {random.choice(PROJECTS)}'
-
-
-# Good enough normally distributed random number
-def rand_normal(a: int, b: int) -> int:
-    return round(sum([random.randint(a, b) for x in range(5)]) / 5)
+    return f'{one_of(VERBS)} {one_of(NOUNS)} for {one_of(PROJECTS)}'
 
 
 def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
@@ -59,7 +54,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
             continue
 
         now = datetime.datetime(now.year, now.month, now.day,
-                                rand_normal(8, 10), random.randint(1, 59),
+                                rand_normal(8, 10), randint(1, 59),
                                 tzinfo=datetime.timezone.utc)
 
         if seq == 1:
@@ -100,9 +95,9 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                           [workitem_uid, '1'],
                                           settings)
 
-        random.shuffle(pomodoros)
+        shuffle(pomodoros)
         for p in pomodoros:
-            choice = random.randint(1, 10)
+            choice = randint(1, 10)
             if choice < 3:  # Ignore it
                 continue
             else:
@@ -136,7 +131,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                               settings)
 
         for w in set(pomodoros):
-            choice = random.randint(1, 10)
+            choice = andint(1, 10)
             if choice < 4:  # Ignore it
                 continue
             else:   # Complete it

@@ -17,7 +17,7 @@ import datetime
 import json
 import logging
 import platform
-import random
+import secrets
 import sys
 import traceback
 import urllib
@@ -494,7 +494,7 @@ class Application(QApplication, AbstractEventEmitter):
         preset_names = [preset.name for preset in QGradient.Preset]
         if 'NumPresets' in preset_names:
             preset_names.remove('NumPresets')
-        chosen = random.choice(preset_names)
+        chosen = secrets.choice(preset_names)
         self._settings.set({'Application.eyecandy_gradient': chosen})
         callback('Application.eyecandy_gradient', chosen)
         return False

@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import os
-import random
 
 from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton
@@ -15,6 +14,7 @@ from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, S
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
+from fk.tests.test_utils import random
 
 TEMP_FILENAME = './screenshots-e2e.txt'
 POMODORO_WORK_DURATION = 1  # seconds
@@ -427,13 +427,13 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
     def _emulate_day(self, workitem: Workitem, start_date: datetime.datetime, day: int):
         weekday = start_date.weekday()
-        if weekday < 5 or random.random() < 0.05:
+        if weekday < 5 or random() < 0.05:
             avg_pomos = 10 + round(day / 100) - weekday
-            num_pomos = round(avg_pomos * (1 + (random.random() - 0.5) / 5))
-            now = start_date + datetime.timedelta(minutes=round(60 * 7 + random.random() * 180))
+            num_pomos = round(avg_pomos * (1 + (random() - 0.5) / 5))
+            now = start_date + datetime.timedelta(minutes=round(60 * 7 + random() * 180))
             for p in range(num_pomos):
                 uid = generate_uid()
-                state_selector = random.random()
+                state_selector = random()
                 if state_selector < 0.1 + (365 - day) / 1200:
                     state = 'canceled'
                 elif state_selector < 0.5 + day / 900:
@@ -441,4 +441,4 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 else:
                     state = 'new'
                 workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, uid, workitem, now)
-                now = now + datetime.timedelta(minutes=round(random.random() * 20))
+                now = now + datetime.timedelta(minutes=round(random() * 20))
