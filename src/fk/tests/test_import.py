@@ -27,7 +27,6 @@ from fk.core.import_export import import_
 from fk.core.mock_settings import MockSettings
 from fk.core.tenant import Tenant
 from fk.core.user import User
-from fk.qt.threaded_event_source import ThreadedEventSource
 
 TEMP_DIR = 'src/fk/tests/fixtures/'
 TEMP_FILE = 'flowkeeper-data-TEMP.txt'
@@ -76,8 +75,9 @@ class TestImport(TestCase):
 
     def _register_source_producers(self):
         def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
-            inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
-            return ThreadedEventSource(inner_source, self)
+            # This is not 100% accurate, as the original wraps it into a ThreadedEventSource, but should suffice
+            # for the purpose of this unit test
+            return EphemeralEventSource[Tenant](settings, cryptograph, root)
 
         get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
