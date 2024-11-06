@@ -77,7 +77,7 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         for pomodoro in workitem.values():
             if pomodoro.is_startable():
                 work_duration = self._work_duration if self._work_duration != 0 else pomodoro.get_work_duration()
-                rest_duration = self._rest_duration if self._rest_duration != 0.0 else pomodoro.get_rest_duration()
+                rest_duration = self._rest_duration if self._rest_duration != 0 else pomodoro.get_rest_duration()
                 params = {
                     'pomodoro': pomodoro,
                     'workitem': workitem,
