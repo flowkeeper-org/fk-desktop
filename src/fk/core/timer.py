@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from fk.core import events
@@ -80,7 +81,7 @@ class PomodoroTimer(AbstractEventEmitter):
         source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
         source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
 
-    def _refresh(self, event: str | None = None, **kwargs) -> None:
+    def _refresh(self, event: str | None = None, when: datetime.datetime | None = None, **kwargs) -> None:
         logger.debug('PomodoroTimer: Refreshing')
         workitem: Workitem | None = None
         pomodoro: Pomodoro | None = None
@@ -107,7 +108,7 @@ class PomodoroTimer(AbstractEventEmitter):
             self._workitem = workitem
             self._planned_duration = pomodoro.get_rest_duration() \
                 if pomodoro.is_resting() else pomodoro.get_work_duration()
-            self._remaining_duration = max(pomodoro.remaining_time_in_current_state(), 0)
+            self._remaining_duration = max(pomodoro.remaining_time_in_current_state(when), 0)
             self._transition_timer.cancel()
             if self._remaining_duration > 0:
                 self._schedule_tick()
@@ -138,9 +139,9 @@ class PomodoroTimer(AbstractEventEmitter):
     def _schedule_tick(self) -> None:
         self._tick_timer.schedule(990, self._handle_tick, None)
 
-    def _handle_tick(self, params: dict | None) -> None:
+    def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
         if self._pomodoro is not None:
-            self._remaining_duration = max(self._pomodoro.remaining_time_in_current_state(), 0)
+            self._remaining_duration = max(self._pomodoro.remaining_time_in_current_state(when), 0)
             # Only tick if there's something running
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': self,
@@ -160,7 +161,7 @@ class PomodoroTimer(AbstractEventEmitter):
         }, True)
         logger.debug(f'PomodoroTimer: Done - Scheduled transition to {target_state} in {ms / 1000} seconds')
 
-    def _handle_transition(self, params: dict | None) -> None:
+    def _handle_transition(self, params: dict | None, when: datetime.datetime | None) -> None:
         target_pomodoro: Pomodoro = params['target_pomodoro']
         target_workitem: Workitem = params['target_workitem']
         target_state: str = params['target_state']
@@ -172,19 +173,20 @@ class PomodoroTimer(AbstractEventEmitter):
         if target_state == 'rest':
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
-            rest_duration = self._source_holder.get_settings().get('Pomodoro.default_rest_duration')
-            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}', '{rest_duration}')")
+            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}')")
             self._source_holder.get_source().execute(
                 StartRestInternalStrategy,
-                [target_workitem.get_uid(), rest_duration],
-                persist=False)
+                [target_workitem.get_uid()],
+                persist=False,
+                when=when)
             logger.debug(f"PomodoroTimer: Executed StartRestInternalStrategy")
         elif target_state == 'finished':
             logger.debug(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
             self._source_holder.get_source().execute(
                 FinishPomodoroInternalStrategy,
                 [target_workitem.get_uid()],
-                persist=False)
+                persist=False,
+                when=when)
             logger.debug(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
         else:
             raise Exception(f"Unexpected scheduled transition state: {target_state}")

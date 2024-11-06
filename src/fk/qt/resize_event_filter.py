@@ -68,7 +68,7 @@ class ResizeEventFilter(QMainWindow):
                 if self._is_resizing:   # Don't fire those events too frequently
                     return False
                 self._timer.schedule(1000,
-                                     lambda _: self.resize_completed(),
+                                     lambda _1, _2: self.resize_completed(),
                                      None,
                                      True)
                 self._is_resizing = True

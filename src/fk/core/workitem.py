@@ -16,11 +16,16 @@
 from __future__ import annotations
 
 import datetime
+import re
+from collections.abc import Set
 from typing import Iterable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
+
+
+TAG_REGEX = re.compile('#(\\w+)')
 
 
 class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
@@ -93,6 +98,12 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                 return True
         return False
 
+    def get_running_pomodoro(self) -> Pomodoro | None:
+        for p in self.values():
+            if p.is_running():
+                return p
+        return None
+
     def is_sealed(self) -> bool:
         return self._state in ('finished', 'canceled')
 
@@ -110,13 +121,19 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         self._state = 'running'
         self._date_work_started = when
 
-    def dump(self, indent: str = '') -> str:
-        return f'{super().dump(indent)}\n' \
-               f'{indent} - State: {self._state}\n' \
-               f'{indent} - Work started: {self._date_work_started}\n' \
-               f'{indent} - Work ended: {self._date_work_ended}'
+    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid)}\n' \
+               f'{indent}  State: {self._state}\n' \
+               f'{indent}  Work started: {self._date_work_started}\n' \
+               f'{indent}  Work ended: {self._date_work_ended}'
 
     def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
         for pomodoro in self._children.values():
             if pomodoro.is_startable():
                 yield pomodoro
+
+    def get_tags(self) -> Set[str]:
+        res = set[str]()
+        for t in TAG_REGEX.finditer(self._name):
+            res.add(t.group(1).lower())
+        return res

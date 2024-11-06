@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
+from PySide6.QtCore import QSize
+from PySide6.QtGui import Qt
 
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
@@ -38,12 +40,13 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
         }
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        size = option.rect.height()
+        s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
+        size = s.height()
         for i, p in enumerate(index.data().split(',')):
             if p != '':
                 rect = QtCore.QRect(
                     option.rect.left() + size * i,
-                    option.rect.center().y() - (size / 2) + 1,
+                    option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
                     size,
                     size)
                 self._svg_renderer[p].render(painter, rect)

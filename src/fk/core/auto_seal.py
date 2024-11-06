@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 def auto_seal(workitems: Iterable[Workitem],
-              executor: Callable[[Type[AbstractStrategy], list[str], bool, datetime.datetime], None]) -> None:
+              executor: Callable[[Type[AbstractStrategy], list[str], bool, datetime.datetime], None],
+              when: datetime.datetime) -> None:
     # If there are pomodoros which should have been completed X seconds ago, but are not,
     # then void them automatically.
     # TODO: Instead of explicit auto-sealing mechanism, create a notion of the "current pomodoro" / timer in the
@@ -34,7 +35,7 @@ def auto_seal(workitems: Iterable[Workitem],
     for workitem in workitems:
         for pomodoro in workitem.values():
             if pomodoro.is_running():
-                remaining_time = pomodoro.total_remaining_time()
+                remaining_time = pomodoro.total_remaining_time(when)
                 if remaining_time < 0:
                     # TODO: Introduce the concept of "fake now", so that we don't need to compare against wall clock
                     # UC-1: If a pomodoro finished offline in the past, it is completed automatically
@@ -50,7 +51,7 @@ def auto_seal(workitems: Iterable[Workitem],
                                      f'{workitem.get_name()} '
                                      f'(transition happened when the client was offline)')
                 elif pomodoro.is_working():
-                    remaining_time = pomodoro.remaining_time_in_current_state()
+                    remaining_time = pomodoro.remaining_time_in_current_state(when)
                     if remaining_time < 0:
                         # UC-1: If a pomodoro work finished offline in the past, the rest starts automatically
                         # This pomodoro should've transitioned to "rest" in the past, but it hasn't
@@ -59,6 +60,6 @@ def auto_seal(workitems: Iterable[Workitem],
                                  [workitem.get_uid(), str(pomodoro.get_rest_duration())],
                                  False,
                                  pomodoro.planned_end_of_work())
-                        logger.warning(f'Warning - automatically started rest on '
-                                       f'{workitem.get_name()} '
-                                       f'(transition happened when the client was offline)')
+                        # logger.warning(f'Warning - automatically started rest on '
+                        #                f'{workitem.get_name()} '
+                        #                f'(transition happened when the client was offline)')

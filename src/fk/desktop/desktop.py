@@ -245,7 +245,7 @@ if __name__ == "__main__":
         pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: hide_timer_automatically())
         pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: show_timer_automatically())
 
-        loader = QtUiTools.QUiLoader()
+        loader = QtUiTools.QUiLoader(app)
 
         # Load main window
         file = QtCore.QFile(":/core.ui")
@@ -290,7 +290,9 @@ if __name__ == "__main__":
         # Backlogs table
         backlogs_widget: BacklogWidget = BacklogWidget(window, app, app.get_source_holder(), actions)
         backlogs_widget.get_table().on(AfterSelectionChanged, lambda event, before, after: workitems_widget.upstream_selected(after))
+        backlogs_widget.get_tags().on(AfterSelectionChanged, lambda event, before, after: workitems_widget.upstream_selected(after))
         backlogs_widget.get_table().on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
+        backlogs_widget.get_tags().on(AfterSelectionChanged, lambda event, before, after: progress_widget.update_progress(after) if after is not None else None)
         left_layout.addWidget(backlogs_widget)
 
         # Users table

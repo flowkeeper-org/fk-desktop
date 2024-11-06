@@ -17,12 +17,13 @@ from __future__ import annotations
 
 import logging
 import os
-import random
 import subprocess
 from typing import Callable
 
 from PIL import Image
 from PySide6.QtWidgets import QWidget
+
+from fk.tests.test_utils import randint
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class Screenshot:
 
     @staticmethod
     def _check_method(method: Callable[[str], None]) -> bool:
-        file = f'test-results/check-{random.randint(100000, 999999)}.png'
+        file = f'test-results/check-{randint(100000, 999999)}.png'
         try:
             method(file)
             im = Image.open(file)

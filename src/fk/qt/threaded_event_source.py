@@ -24,6 +24,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.tag import Tag
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.qt.qt_invoker import invoke_in_main_thread
@@ -102,14 +103,17 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                                   persist: bool = False) -> None:
         self._wrapped.execute_prepared_strategy(strategy, auto, persist)
 
-    def auto_seal(self) -> None:
-        self._wrapped.auto_seal()
+    def auto_seal(self, when: datetime.datetime | None = None) -> None:
+        self._wrapped.auto_seal(when)
 
     def users(self) -> Iterable[User]:
         return self._wrapped.users()
 
     def backlogs(self) -> Iterable[Backlog]:
         return self._wrapped.backlogs()
+
+    def tags(self) -> Iterable[Tag]:
+        return self._wrapped.tags()
 
     def workitems(self) -> Iterable[Workitem]:
         return self._wrapped.workitems()
@@ -119,6 +123,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
 
     def find_workitem(self, uid: str) -> Workitem | None:
         return self._wrapped.find_workitem(uid)
+
+    def find_tag(self, uid: str) -> Tag | None:
+        return self._wrapped.find_tag(uid)
 
     def find_backlog(self, uid: str) -> Backlog | None:
         return self._wrapped.find_backlog(uid)
@@ -135,7 +142,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def can_connect(self):
         return self._wrapped.can_connect()
 
-    def repair(self):
+    def repair(self) -> list[str] | None:
         return self._wrapped.repair()
 
     def compress(self):
