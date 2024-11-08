@@ -216,7 +216,7 @@ class Tutorial:
                                   'down')
 
     def _on_pomodoro_work_start(self, complete: Callable, skip: Callable, **kwargs) -> None:
-        def do(_):
+        def do(_1, _2):
             timer: QToolButton = self._main_window.findChild(QToolButton, "focus.voidPomodoro")
             pt: QPoint = timer.rect().center()
             pt.setY(timer.rect().bottom() + 15)
