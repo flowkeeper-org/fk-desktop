@@ -79,11 +79,17 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         if carry != 'cache' and source == self and source.get_last_sequence() != self._last_seq_in_cache:
             self.save_cache()
 
+    def _initialize_empty_redo_log(self):
+        # This is done to avoid creating local user in the redo log
+        if not os.path.isfile(self._redo_log_filename):
+            with open(self._redo_log_filename, 'w', encoding='UTF-8'):
+                pass
+
     def initialize_redo_log(self):
-        filename = str(Path.home() / f'flowkeeper-redo-{super(CachingMixin, self).get_id()}.txt')
         user = self._cache_application.get_settings().get_username()
-        logger.debug(f'Initializing redo log with file {filename} and user {user}')
-        settings = MockSettings(filename, user)
+        logger.debug(f'Initializing redo log with file {self._redo_log_filename} and user {user}')
+        self._initialize_empty_redo_log()
+        settings = MockSettings(self._redo_log_filename, user)
         self._redo_log = FileEventSource[Tenant](settings,
                                                  NoCryptograph(settings),
                                                  super(CachingMixin, self).get_data())

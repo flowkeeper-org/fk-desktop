@@ -52,7 +52,7 @@ class TestSettings(TestCase):
 
     def test_categories(self):
         categories = self.settings.get_categories()
-        self.assertEqual(len(categories), 5)
+        self.assertEqual(len(categories), 6)
         self.assertIn('General', categories)
         self.settings.set({
             'Pomodoro.default_work_duration': '10',
@@ -100,7 +100,7 @@ class TestSettings(TestCase):
         self.assertEqual(self.settings.get_username(), 'user@local.host')
         self.assertEqual(self.settings.get_work_duration(), 14)
         self.assertEqual(self.settings.get_rest_duration(), 15)
-        self.assertEqual(self.settings.get_fullname(), 'John Doe')
+        self.assertEqual(self.settings.get_fullname(), 'Local User')    # Ignores Source.fullname for local sources
         self.assertFalse(self.settings.is_team_supported(), False)
         self.settings.set({
             'Source.type': 'flowkeeper.org',

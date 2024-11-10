@@ -51,7 +51,7 @@ class AudioPlayer(QObject):
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         if self._audio_player.isPlaying():
             self._audio_player.stop()
-        source.on(SourceMessagesProcessed, lambda event, source: self._start_what_is_needed())
+        source.on(SourceMessagesProcessed, lambda **kwargs: self._start_what_is_needed())
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         needs_reset = False

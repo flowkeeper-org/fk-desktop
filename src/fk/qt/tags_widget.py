@@ -127,7 +127,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
 
         self.setVisible(tag_exists and self._should_be_visible)
 
-    def _init_tags(self, source: AbstractEventSource, event: str = None) -> None:
+    def _init_tags(self, source: AbstractEventSource, event: str = None, carry: any = None) -> None:
         for widget in self.layout().widgets():
             self.layout().removeWidget(widget)
             widget.deleteLater()

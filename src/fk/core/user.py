@@ -75,5 +75,5 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, mask_uid)}\n' \
-               f'{indent}  SystemUser: {self._is_system_user}\n' \
-               f'{indent}  LocalUser: {self._is_local_user}'
+               f'{indent}  System user: {self._is_system_user}\n' \
+               f'{indent}  Local user: {self._is_local_user}'

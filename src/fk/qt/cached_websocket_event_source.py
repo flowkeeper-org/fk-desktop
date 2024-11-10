@@ -46,7 +46,7 @@ class CachedWebsocketEventSource(CachingMixin, WebsocketEventSource, Generic[TRo
                          root=root)
         self._save_timer = QtTimer('WebsocketEventSource_save_cache')
         self._save_timer.schedule(10000,
-                                  lambda params: self.save_cache(),
+                                  lambda _1, _2: self.save_cache(),
                                   None,
                                   False)
         atexit.register(self.save_cache)

@@ -71,14 +71,18 @@ class MockSettings(AbstractSettings):
 
     def get_displayed_settings(self) -> list[str]:
         res = list()
+
+        all_values = dict()
+        for tab_name in self.get_categories():
+            settings = self.get_settings(tab_name)
+            for s in settings:
+                all_values[s[0]] = s[3]
+
         for tab_name in self.get_categories():
             logger.debug(f'Category: {tab_name}')
             settings = self.get_settings(tab_name)
-            values = dict()
-            for s in settings:
-                values[s[0]] = s[3]
             for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
-                if option_visible(values) and option_type not in ('separator', 'button'):
+                if option_visible(all_values) and option_type not in ('separator', 'button'):
                     logger.debug(f' - {option_display}: {option_value}')
                     res.append(option_id)
         return res
