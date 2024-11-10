@@ -68,11 +68,12 @@ there's not enough startable (`new` state) pomodoros in the workitem. Emits
 - `VoidPomodoroStrategy("<WORKITEM_UID>")` - Fails if the workitem with specified UID is not 
 found or sealed, or has no running pomodoros. Emits `BeforePomodoroComplete` / 
 `AfterPomodoroComplete` events with target state `canceled`.
-- `StartWorkStrategy("<WORKITEM_UID>", "<WORK_DURATION_IN_SECONDS>")` - Fails if the workitem 
-with specified UID is not found or sealed, or has no startable (`new`) pomodoros. If the 
-specified work duration is `0`, then the default value at the pomodoro creation moment is used. 
+- `StartWorkStrategy("<WORKITEM_UID>", "<WORK_DURATION_IN_SECONDS>", "<REST_DURATION_IN_SECONDS>")` - 
+Fails if the workitem with specified UID is not found or sealed, or has no startable (`new`) pomodoros. 
+If the specified work duration is `0`, then the default value at the pomodoro creation moment is used. 
 If a Workitem is not yet running, it switches into `running` state, emitting a pair of 
-`BeforeWorkitemStart` / `AfterWorkitemStart` events. As long as it doesn't fail, this strategy 
+`BeforeWorkitemStart` / `AfterWorkitemStart` events. If the specified rest duration is `0`, then the 
+default value at the pomodoro creation moment is used.As long as it doesn't fail, this strategy 
 emits `BeforePomodoroWorkStart` / `AfterPomodoroWorkStart` events.
 
 "Internal" strategies, triggered by the timer and auto-seal mechanism. Those are not registered
@@ -81,10 +82,9 @@ in the strategy factory / event sources, thus cannot appear in persisted form:
 - `FinishPomodoroInternalStrategy("<WORKITEM_UID>")` - Fails if the workitem with specified UID is not 
 found or sealed, or has no running pomodoros. Emits `BeforePomodoroComplete` / 
 `AfterPomodoroComplete` events with target state `finished`.
-- `StartRestInternalStrategy("<WORKITEM_UID>", "<REST_DURATION_IN_SECONDS>")` - Fails if the workitem 
+- `StartRestInternalStrategy("<WORKITEM_UID>")` - Fails if the workitem 
 with specified UID is not found or is not running, or has no in-work (`work` state) pomodoros. 
-If the specified rest duration is `0`, then the default value at the pomodoro creation moment 
-is used. Emits `BeforePomodoroRestStart` / `AfterPomodoroRestStart` events.
+Emits `BeforePomodoroRestStart` / `AfterPomodoroRestStart` events.
 
 ## Server strategies
 

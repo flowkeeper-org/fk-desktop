@@ -68,7 +68,7 @@ class Heartbeat():
                              None,
                              False)
 
-    def _send_ping(self, params: dict | None) -> None:
+    def _send_ping(self, params: dict | None, when: datetime.datetime | None = None) -> None:
         now = datetime.datetime.now(datetime.timezone.utc)
         if self._last_sent_time and not self.is_offline():
             diff_ms = (now - self._last_sent_time).total_seconds() * 1000

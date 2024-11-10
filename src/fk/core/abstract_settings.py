@@ -95,6 +95,10 @@ def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_rest_sound'] == 'True'
 
 
+def _show_if_madelene(values: dict[str, str]) -> bool:
+    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.mp3'
+
+
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
 
@@ -108,7 +112,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
-                 callback_invoker: Callable):
+                 callback_invoker: Callable,
+                 is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
             events.BeforeSettingsChanged,
             events.AfterSettingsChanged,
@@ -122,6 +127,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
                 ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
+                ('', 'separator', '', '', [], _always_show),
+                ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
@@ -194,7 +201,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome()), [], _always_show),
+                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
@@ -245,13 +252,16 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
                 ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
-                ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'False', [], _always_show),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', '', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
+                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_copyright', 'label', '', 'Embedded music - "Madelene (ID 1315)"\n(C) Lobo Loco <https://www.musikbrause.de>,\nCC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
+                ('separator', 'separator', '', '', [], _always_show),
+                ('Application.audio_output', 'choice', 'Output device', '#default', ['#default:Default'], _always_show),
             ],
         }
         for lst in self._definitions.values():
@@ -389,3 +399,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             return 'wss://app.flowkeeper.pro/ws'
         else:
             raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
+
+    def update_default(self, name: str, value: str) -> None:
+        self._defaults[name] = value

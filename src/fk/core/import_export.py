@@ -18,6 +18,8 @@ import logging
 from os import path
 from typing import Iterable, Callable, TypeVar
 
+from more_itertools import tail
+
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_serializer import AbstractSerializer
@@ -87,15 +89,17 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                 seq += 1
                 for pomodoro in workitem.values():
                     # We could create all at once, but then we'd lose the information about unplanned pomodoros
-                    yield AddPomodoroStrategy(seq, workitem.get_create_date(), user.get_identity(),
+                    yield AddPomodoroStrategy(seq, pomodoro.get_create_date(), user.get_identity(),
                                               [workitem.get_uid(), '1'],
                                               source.get_settings())
                     seq += 1
                     if pomodoro.is_canceled() or pomodoro.is_finished():
                         yield StartWorkStrategy(seq,
-                                                pomodoro.get_last_modified_date() - datetime.timedelta(seconds=1),
+                                                pomodoro.get_work_start_date(),
                                                 user.get_identity(),
-                                                [workitem.get_uid(), '1'],
+                                                [workitem.get_uid(),
+                                                 str(pomodoro.get_work_duration()),
+                                                 str(pomodoro.get_rest_duration())],
                                                 source.get_settings())
                         seq += 1
                     if pomodoro.is_canceled():
@@ -112,7 +116,8 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
 
 def merge_strategies(source: AbstractEventSource[TRoot],
                      data: TRoot) -> Iterable[AbstractStrategy]:
-    """The list of strategies required to merge self with another, used in import"""
+    """The list of strategies required to merge self with another, used in import. Here source is the "into" / combined
+    source, and "data" is the result of loading import file into a new empty source."""
     # UC-2: Import can be done incrementally ("smart import"). Such an import should never delete anything. Items with the same UIDs will be merged together.
 
     # Prepare maps to speed up imports, otherwise we'll have to loop a lot
@@ -175,20 +180,25 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                          [workitem.get_uid(), workitem.get_name()],
                                                          source.get_settings())
                             seq += 1
-                    if existing_workitem.has_running_pomodoro():
-                        yield VoidPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid()],
-                                                   source.get_settings())
-                        seq += 1
+
+                    # # TODO: I'm not sure why we do this. Commenting out for now.
+                    # running = existing_workitem.get_running_pomodoro()
+                    # if running is not None:
+                    #     # TODO: Also check that this pomodoro is to be voided
+                    #     yield VoidPomodoroStrategy(seq, running.get_last_modified_date(), user.get_identity(),
+                    #                                [workitem.get_uid()],
+                    #                                source.get_settings())
+                    #     seq += 1
 
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
                 if num_pomodoros_to_add > 0:
-                    # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
-                    yield AddPomodoroStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
-                                              [workitem.get_uid(), str(num_pomodoros_to_add)],
-                                              source.get_settings())
-                    seq += 1
+                    for p_old in tail(num_pomodoros_to_add, workitem.values()):
+                        # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
+                        yield AddPomodoroStrategy(seq, p_old.get_create_date(), user.get_identity(),
+                                                  [workitem.get_uid(), '1'],
+                                                  source.get_settings())
+                        seq += 1
 
                 # Here we rely on dict.values() having list semantics. Need to check if this is guaranteed behavior.
                 # Also, we rely on the fact that there are at least len(workitem) pomodoros now
@@ -198,9 +208,11 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                     if p_old.is_startable():
                         if p_new.is_canceled() or p_new.is_finished():
                             yield StartWorkStrategy(seq,
-                                                    p_new.get_last_modified_date() - datetime.timedelta(seconds=1),
+                                                    p_new.get_work_start_date(),
                                                     user.get_identity(),
-                                                    [workitem.get_uid(), '1'],
+                                                    [workitem.get_uid(),
+                                                     str(p_new.get_work_duration()),
+                                                     str(p_new.get_rest_duration())],
                                                     source.get_settings())
                             seq += 1
                             if p_new.is_canceled():
@@ -315,8 +327,10 @@ def _merge_sources(existing_source,
     new_username = existing_source.get_settings().get_username()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
         strategy.replace_user_identity(new_username)
+        existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
         existing_source.execute_prepared_strategy(strategy, False, True)
         count += 1
+    existing_source.auto_seal()
     existing_source.unmute()
     completion_callback(count)
 
@@ -344,7 +358,7 @@ def import_classic(source: AbstractEventSource[TRoot],
     user_identity = source.get_settings().get_username()
     i = 0
 
-    if user_identity not in source.users():
+    if source.find_user(user_identity) is None:
         # UC-3: Before classic import, if a user configured in Settings is not in the data model, it is created automatically
         i += 1
         strategy = CreateUserStrategy(i,
@@ -374,6 +388,7 @@ def import_classic(source: AbstractEventSource[TRoot],
                     # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
+                source.auto_seal(strategy.get_when())
                 source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)
@@ -383,6 +398,5 @@ def import_classic(source: AbstractEventSource[TRoot],
                 else:
                     raise e
 
-    source.auto_seal()
     source.unmute()
     completion_callback(total)

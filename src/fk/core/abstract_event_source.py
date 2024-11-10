@@ -29,6 +29,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
+from fk.core.tag import Tag
 from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
@@ -86,6 +87,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterPomodoroRestStart,
             events.BeforePomodoroComplete,
             events.AfterPomodoroComplete,
+            events.TagCreated,
+            events.TagDeleted,
+            events.TagContentChanged,
             events.SourceMessagesRequested,
             events.SourceMessagesProcessed,
             events.BeforeMessageProcessed,
@@ -195,13 +199,14 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             carry)
         self.execute_prepared_strategy(s, auto, persist)
 
-    def auto_seal(self) -> None:
+    def auto_seal(self, when: datetime.datetime | None = None) -> None:
         auto_seal(self.workitems(),
-                  lambda strategy_class, params, persist, when: self.execute(strategy_class,
-                                                                             params,
-                                                                             persist=persist,
-                                                                             when=when,
-                                                                             auto=True))
+                  lambda strategy_class, params, persist, exec_when: self.execute(strategy_class,
+                                                                                  params,
+                                                                                  persist=persist,
+                                                                                  when=exec_when,
+                                                                                  auto=True),
+                  when)
 
     def users(self) -> Iterable[User]:
         for user in self.get_data().values():
@@ -211,6 +216,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         for user in self.get_data().values():
             for backlog in user.values():
                 yield backlog
+
+    def tags(self) -> Iterable[Tag]:
+        for user in self.get_data().values():
+            for tag in user.get_tags().values():
+                yield tag
 
     def workitems(self) -> Iterable[Workitem]:
         for backlog in self.backlogs():
@@ -226,6 +236,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         for backlog in self.backlogs():
             if backlog.get_uid() == uid:
                 return backlog
+
+    def find_tag(self, uid: str) -> Tag | None:
+        for tag in self.tags():
+            if tag.get_uid() == uid:
+                return tag
 
     def find_user(self, identity: str) -> User | None:
         for user in self.users():
@@ -259,6 +274,10 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     @abstractmethod
     def can_connect(self):
+        pass
+
+    @abstractmethod
+    def repair(self) -> list[str] | None:
         pass
 
     def connect(self):

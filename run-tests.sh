@@ -22,7 +22,7 @@ set -e
 
 source venv/bin/activate
 PYTHONPATH=src python -m coverage run -m unittest discover -v fk.tests
-python -m coverage html
+python -m coverage html # --include="src/fk/core/*"
 
 # Simple test run
 # PYTHONPATH=src python -m unittest discover -v fk.tests

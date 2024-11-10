@@ -19,7 +19,7 @@ import sys
 
 import keyring
 from PySide6 import QtCore
-from PySide6.QtGui import QFont, Qt
+from PySide6.QtGui import QFont, Qt, QGuiApplication
 from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
@@ -42,7 +42,10 @@ class QtSettings(AbstractSettings):
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
         font = QFont()
         self._app_name = app_name
-        super().__init__(font.family(), font.pointSize(), invoke_in_main_thread)
+        super().__init__(font.family(),
+                         font.pointSize(),
+                         invoke_in_main_thread,
+                         QGuiApplication.platformName() == 'wayland')
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
         keyring_feature_enabled = self.get('Application.feature_keyring') == 'True'

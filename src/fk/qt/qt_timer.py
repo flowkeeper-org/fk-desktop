@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 import threading
 from typing import Callable
@@ -43,7 +44,7 @@ class QExtendedTimer(QTimer):
 
 class QtTimer(AbstractTimer):
     _timer: QExtendedTimer
-    _callback: Callable[[dict], None]
+    _callback: Callable[[dict, datetime.datetime], None]
     _params: dict | None
     _once: bool
     _name: str
@@ -60,11 +61,11 @@ class QtTimer(AbstractTimer):
             self._timer.stop()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'QtTimer - callback, {threading.get_ident()}, {self._name}')
-        self._callback(self._params)
+        self._callback(self._params, datetime.datetime.now(datetime.timezone.utc))
 
     def schedule(self,
                  ms: float,
-                 callback: Callable[[dict], None],
+                 callback: Callable[[dict, datetime.datetime], None],
                  params: dict | None,
                  once: bool = False) -> None:
         # We need to be careful -- this function might be called

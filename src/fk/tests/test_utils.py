@@ -13,7 +13,13 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import datetime
+import math
+import secrets
+import sys
+from typing import TypeVar
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.mock_settings import MockSettings
@@ -23,6 +29,7 @@ from fk.core.user import User
 PREDEFINED_TIMESTAMP = [1632408308, 1666626369, 1700938030]
 PREDEFINED_UID = ['a00001', 'a00002', 'a00003', 'a00004', 'a00005']
 TEST_USERNAMES = ['alice@flowkeeper.org', 'bob@flowkeeper.org', 'charlie@flowkeeper.org']
+_T = TypeVar('_T')
 
 
 def check_timestamp(t: datetime.datetime, n: int) -> bool:
@@ -69,3 +76,34 @@ def test_data() -> Tenant:
     for u in users:
         tenant[u] = users[u]
     return tenant
+
+
+##########################################################################################
+# Random stuff
+##########################################################################################
+def one_of(seq: list[_T]) -> _T:
+    return secrets.choice(seq)
+
+
+def randint(a: int, b: int) -> int:
+    return a + secrets.randbelow(b + 1)
+
+
+def random() -> float:
+    # This is slow, but works correctly
+    return secrets.randbits(int(8 * math.log(sys.maxsize, 256))) / sys.maxsize
+
+
+# Good enough normally distributed random number
+def rand_normal(a: int, b: int) -> int:
+    return round(sum([randint(a, b) for x in range(5)]) / 5)
+
+
+def shuffle(seq: list[_T]) -> list[_T]:
+    res = list()
+    lst = list(seq)
+    while len(lst) > 0:
+        v = one_of(lst)
+        res.append(v)
+        lst.remove(v)
+    return res

@@ -93,3 +93,6 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
     def get_id(self) -> str:
         return f'ephemeral-{uuid.uuid4()}'
+
+    def repair(self) -> list[str] | None:
+        return None

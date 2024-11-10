@@ -17,7 +17,7 @@ import datetime
 import json
 import logging
 import platform
-import random
+import secrets
 import sys
 import traceback
 import urllib
@@ -411,12 +411,13 @@ class Application(QApplication, AbstractEventEmitter):
                                  "Confirmation",
                                  f"Are you sure you want to repair the data source? "
                                  f"This action will\n"
-                                 f"1. Remove duplicates,\n"
-                                 f"2. Create missing data entities like users and backlogs, on first reference,\n"
-                                 f"3. Renumber / reindex data,\n"
-                                 f"4. Remove any events, which fail after 1 -- 3,\n"
-                                 f"5. Create a backup file and overwrite the original data source one,\n"
-                                 f"6. Display a detailed log of what it did.\n"
+                                 f"1. Reorder operations according to their timestamps,\n"
+                                 f"2. Remove duplicates,\n"
+                                 f"3. Create missing data entities like users and backlogs, on first reference,\n"
+                                 f"4. Renumber / reindex data,\n"
+                                 f"5. Remove any events, which fail after 2 -- 4,\n"
+                                 f"6. Create a backup file and overwrite the original data source one,\n"
+                                 f"7. Display a detailed log of what it did.\n"
                                  f"\n"
                                  f"If there are no errors, then this action won't create or overwrite any files.",
                                  QMessageBox.StandardButton.Ok,
@@ -498,7 +499,7 @@ class Application(QApplication, AbstractEventEmitter):
         preset_names = [preset.name for preset in QGradient.Preset]
         if 'NumPresets' in preset_names:
             preset_names.remove('NumPresets')
-        chosen = random.choice(preset_names)
+        chosen = secrets.choice(preset_names)
         self._settings.set({'Application.eyecandy_gradient': chosen})
         callback('Application.eyecandy_gradient', chosen)
         return False
@@ -577,7 +578,7 @@ class Application(QApplication, AbstractEventEmitter):
     def get_heartbeat(self) -> Heartbeat:
         return self._heartbeat
 
-    def check_version(self, event: str) -> None:
+    def check_version(self, event: str, when: datetime.datetime | None = None) -> None:
         def on_version(latest: Version, changelog: str):
             if latest is not None:
                 current: Version = get_current_version()

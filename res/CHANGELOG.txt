@@ -6,6 +6,20 @@
 - User picture is used to display connection state.
 - [Technical] Improved performance of sending actions to the server.
 
+### v0.8.0 (4 November 2024)
+- You can now use #tags in work items. You can turn it off in Settings > General.
+- When #tags are enabled, work item text wraps if it doesn't fit on one line. This is the default behavior.
+- Embedded resting music - "Madelene" by Lobo Loco, with kind permission from its author (CC-BY-NC-ND).
+- Selectable audio output in Settings > Audio.
+- [Technical] Flowkeeper displays window title in the focus mode on Wayland automatically.
+- [Technical] StartWork strategy now also carries planned rest duration.
+- [Technical] Smart import now preserves timestamps and history.
+- [Technical] We can now import stuff which happened in the past.
+- [Bugfix] Fixed "user already exists" import error.
+- [Bugfix] Fixed incorrect pomodoro states after import.
+- [Bugfix] Fixed incorrect timestamps in smart import.
+- [Bugfix] Fixed incorrect work / rest durations in smart import.
+
 ### v0.7.1 (13 September 2024)
 - [Bugfix] Fixed import/export wizard look & feel on Windows 11 with Qt 6.7.x.
 - [Bugfix] Fixed "No QtMultimedia backends found" issue on macOS.

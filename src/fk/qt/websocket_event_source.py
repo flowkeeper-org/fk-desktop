@@ -28,7 +28,6 @@ from PySide6.QtWidgets import QApplication
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
-from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
@@ -125,7 +124,10 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         else:
             logger.warning(f'WebSocket disconnected for unknown reason. Will attempt to reconnect in {next_reconnect}ms')
             # TODO: Bug -- if we ask for consent, and reconnect in the meantime, the app crashes
-            self._reconnect_timer.schedule(next_reconnect, self.connect, None, True)
+            self._reconnect_timer.schedule(next_reconnect,
+                                           lambda _1, _2: self.connect(),
+                                           None,
+                                           True)
 
     def connect(self, params: dict | None = None) -> None:
         self.went_offline()
@@ -168,6 +170,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
+                    self.auto_seal(s.get_when())
                     self.execute_prepared_strategy(s)
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
@@ -283,3 +286,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         username = self.get_settings().get_username()
         h = md5((url + username).encode('utf-8')).hexdigest()
         return f'websocket-{h}'
+
+    def repair(self) -> list[str] | None:
+        return None
