@@ -1,3 +1,6 @@
+### v0.8.1 (13 November 2024)
+- [Bugfix] Fixed a bug in tutorial step 8.
+
 ### v0.8.0 (4 November 2024)
 - You can now use #tags in work items. You can turn it off in Settings > General.
 - When #tags are enabled, work item text wraps if it doesn't fit on one line. This is the default behavior.
