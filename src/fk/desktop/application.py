@@ -61,7 +61,6 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.websocket_event_source import WebsocketEventSource
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +109,11 @@ class Application(QApplication, AbstractEventEmitter):
                 from fk.e2e.screenshots_e2e import ScreenshotE2eTest
                 test = ScreenshotE2eTest(self)
             else:
-                from fk.e2e.backlog_e2e import BacklogE2eTest
-                test = BacklogE2eTest(self)
+                # TODO: Merge those tests once Websocket suite works reliably
+                # from fk.e2e.backlog_e2e import BacklogE2eTest
+                # test = BacklogE2eTest(self)
+                from fk.e2e.server_e2e import ServerE2eTest
+                test = ServerE2eTest(self)
             sys.excepthook = test.on_exception
             test.start()
         else:

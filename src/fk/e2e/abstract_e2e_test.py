@@ -20,8 +20,11 @@ import atexit
 import inspect
 import logging
 import os
+import pathlib
+import subprocess
 import sys
 import traceback
+import uuid
 from abc import ABC
 from datetime import datetime
 from typing import Callable
@@ -32,7 +35,9 @@ from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow
 
 from fk.desktop.application import Application
+from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.e2e.screenshot import Screenshot
+from fk.e2e.testing_strategies import ShutdownServerStrategy, CreateAccountStrategy
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.2  # seconds
@@ -334,3 +339,38 @@ class AbstractE2eTest(ABC):
         screen_center = self._app.primaryScreen().geometry().center()
         fg = self.window().geometry()
         self.window().move(screen_center - (fg.center() - fg.topLeft()))
+
+    def start_server(self, superuser: str, port: str, is_private: bool):
+        # TODO: There must be a better way to do this
+        tempdir = pathlib.Path(os.environ.get('TEMP', '/tmp')).joinpath(str(uuid.uuid4()))
+        os.mkdir(tempdir)
+        subprocess.Popen('start.sh',
+                         executable='bash',
+                         cwd='/home/w/projects/flowkeeper-server/fk/server',   # TODO
+                         env={
+                             'FK_DATA': tempdir,
+                             'FK_GOOGLE_CLIENT_ID': '',
+                             'FK_GOOGLE_CLIENT_SECRET': '',
+                             'FK_HOST': 'localhost',
+                             'FK_PORT': port,
+                             'FK_PRIVATE': '1' if is_private else '0',
+                             'FK_SUPERUSER': superuser,
+                         }).wait()
+
+    def stop_server(self):
+        self._app.get_source_holder().get_source().execute(
+            ShutdownServerStrategy,
+            ['Requested by e2e test'],
+            persist=False)
+
+    def create_user_account(self, username: str, fullname: str, password: str):
+        self._app.get_source_holder().get_source().execute(
+            CreateAccountStrategy,
+            [username, fullname, password],
+            persist=False)
+
+    def delete_user_account(self, username: str):
+        self._app.get_source_holder().get_source().execute(
+            DeleteAccountStrategy,
+            ['Requested by e2e test', username],
+            persist=False)

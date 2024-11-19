@@ -58,7 +58,6 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         if not user.is_local_user():
             # Someone shared their timer state with us -- we won't find a local workitem
             # TODO: Fire some event here
-            print(f'User {self._user_identity} started their work')
             return None, None
 
         workitem: Workitem | None = None
@@ -277,7 +276,6 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
         if not user.is_local_user():
             # Someone shared their timer state with us -- we won't find a local workitem
             # TODO: Fire some event here
-            print(f'User {self._user_identity} canceled their work')
             return None, None
 
         _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._carry, self._when)

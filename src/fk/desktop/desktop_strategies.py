@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import logging
-import re
 from typing import Callable
 
 from PySide6.QtWidgets import QMessageBox
@@ -27,7 +26,6 @@ from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
 
 logger = logging.getLogger(__name__)
-EMAIL_REGEX = re.compile(r'[\w\-.]+@(?:[\w-]+\.)+[\w-]{2,4}')
 
 
 # Authenticate("alice@example.com", "google|token123", "false")
@@ -228,10 +226,11 @@ class PingStrategy(AbstractStrategy):
         return None, None
 
 
-# DeleteAccount("reason")
+# DeleteAccount("reason", "[username]")
 @strategy
 class DeleteAccountStrategy(AbstractStrategy):
     _reason: str
+    _username: str
 
     def __init__(self,
                  seq: int,
@@ -242,6 +241,10 @@ class DeleteAccountStrategy(AbstractStrategy):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._reason = params[0]
+        if len(params) > 1 and params[1] != '':
+            self._username = params[1]
+        else:
+            self._username = None
 
     def encryptable(self) -> bool:
         return False

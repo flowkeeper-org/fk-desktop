@@ -154,7 +154,11 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                 logger.debug(f" - {line}")
             try:
                 s = self._serializer.deserialize(line)
-                if type(s) is not ErrorStrategy:
+                if type(s) is ErrorStrategy:
+                    self._received_error = True
+                    self.execute_prepared_strategy(s)
+                    break
+                else:
                     self.went_online()
                 if s is None:
                     continue
