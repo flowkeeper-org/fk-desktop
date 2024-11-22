@@ -19,7 +19,7 @@ from typing import TypeVar, Generic
 
 from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPainter, QStandardItemModel
-from PySide6.QtWidgets import QTableView, QWidget
+from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -83,6 +83,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
+
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        # self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDragDropOverwriteMode(False)
 
         self._update_row_height()
 

@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 
 from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QMimeData
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -42,7 +42,13 @@ class BacklogItem(QtGui.QStandardItem):
         self.setData(backlog, 500)
         self.setData(backlog.get_name(), Qt.ItemDataRole.ToolTipRole)
         self.setData('title', 501)
-        self.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
+        default_flags = (Qt.ItemFlag.ItemIsSelectable |
+                         Qt.ItemFlag.ItemIsEnabled |
+                         Qt.ItemFlag.ItemIsDragEnabled |
+                         Qt.ItemFlag.ItemIsDropEnabled)
+        self.setDropEnabled(True)
+        self.setDragEnabled(True)
+        self.setFlags(default_flags)
         self.update_display()
         self.update_font()
 
@@ -122,3 +128,32 @@ class BacklogModel(QtGui.QStandardItemModel):
 
     def _sort(self, event: str = None, **kwargs):
         self.sort(0, Qt.SortOrder.DescendingOrder)
+
+    def supportedDropActions(self) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction
+
+    def insertRows(self, row, count, parent = ...):
+        print('insertRows', row, count)
+        super().insertRows(row, count, parent)
+
+    def removeRows(self, row, count, parent = ...):
+        print('removeRows', row, count)
+        super().removeRows(row, count, parent)
+
+    def moveRows(self, sourceParent, sourceRow, count, destinationParent, destinationChild):
+        print('moveRows', sourceRow, count, destinationChild)
+        super().moveRows(sourceParent, sourceRow, count, destinationParent, destinationChild)
+
+    def dropMimeData(self, data, action, row, column, parent):
+        return True
+
+    def canDropMimeData(self, data, action, row, column, parent):
+        return True
+
+    def mimeTypes(self):
+        return ["application/vnd.text.list"]
+
+    def mimeData(self, indexes):
+        d = QMimeData()
+        d.setData("application/vnd.text.list", b'123')
+        return d

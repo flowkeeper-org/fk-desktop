@@ -154,12 +154,17 @@ class WorkitemModel(QtGui.QStandardItemModel):
         elif workitem.is_sealed():
             font = self._font_sealed
 
+        default_flags = (Qt.ItemFlag.ItemIsSelectable |
+                         Qt.ItemFlag.ItemIsEnabled |
+                         Qt.ItemFlag.ItemIsDragEnabled |
+                         Qt.ItemFlag.ItemIsDropEnabled)
+
         col1 = QtGui.QStandardItem()
         col1.setData('' if workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
         col1.setData(font, Qt.ItemDataRole.FontRole)
         col1.setData(workitem, 500)
         col1.setData('planned', 501)
-        col1.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+        col1.setFlags(default_flags)
         self.setItem(i, 0, col1)
 
         col2 = QtGui.QStandardItem()
@@ -168,7 +173,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col2.setData(workitem, 500)
         col2.setData('title', 501)
         col2.setData(workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
-        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
+        flags = default_flags
         if not workitem.is_sealed():
             flags |= Qt.ItemFlag.ItemIsEditable
         col2.setFlags(flags)
@@ -181,7 +186,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
         col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
         col3.setData(workitem, 500)
         col3.setData('pomodoro', 501)
-        col3.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+        col3.setFlags(default_flags)
         self.setItem(i, 2, col3)
 
     def get_row_height(self):
@@ -215,3 +220,18 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
     def get_backlog_or_tag(self) -> Backlog | Tag | None:
         return self._backlog_or_tag
+
+    def supportedDropActions(self) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction | Qt.DropAction.CopyAction
+
+    def insertRows(self, row, count, parent = ...):
+        print('insertRows', row, count)
+        super().insertRows(row, count, parent)
+
+    def removeRows(self, row, count, parent = ...):
+        print('removeRows', row, count)
+        super().removeRows(row, count, parent)
+
+    def moveRows(self, sourceParent, sourceRow, count, destinationParent, destinationChild):
+        print('moveRows', sourceRow, count, destinationChild)
+        super().moveRows(sourceParent, sourceRow, count, destinationParent, destinationChild)
