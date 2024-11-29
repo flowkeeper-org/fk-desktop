@@ -58,9 +58,9 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_state(self, when: datetime.datetime) -> (str, int):
         p = self.get_running_pomodoro()
         if p is not None and p.is_working():
-            return f"Focus", p.remaining_minutes_in_current_state(when)
+            return f"Focus", p.remaining_minutes_in_current_state_str(when)
         elif p is not None and p.is_resting():
-            return "Rest", p.remaining_minutes_in_current_state(when)
+            return "Rest", p.remaining_minutes_in_current_state_str(when)
         else:
             return "Idle", 0
 

@@ -47,3 +47,34 @@ class TestFileEventSource(TestCase):
         self.assertIn('user@local.host', self.data)
         user = self.data['user@local.host']
         self.assertEqual(len(user), 0)
+
+    # Tests:
+    # - Filesystem watcher
+    # - Cryptograph -- create a dedicated unit test for it
+    # - Creation from existing strategies (no file read)
+    # - Events - SourceMessagesRequested, SourceMessagesProcessed, ...
+    # - Events in case of errors
+    # - Auto-seal at the end of every read
+    # - Sequence errors, configurable
+    # - Skipping strategies out of order
+    # - Mute / don't mute
+    # - Create file automatically
+    # - Dealing with syntax errors
+    # - Ignoring comments and empty lines
+    # - Starting with non-1 sequences
+    # - Writing strategies to file (close / open)
+    # - Repair (various cases)
+    # - - Removing duplicates
+    # - - Renumber strategies
+    # - - Create non-existent users on first reference
+    # - - Create non-existent backlogs on first reference
+    # - - Create non-existent workitems on first reference
+    # - - Removing any invalid strategies
+    # - - Creating a backup file
+    # - - Don't do anything for "good" files
+    # - - Check that it can repair something that won't import
+    # - Compress
+    # - - Creates a backup file
+    # - - Compare dumps of random.txt
+    # - - No changes if there are no savings
+    # - Method calls like disconnect, send_ping, etc.

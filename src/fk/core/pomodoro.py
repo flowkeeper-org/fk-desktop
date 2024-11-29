@@ -140,7 +140,8 @@ class Pomodoro(AbstractDataItem['Workitem']):
         return self._rest_duration
 
     def total_remaining_time(self, when: datetime.datetime) -> float:
-        # Total remaining time in seconds. Can be negative, if it has expired. Can be None, if it hasn't started yet.
+        # Total remaining time in seconds, which only makes sense for active pomodoros.
+        # Can be negative, if it has expired. Can be 0, if it hasn't started yet.
         remaining_in_current = self.remaining_time_in_current_state(when)
         if self.is_working():
             return remaining_in_current + self._rest_duration
@@ -160,8 +161,11 @@ class Pomodoro(AbstractDataItem['Workitem']):
         else:
             return 0
 
-    def remaining_minutes_in_current_state(self, when: datetime.datetime) -> str:
-        m = self.remaining_time_in_current_state(when) / 60
+    def remaining_minutes_in_current_state_str(self, when: datetime.datetime) -> str:
+        seconds = self.remaining_time_in_current_state(when)
+        if seconds == 0:
+            return 'N/A'
+        m = seconds / 60
         if m < 1:
             return "Less than a minute"
         else:
@@ -178,9 +182,13 @@ class Pomodoro(AbstractDataItem['Workitem']):
             return 0
 
     def planned_end_of_work(self) -> datetime.datetime:
+        if self._date_work_started is None:
+            return None
         return self._date_work_started + datetime.timedelta(seconds=self._work_duration)
 
     def planned_end_of_rest(self) -> datetime.datetime:
+        if self._date_work_started is None:
+            return None
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
 
     def total_planned_time(self) -> float:
