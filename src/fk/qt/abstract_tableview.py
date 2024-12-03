@@ -207,3 +207,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.selectionModel().blockSignals(False)
 
         self.update_actions(None)
+
+    def dragMoveEvent(self, event):
+        super().dragMoveEvent(event)
+        index: QModelIndex = self.indexAt(event.pos())
+        if index.data(501) == 'title':
+            # Hovering over a "real" item. Insert a "drop placeholder" here instead.
+            self.model().create_drop_placeholder(index)
+        else:
+            # Hovering over a "drop placeholder" item -- nothing to do
+            pass

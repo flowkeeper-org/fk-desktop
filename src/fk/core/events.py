@@ -29,6 +29,8 @@ BeforeBacklogDelete = "BeforeBacklogDelete"
 AfterBacklogDelete = "AfterBacklogDelete"
 BeforeBacklogRename = "BeforeBacklogRename"
 AfterBacklogRename = "AfterBacklogRename"
+BeforeBacklogReorder = "BeforeBacklogReorder"
+AfterBacklogReorder = "AfterBacklogReorder"
 
 BeforeWorkitemCreate = "BeforeWorkitemCreate"
 AfterWorkitemCreate = "AfterWorkitemCreate"

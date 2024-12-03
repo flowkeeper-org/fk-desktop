@@ -1,3 +1,9 @@
+### v0.9.0 (TODO)
+- You can now reorder backlogs via drag-and-drop.
+
+### v0.8.1
+TODO
+
 ### v0.8.0 (4 November 2024)
 - You can now use #tags in work items. You can turn it off in Settings > General.
 - When #tags are enabled, work item text wraps if it doesn't fit on one line. This is the default behavior.

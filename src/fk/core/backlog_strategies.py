@@ -157,3 +157,43 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
         backlog.item_updated(self._when)
         emit(events.AfterBacklogRename, params, self._carry)
         return None, None
+
+
+# ReorderBacklog("123-456-789", "0")
+@strategy
+class ReorderBacklogStrategy(AbstractStrategy[Tenant]):
+    _backlog_uid: str
+    _new_index: int
+
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._backlog_uid = params[0]
+        self._new_index = int(params[1])
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        # UC-2: Trying to reorder a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
+        if self._backlog_uid not in user:
+            raise Exception(f'Backlog "{self._backlog_uid}" not found')
+        backlog = user[self._backlog_uid]
+
+        params = {
+            'backlog': backlog,
+            'new_index': self._new_index,
+        }
+        emit(events.BeforeBacklogReorder, params, self._carry)
+        user.move_child(backlog, self._new_index)
+        user.item_updated(self._when)
+        emit(events.AfterBacklogReorder, params, self._carry)
+        return None, None

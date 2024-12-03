@@ -66,6 +66,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterBacklogDelete,
             events.BeforeBacklogRename,
             events.AfterBacklogRename,
+            events.BeforeBacklogReorder,
+            events.AfterBacklogReorder,
             events.BeforeWorkitemCreate,
             events.AfterWorkitemCreate,
             events.BeforeWorkitemComplete,
