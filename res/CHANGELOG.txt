@@ -5,6 +5,7 @@
 - Configurable caching for local file source to speed up loading.
 - User picture is used to display connection state.
 - [Technical] Improved performance of sending actions to the server.
+- [Bugfix] Flowkeeper crashes when trying to open Settings when there's no audio devices (#38).
 
 ### v0.8.1 (13 November 2024)
 - [Bugfix] Fixed a bug in tutorial.

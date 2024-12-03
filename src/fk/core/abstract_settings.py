@@ -261,7 +261,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
-                ('Application.audio_output', 'choice', 'Output device', '#default', ['#default:Default'], _always_show),
+                ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
         }
         for lst in self._definitions.values():

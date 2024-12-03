@@ -53,7 +53,7 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
     def append(self, strategies: Iterable[AbstractStrategy]) -> None:
         return self._wrapped.append(strategies)
 
-    def clone(self, new_root: TRoot) -> Self[TRoot]:
+    def clone(self, new_root: TRoot) -> Self:
         return self._wrapped.clone(new_root)
 
     def on(self, event_pattern: str, callback: Callable, last: bool = False) -> None:

@@ -227,6 +227,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             for workitem in backlog.values():
                 yield workitem
 
+    def pomodoros(self) -> Iterable[Pomodoro]:
+        for workitem in self.workitems():
+            for pomodoro in workitem.values():
+                yield pomodoro
+
     def find_workitem(self, uid: str) -> Workitem | None:
         for workitem in self.workitems():
             if workitem.get_uid() == uid:
@@ -246,11 +251,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         for user in self.users():
             if user.get_identity() == identity:
                 return user
-
-    def pomodoros(self) -> Iterable[Pomodoro]:
-        for workitem in self.workitems():
-            for pomodoro in workitem.values():
-                yield pomodoro
 
     @abstractmethod
     def clone(self, new_root: TRoot) -> AbstractEventSource[TRoot]:

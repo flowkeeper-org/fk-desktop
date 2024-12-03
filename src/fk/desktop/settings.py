@@ -125,6 +125,9 @@ class SettingsDialog(QDialog):
                     if output.isDefault():
                         self._data.update_default('Application.audio_output', name)
                 break
+        if len(choice) == 0:
+            choice.append('#none:No audio outputs detected')
+            self._data.update_default('Application.audio_output', '#none')
 
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
         if role == QDialogButtonBox.ButtonRole.ApplyRole:
