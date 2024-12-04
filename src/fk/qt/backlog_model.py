@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 
 from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtCore import Qt, QMimeData, QModelIndex
+from PySide6.QtCore import Qt
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -26,6 +26,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy, ReorderBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
+from fk.qt.abstract_drop_model import AbstractDropModel
 
 logger = logging.getLogger(__name__)
 font_new = QtGui.QFont()
@@ -61,27 +62,11 @@ class BacklogItem(QtGui.QStandardItem):
         return self._backlog.get_last_modified_date() < other._backlog.get_last_modified_date()
 
 
-class DropPlaceholderItem(QtGui.QStandardItem):
-    def __init__(self):
-        super().__init__()
-        self.setData(None, 500)
-        self.setData('drop', 501)
-        default_flags = (Qt.ItemFlag.ItemIsSelectable |
-                         Qt.ItemFlag.ItemIsEnabled |
-                         Qt.ItemFlag.ItemIsDropEnabled)
-        self.setFlags(default_flags)
-        self.setData('', Qt.ItemDataRole.DisplayRole)
-        self.setData(font_new, Qt.ItemDataRole.FontRole)
-
-
-class BacklogModel(QtGui.QStandardItemModel):
-    _source_holder: EventSourceHolder
-
+class BacklogModel(AbstractDropModel):
     def __init__(self,
                  parent: QtCore.QObject,
                  source_holder: EventSourceHolder):
-        super().__init__(0, 1, parent)
-        self._source_holder = source_holder
+        super().__init__(1, parent, source_holder)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
@@ -90,9 +75,6 @@ class BacklogModel(QtGui.QStandardItemModel):
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
-        source.on('AfterBacklog*', self._sort)
-        source.on('AfterWorkitem*', self._sort)
-        source.on('AfterPomodoro*', self._sort)
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -135,47 +117,14 @@ class BacklogModel(QtGui.QStandardItemModel):
             for backlog in reversed(user.values()):
                 self.appendRow(BacklogItem(backlog))
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
-        self._sort()
 
-    def _sort(self, event: str = None, **kwargs):
-        #self.sort(0, Qt.SortOrder.DescendingOrder)
-        pass
+    def get_type(self) -> str:
+        return 'application/flowkeeper.backlog.id'
 
-    def supportedDropActions(self) -> Qt.DropAction:
-        return Qt.DropAction.MoveAction
+    def item_by_id(self, uid: str) -> BacklogItem:
+        return BacklogItem(self._source_holder.get_source().find_backlog(uid))
 
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        if where.data(501) == 'drop':
-            backlog_id = data.data('application/flowkeeper.backlog.id').toStdString()
-            self._source_holder.get_source().execute(ReorderBacklogStrategy,
-                                                     # We display backlogs in reverse order, so need to subtract here
-                                                     [backlog_id, str(self.rowCount() - where.row() - 1)])
-            self._remove_drop_placeholder()
-            self.insertRow(where.row(), BacklogItem(self._source_holder.get_source().find_backlog(backlog_id)))
-        return True
-
-    def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        return data.data('application/flowkeeper.backlog.id') is not None
-
-    def mimeTypes(self):
-        return ["application/flowkeeper.backlog.id"]
-
-    def mimeData(self, indexes):
-        if len(indexes) != 1:
-            raise Exception(f'Unexpected number of rows to move: {len(indexes)}')
-        data = QMimeData()
-        backlog: Backlog = indexes[0].data(500)
-        data.setData("application/flowkeeper.backlog.id", bytes(backlog.get_uid(), 'iso8859-1'))
-        return data
-
-    def _remove_drop_placeholder(self):
-        # We can only have one placeholder
-        for i in range(self.rowCount()):
-            if self.index(i, 0).data(501) == 'drop':
-                self.removeRow(i)
-                return  # We won't have more than one
-
-    def create_drop_placeholder(self, index: QModelIndex):
-        self._remove_drop_placeholder()
-        item = DropPlaceholderItem()
-        self.insertRow(index.row(), item)
+    def reorder(self, to_index: int, uid: str):
+        self._source_holder.get_source().execute(ReorderBacklogStrategy,
+                                                 # We display backlogs in reverse order, so need to subtract here
+                                                 [uid, str(self.rowCount() - to_index - 1)])

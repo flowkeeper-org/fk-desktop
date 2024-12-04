@@ -25,13 +25,84 @@ from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWork
     AfterWorkitemDelete, AfterSettingsChanged
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import RenameWorkitemStrategy
+from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
+from fk.qt.abstract_drop_model import AbstractDropModel
 
 logger = logging.getLogger(__name__)
 
 
-class WorkitemModel(QtGui.QStandardItemModel):
-    _source_holder: EventSourceHolder
+class WorkitemPlannedItem(QtGui.QStandardItem):
+    _workitem: Workitem
+    _font: QtGui.QFont
+
+    def __init__(self, workitem: Workitem, font: QtGui.QFont):
+        super().__init__()
+        self._workitem = workitem
+        self._font = font
+        self.setData(workitem, 500)
+        self.setData('planned', 501)
+        flags = (Qt.ItemFlag.ItemIsSelectable |
+                 Qt.ItemFlag.ItemIsEnabled)
+        self.setFlags(flags)
+        self.update_planned()
+        self.update_font()
+
+    def update_planned(self):
+        self.setData('' if self._workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
+        self.setData('Planned' if self._workitem.is_planned() else 'Unplanned', Qt.ItemDataRole.ToolTipRole)
+
+    def update_font(self):
+        self.setData(self._font, Qt.ItemDataRole.FontRole)
+
+
+class WorkitemTitleItem(QtGui.QStandardItem):
+    _workitem: Workitem
+    _font: QtGui.QFont
+
+    def __init__(self, workitem: Workitem, font: QtGui.QFont):
+        super().__init__()
+        self._workitem = workitem
+        self._font = font
+        self.setData(workitem, 500)
+        self.setData('title', 501)
+        flags = (Qt.ItemFlag.ItemIsSelectable |
+                 Qt.ItemFlag.ItemIsEnabled |
+                 Qt.ItemFlag.ItemIsDragEnabled)
+        if not workitem.is_sealed():
+            flags |= Qt.ItemFlag.ItemIsEditable
+        self.setFlags(flags)
+        self.update_display()
+        self.update_font()
+
+    def update_display(self):
+        self.setData(self._workitem.get_name(), Qt.ItemDataRole.DisplayRole)
+        self.setData(self._workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
+
+    def update_font(self):
+        self.setData(self._font, Qt.ItemDataRole.FontRole)
+
+
+class WorkitemPomodoroItem(QtGui.QStandardItem):
+    _workitem: Workitem
+    _row_height: int
+
+    def __init__(self, workitem: Workitem, row_height: int):
+        super().__init__()
+        self._workitem = workitem
+        self._row_height = row_height
+        self.setData(workitem, 500)
+        self.setData('pomodoro', 501)
+        flags = (Qt.ItemFlag.ItemIsSelectable |
+                 Qt.ItemFlag.ItemIsEnabled)
+        self.setFlags(flags)
+        self.update_display()
+
+    def update_display(self):
+        self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
+        self.setData(QSize(len(self._workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
+
+
+class WorkitemModel(AbstractDropModel):
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
@@ -40,8 +111,7 @@ class WorkitemModel(QtGui.QStandardItemModel):
     _show_completed: bool
 
     def __init__(self, parent: QtWidgets.QWidget, source_holder: EventSourceHolder):
-        super().__init__(0, 3, parent)
-        self._source_holder = source_holder
+        super().__init__(1, parent, source_holder)
         self._font_new = QtGui.QFont()
         self._font_running = QtGui.QFont()
         self._font_running.setWeight(QtGui.QFont.Weight.Bold)
@@ -153,39 +223,9 @@ class WorkitemModel(QtGui.QStandardItemModel):
             font = self._font_running
         elif workitem.is_sealed():
             font = self._font_sealed
-
-        default_flags = (Qt.ItemFlag.ItemIsSelectable |
-                         Qt.ItemFlag.ItemIsEnabled |
-                         Qt.ItemFlag.ItemIsDragEnabled |
-                         Qt.ItemFlag.ItemIsDropEnabled)
-
-        col1 = QtGui.QStandardItem()
-        col1.setData('' if workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
-        col1.setData(font, Qt.ItemDataRole.FontRole)
-        col1.setData(workitem, 500)
-        col1.setData('planned', 501)
-        col1.setFlags(default_flags)
-        self.setItem(i, 0, col1)
-
-        col2 = QtGui.QStandardItem()
-        col2.setData(workitem.get_name(), Qt.ItemDataRole.DisplayRole)
-        col2.setData(font, Qt.ItemDataRole.FontRole)
-        col2.setData(workitem, 500)
-        col2.setData('title', 501)
-        col2.setData(workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
-        flags = default_flags
-        if not workitem.is_sealed():
-            flags |= Qt.ItemFlag.ItemIsEditable
-        col2.setFlags(flags)
-        self.setItem(i, 1, col2)
-
-        col3 = QtGui.QStandardItem()
-        col3.setData(','.join([str(p) for p in workitem.values()]), Qt.ItemDataRole.DisplayRole)
-        col3.setData(QSize(len(workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
-        col3.setData(workitem, 500)
-        col3.setData('pomodoro', 501)
-        col3.setFlags(default_flags)
-        self.setItem(i, 2, col3)
+        self.setItem(i, 0, WorkitemPlannedItem(workitem, font))
+        self.setItem(i, 1, WorkitemTitleItem(workitem, font))
+        self.setItem(i, 2, WorkitemPomodoroItem(workitem, self._row_height))
 
     def get_row_height(self):
         return self._row_height
@@ -218,3 +258,19 @@ class WorkitemModel(QtGui.QStandardItemModel):
 
     def get_backlog_or_tag(self) -> Backlog | Tag | None:
         return self._backlog_or_tag
+
+    def get_type(self) -> str:
+        return 'application/flowkeeper.workitem.id'
+
+    def item_by_id(self, uid: str) -> WorkitemTitleItem:
+        workitem = self._source_holder.get_source().find_workitem(uid)
+        font = self._font_new
+        if workitem.is_running():
+            font = self._font_running
+        elif workitem.is_sealed():
+            font = self._font_sealed
+        return WorkitemTitleItem(workitem, font)
+
+    def reorder(self, to_index: int, uid: str):
+        self._source_holder.get_source().execute(ReorderWorkitemStrategy,
+                                                 [uid, str(to_index)])
