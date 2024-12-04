@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 class AudioPlayer(QObject):
     _timer: PomodoroTimer
-    _audio_output: QAudioOutput
-    _audio_player: QMediaPlayer
+    _audio_output: QAudioOutput | None
+    _audio_player: QMediaPlayer | None
     _settings: AbstractSettings
 
     def __init__(self,
@@ -49,9 +49,9 @@ class AudioPlayer(QObject):
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
-        if self._audio_player.isPlaying():
+        if self._audio_player is not None and self._audio_player.isPlaying():
             self._audio_player.stop()
-        source.on(SourceMessagesProcessed, lambda event, source: self._start_what_is_needed())
+        source.on(SourceMessagesProcessed, lambda **kwargs: self._start_what_is_needed())
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         needs_reset = False
@@ -70,63 +70,71 @@ class AudioPlayer(QObject):
         for device in QMediaDevices.audioOutputs():
             if device.id().toStdString() == self._settings.get('Application.audio_output'):
                 found = device
-        self._audio_output = QAudioOutput(found)
-        self._audio_player = QMediaPlayer(self.parent())
-        self._audio_player.setAudioOutput(self._audio_output)
+        if found is None:
+            self._audio_output = None
+            self._audio_player = None
+        else:
+            self._audio_output = QAudioOutput(found)
+            self._audio_player = QMediaPlayer(self.parent())
+            self._audio_player.setAudioOutput(self._audio_output)
 
     def _set_volume(self, setting: str):
-        try:
-            from PySide6.QtMultimedia import QtAudio
-            Q = QtAudio
-        except Exception:
-            from PySide6.QtMultimedia import QAudio
-            Q = QAudio
-        volume = float(self._settings.get(setting)) / 100.0
-        # This is what all mixers do
-        volume = Q.convertVolume(volume,
-                                 Q.VolumeScale.LogarithmicVolumeScale,
-                                 Q.VolumeScale.LinearVolumeScale)
-        self._audio_output.setVolume(volume)
-        logger.debug(f'Volume is set to {int(volume * 100)}%')
+        if self._audio_output is not None:
+            try:
+                from PySide6.QtMultimedia import QtAudio
+                Q = QtAudio
+            except Exception:
+                from PySide6.QtMultimedia import QAudio
+                Q = QAudio
+            volume = float(self._settings.get(setting)) / 100.0
+            # This is what all mixers do
+            volume = Q.convertVolume(volume,
+                                     Q.VolumeScale.LogarithmicVolumeScale,
+                                     Q.VolumeScale.LinearVolumeScale)
+            self._audio_output.setVolume(volume)
+            logger.debug(f'Volume is set to {int(volume * 100)}%')
 
     def _play_audio(self, event: str = None, **kwargs) -> None:
-        # Alarm bell
-        play_alarm_sound = (self._settings.get('Application.play_alarm_sound') == 'True')
-        play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
-        if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
-            self._audio_player.stop()     # In case it was ticking or playing rest music
-            alarm_file = self._settings.get('Application.alarm_sound_file')
-            self._reset()
-            self._set_volume('Application.alarm_sound_volume')
-            self._audio_player.setSource(alarm_file)
-            self._audio_player.setLoops(1)
-            self._audio_player.play()
+        if self._audio_player is not None:
+            # Alarm bell
+            play_alarm_sound = (self._settings.get('Application.play_alarm_sound') == 'True')
+            play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
+            if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
+                self._audio_player.stop()     # In case it was ticking or playing rest music
+                alarm_file = self._settings.get('Application.alarm_sound_file')
+                self._reset()
+                self._set_volume('Application.alarm_sound_volume')
+                self._audio_player.setSource(alarm_file)
+                self._audio_player.setLoops(1)
+                self._audio_player.play()
 
-        # Rest music
-        if event == 'TimerWorkComplete':
-            self._start_rest_sound()
+            # Rest music
+            if event == 'TimerWorkComplete':
+                self._start_rest_sound()
 
     def _start_ticking(self, event: str = None, **kwargs) -> None:
-        play_tick_sound = (self._settings.get('Application.play_tick_sound') == 'True')
-        if play_tick_sound:
-            self._audio_player.stop()     # Just in case
-            tick_file = self._settings.get('Application.tick_sound_file')
-            self._reset()
-            self._set_volume('Application.tick_sound_volume')
-            self._audio_player.setSource(tick_file)
-            self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
-            self._audio_player.play()
+        if self._audio_player is not None:
+            play_tick_sound = (self._settings.get('Application.play_tick_sound') == 'True')
+            if play_tick_sound:
+                self._audio_player.stop()     # Just in case
+                tick_file = self._settings.get('Application.tick_sound_file')
+                self._reset()
+                self._set_volume('Application.tick_sound_volume')
+                self._audio_player.setSource(tick_file)
+                self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
+                self._audio_player.play()
 
     def _start_rest_sound(self) -> None:
-        play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
-        if play_rest_sound:
-            self._audio_player.stop()     # In case it was ticking
-            rest_file = self._settings.get('Application.rest_sound_file')
-            self._reset()
-            self._set_volume('Application.rest_sound_volume')
-            self._audio_player.setSource(rest_file)
-            self._audio_player.setLoops(1)
-            self._audio_player.play()     # This will substitute the bell sound
+        if self._audio_player is not None:
+            play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
+            if play_rest_sound:
+                self._audio_player.stop()     # In case it was ticking
+                rest_file = self._settings.get('Application.rest_sound_file')
+                self._reset()
+                self._set_volume('Application.rest_sound_volume')
+                self._audio_player.setSource(rest_file)
+                self._audio_player.setLoops(1)
+                self._audio_player.play()     # This will substitute the bell sound
 
     def _start_what_is_needed(self) -> None:
         if self._timer.is_working():
