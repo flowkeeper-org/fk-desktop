@@ -25,9 +25,6 @@ from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.event_source_holder import EventSourceHolder
 
 
-# TODO Sometimes drops lose an item, e.g. dropping a workitem at the end
-# TODO Disable drag-and-drop for workitems in "tag" mode
-
 class DropPlaceholderItem(QStandardItem):
     def __init__(self, based_on_index: QModelIndex):
         super().__init__()

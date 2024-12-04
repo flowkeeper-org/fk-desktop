@@ -122,7 +122,6 @@ class BacklogModel(AbstractDropModel):
                         new_index -= 1
                     row = self.takeRow(old_index)
                     self.insertRow(new_index, row)
-                    print('_backlog_reordered', old_index, 'to', new_index, 'row:', row)
                     return
 
     def load(self, user: User) -> None:

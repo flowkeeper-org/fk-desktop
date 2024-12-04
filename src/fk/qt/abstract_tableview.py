@@ -86,9 +86,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
+        self.setDropIndicatorShown(False)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
-        # self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.setDragDropOverwriteMode(False)
 
         self._update_row_height()

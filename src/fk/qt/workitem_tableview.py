@@ -131,7 +131,9 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
 
     def upstream_selected(self, backlog_or_tag: Backlog | Tag) -> None:
         super().upstream_selected(backlog_or_tag)
-        self._actions['workitems_table.newItem'].setEnabled(type(backlog_or_tag) is Backlog)
+        is_backlog = type(backlog_or_tag) is Backlog
+        self._actions['workitems_table.newItem'].setEnabled(is_backlog)
+        self.setDragEnabled(is_backlog)
         self._resize()
 
     def update_actions(self, selected: Workitem) -> None:
