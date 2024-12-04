@@ -19,21 +19,21 @@ from PySide6.QtCore import QSize, Property
 from PySide6.QtGui import QFont, QColor, QPalette
 from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
 
-from fk.qt.timer_renderer import TimerRenderer
+from fk.qt.new_timer_renderer import NewTimerRenderer
 
 logger = logging.getLogger(__name__)
 DISPLAY_SIZE = 63
 
 
 class TimerWidget(QWidget):
-    _timer_display: TimerRenderer
+    _timer_display: NewTimerRenderer
     _fg_color: QColor
     _bg_color: QColor
 
     def __init__(self,
                  parent: QWidget,
                  name: str,
-                 center_button: QToolButton):
+                 center_button: QToolButton = None):
         super().__init__(parent)
         self.setObjectName(name)
 
@@ -55,8 +55,9 @@ class TimerWidget(QWidget):
         inner_timer_layout.setContentsMargins(0, 0, 0, 0)
         inner_timer_layout.setSpacing(0)
 
-        inner_timer_layout.addWidget(center_button)
-        self._timer_display = TimerRenderer(
+        if center_button is not None:
+            inner_timer_layout.addWidget(center_button)
+        self._timer_display = NewTimerRenderer(
             self,
             self._fg_color,
             self._bg_color,
@@ -98,6 +99,6 @@ class TimerWidget(QWidget):
         self._timer_display.reset()
         self._timer_display.repaint()
 
-    def set_values(self, completion) -> None:
-        self._timer_display.set_values(completion)
+    def set_values(self, completion, is_work) -> None:
+        self._timer_display.set_values(completion, is_work=is_work)
         self._timer_display.repaint()

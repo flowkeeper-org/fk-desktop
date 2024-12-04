@@ -90,7 +90,7 @@ def show_timer_automatically() -> None:
         window.hide()
 
 
-def hide_timer(event: str|None = None, **kwargs) -> None:
+def hide_timer(event: str | None = None, **kwargs) -> None:
     set_window_flags(False)
     main_layout.show()
     focus.show()

@@ -253,7 +253,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
         self._header_text.setText(state_txt)
-        self._timer_widget.set_values(completion)
+        self._timer_widget.set_values(completion, self._timer.is_working())
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':

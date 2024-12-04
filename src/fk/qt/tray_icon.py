@@ -42,7 +42,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  actions: Actions):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
-        self._default_icon = QIcon(":/icons/logo.png")
+        self._default_icon = QIcon(":/icons/logo8.png")
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._continue_workitem = None
@@ -107,7 +107,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
-        self._timer_widget.set_values(completion)
+        self._timer_widget.set_values(completion, self._timer.is_working())
         self._paint_timer()
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:

@@ -13,9 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QToolButton
 
 from fk.core.timer import PomodoroTimer
 from fk.qt.focus_widget import FocusWidget
@@ -30,14 +27,8 @@ FocusWidget.define_actions(mc.get_actions())
 
 action = mc.get_actions()['focus.voidPomodoro']
 
-btn = QToolButton(mc.get_window())
-btn.setObjectName('focus.voidPomodoro')
-btn.setIcon(QIcon(action.icon()))
-btn.setIconSize(QSize(32, 32))
-btn.setDefaultAction(action)
-
-timer = TimerWidget(mc.get_window(), 'timer', btn)
-timer.set_values(0.666)
+timer = TimerWidget(mc.get_window(), 'timer')
+timer.set_values(0, True)
 mc.get_window().setCentralWidget(timer)
 
 mc.main_loop()
