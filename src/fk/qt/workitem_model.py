@@ -31,38 +31,34 @@ from fk.qt.abstract_drop_model import AbstractDropModel
 logger = logging.getLogger(__name__)
 
 
-class WorkitemPlannedItem(QtGui.QStandardItem):
+class WorkitemPlanned(QtGui.QStandardItem):
     _workitem: Workitem
-    _font: QtGui.QFont
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
         super().__init__()
         self._workitem = workitem
-        self._font = font
         self.setData(workitem, 500)
         self.setData('planned', 501)
         flags = (Qt.ItemFlag.ItemIsSelectable |
                  Qt.ItemFlag.ItemIsEnabled)
         self.setFlags(flags)
         self.update_planned()
-        self.update_font()
+        self.update_font(font)
 
     def update_planned(self):
         self.setData('' if self._workitem.is_planned() else '*', Qt.ItemDataRole.DisplayRole)
         self.setData('Planned' if self._workitem.is_planned() else 'Unplanned', Qt.ItemDataRole.ToolTipRole)
 
-    def update_font(self):
-        self.setData(self._font, Qt.ItemDataRole.FontRole)
+    def update_font(self, font: QtGui.QFont):
+        self.setData(font, Qt.ItemDataRole.FontRole)
 
 
-class WorkitemTitleItem(QtGui.QStandardItem):
+class WorkitemTitle(QtGui.QStandardItem):
     _workitem: Workitem
-    _font: QtGui.QFont
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
         super().__init__()
         self._workitem = workitem
-        self._font = font
         self.setData(workitem, 500)
         self.setData('title', 501)
         flags = (Qt.ItemFlag.ItemIsSelectable |
@@ -72,17 +68,17 @@ class WorkitemTitleItem(QtGui.QStandardItem):
             flags |= Qt.ItemFlag.ItemIsEditable
         self.setFlags(flags)
         self.update_display()
-        self.update_font()
+        self.update_font(font)
 
     def update_display(self):
         self.setData(self._workitem.get_name(), Qt.ItemDataRole.DisplayRole)
         self.setData(self._workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
 
-    def update_font(self):
-        self.setData(self._font, Qt.ItemDataRole.FontRole)
+    def update_font(self, font: QtGui.QFont):
+        self.setData(font, Qt.ItemDataRole.FontRole)
 
 
-class WorkitemPomodoroItem(QtGui.QStandardItem):
+class WorkitemPomodoro(QtGui.QStandardItem):
     _workitem: Workitem
     _row_height: int
 
@@ -144,9 +140,9 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._workitem_renamed)
-        source.on(AfterWorkitemComplete, self._pomodoro_changed)
-        source.on(AfterWorkitemStart, self._pomodoro_changed)
-        source.on('AfterPomodoro*', self._pomodoro_changed)
+        source.on(AfterWorkitemComplete, self._workitem_changed)
+        source.on(AfterWorkitemStart, self._workitem_changed)
+        source.on('AfterPomodoro*', self._workitem_changed)
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -172,9 +168,7 @@ class WorkitemModel(AbstractDropModel):
                 type(self._backlog_or_tag) is Tag and self._backlog_or_tag.get_uid() in workitem.get_tags())
 
     def _add_workitem(self, workitem: Workitem) -> None:
-        item = QtGui.QStandardItem('')
-        self.appendRow(item)
-        self.set_row(self.rowCount() - 1, workitem)
+        self.appendRow(self._item_for_object(workitem))
 
     def _find_workitem(self, workitem: Workitem) -> int:
         for i in range(self.rowCount()):
@@ -205,27 +199,27 @@ class WorkitemModel(AbstractDropModel):
             else:
                 # This workitem should not be in this list
                 self._remove_if_found(workitem)
-        self._pomodoro_changed(workitem)
+        self._workitem_changed(workitem)
 
-    def _pomodoro_changed(self, workitem: Workitem, **kwargs) -> None:
+    def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
-            wi = self.item(i).data(500)
+            item0: WorkitemPlanned = self.item(i, 0)
+            wi = item0.data(500)
             if wi == workitem:
                 if not self._show_completed and workitem.is_sealed():
                     self.removeRow(i)
                 else:
-                    self.set_row(i, wi)
-                return
+                    font = self._get_font(workitem)
+                    item0.update_font(font)
+                    item0.update_planned()
 
-    def set_row(self, i: int, workitem: Workitem) -> None:
-        font = self._font_new
-        if workitem.is_running():
-            font = self._font_running
-        elif workitem.is_sealed():
-            font = self._font_sealed
-        self.setItem(i, 0, WorkitemPlannedItem(workitem, font))
-        self.setItem(i, 1, WorkitemTitleItem(workitem, font))
-        self.setItem(i, 2, WorkitemPomodoroItem(workitem, self._row_height))
+                    item1: WorkitemTitle = self.item(i, 1)
+                    item1.update_font(font)
+                    item1.update_display()
+
+                    item2: WorkitemPomodoro = self.item(i, 2)
+                    item2.update_display()
+                return
 
     def get_row_height(self):
         return self._row_height
@@ -235,7 +229,6 @@ class WorkitemModel(AbstractDropModel):
         self.clear()
         self._backlog_or_tag = backlog_or_tag
         if backlog_or_tag is not None:
-            i = 0
             if type(backlog_or_tag) is Backlog:
                 workitems = backlog_or_tag.values()
             else:
@@ -244,10 +237,7 @@ class WorkitemModel(AbstractDropModel):
             for workitem in workitems:
                 if not self._show_completed and workitem.is_sealed():
                     continue
-                item = QtGui.QStandardItem('')
-                self.appendRow(item)
-                self.set_row(i, workitem)
-                i += 1
+                self.appendRow(self._item_for_object(workitem))
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(1, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(2, QtGui.QStandardItem(''))
@@ -262,14 +252,24 @@ class WorkitemModel(AbstractDropModel):
     def get_type(self) -> str:
         return 'application/flowkeeper.workitem.id'
 
-    def item_by_id(self, uid: str) -> WorkitemTitleItem:
+    def item_by_id(self, uid: str) -> list[QtGui.QStandardItem]:
         workitem = self._source_holder.get_source().find_workitem(uid)
-        font = self._font_new
+        return self._item_for_object(workitem)
+
+    def _get_font(self, workitem: Workitem) -> QtGui.QFont:
         if workitem.is_running():
-            font = self._font_running
+            return self._font_running
         elif workitem.is_sealed():
-            font = self._font_sealed
-        return WorkitemTitleItem(workitem, font)
+            return self._font_sealed
+        return self._font_new
+
+    def _item_for_object(self, workitem: Workitem) -> list[QtGui.QStandardItem]:
+        font = self._get_font(workitem)
+        return [
+            WorkitemPlanned(workitem, font),
+            WorkitemTitle(workitem, font),
+            WorkitemPomodoro(workitem, self._row_height)
+        ]
 
     def reorder(self, to_index: int, uid: str):
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,

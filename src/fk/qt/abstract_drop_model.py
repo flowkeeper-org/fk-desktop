@@ -26,15 +26,17 @@ from fk.core.event_source_holder import EventSourceHolder
 
 
 class DropPlaceholderItem(QStandardItem):
-    def __init__(self):
+    def __init__(self, based_on_index: QModelIndex):
         super().__init__()
         self.setData(None, 500)
+        self.setData(based_on_index.data(Qt.ItemDataRole.FontRole), Qt.ItemDataRole.FontRole)
+        self.setData(based_on_index.data(Qt.ItemDataRole.SizeHintRole), Qt.ItemDataRole.SizeHintRole)
         self.setData('drop', 501)
-        default_flags = (Qt.ItemFlag.ItemIsSelectable |
-                         Qt.ItemFlag.ItemIsEnabled |
-                         Qt.ItemFlag.ItemIsDropEnabled)
-        self.setFlags(default_flags)
         self.setData('', Qt.ItemDataRole.DisplayRole)
+        flags = (Qt.ItemFlag.ItemIsSelectable |
+                 Qt.ItemFlag.ItemIsEnabled |
+                 Qt.ItemFlag.ItemIsDropEnabled)
+        self.setFlags(flags)
 
 
 class AbstractDropModel(QStandardItemModel):
@@ -93,5 +95,5 @@ class AbstractDropModel(QStandardItemModel):
 
     def create_drop_placeholder(self, index: QModelIndex):
         self._remove_drop_placeholder()
-        item = DropPlaceholderItem()
-        self.insertRow(index.row(), item)
+        items = [DropPlaceholderItem(index) for _ in range(0, self.columnCount())]
+        self.insertRow(index.row(), items)

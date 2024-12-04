@@ -48,17 +48,18 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
                 f'</span>')
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        painter.save()
-        painter.translate(option.rect.topLeft())
+        if index.data(501) == 'title':  # We can also get a drop placeholder here, which we don't want to paint
+            painter.save()
+            painter.translate(option.rect.topLeft())
 
-        document = QTextDocument(self)
-        document.setTextWidth(option.rect.width())
+            document = QTextDocument(self)
+            document.setTextWidth(option.rect.width())
 
-        workitem: Workitem = index.data(500)
-        document.setHtml(self._format_html(workitem))
-        document.drawContents(painter)
+            workitem: Workitem = index.data(500)
+            document.setHtml(self._format_html(workitem))
+            document.drawContents(painter)
 
-        painter.restore()
+            painter.restore()
 
     def sizeHint(self, option, index) -> QSize:
         size = super().sizeHint(option, index)
