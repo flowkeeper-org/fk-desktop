@@ -25,6 +25,9 @@ from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.event_source_holder import EventSourceHolder
 
 
+# TODO Sometimes drops lose an item, e.g. dropping a workitem at the end
+# TODO Disable drag-and-drop for workitems in "tag" mode
+
 class DropPlaceholderItem(QStandardItem):
     def __init__(self, based_on_index: QModelIndex):
         super().__init__()
@@ -56,7 +59,7 @@ class AbstractDropModel(QStandardItemModel):
         if where.data(501) == 'drop':
             item_id = data.data(self.get_type()).toStdString()
             self.reorder(where.row(), item_id)
-            self._remove_drop_placeholder()
+            self.remove_drop_placeholder()
             self.insertRow(where.row(), self.item_by_id(item_id))
         return True
 
@@ -73,7 +76,7 @@ class AbstractDropModel(QStandardItemModel):
         pass
 
     def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        return data.data(self.get_type()) is not None
+        return data.data(self.get_type()) is not None and where.isValid()
 
     def mimeTypes(self):
         return [self.get_type()]
@@ -86,7 +89,7 @@ class AbstractDropModel(QStandardItemModel):
         data.setData(self.get_type(), bytes(item.get_uid(), 'iso8859-1'))
         return data
 
-    def _remove_drop_placeholder(self):
+    def remove_drop_placeholder(self):
         # We can only have one placeholder
         for i in range(self.rowCount()):
             if self.index(i, 0).data(501) == 'drop':
@@ -94,6 +97,6 @@ class AbstractDropModel(QStandardItemModel):
                 return  # We won't have more than one
 
     def create_drop_placeholder(self, index: QModelIndex):
-        self._remove_drop_placeholder()
+        self.remove_drop_placeholder()
         items = [DropPlaceholderItem(index) for _ in range(0, self.columnCount())]
         self.insertRow(index.row(), items)

@@ -217,3 +217,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         else:
             # Hovering over a "drop placeholder" item -- nothing to do
             pass
+
+    def dragLeaveEvent(self, event):
+        super().dragLeaveEvent(event)
+        self.model().remove_drop_placeholder()

@@ -75,6 +75,7 @@ class BacklogModel(AbstractDropModel):
         source.on(events.AfterBacklogCreate, self._backlog_added)
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
+        source.on(events.AfterBacklogReorder, self._backlog_reordered)
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -111,6 +112,19 @@ class BacklogModel(AbstractDropModel):
                 self.item(i).update_display()
                 return
 
+    def _backlog_reordered(self, backlog: Backlog, new_index: int, carry: str, **kwargs) -> None:
+        if carry != 'ui':
+            for old_index in range(self.rowCount()):
+                bl = self.item(old_index).data(500)
+                if bl == backlog:
+                    new_index = self.rowCount() - new_index
+                    if new_index > old_index:
+                        new_index -= 1
+                    row = self.takeRow(old_index)
+                    self.insertRow(new_index, row)
+                    print('_backlog_reordered', old_index, 'to', new_index, 'row:', row)
+                    return
+
     def load(self, user: User) -> None:
         self.clear()
         if user is not None:
@@ -127,4 +141,5 @@ class BacklogModel(AbstractDropModel):
     def reorder(self, to_index: int, uid: str):
         self._source_holder.get_source().execute(ReorderBacklogStrategy,
                                                  # We display backlogs in reverse order, so need to subtract here
-                                                 [uid, str(self.rowCount() - to_index - 1)])
+                                                 [uid, str(self.rowCount() - to_index - 1)],
+                                                 carry='ui')

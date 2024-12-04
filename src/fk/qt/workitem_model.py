@@ -22,7 +22,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete, AfterSettingsChanged
+    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
@@ -140,6 +140,7 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemCreate, self._workitem_created)
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._workitem_renamed)
+        source.on(AfterWorkitemReorder, self._workitem_reordered)
         source.on(AfterWorkitemComplete, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
         source.on('AfterPomodoro*', self._workitem_changed)
@@ -200,6 +201,17 @@ class WorkitemModel(AbstractDropModel):
                 # This workitem should not be in this list
                 self._remove_if_found(workitem)
         self._workitem_changed(workitem)
+
+    def _workitem_reordered(self, workitem: Workitem, new_index: int, carry: str, **kwargs) -> None:
+        if (carry != 'ui' and
+                type(self._backlog_or_tag) is Backlog and
+                self._workitem_belongs_here(workitem)):
+            old_index = self._find_workitem(workitem)
+            if old_index >= 0:
+                if new_index > old_index:
+                    new_index -= 1
+                row = self.takeRow(old_index)
+                self.insertRow(new_index, row)
 
     def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
@@ -273,4 +285,5 @@ class WorkitemModel(AbstractDropModel):
 
     def reorder(self, to_index: int, uid: str):
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
-                                                 [uid, str(to_index)])
+                                                 [uid, str(to_index)],
+                                                 carry='ui')
