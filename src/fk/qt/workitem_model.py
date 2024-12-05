@@ -104,7 +104,7 @@ class WorkitemModel(AbstractDropModel):
     _font_sealed: QtGui.QFont
     _backlog_or_tag: Backlog | Tag | None
     _row_height: int
-    _show_completed: bool
+    _hide_completed: bool
 
     def __init__(self, parent: QtWidgets.QWidget, source_holder: EventSourceHolder):
         super().__init__(1, parent, source_holder)
@@ -114,7 +114,7 @@ class WorkitemModel(AbstractDropModel):
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog_or_tag = None
-        self._show_completed = (source_holder.get_settings().get('Application.show_completed') == 'True')
+        self._hide_completed = (source_holder.get_settings().get('Application.hide_completed') == 'True')
         self._update_row_height()
         self.itemChanged.connect(lambda item: self._handle_rename(item))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
@@ -218,7 +218,7 @@ class WorkitemModel(AbstractDropModel):
             item0: WorkitemPlanned = self.item(i, 0)
             wi = item0.data(500)
             if wi == workitem:
-                if not self._show_completed and workitem.is_sealed():
+                if self._hide_completed and workitem.is_sealed():
                     self.removeRow(i)
                 else:
                     font = self._get_font(workitem)
@@ -247,15 +247,15 @@ class WorkitemModel(AbstractDropModel):
                 workitems = sorted(backlog_or_tag.get_workitems(),
                                    key=lambda a: a.get_last_modified_date())
             for workitem in workitems:
-                if not self._show_completed and workitem.is_sealed():
+                if self._hide_completed and workitem.is_sealed():
                     continue
                 self.appendRow(self._item_for_object(workitem))
         self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(1, QtGui.QStandardItem(''))
         self.setHorizontalHeaderItem(2, QtGui.QStandardItem(''))
 
-    def show_completed(self, show: bool) -> None:
-        self._show_completed = show
+    def hide_completed(self, hide: bool) -> None:
+        self._hide_completed = hide
         self.load(self._backlog_or_tag)
 
     def get_backlog_or_tag(self) -> Backlog | Tag | None:

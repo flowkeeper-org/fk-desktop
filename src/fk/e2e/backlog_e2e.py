@@ -247,18 +247,17 @@ class BacklogE2eTest(AbstractE2eTest):
         # workitems_table.completeItem
         # workitems_table.addPomodoro
         # workitems_table.removePomodoro
-        # workitems_table.showCompleted
+        # workitems_table.hideCompleted
         # focus.voidPomodoro
         # focus.nextPomodoro
         # focus.completeItem
-        # focus.showFilter
         def assert_backlog_actions_enabled(new_from_incomplete: bool):
             self.assert_actions_enabled([
                 'backlogs_table.newBacklog',
                 'backlogs_table.renameBacklog',
                 'backlogs_table.deleteBacklog',
                 'workitems_table.newItem',
-                'workitems_table.showCompleted',
+                'workitems_table.hideCompleted',
             ])
             if new_from_incomplete:
                 self.assert_actions_enabled(['backlogs_table.newBacklogFromIncomplete'])
@@ -431,7 +430,7 @@ class BacklogE2eTest(AbstractE2eTest):
     #     pass
     #
     # async def test_05_filtering(self):
-    #     # Check that the "show completed workitems" does what it should
+    #     # Check that the "hide completed workitems" does what it should
     #     pass
     #
     # async def test_06_focus(self):

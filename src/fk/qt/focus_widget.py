@@ -109,7 +109,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         layout.addWidget(self._timer_widget)
         layout.addWidget(self._create_button("focus.nextPomodoro"))
         layout.addWidget(self._create_button("focus.completeItem"))
-        layout.addWidget(self._create_button("focus.showFilter"))
 
         if "window.showAll" in actions:
             layout.addWidget(self._create_button("window.showAll"))
@@ -136,7 +135,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
-        actions.add('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
     def _create_button(self,
                        name: str,
@@ -149,15 +147,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         btn.setDefaultAction(action)
         self._buttons[name] = btn
         return btn
-
-    def _display_filter(self):
-        if 'workitems_table.showCompleted' not in self._actions:
-            raise Exception('Show Completed action is undefined')
-        menu_filter = QMenu("Filter", self.parent())
-        menu_filter.addAction(self._actions['workitems_table.showCompleted'])
-        menu_filter.exec(
-            self.parent().mapToGlobal(
-                self._buttons['focus.showFilter'].geometry().center()))
 
     def reset(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
         self._header_text.setText(text)

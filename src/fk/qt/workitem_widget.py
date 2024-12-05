@@ -57,6 +57,7 @@ class WorkitemWidget(QWidget):
         tb.addAction(actions['workitems_table.completeItem'])
         tb.addAction(actions['workitems_table.addPomodoro'])
         tb.addAction(actions['workitems_table.removePomodoro'])
+        tb.addAction(actions['workitems_table.hideCompleted'])
         layout.addWidget(tb)
 
         self._workitems_table = WorkitemTableView(self, application, source_holder, actions)

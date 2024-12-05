@@ -125,7 +125,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
+                ('Application.hide_completed', 'bool', 'Hide completed items', 'False', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
