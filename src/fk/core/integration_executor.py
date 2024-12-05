@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import logging
+import shlex
+from subprocess import Popen
 
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_settings import AbstractSettings
@@ -48,20 +50,25 @@ class IntegrationExecutor:
                     self._subscribed[event] = new_conf[event]
             else:
                 emitter: AbstractEventEmitter = ALL_EVENTS[event].emitter
-                emitter.on(ALL_EVENTS[event].event, self.on_event, True)
-                print('Subscribed to', event)
+                emitter.on(ALL_EVENTS[event].event,
+                           lambda **kwargs: self.on_event(event, **kwargs),
+                           True)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'Subscribed to {event}')
                 self._subscribed[event] = new_conf[event]
         to_delete: set[str] = set()
         for event in self._subscribed:
             if event not in new_conf:
                 emitter: AbstractEventEmitter = ALL_EVENTS[event].emitter
                 emitter.unsubscribe_one(self.on_event, ALL_EVENTS[event].event)
-                print('Unsubscribed from', event)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'Unsubscribed from {event}')
                 to_delete.add(event)
         for event in to_delete:
             del self._subscribed[event]
 
-    def on_event(self, event, carry, **kwargs):
-        print('Received event:', event, kwargs)
-        print('Executing:', self._subscribed[event])
-        # TODO: Execute command
+    def on_event(self, full_event, **kwargs):
+        args = shlex.split(self._subscribed[full_event])
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Received event {full_event} with args {kwargs}. Executing: {args}')
+        Popen(args)
