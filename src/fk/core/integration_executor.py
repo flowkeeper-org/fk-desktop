@@ -75,7 +75,11 @@ class IntegrationExecutor:
             del self._subscribed[event]
 
     def on_event(self, full_event, **kwargs):
-        args = shlex.split(self._subscribed[full_event])
+        command = self._subscribed[full_event]
+        formatted = eval(f"f'{command}'", kwargs)   # Kwargs parameter here is important -- it limits eval() scope
+        # This is a safer, but less flexible alternative:
+        # formatted = command.format(**kwargs)
+        args = shlex.split(formatted)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Received event {full_event} with args {kwargs}. Executing: {args}')
         Popen(args)

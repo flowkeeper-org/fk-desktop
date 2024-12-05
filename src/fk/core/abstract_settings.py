@@ -262,8 +262,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             ],
             'Integration': [
                 ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system.\n'
-                                                             'You can use {placeholder} syntax, for example:\n'
-                                                             'espeak "Deleted {workitem.get_name()}"', [], _always_show),
+                                                             'You can use Python f{} syntax for variable substitution:\n'
+                                                             'espeak "Deleted work item {workitem.get_name()}"\n'
+                                                             'echo "Received {event}. Available variables: {dir()}"\n'
+                                                             'WARNING: Placeholders are substituted as-is, without\n'
+                                                             'any sanitization or escaping.', [], _always_show),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
