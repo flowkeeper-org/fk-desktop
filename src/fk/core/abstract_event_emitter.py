@@ -18,6 +18,8 @@ import logging
 import re
 from typing import Callable
 
+from fk.core.events import register_event
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,6 +45,7 @@ class AbstractEventEmitter:
         self._connections_2 = dict()
         self._last = set()
         for event in allowed_events:
+            register_event(event, self)
             self._connections_1[event] = list[Callable]()
             self._connections_2[event] = list[Callable]()
 
@@ -76,6 +79,15 @@ class AbstractEventEmitter:
         for callables in self._connections_2.values():
             if callback in callables:
                 callables.remove(callback)
+
+    def unsubscribe_one(self, callback: Callable, event_pattern: str) -> None:
+        regex = re.compile(event_pattern.replace('*', '.*'))
+        for event in self._connections_1:
+            if regex.match(event):
+                if callback in self._connections_1[event]:
+                    self._connections_1[event].remove(callback)
+                if callback in self._connections_2[event]:
+                    self._connections_2[event].remove(callback)
 
     def _emit(self, event: str, params: dict[str, any], carry: any = None) -> None:
         if not self._is_muted():

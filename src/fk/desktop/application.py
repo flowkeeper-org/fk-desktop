@@ -42,6 +42,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.integration_executor import IntegrationExecutor
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
@@ -77,6 +78,7 @@ class Application(QApplication, AbstractEventEmitter):
     _source_holder: EventSourceHolder | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
+    _integration_executor: IntegrationExecutor
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -161,6 +163,8 @@ class Application(QApplication, AbstractEventEmitter):
         self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
         self._heartbeat.on(events.WentOffline, self._on_went_offline)
         self._heartbeat.on(events.WentOnline, self._on_went_online)
+
+        self._integration_executor = IntegrationExecutor(self._settings)
 
     def _initialize_logger(self):
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

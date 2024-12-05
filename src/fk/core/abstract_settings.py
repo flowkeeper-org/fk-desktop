@@ -21,6 +21,7 @@ from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+from fk.core.events import get_all_events
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +249,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', '', 'Embedded music - "Madelene (ID 1315)"\n(C) Lobo Loco <https://www.musikbrause.de>,\nCC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)"\n'
+                                                                           '(C) Lobo Loco <https://www.musikbrause.de>,\n'
+                                                                           'CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
@@ -256,6 +259,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
+            ],
+            'Integration': [
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system.\n'
+                                                             'You can use {placeholder} syntax, for example:\n'
+                                                             'espeak "Deleted {workitem.get_name()}"', [], _always_show),
+                ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
         for lst in self._definitions.values():

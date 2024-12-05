@@ -72,6 +72,9 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def unsubscribe(self, callback: Callable) -> None:
         self._wrapped.unsubscribe(callback)
 
+    def unsubscribe_one(self, callback: Callable, event_pattern: str) -> None:
+        self._wrapped.unsubscribe_one(callback, event_pattern)
+
     def cancel(self, event_pattern: str) -> None:
         self._wrapped.cancel(event_pattern)
 

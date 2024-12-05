@@ -45,13 +45,13 @@ QMainWindow, #StatsWindow {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-QTableView, #backlogs_widget, #workitems_widget {
+#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget {
     color: $TABLE_TEXT_COLOR;
     border: none;
     padding: 10px;
 }
 
-QTableView::item:selected {
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected {
     color: $TABLE_TEXT_COLOR;
     background-color: $SELECTION_BG_COLOR;
     border: none;
@@ -107,11 +107,6 @@ InfoOverlay #overlay_text, #prev_button {
 #timer {
     qproperty-fg_color: $FOCUS_TEXT_COLOR;
     qproperty-bg_color: $FOCUS_BG_COLOR;
-}
-
-#image1, #image2, #image3, #image4, #image5, #pages, #title1, #title2, #title3, #title4, #title5 {
-    background-color: "#f7f8fa";
-    color: "#000000";
 }
 
 .tag_label {

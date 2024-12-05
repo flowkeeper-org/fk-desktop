@@ -63,15 +63,13 @@ TagContentChanged = "TagContentChanged"
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"
 
-BeforeSettingsChanged = "BeforeSettingsChanged"
-AfterSettingsChanged = "AfterSettingsChanged"
-
 BeforeMessageProcessed = "BeforeMessageProcessed"
 AfterMessageProcessed = "AfterMessageProcessed"
 
 PongReceived = "PongReceived"
-WentOnline = "WentOnline"
-WentOffline = "WentOffline"
+
+BeforeSettingsChanged = "BeforeSettingsChanged"
+AfterSettingsChanged = "AfterSettingsChanged"
 
 BeforeTenantRename = "BeforeTenantRename"
 AfterTenantRename = "AfterTenantRename"
@@ -79,3 +77,33 @@ BeforeTenantDelete = "BeforeTenantDelete"
 AfterTenantDelete = "AfterTenantDelete"
 BeforeTenantCreate = "BeforeTenantCreate"
 AfterTenantCreate = "AfterTenantCreate"
+
+WentOnline = "WentOnline"
+WentOffline = "WentOffline"
+
+
+class EmittedEvent:
+    event: str
+    emitter: object     # TODO: See if we can store a weak reference instead
+
+    def __init__(self, event: str, emitter: object):
+        self.event = event
+        self.emitter = emitter
+
+    def __str__(self):
+        return f'{self.emitter.__class__.__name__}.{self.event}'
+
+
+ALL_EVENTS: dict[str, EmittedEvent] = dict()
+ALL_EVENTS_STR: set[str] = set()
+
+
+def register_event(event: str, emitter: object):
+    e = EmittedEvent(event, emitter)
+    ALL_EVENTS[str(e)] = e
+    ALL_EVENTS_STR.add(str(e))
+
+
+def get_all_events() -> set[str]:
+    # TODO: See if we can remove duplicates and weak references at the same time here
+    return ALL_EVENTS_STR

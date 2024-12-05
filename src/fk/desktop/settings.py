@@ -19,12 +19,12 @@ import re
 import sys
 from typing import Callable
 
-from PySide6.QtCore import QSize, QTime
+from PySide6.QtCore import QSize, QTime, Qt
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
@@ -401,6 +401,49 @@ class SettingsDialog(QDialog):
             ed11 = QLabel(parent)
             ed11.setText(option_value)
             return [ed11]
+        elif option_type == 'keyvalue':
+            ed13 = QTableWidget(parent)
+            ed13.setColumnCount(2)
+            ed13.horizontalHeader().setVisible(True)
+            ed13.horizontalHeader().setStretchLastSection(True)
+            ed13.setHorizontalHeaderItem(0, QTableWidgetItem('Event'))
+            ed13.setHorizontalHeaderItem(1, QTableWidgetItem('Command'))
+            ed13.verticalHeader().setVisible(False)
+            ed13.setRowCount(len(option_options))
+            json_value: dict[str, str] = json.loads(option_value)
+
+            flags = (Qt.ItemFlag.ItemIsSelectable |
+                     Qt.ItemFlag.ItemIsEnabled)
+            for i, option in enumerate(sorted(option_options)):
+                item1 = QTableWidgetItem(option)
+                item1.setFlags(flags)
+                ed13.setItem(i, 0, item1)
+                item2 = QTableWidgetItem(json_value[option] if option in json_value else '')
+                item2.setFlags(flags | Qt.ItemFlag.ItemIsEditable)
+                ed13.setItem(i, 1, item2)
+            ed13.resizeColumnsToContents()
+
+            def get_value() -> str:
+                obj: dict[str, str] = dict()
+                for j in range(ed13.rowCount()):
+                    key = ed13.item(j, 0).text()
+                    value = ed13.item(j, 1).text().strip()
+                    if value != '':
+                        obj[key] = value
+                return json.dumps(obj)
+
+            def set_value(value: str) -> None:
+                obj: dict[str, str] = json.loads(value)
+                for j in range(ed13.rowCount()):
+                    key = ed13.item(j, 0).text()
+                    if key in obj:
+                        ed13.item(j, 1).setText(obj[key])
+
+            ed13.itemChanged.connect(lambda: self._on_value_changed(option_id, get_value()))
+            self._widgets_get_value[option_id] = get_value
+            self._widgets_set_value[option_id] = set_value
+
+            return [ed13]
         else:
             return []
 
@@ -437,9 +480,12 @@ class SettingsDialog(QDialog):
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
             widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)
-            label = QLabel('' if option_type == 'button' else option_display, res)
-            label.setObjectName(f'label-{option_id}')
-            self._widgets_visibility[label] = option_visible
+            if option_display == '':
+                label = None
+            else:
+                label = QLabel('' if option_type == 'button' else option_display, res)
+                label.setObjectName(f'label-{option_id}')
+                self._widgets_visibility[label] = option_visible
             if len(widgets) == 0:
                 # Separator
                 separator = QFrame(res)
@@ -452,13 +498,16 @@ class SettingsDialog(QDialog):
             elif len(widgets) == 1:
                 widgets[0].setObjectName(f'{option_id}')
                 self._widgets_visibility[widgets[0]] = option_visible
-                layout.addRow(label, widgets[0])
+                if label is None:
+                    layout.addRow(widgets[0])
+                else:
+                    layout.addRow(label, widgets[0])
             else:
                 i = 1
                 for widget in widgets:
                     widget.setObjectName(f'#{option_id}-{i}')
                     self._widgets_visibility[widget] = option_visible
-                    if i == 1:
+                    if i == 1 and label is not None:
                         layout.addRow(label, widget)
                     else:
                         layout.addRow(widget)
