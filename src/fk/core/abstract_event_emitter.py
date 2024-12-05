@@ -45,9 +45,11 @@ class AbstractEventEmitter:
         self._connections_2 = dict()
         self._last = set()
         for event in allowed_events:
-            register_event(event, self)
             self._connections_1[event] = list[Callable]()
             self._connections_2[event] = list[Callable]()
+        # We need to do it in the separate loop, because registration might already trigger subscriptions
+        for event in allowed_events:
+            register_event(event, self)
 
     # Event subscriptions. Here event_pattern can contain * characters
     # and other regex syntax.

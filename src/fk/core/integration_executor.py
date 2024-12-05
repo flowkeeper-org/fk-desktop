@@ -22,7 +22,7 @@ from subprocess import Popen
 
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.events import AfterSettingsChanged, ALL_EVENTS
+from fk.core.events import AfterSettingsChanged, ALL_EVENTS, set_emitter_added_callback
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,18 @@ class IntegrationExecutor:
         self._settings = settings
         self._subscribed = dict()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
-        # TODO: Do this after all emitters are constructed
-        # self._sync_subscriptions(json.loads(self._settings.get('Integration.callbacks')))
+        set_emitter_added_callback(self._on_emitter_added)
+        self._resync_subscriptions_from_settings()
+
+    def _on_emitter_added(self, emitter: object):
+        self._resync_subscriptions_from_settings()
 
     def _on_setting_changed(self, new_values: dict[str, str], **kwargs):
         if 'Integration.callbacks' in new_values:
             self._sync_subscriptions(json.loads(new_values['Integration.callbacks']))
+
+    def _resync_subscriptions_from_settings(self) -> None:
+        self._sync_subscriptions(json.loads(self._settings.get('Integration.callbacks')))
 
     def _sync_subscriptions(self, new_conf: dict[str, str]) -> None:
         for event in new_conf:
@@ -49,13 +55,14 @@ class IntegrationExecutor:
                 if self._subscribed[event] != new_conf[event]:
                     self._subscribed[event] = new_conf[event]
             else:
-                emitter: AbstractEventEmitter = ALL_EVENTS[event].emitter
-                emitter.on(ALL_EVENTS[event].event,
-                           lambda **kwargs: self.on_event(event, **kwargs),
-                           True)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'Subscribed to {event}')
-                self._subscribed[event] = new_conf[event]
+                if event in ALL_EVENTS:     # The corresponding emitter might not have initialized yet
+                    emitter: AbstractEventEmitter = ALL_EVENTS[event].emitter
+                    emitter.on(ALL_EVENTS[event].event,
+                               lambda **kwargs: self.on_event(event, **kwargs),
+                               True)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f'Subscribed to {event}')
+                    self._subscribed[event] = new_conf[event]
         to_delete: set[str] = set()
         for event in self._subscribed:
             if event not in new_conf:
