@@ -44,7 +44,9 @@ class Actions:
         self._shortcuts = json.loads(self._settings.get('Application.shortcuts'))
         for a in self._actions.keys():
             if a in self._shortcuts:
-                self._actions[a].setShortcut(self._shortcuts[a])
+                action = self._actions[a]
+                action.setShortcut(self._shortcuts[a])
+                action.setToolTip(f"{action.text()} ({self._shortcuts[a]})")
 
     def add(self,
             name: str,
@@ -56,14 +58,28 @@ class Actions:
             is_checked: bool = False) -> QAction:
         res: QAction = QAction(text, self._window)
         res.setObjectName(name)
-        if shortcut is not None:
+        if shortcut is None:
+            res.setToolTip(text)
+        else:
             if name in self._shortcuts:
                 res.setShortcut(self._shortcuts[name])
+                res.setToolTip(f"{text} ({self._shortcuts[name]})")
             else:
                 res.setShortcut(shortcut)
+                res.setToolTip(f"{text} ({shortcut})")
         if icon is not None:
             # res.setIcon(QIcon(icon))
-            res.setIcon(QIcon.fromTheme(icon))
+            if type(icon) is str:
+                res.setIcon(QIcon.fromTheme(icon))
+            else:
+                qi = QIcon()
+                qi.addPixmap(QIcon.fromTheme(icon[0]).pixmap(48),
+                             QIcon.Mode.Normal,
+                             QIcon.State.On)
+                qi.addPixmap(QIcon.fromTheme(icon[1]).pixmap(48),
+                             QIcon.Mode.Normal,
+                             QIcon.State.Off)
+                res.setIcon(qi)
         if is_toggle:
             res.setCheckable(True)
             res.setChecked(is_checked)

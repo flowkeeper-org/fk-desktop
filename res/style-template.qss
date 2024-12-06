@@ -82,6 +82,11 @@ QToolButton {
     color: $TABLE_TEXT_COLOR;
 }
 
+#toolBacklogs:checked {
+    background: none;
+    color: $TABLE_TEXT_COLOR;
+}
+
 QToolButton:checked {
     background: $TOOLBAR_CHECKED_BG_COLOR;
     color: $FOCUS_TEXT_COLOR;

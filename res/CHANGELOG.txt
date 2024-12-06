@@ -1,7 +1,9 @@
 ### v0.9.0 (TODO)
-- You can now reorder backlogs and work items via drag-and-drop.
+- You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.
 - Changed "Show completed items" to "Hide completed items" and moved it to the toolbar (#42).
 - You can now configure Flowkeeper to execute programs on different events, see Settings > Integration (#40).
+- All buttons and icons now have tooltips with shortcuts in them (#43, #52).
+- Miscellaneous UI improvements (#44).
 - [Bugfix] Couldn't open Settings when there's no audio devices (#38).
 
 ### v0.8.1 (13 November 2024)

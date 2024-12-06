@@ -202,9 +202,9 @@ class MainWindow:
 
         backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
-                    "Backlogs",
+                    "Show / Hide Backlogs",
                     'Ctrl+B',
-                    'tool-backlogs',
+                    ('tool-left-close', 'tool-left-open'),
                     MainWindow.toggle_backlogs,
                     True,
                     backlogs_were_visible)
@@ -368,12 +368,10 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
-        tool_backlogs.setIcon(QIcon.fromTheme('tool-backlogs'))
         tool_backlogs.setDefaultAction(action_backlogs)
 
         # noinspection PyTypeChecker
         tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
-        tool_teams.setIcon(QIcon.fromTheme('tool-teams'))
         tool_teams.setDefaultAction(action_teams)
         action_teams.setEnabled(settings.is_team_supported())
         tool_teams.setVisible(settings.is_team_supported())
