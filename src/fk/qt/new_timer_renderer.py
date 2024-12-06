@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import QMargins
 from PySide6.QtGui import QColor, QPen, Qt, QConicalGradient
 
 
@@ -63,6 +62,10 @@ class NewTimerRenderer(QtCore.QObject):
             self._pen_border.setColor(bg_pen)
 
         self.reset()
+
+    def set_hues(self, hue_work, hue_rest):
+        self._hue_work = hue_work
+        self._hue_rest = hue_rest
 
     def set_colors(self, fg_color: QColor, bg_color: QColor):
         self._bg_pen = fg_color
