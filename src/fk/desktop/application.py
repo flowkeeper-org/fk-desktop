@@ -28,6 +28,7 @@ from typing import Callable
 from PySide6 import QtCore
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
+from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -135,6 +136,9 @@ class Application(QApplication, AbstractEventEmitter):
                 })
             else:
                 self._settings = QtSettings()
+                if self._settings.get('Application.singleton') == 'True' and self.is_another_instance_running():
+                    logger.warning(f'Another instance of Flowkeeper is running - exiting')
+                    sys.exit(3)
             self._initialize_logger()
             if self._settings.is_keyring_enabled():
                 self._cryptograph = FernetCryptograph(self._settings)
@@ -391,6 +395,15 @@ class Application(QApplication, AbstractEventEmitter):
         if request_logger_change:
             logger.debug(f'Reinitializing the logger because of a setting change')
             self._initialize_logger()
+
+    def is_another_instance_running(self) -> bool:
+        server = QTcpServer(self)
+        server.setMaxPendingConnections(0)
+        if server.listen(QHostAddress.SpecialAddress.Any, 11501):
+            logger.debug(f'Could create a TCP listener on port {server.serverPort()}')
+            return False
+        else:
+            return True
 
     def show_settings_dialog(self):
         SettingsDialog(

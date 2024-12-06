@@ -3,6 +3,7 @@
 - Changed "Show completed items" to "Hide completed items" and moved it to the toolbar (#42).
 - You can now configure Flowkeeper to execute programs on different events, see Settings > Integration (#40).
 - All buttons and icons now have tooltips with shortcuts in them (#43, #52).
+- New setting: General > Single Flowkeeper instance (#50).
 - Miscellaneous UI improvements (#44).
 - [Bugfix] Couldn't open Settings when there's no audio devices (#38).
 
