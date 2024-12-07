@@ -25,9 +25,9 @@ from xml.etree.ElementTree import Element
 
 from PySide6 import QtUiTools
 from PySide6.QtCore import QObject, QFile
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QGuiApplication
 from PySide6.QtWidgets import QMainWindow, QWidget, QTextEdit, \
-    QCheckBox, QComboBox, QDialogButtonBox, QMessageBox
+    QCheckBox, QComboBox, QDialogButtonBox, QMessageBox, QPushButton
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.pomodoro import Pomodoro
@@ -287,6 +287,9 @@ class WorkSummaryWindow(QObject):
         file.close()
 
         self._buttons: QDialogButtonBox = self._summary_window.findChild(QDialogButtonBox, "buttons")
+        copy_button = QPushButton('Copy summary to clipboard and close')
+        copy_button.setDefault(True)
+        self._buttons.addButton(copy_button, QDialogButtonBox.ButtonRole.ActionRole)
         self._buttons.clicked.connect(lambda btn: self._on_action(self._buttons.buttonRole(btn)))
 
         self._results: QTextEdit = self._summary_window.findChild(QTextEdit, "work_summary_results")
@@ -515,5 +518,9 @@ class WorkSummaryWindow(QObject):
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
         if role == QDialogButtonBox.ButtonRole.AcceptRole:
             SettingsDialog.do_browse_simple('', self._export_to_file)
+        elif role == QDialogButtonBox.ButtonRole.ActionRole:
+            res = self._format_data(self._view_durations.isChecked(), self._view_backlogs.isChecked())
+            QGuiApplication.clipboard().setText(res)
+            self._summary_window.close()
         elif role == QDialogButtonBox.ButtonRole.RejectRole:
             self._summary_window.close()
