@@ -25,6 +25,7 @@ from fk.core.workitem import Workitem
 
 class Backlog(AbstractDataContainer[Workitem, 'User']):
     """Backlog is a named list of workitems, belonging to a User."""
+    _date_work_started: datetime.datetime | None
 
     def __init__(self,
                  name: str,
@@ -32,6 +33,7 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
                  uid: str,
                  create_date: datetime.datetime):
         super().__init__(name=name, parent=user, uid=uid, create_date=create_date)
+        self._date_work_started = None
 
     def __str__(self):
         return f'Backlog "{self._name}"'
@@ -55,3 +57,10 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
 
     def get_owner(self) -> 'User':
         return self._parent
+
+    def get_start_date(self) -> datetime.datetime | None:
+        return self._date_work_started
+
+    def update_start_date(self, when: datetime.datetime) -> None:
+        if self._date_work_started is None or self._date_work_started > when:
+            self._date_work_started = when
