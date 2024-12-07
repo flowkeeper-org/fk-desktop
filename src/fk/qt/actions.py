@@ -58,7 +58,7 @@ class Actions:
             is_checked: bool = False) -> QAction:
         res: QAction = QAction(text, self._window)
         res.setObjectName(name)
-        if shortcut is None:
+        if shortcut is None or shortcut == '':
             res.setToolTip(text)
         else:
             if name in self._shortcuts:

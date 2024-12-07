@@ -124,7 +124,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         actions.add('workitems_table.hideCompleted',
                     "Hide Completed Items",
                     '',
-                    "tool-filter",
+                    ("tool-filter-on", "tool-filter-off"),
                     WorkitemTableView._toggle_hide_completed_workitems,
                     True,
                     actions.get_settings().get('Application.hide_completed') == 'True')
