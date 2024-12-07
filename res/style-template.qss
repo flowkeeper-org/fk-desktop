@@ -131,3 +131,7 @@ InfoOverlay #overlay_text, #prev_button {
 #tags_table {
     padding: 10px 10px 10px 10px;
 }
+
+#work_summary_results {
+    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
+}

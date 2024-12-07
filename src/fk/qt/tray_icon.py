@@ -24,6 +24,7 @@ from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
+from fk.qt.new_timer_renderer import NewTimerRenderer
 from fk.qt.timer_renderer import TimerRenderer
 
 
@@ -32,7 +33,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _timer_widget: TimerRenderer | None
+    _timer_widget: NewTimerRenderer | None
     _continue_workitem: Workitem | None
 
     def __init__(self,
@@ -42,11 +43,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  actions: Actions):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
-        self._default_icon = QIcon(":/icons/logo8.png")
+        self._default_icon = QIcon(":/icons/logo.png")
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._continue_workitem = None
-        self._timer_widget = TimerRenderer(
+        self._timer_widget = NewTimerRenderer(
             None,
             None,
             None,

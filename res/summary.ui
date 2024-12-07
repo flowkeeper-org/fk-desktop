@@ -57,7 +57,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="results"/>
+      <widget class="QTextEdit" name="work_summary_results"/>
      </item>
      <item>
       <widget class="QDialogButtonBox" name="buttons">

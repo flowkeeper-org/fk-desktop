@@ -15,7 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtWidgets import QPushButton
 
+from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
+from fk.core.workitem import Workitem
 from fk.qt.qt_timer import QtTimer
 from fk.qt.tray_icon import TrayIcon
 from fk.tools.minimal_common import MinimalCommon
@@ -30,9 +32,31 @@ pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Trans
 tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
 
 tray.setVisible(True)
+tray.mode_changed('idle', 'working')
+wi = Workitem('Test', '123', None, None)
+
+ratio = 0
+pomodoro_timer._state = 'work'
+
+
+def tick():
+    global ratio
+    global pomodoro_timer
+    tray.tick(Pomodoro(False, pomodoro_timer._state, 5000, 5000, "123", wi, None),
+              'State',
+              ratio)
+    ratio += 0.1
+    if ratio > 1:
+        if pomodoro_timer._state == 'work':
+            pomodoro_timer._state = 'rest'
+        else:
+            pomodoro_timer._state = 'work'
+        ratio = 0
+
 
 button = QPushButton(window)
 button.setText('See tray icon')
+button.clicked.connect(lambda: tick())
 window.setCentralWidget(button)
 
 mc.main_loop()
