@@ -52,8 +52,15 @@ class Formatter(ABC):
     def day(self, text: str) -> str:
         pass
 
+    def workitem_plaintext(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        if duration is not None:
+            text += f': {duration}'
+        if backlogs is not None and len(backlogs) > 0:
+            text += f''', in backlog{"s" if len(backlogs) > 1 else ""} "{'", "'.join(backlogs)}"'''
+        return text
+
     @abstractmethod
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         pass
 
     @abstractmethod
@@ -71,11 +78,8 @@ class MarkdownFormatter(Formatter):
     def day(self, text: str) -> str:
         return f'\n### {text}\n\n'
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
-        if duration is None:
-            return f' - {text}\n'
-        else:
-            return f' - {text}: {duration}\n'
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        return f' - {self.workitem_plaintext(text, duration, backlogs)}\n'
 
     def footer(self) -> str:
         return ''
@@ -95,11 +99,8 @@ class OrgModeFormatter(Formatter):
     def day(self, text: str) -> str:
         return f'*** {text}\n'
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
-        if duration is None:
-            return f'- {text}\n'
-        else:
-            return f'- {text}: {duration}\n'
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        return f'- {self.workitem_plaintext(text, duration, backlogs)}\n'
 
     def footer(self) -> str:
         return ''
@@ -114,8 +115,8 @@ class MarkdownTableFormatter(Formatter):
         self._last_day = ''
 
     def header(self) -> str:
-        return '| Week number | Date | Work item | Time spent |\n' \
-               '| ----------- | ---- | --------- | ---------- |\n'
+        return '| Week number | Date | Work item | Time spent | Backlogs |\n' \
+               '| ----------- | ---- | --------- | ---------- | -------- |\n'
 
     def week(self, text: str) -> str:
         self._last_week = text
@@ -125,8 +126,8 @@ class MarkdownTableFormatter(Formatter):
         self._last_day = text
         return ''
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
-        return f'| {self._last_week} | {self._last_day} | {text} | {duration if duration is not None else ""} |\n'
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        return f'| {self._last_week} | {self._last_day} | {text} | {duration if duration is not None else ""} | {", ".join(backlogs) if backlogs is not None else ""} |\n'
 
     def footer(self) -> str:
         return ''
@@ -142,11 +143,8 @@ class PlaintextFormatter(Formatter):
     def day(self, text: str) -> str:
         return f'\n{text}\n\n'
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
-        if duration is None:
-            return f'{text}\n'
-        else:
-            return f'{text}: {duration}\n'
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        return self.workitem_plaintext(text, duration, backlogs) + '\n'
 
     def footer(self) -> str:
         return ''
@@ -164,7 +162,7 @@ class CsvFormatter(Formatter):
         f = StringIO()
         # TODO: It would be more efficient and elegant, if we used streams throughout this entire file
         #  instead of string concatenation
-        csv.writer(f).writerow(['Week number', 'Date', 'Work item', 'Time spent'])
+        csv.writer(f).writerow(['Week number', 'Date', 'Work item', 'Time spent', 'Backlogs'])
         return f.getvalue()
 
     def week(self, text: str) -> str:
@@ -175,12 +173,13 @@ class CsvFormatter(Formatter):
         self._last_day = text
         return ''
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         f = StringIO()
         csv.writer(f).writerow([self._last_week,
                                 self._last_day,
                                 text,
-                                duration if duration is not None else ""])
+                                duration if duration is not None else "",
+                                ('"' + '", "'.join(backlogs) + '"') if backlogs is not None and len(backlogs) > 0 else ""])
         return f.getvalue()
 
     def footer(self) -> str:
@@ -211,14 +210,12 @@ class JsonFormatter(Formatter):
         self._last_day = text
         return ''
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
-        if duration is None:
-            to_append = text
-        else:
-            to_append = {
-                "title": text,
-                "duration": str(duration)
-            }
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
+        to_append = {"title": text}
+        if duration is not None:
+            to_append['duration'] = str(duration)
+        if backlogs is not None:
+            to_append['backlogs'] = list(backlogs)
         self._json['weeks'][self._last_week][self._last_day].append(to_append)
         return ''
 
@@ -251,10 +248,15 @@ class XmlFormatter(Formatter):
         self._last_day = el
         return ''
 
-    def workitem(self, text: str, duration: datetime.timedelta = None) -> str:
+    def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         el = Element('item', title=text)
         if duration is not None:
             el.attrib['duration'] = str(duration)
+        if backlogs is not None and len(backlogs) > 0:
+            bs = Element('backlogs')
+            el.append(bs)
+            for backlog in backlogs:
+                bs.append(Element('backlog', title=backlog))
         self._last_day.append(el)
         return ''
 
@@ -266,7 +268,7 @@ class XmlFormatter(Formatter):
 class WorkSummaryWindow(QObject):
     _source: AbstractEventSource
     _summary_window: QMainWindow
-    _data: dict[datetime.date, dict[str, datetime.timedelta]]
+    _data: dict[datetime.date, dict[str, list[datetime.timedelta, set[str]]]]
     _results: QTextEdit
     _view_durations: QCheckBox
     _view_backlogs: QCheckBox
@@ -359,8 +361,8 @@ class WorkSummaryWindow(QObject):
         self._view_backlogs.setChecked(s.get('backlogs', False))
         self._view_backlogs.blockSignals(False)
 
-    def _extract_data(self) -> dict[datetime.date, dict[str, datetime.timedelta]]:
-        data = dict[datetime.date, dict[str, datetime.timedelta]]()
+    def _extract_data(self) -> dict[datetime.date, dict[str, list[datetime.timedelta, set[str]]]]:
+        data = dict[datetime.date, dict[str, list[datetime.timedelta, set[str]]]]()
         for w in self._source.workitems():
             if w.is_sealed():
                 key = w.get_last_modified_date().date()  # That's when it was sealed
@@ -368,7 +370,8 @@ class WorkSummaryWindow(QObject):
                     data[key] = dict()
                 workitems = data[key]
                 if w.get_name() not in workitems:
-                    workitems[w.get_name()] = datetime.timedelta()
+                    workitems[w.get_name()] = [datetime.timedelta(), set()]
+                workitems[w.get_name()][1].add(w.get_parent().get_name())
             for p in w.values():
                 pp: Pomodoro = p
                 if pp.is_finished():
@@ -377,8 +380,9 @@ class WorkSummaryWindow(QObject):
                         data[key] = dict()
                     workitems = data[key]
                     if w.get_name() not in workitems:
-                        workitems[w.get_name()] = datetime.timedelta()
-                    workitems[w.get_name()] += datetime.timedelta(seconds=pp.get_work_duration())
+                        workitems[w.get_name()] = [datetime.timedelta(), set([w.get_parent().get_name()])]
+                    workitems[w.get_name()][0] += datetime.timedelta(seconds=pp.get_work_duration())
+                    workitems[w.get_name()][1].add(w.get_parent().get_name())
         return data
 
     def _display_formatted(self) -> None:
@@ -432,11 +436,11 @@ class WorkSummaryWindow(QObject):
                 res += formatter.day(str(date))
                 workitems = self._data[date]
                 for workitem_name in workitems:
-                    duration = workitems[workitem_name]
-                    if include_durations:
-                        res += formatter.workitem(workitem_name, duration)
-                    else:
-                        res += formatter.workitem(workitem_name)
+                    duration = workitems[workitem_name][0]
+                    backlogs = workitems[workitem_name][1]
+                    res += formatter.workitem(workitem_name,
+                                              duration if include_durations else None,
+                                              backlogs if include_backlogs else None)
         res += formatter.footer()
         return res
 

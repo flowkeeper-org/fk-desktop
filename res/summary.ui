@@ -55,14 +55,14 @@
      <item>
       <widget class="QCheckBox" name="view_time_spent">
        <property name="text">
-        <string>Show time spent</string>
+        <string>Include time spent</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="view_backlogs">
        <property name="text">
-        <string>Show information about backlogs</string>
+        <string>Include information about backlogs</string>
        </property>
       </widget>
      </item>
