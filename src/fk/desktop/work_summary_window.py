@@ -268,8 +268,10 @@ class WorkSummaryWindow(QObject):
     _summary_window: QMainWindow
     _data: dict[datetime.date, dict[str, datetime.timedelta]]
     _results: QTextEdit
-    _view_time_spent: QCheckBox
+    _view_durations: QCheckBox
+    _view_backlogs: QCheckBox
     _format: QComboBox
+    _period: QComboBox
     _buttons: QDialogButtonBox
 
     def __init__(self, parent: QWidget, source: AbstractEventSource):
@@ -287,8 +289,13 @@ class WorkSummaryWindow(QObject):
 
         self._results: QTextEdit = self._summary_window.findChild(QTextEdit, "work_summary_results")
 
-        self._view_time_spent: QCheckBox = self._summary_window.findChild(QCheckBox, "view_time_spent")
-        self._view_time_spent.stateChanged.connect(lambda v: self._display_formatted())
+        self._view_durations: QCheckBox = self._summary_window.findChild(QCheckBox, "view_time_spent")
+        self._view_durations.stateChanged.connect(lambda v: self._display_formatted())
+        self._view_durations.stateChanged.connect(self._save_settings)
+
+        self._view_backlogs: QCheckBox = self._summary_window.findChild(QCheckBox, "view_backlogs")
+        self._view_backlogs.stateChanged.connect(lambda v: self._display_formatted())
+        self._view_backlogs.stateChanged.connect(self._save_settings)
 
         self._format: QComboBox = self._summary_window.findChild(QComboBox, "format")
         self._format.addItems(['Markdown',
@@ -301,6 +308,19 @@ class WorkSummaryWindow(QObject):
                                'JSON',
                                'XML'])
         self._format.currentIndexChanged.connect(lambda v: self._display_formatted())
+        self._format.currentIndexChanged.connect(self._save_settings)
+
+        self._period: QComboBox = self._summary_window.findChild(QComboBox, "period")
+        self._period.addItems(['Everything',
+                               'This week',
+                               'Previous week',
+                               'Today',
+                               'Yesterday',
+                               'Last working day (Mon - Fri)'])
+        self._period.currentIndexChanged.connect(lambda v: self._display_formatted())
+        self._period.currentIndexChanged.connect(self._save_settings)
+
+        self._load_settings()
 
         close_action = QAction(self._summary_window, 'Close')
         close_action.triggered.connect(self._summary_window.close)
@@ -309,6 +329,35 @@ class WorkSummaryWindow(QObject):
 
         self._data = self._extract_data()
         self._display_formatted()
+
+    def _save_settings(self):
+        self._source.get_settings().set({
+            "Application.work_summary_settings": json.dumps({
+                "format": self._format.currentIndex(),
+                "period": self._period.currentIndex(),
+                "durations": self._view_durations.isChecked(),
+                "backlogs": self._view_backlogs.isChecked(),
+            })
+        })
+
+    def _load_settings(self):
+        s = json.loads(self._source.get_settings().get("Application.work_summary_settings"))
+
+        self._format.blockSignals(True)
+        self._format.setCurrentIndex(s.get('format', 0))
+        self._format.blockSignals(False)
+
+        self._period.blockSignals(True)
+        self._period.setCurrentIndex(s.get('period', 0))
+        self._period.blockSignals(False)
+
+        self._view_durations.blockSignals(True)
+        self._view_durations.setChecked(s.get('durations', False))
+        self._view_durations.blockSignals(False)
+
+        self._view_backlogs.blockSignals(True)
+        self._view_backlogs.setChecked(s.get('backlogs', False))
+        self._view_backlogs.blockSignals(False)
 
     def _extract_data(self) -> dict[datetime.date, dict[str, datetime.timedelta]]:
         data = dict[datetime.date, dict[str, datetime.timedelta]]()
@@ -333,13 +382,13 @@ class WorkSummaryWindow(QObject):
         return data
 
     def _display_formatted(self) -> None:
-        res = self._format_data(self._view_time_spent.isChecked())
+        res = self._format_data(self._view_durations.isChecked(), self._view_backlogs.isChecked())
         if self._format.currentText() == 'Formatted' or self._format.currentText() == 'Formatted table':
             self._results.setMarkdown(res)
         else:
             self._results.setText(res)
 
-    def _format_data(self, include_time: bool) -> str:
+    def _format_data(self, include_durations: bool, include_backlogs: bool) -> str:
         # First sort the dates / keys
         dates = list(self._data.keys())
         dates.sort(reverse=True)
@@ -384,7 +433,7 @@ class WorkSummaryWindow(QObject):
                 workitems = self._data[date]
                 for workitem_name in workitems:
                     duration = workitems[workitem_name]
-                    if include_time:
+                    if include_durations:
                         res += formatter.workitem(workitem_name, duration)
                     else:
                         res += formatter.workitem(workitem_name)
@@ -415,7 +464,7 @@ class WorkSummaryWindow(QObject):
     def _export_to_file(self, filename: str):
         if path.isdir(filename):
             filename = path.join(filename, f'work-summary.{self._get_file_extension()}')
-        res = self._format_data(self._view_time_spent.isChecked())
+        res = self._format_data(self._view_durations.isChecked(), self._view_backlogs.isChecked())
         with open(filename, "w") as file:
             file.write(res)
         if QMessageBox().information(

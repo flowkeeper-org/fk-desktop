@@ -3,7 +3,7 @@
 - Moved "Hide completed items" to the toolbar (#42) and other actions under the "stopwatch" menu.
 - You can now configure Flowkeeper to execute programs on different events, see Settings > Integration (#40).
 - All buttons and icons now have tooltips with shortcuts in them (#43, #52).
-- Improved Work Summary (F3) -- new output formats, options and usability enhancements (#45, #49).
+- Journaling-friendly Work Summary (F3) -- more output formats and enhanced usability (#45, #49).
 - New setting: General > Single Flowkeeper instance (#50).
 - Miscellaneous UI improvements, notably new tray icon visualization (#44, #51, #39).
 - [Bugfix] Couldn't open Settings when there's no audio devices (#38).
