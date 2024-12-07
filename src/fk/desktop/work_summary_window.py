@@ -393,14 +393,47 @@ class WorkSummaryWindow(QObject):
             self._results.setText(res)
 
     def _format_data(self, include_durations: bool, include_backlogs: bool) -> str:
+        # Get the period
+        period: str = self._period.currentText()
+
         # First sort the dates / keys
         dates = list(self._data.keys())
         dates.sort(reverse=True)
+
+        # Prepare for period filtering
+        today = datetime.date.today()
+        yesterday = today - datetime.timedelta(days=1)
+        this_week = today.isocalendar()[1]
+        if today.weekday() == 6:
+            last_working_day = today - datetime.timedelta(days=2)
+        elif today.weekday() == 5:
+            last_working_day = today - datetime.timedelta(days=1)
+        else:
+            last_working_day = today
+        if this_week == 1:
+            previous_week = 52
+            year_of_previous_week = today.year - 1
+        else:
+            previous_week = this_week - 1
+            year_of_previous_week = today.year
 
         # Then group dates by weeks
         weeks = dict[str, list[datetime.date]]()
         for date in dates:
             week_number = date.isocalendar()[1]
+
+            # Period filtering
+            if period == 'Today' and date != today:
+                continue
+            elif period == 'Yesterday' and date != yesterday:
+                continue
+            elif period == 'This week' and (week_number != this_week or date.year != today.year):
+                continue
+            elif period == 'Previous week' and (week_number != previous_week or date.year != year_of_previous_week):
+                continue
+            elif period == 'Last working day (Mon - Fri)' and date != last_working_day:
+                continue
+
             # Those keys are sortable alphabetically
             week_key = f'{date.year}, Week {"0" if week_number < 10 else ""}{week_number}'
             if week_key not in weeks:
