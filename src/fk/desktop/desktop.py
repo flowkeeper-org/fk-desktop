@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QAction
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QMainWindow
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -56,68 +56,36 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
-def set_window_flags(is_focused: bool):
+def set_window_flags():
     flags = default_flags
-
-    hide_frame = settings.get('Application.show_window_title') != 'True'
-    mode = get_timer_ui_mode()
-    if mode == 'focus' and is_focused and hide_frame:
-        flags = flags | Qt.WindowType.FramelessWindowHint
-
     is_pinned = settings.get('Application.always_on_top') == 'True'
     if is_pinned:
         flags = flags | Qt.WindowType.WindowStaysOnTopHint
-
     window.setWindowFlags(flags)
 
 
-def show_timer_automatically() -> None:
-    global continue_workitem
-    actions['focus.voidPomodoro'].setEnabled(True)
-    mode = get_timer_ui_mode()
-    if mode == 'focus':
-        set_window_flags(True)
-        height = focus.size().height()
-        focus.show()
-        main_layout.hide()
-        left_toolbar.hide()
-        window.setFixedWidth(window.width())    # TODO: Make it flexible
-        window.setFixedHeight(height)
-        window.adjustSize()
-        actions['window.focusMode'].setChecked(False)
-        window.show()
-    elif mode == 'minimize':
-        window.hide()
+def focus(**kwargs) -> None:
+    window.hide()
+    root_layout.removeWidget(focus_widget)
+
+    focus_widget.setParent(focus_window)
+    focus_window.setCentralWidget(focus_widget)
+    # focus_window.setFixedWidth(focus_widget.width())
+    focus_window.setFixedHeight(focus_widget.height())
+
+    if settings.get('Application.show_window_title') == 'True':
+        focus_window.setWindowFlags(default_flags)
+    else:
+        focus_window.setWindowFlags(default_flags | Qt.WindowType.FramelessWindowHint)
+
+    focus_window.show()
 
 
-def hide_timer(event: str | None = None, **kwargs) -> None:
-    set_window_flags(False)
-    main_layout.show()
-    focus.show()
-    left_toolbar.show()
-    window.setMaximumHeight(16777215)
-    window.setMinimumHeight(0)
-    window.setMaximumWidth(16777215)
-    window.setMinimumWidth(0)
-    resize_event_filter.restore_size()
-    actions['window.focusMode'].setChecked(True)
+def defocus(**kwargs) -> None:
+    focus_window.hide()
+    focus_widget.setParent(window)
+    root_layout.insertWidget(0, focus_widget)
     window.show()
-
-    # Without this junk with Qt 6.7.0, KDE 5.18.8 on XOrg the window moves down every time its size is restored
-    pos = window.pos()
-    pos.setY(pos.y() - 1)
-    window.move(pos)
-    pos.setY(pos.y() + 1)
-    window.move(pos)
-
-
-def hide_timer_automatically() -> None:
-    actions['focus.voidPomodoro'].setDisabled(True)
-    mode = get_timer_ui_mode()
-    if mode == 'focus':
-        hide_timer()
-    elif mode == 'minimize':
-        window.show()
 
 
 def update_tables_visibility() -> None:
@@ -130,7 +98,7 @@ def update_tables_visibility() -> None:
 
 def on_messages(event: str, source: AbstractEventSource) -> None:
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
-        show_timer_automatically()
+        focus()
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
@@ -141,8 +109,8 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         new_value = new_values[name]
         if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
             # TODO: This really doesn't work well
-            hide_timer_automatically()
-            show_timer_automatically()
+            defocus()
+            focus()
         elif name == 'Application.show_main_menu':
             main_menu.setVisible(new_value == 'True')
         elif name == 'Application.show_status_bar':
@@ -154,7 +122,7 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.shortcuts':
             actions.update_from_settings()
         elif name == 'Application.always_on_top':
-            set_window_flags(main_layout.isHidden())
+            set_window_flags()
             window.show()
 
 
@@ -164,9 +132,9 @@ class MainWindow:
 
     def toggle_focus_mode(self, state: bool):
         if state:
-            show_timer_automatically()
+            focus()
         else:
-            hide_timer()
+            defocus()
 
     def toggle_pin_window(self, state: bool):
         is_checked: bool = actions['window.pinWindow'].isChecked()
@@ -233,13 +201,13 @@ if __name__ == "__main__":
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
             source.on(SourceMessagesProcessed, on_messages)
-            source.on(AfterWorkitemComplete, hide_timer)
+            source.on(AfterWorkitemComplete, defocus)
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: hide_timer_automatically())
-        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: show_timer_automatically())
+        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: defocus())
+        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: focus())
 
         loader = QtUiTools.QUiLoader(app)
 
@@ -318,14 +286,16 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus = FocusWidget(window,
-                            app,
-                            pomodoro_timer,
-                            app.get_source_holder(),
-                            settings,
-                            actions,
-                            settings.get('Application.focus_flavor'))
-        root_layout.insertWidget(0, focus)
+        focus_widget = FocusWidget(window,
+                                   app,
+                                   pomodoro_timer,
+                                   app.get_source_holder(),
+                                   settings,
+                                   actions,
+                                   settings.get('Application.focus_flavor'))
+        root_layout.insertWidget(0, focus_widget)
+
+        focus_window = QMainWindow(window)
 
         # Layouts
         # noinspection PyTypeChecker
@@ -401,10 +371,10 @@ if __name__ == "__main__":
         actions.bind('backlogs_table', backlogs_widget.get_table())
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_widget.get_table())
-        actions.bind('focus', focus)
+        actions.bind('focus', focus_widget)
         actions.bind('window', main_window)
 
-        set_window_flags(False)
+        set_window_flags()
 
         tutorial = Tutorial(app.get_source_holder(), settings, window)
 
@@ -413,7 +383,7 @@ if __name__ == "__main__":
         # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
         # Otherwise, the font size for the focus' header is picked correctly, but
         # default font family is used.
-        focus.update_fonts()
+        focus_widget.update_fonts()
 
         try:
             app.initialize_source()

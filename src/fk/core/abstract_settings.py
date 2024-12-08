@@ -254,9 +254,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)"\n'
-                                                                           '(C) Lobo Loco <https://www.musikbrause.de>,\n'
-                                                                           'CC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
