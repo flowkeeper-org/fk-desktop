@@ -149,6 +149,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
                 ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
+                ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
@@ -198,6 +199,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
+                ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)', 'minimal:Minimalistic (with context menu)'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
@@ -227,7 +229,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
-                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
+                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'NorseBeauty', ['NorseBeauty:NorseBeauty'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
@@ -263,12 +265,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
             'Integration': [
-                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system.\n'
-                                                             'You can use Python f{} syntax for variable substitution:\n'
-                                                             'espeak "Deleted work item {workitem.get_name()}"\n'
-                                                             'echo "Received {event}. Available variables: {dir()}"\n'
-                                                             'WARNING: Placeholders are substituted as-is, without\n'
-                                                             'any sanitization or escaping.', [], _always_show),
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{} syntax for variable substitution:\n'
+                                                             '$ espeak "Deleted work item {workitem.get_name()}"\n'
+                                                             '$ echo "Received {event}. Available variables: {dir()}"\n'
+                                                             'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }

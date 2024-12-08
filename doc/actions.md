@@ -29,8 +29,7 @@
 - ('focus.completeItem', "Complete Item", None, "tool-complete", FocusWidget._complete_item)
 
 ## MainWindow
-- ('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
-- ('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+- ('window.focusMode', "Focus Mode", None, "tool-show-timer-only", MainWindow.toggle_focus_mode)
 - ('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
 - ('window.showBacklogs', "Backlogs", 'Ctrl+B', 'tool-backlogs', MainWindow.show_about)
 - ('window.showUsers', "Team", 'Ctrl+T', 'tool-teams', MainWindow.toggle_users)

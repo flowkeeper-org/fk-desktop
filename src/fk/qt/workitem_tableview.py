@@ -103,10 +103,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             actions['workitems_table.renameItem'],
             actions['workitems_table.deleteItem'],
             actions['workitems_table.startItem'],
-            actions['workitems_table.completeItem'],
             actions['workitems_table.addPomodoro'],
             actions['workitems_table.removePomodoro'],
             actions['workitems_table.hideCompleted'],
+            actions['workitems_table.completeItem'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))

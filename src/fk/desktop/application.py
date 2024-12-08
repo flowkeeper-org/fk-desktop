@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
@@ -80,6 +80,9 @@ class Application(QApplication, AbstractEventEmitter):
     _heartbeat: Heartbeat
     _version_timer: QtTimer
     _integration_executor: IntegrationExecutor
+    _current_version: Version
+
+    upgraded = Signal(Version)
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -88,10 +91,11 @@ class Application(QApplication, AbstractEventEmitter):
         # It's important to import Common theme very early, because we need it to get app version, etc.
         # noinspection PyUnresolvedReferences
         import fk.desktop.resources
+        self._current_version = get_current_version()
 
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
-            print(f'Flowkeeper v{get_current_version()}')
+            print(f'Flowkeeper v{self._current_version}')
             sys.exit(0)
 
         self._register_source_producers()
@@ -160,6 +164,8 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
 
+        QtTimer('Upgrade checker').schedule(1000, self._check_upgrade, None, True)
+
         self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
@@ -194,11 +200,20 @@ class Application(QApplication, AbstractEventEmitter):
         stdio_handler.setLevel(logging.WARNING)
         root.handlers.append(stdio_handler)
 
-        logger.debug(f'Flowkeeper: {get_current_version()}')
+        logger.debug(f'Flowkeeper: {self._current_version}')
         logger.debug(f'Qt: {QtCore.__version__}')
         logger.debug(f'Python: {sys.version}')
         logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
         logger.debug(f'Kernel: {platform.platform()}')
+
+    def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
+        last_version = Version(self._settings.get('Application.last_version'))
+        print(f'Last version: {last_version}')
+        #self._settings.set({'Application.last_version': str('0.0.1')})
+        if self._current_version != last_version:
+            logger.info(f'We execute for the first time after upgrade from {last_version} to {self._current_version}')
+            self.upgraded.emit(self._current_version)
+            # self._settings.set({'Application.last_version': str(self._current_version)})
 
     def initialize_source(self):
         self._source_holder.request_new_source()
@@ -377,7 +392,7 @@ class Application(QApplication, AbstractEventEmitter):
                 request_ui_refresh = True
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
-                    self._version_timer.schedule(1000, self.check_version, None, True)
+                    self._version_timer.schedule(2000, self.check_version, None, True)
             elif name.startswith('Logger.'):
                 request_logger_change = True
 
@@ -580,15 +595,14 @@ class Application(QApplication, AbstractEventEmitter):
     def check_version(self, event: str, when: datetime.datetime | None = None) -> None:
         def on_version(latest: Version, changelog: str):
             if latest is not None:
-                current: Version = get_current_version()
-                if latest > current:
+                if latest > self._current_version:
                     self._emit(NewReleaseAvailable, {
-                        'current': current,
+                        'current': self._current_version,
                         'latest': latest,
                         'changelog': changelog,
                     })
                 else:
-                    logger.debug(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+                    logger.debug(f'We are on the latest Flowkeeper version already (current is {self._current_version}, latest is {latest})')
             else:
                 logger.warning("Couldn't get the latest release info from GitHub")
         logger.debug('Will check GitHub releases for the latest version')

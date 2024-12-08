@@ -42,13 +42,15 @@ class AbstractTimerDisplay:
         self._continue_workitem = None
         self._mode = 'undefined'
 
-        timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
-        timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
-        timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
-        timer.on(PomodoroTimer.TimerTick, self._on_tick)
-        timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
+        if timer is not None:
+            timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
+            timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
+            timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
+            timer.on(PomodoroTimer.TimerTick, self._on_tick)
+            timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
 
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        if source_holder is not None:
+            source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _set_mode(self, mode):
         old_mode = self._mode

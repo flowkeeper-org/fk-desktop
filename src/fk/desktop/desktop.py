@@ -19,7 +19,7 @@ import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
@@ -28,6 +28,7 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
+from fk.desktop.config_wizard import ConfigWizard
 from fk.desktop.tutorial import Tutorial
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
@@ -83,8 +84,7 @@ def show_timer_automatically() -> None:
         window.setFixedWidth(window.width())    # TODO: Make it flexible
         window.setFixedHeight(height)
         window.adjustSize()
-        focus._buttons['window.showFocus'].hide()
-        focus._buttons['window.showAll'].show()
+        actions['window.focusMode'].setChecked(False)
         window.show()
     elif mode == 'minimize':
         window.hide()
@@ -100,8 +100,7 @@ def hide_timer(event: str | None = None, **kwargs) -> None:
     window.setMaximumWidth(16777215)
     window.setMinimumWidth(0)
     resize_event_filter.restore_size()
-    focus._buttons['window.showFocus'].show()
-    focus._buttons['window.showAll'].hide()
+    actions['window.focusMode'].setChecked(True)
     window.show()
 
     # Without this junk with Qt 6.7.0, KDE 5.18.8 on XOrg the window moves down every time its size is restored
@@ -116,8 +115,6 @@ def hide_timer_automatically() -> None:
     actions['focus.voidPomodoro'].setDisabled(True)
     mode = get_timer_ui_mode()
     if mode == 'focus':
-        focus._buttons['window.showFocus'].show()
-        focus._buttons['window.showAll'].hide()
         hide_timer()
     elif mode == 'minimize':
         window.show()
@@ -165,14 +162,17 @@ class MainWindow:
     def __init__(self):
         super().__init__()
 
-    def show_all(self):
-        hide_timer()
+    def toggle_focus_mode(self, state: bool):
+        print(f'Toggle focus mode: {state}')
+        if state:
+            show_timer_automatically()
+        else:
+            hide_timer()
 
-    def show_focus(self):
-        show_timer_automatically()
-
-    def pin_window(self):
-        settings.set({'Application.always_on_top': 'True'})
+    def toggle_pin_window(self, state: bool):
+        print(f'Toggle pin window: {state}')
+        is_checked: bool = actions['window.pinWindow'].isChecked()
+        settings.set({'Application.always_on_top': str(is_checked)})
 
     def unpin_window(self):
         settings.set({'Application.always_on_top': 'False'})
@@ -193,14 +193,12 @@ class MainWindow:
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
-        actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
-        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.pin_window)
-        actions.add('window.unpinWindow', "Unpin Flowkeeper", None, "tool-unpin", MainWindow.unpin_window)
+        actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
+        actions.add('window.pinWindow', "Pin Flowkeeper", None, ("tool-pin", "tool-unpin"), MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
-        backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
+        backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
                     "Show / Hide Backlogs",
                     'Ctrl+B',
@@ -209,14 +207,14 @@ class MainWindow:
                     True,
                     backlogs_were_visible)
 
-        users_were_visible = (settings.get('Application.users_visible') == 'True')
+        users_were_visible = (actions.get_settings().get('Application.users_visible') == 'True')
         actions.add('window.showUsers',
                     "Team",
                     'Ctrl+T',
                     'tool-teams',
                     MainWindow.toggle_users,
                     True,
-                    settings.is_team_supported() and users_were_visible)
+                    actions.get_settings().is_team_supported() and users_were_visible)
 
 
 if __name__ == "__main__":
@@ -235,7 +233,7 @@ if __name__ == "__main__":
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
-            main_window.show_all()
+            actions['window.focusMode'].setChecked(False)
             source.on(SourceMessagesProcessed, on_messages)
             source.on(AfterWorkitemComplete, hide_timer)
 
@@ -253,6 +251,8 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         window: QtWidgets.QMainWindow = loader.load(file, None)
         file.close()
+
+        app.upgraded.connect(lambda v: ConfigWizard(app, actions, window).show())
 
         default_flags = window.windowFlags()
 
@@ -320,7 +320,13 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus = FocusWidget(window, app, pomodoro_timer, app.get_source_holder(), settings, actions)
+        focus = FocusWidget(window,
+                            app,
+                            pomodoro_timer,
+                            app.get_source_holder(),
+                            settings,
+                            actions,
+                            settings.get('Application.focus_flavor'))
         root_layout.insertWidget(0, focus)
 
         # Layouts
@@ -328,9 +334,6 @@ if __name__ == "__main__":
         main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
         # noinspection PyTypeChecker
         left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
-
-        # Connect menu actions to the toolbar
-        # TODO -- migrate all those to Actions and remove all actions from .ui file
 
         # noinspection PyTypeChecker
         action_backlogs = actions['window.showBacklogs']

@@ -6,6 +6,8 @@
 - All buttons and icons now have tooltips with shortcuts in them (#43, #52).
 - Journaling-friendly Work Summary (F3) -- more output formats and enhanced usability (#45, #49).
 - New setting: General > Single Flowkeeper instance (#50).
+- You can now choose between two timer widgets -- "Classic" and "Minimalistic".
+- Quick configuration wizard when you open Flowkeeper for the first time.
 - Miscellaneous UI improvements, notably new tray icon visualization (#44, #51, #39).
 - [Bugfix] Couldn't open Settings when there's no audio devices (#38).
 

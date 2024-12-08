@@ -103,9 +103,6 @@ class Actions:
     def bind(self, domain: str, obj: object):
         self._domains[domain] = obj
 
-    def all(self) -> list[QAction]:
-        return list(self._actions.values())
-
     def __getitem__(self, name: str) -> QAction:
         return self._actions[name]
 

@@ -399,6 +399,7 @@ class SettingsDialog(QDialog):
             return [widget]
         elif option_type == 'label':
             ed11 = QLabel(parent)
+            ed11.setWordWrap(True)
             ed11.setText(option_value)
             return [ed11]
         elif option_type == 'keyvalue':

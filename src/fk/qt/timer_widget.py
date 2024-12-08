@@ -15,11 +15,12 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from PySide6.QtCore import QSize, Property
-from PySide6.QtGui import QFont, QColor, QPalette
-from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
+from PySide6.QtCore import QSize, Property, QEvent, Signal, QPoint
+from PySide6.QtGui import QFont, QColor, QPalette, QMouseEvent, Qt
+from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton, QMenu, QApplication
 
 from fk.qt.new_timer_renderer import NewTimerRenderer
+from fk.qt.timer_renderer import TimerRenderer
 
 logger = logging.getLogger(__name__)
 DISPLAY_SIZE = 63
@@ -30,9 +31,12 @@ class TimerWidget(QWidget):
     _fg_color: QColor
     _bg_color: QColor
 
+    clicked = Signal(QPoint)
+
     def __init__(self,
                  parent: QWidget,
                  name: str,
+                 flavor: str,
                  center_button: QToolButton = None):
         super().__init__(parent)
         self.setObjectName(name)
@@ -57,7 +61,13 @@ class TimerWidget(QWidget):
 
         if center_button is not None:
             inner_timer_layout.addWidget(center_button)
-        self._timer_display = NewTimerRenderer(
+
+        if flavor == 'classic':
+            cls = TimerRenderer
+        elif flavor == 'minimal':
+            cls = NewTimerRenderer
+
+        self._timer_display = cls(
             self,
             self._fg_color,
             self._bg_color,
@@ -67,8 +77,7 @@ class TimerWidget(QWidget):
             self._fg_color,
             2,
             0,
-            120,
-        )
+            120)
         self.installEventFilter(self._timer_display)
 
     def _init_timer_display(self):
@@ -102,3 +111,7 @@ class TimerWidget(QWidget):
     def set_values(self, completion, is_work) -> None:
         self._timer_display.set_values(completion, is_work=is_work)
         self._timer_display.repaint()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.type() == QEvent.Type.MouseButtonPress:
+            self.clicked.emit(event.pos())

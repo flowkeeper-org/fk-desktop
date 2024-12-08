@@ -37,11 +37,11 @@ FocusWidget.define_actions(mc.get_actions())
 mc.get_actions().bind('application', mc.get_app())
 
 menu = QMenuBar(mc.get_window())
-menu.addActions(mc.get_actions().all())
+menu.addActions(list(mc.get_actions().values()))
 mc.get_window().setCentralWidget(menu)
 
 logger.debug('All actions:')
-for action in mc.get_actions().all():
+for action in mc.get_actions().values():
     logger.debug(action.objectName())
 
 mc.main_loop()
