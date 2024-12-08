@@ -18,7 +18,7 @@ import logging
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QApplication, \
-    QToolButton
+    QToolButton, QSpacerItem
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -49,6 +49,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _continue_workitem: Workitem | None
     _timer_widget: TimerWidget
     _moving_around: QPoint | None
+    _hint_label: QLabel | None
 
     def __init__(self,
                  parent: QWidget,
@@ -69,6 +70,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._pixmap = None
         self._continue_workitem = None
         self._moving_around = None
+        self._hint_label = None
 
         self._border_color = QColor('#000000')
         self._set_border_color()
@@ -108,15 +110,20 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                                          'timer',
                                          flavor,
                                          self._create_button("focus.voidPomodoro") if flavor == 'classic' else None)
-        layout.addWidget(self._timer_widget)
 
         if flavor == 'classic':
+            layout.addWidget(self._timer_widget)
             layout.addWidget(self._create_button("focus.nextPomodoro"))
             layout.addWidget(self._create_button("focus.completeItem"))
             if "window.pinWindow" in actions:
                 layout.addWidget(self._create_button("window.pinWindow"))
         elif flavor == 'minimal':
+            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding))
+            if settings.get('Application.show_click_here_hint') == 'True':
+                self._hint_label = self._initialize_hint_label()
+                layout.addWidget(self._hint_label)
             self._timer_widget.clicked.connect(self._timer_clicked)
+            layout.addWidget(self._timer_widget)
 
         self._actions['focus.nextPomodoro'].setDisabled(True)
         self._actions['focus.completeItem'].setDisabled(True)
@@ -124,6 +131,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _initialize_hint_label(self) -> QLabel:
+        hint_label = QLabel(self)
+        hint_font = hint_label.font()
+        hint_font.setPointSizeF(hint_font.pointSizeF() * 0.75)
+        hint_label.setFont(hint_font)
+        hint_label.setText("Click here →")
+        return hint_label
 
     def update_fonts(self):
         self._header_text.setFont(self._application.get_header_font())
@@ -198,6 +213,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 'Application.eyecandy_gradient' in new_values or \
                 'Application.eyecandy_image' in new_values:
             self.eye_candy()
+        if self._hint_label is not None and 'Application.show_click_here_hint' in new_values:
+            self._hint_label.hide()
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
@@ -256,6 +273,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self.setMaximumHeight(DISPLAY_HEIGHT)
 
     def _timer_clicked(self, pos: QPoint) -> None:
+        self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
         context_menu.setStyle(QApplication.style())
         context_menu.addAction(self._actions['focus.nextPomodoro'])

@@ -77,7 +77,7 @@ class TimerRenderer(QtCore.QObject):
         self._text = ""
         self._is_set = False
 
-    def set_values(self, my: float | None, team: float | None = None, text: str = "") -> None:
+    def set_values(self, my: float | None, team: float | None = None, text: str = "", is_work: bool = True) -> None:
         self._my_value = my
         self._team_value = team
         self._text = text

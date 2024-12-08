@@ -163,14 +163,12 @@ class MainWindow:
         super().__init__()
 
     def toggle_focus_mode(self, state: bool):
-        print(f'Toggle focus mode: {state}')
         if state:
             show_timer_automatically()
         else:
             hide_timer()
 
     def toggle_pin_window(self, state: bool):
-        print(f'Toggle pin window: {state}')
         is_checked: bool = actions['window.pinWindow'].isChecked()
         settings.set({'Application.always_on_top': str(is_checked)})
 

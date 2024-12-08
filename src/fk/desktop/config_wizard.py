@@ -13,21 +13,29 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import os
 import sys
 
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMainWindow
 
 from fk.desktop.application import Application
-#from fk.desktop.desktop import MainWindow
 from fk.qt.actions import Actions
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.qt_settings import QtSettings
+from fk.qt.qt_timer import QtTimer
+from fk.qt.timer_widget import TimerWidget
 
 
 class PageConfigFocus(QWizardPage):
+    _tick: int
+    _widget1: TimerWidget
+    _widget2: TimerWidget
+
     def __init__(self, application: Application, actions: Actions):
         super().__init__()
+        self._tick = 10
+
         layout_v = QVBoxLayout()
 
         label = QLabel("This wizard will help you configure Flowkeeper after installation. First choose "
@@ -46,6 +54,7 @@ class PageConfigFocus(QWizardPage):
                                     application.get_settings(),
                                     actions,
                                     'minimal')
+        self._widget1 = focus_minimal._timer_widget
         layout_v.addWidget(focus_minimal)
 
         option_classic = QRadioButton("Classic", self)
@@ -59,6 +68,7 @@ class PageConfigFocus(QWizardPage):
                                     application.get_settings(),
                                     actions,
                                     'classic')
+        self._widget2 = focus_classic._timer_widget
         layout_v.addWidget(focus_classic)
 
         label = QLabel("You can change this in Settings > Appearance")
@@ -66,6 +76,17 @@ class PageConfigFocus(QWizardPage):
         layout_v.addWidget(label)
 
         self.setLayout(layout_v)
+
+        self._timer = QtTimer('Configuration wizard step 1')
+        self._timer.schedule(1000, self._handle_tick, None)
+        self._handle_tick()
+
+    def _handle_tick(self, params: dict | None = None, when: datetime.datetime | None = None) -> None:
+        self._widget1.set_values(self._tick / 10, is_work=True)
+        self._widget2.set_values(self._tick / 10, is_work=True)
+        self._tick -= 1
+        if self._tick < 0:
+            self._tick = 10
 
 
 class PageConfigIcons(QWizardPage):
@@ -112,6 +133,7 @@ if __name__ == '__main__':
     window = QMainWindow()
     actions = Actions(window, app.get_settings())
     FocusWidget.define_actions(actions)
+    from fk.desktop.desktop import MainWindow
     MainWindow.define_actions(actions)
     settings = QtSettings()
     wizard = ConfigWizard(app, actions, None)

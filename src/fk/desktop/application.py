@@ -208,12 +208,10 @@ class Application(QApplication, AbstractEventEmitter):
 
     def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
         last_version = Version(self._settings.get('Application.last_version'))
-        print(f'Last version: {last_version}')
-        #self._settings.set({'Application.last_version': str('0.0.1')})
         if self._current_version != last_version:
             logger.info(f'We execute for the first time after upgrade from {last_version} to {self._current_version}')
             self.upgraded.emit(self._current_version)
-            # self._settings.set({'Application.last_version': str(self._current_version)})
+            self._settings.set({'Application.last_version': str(self._current_version)})
 
     def initialize_source(self):
         self._source_holder.request_new_source()

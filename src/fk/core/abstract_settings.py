@@ -238,6 +238,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
                 ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
+                ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', default_font_family, [], _always_show),
