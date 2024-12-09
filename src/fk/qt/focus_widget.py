@@ -126,6 +126,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             layout.addWidget(self._timer_widget)
 
         self._actions['focus.nextPomodoro'].setDisabled(True)
+        self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         self._actions['focus.completeItem'].setDisabled(True)
         self._actions['focus.voidPomodoro'].setDisabled(True)
 
@@ -146,7 +147,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
-        actions.add('focus.nextPomodoro', "Next Pomodoro (#FK Finish streamlining tray icons)", None, "tool-focus-next", FocusWidget._next_pomodoro)
+        actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
 
     def _create_button(self,
@@ -241,7 +242,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         if QMessageBox().warning(
                 self,
                 "Confirmation",
-                f"Are you sure you want to complete workitem '{item.get_name()}'? This will void current pomodoro.",
+                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
                 QMessageBox.StandardButton.Ok,
                 QMessageBox.StandardButton.Cancel
                 ) == QMessageBox.StandardButton.Ok:
@@ -256,14 +257,18 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
             self._actions['focus.nextPomodoro'].setDisabled(True)
+            self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         elif new_mode == 'working' or new_mode == 'resting':
-            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
+            running_item = self._timer.get_running_workitem()
+            self._header_subtext.setText(running_item.get_display_name())
             self._actions['focus.voidPomodoro'].setDisabled(False)
             self._actions['focus.nextPomodoro'].setDisabled(True)
+            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
             self._actions['focus.completeItem'].setDisabled(False)
         elif new_mode == 'ready':
-            self.reset('Start another Pomodoro?', self._continue_workitem.get_name())
+            self.reset('Start another Pomodoro?', self._continue_workitem.get_display_name())
             self._actions['focus.nextPomodoro'].setDisabled(False)
+            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 
     def _apply_size_policy(self):
         sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)

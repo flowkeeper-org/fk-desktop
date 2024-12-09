@@ -88,7 +88,7 @@ def to_focus_mode(**kwargs) -> None:
 
 def from_focus_mode(**kwargs) -> None:
     focus_window.hide()
-    focus_widget.setParent(window)
+    focus_widget.setParent(root_layout_widget)
     root_layout.insertWidget(0, focus_widget)
     window.show()
 
@@ -112,7 +112,14 @@ def update_mode(**kwargs) -> None:
         if mode == 'focus':
             from_focus_mode()
         elif mode == 'minimize':
-            window.show()
+            # It's a bit more complex than just showing the main window, because the user might have
+            # detached the focus widget in the meantime.
+            if focus_widget.parent() == focus_window:
+                from_focus_mode()
+            elif focus_widget.parent() == root_layout_widget:
+                window.show()
+            else:
+                raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
@@ -148,8 +155,24 @@ class MainWindow:
         is_checked: bool = actions['window.pinWindow'].isChecked()
         settings.set({'Application.always_on_top': str(is_checked)})
 
-    def show_window(self):
-        window.show()
+    def toggle_main_window(self):
+        if window.isVisible():
+            # If main window is visible, then focus widget must be in it,
+            # then it's enough to just hide the main window
+            window.hide()
+        else:
+            if focus_window.isVisible():
+                # We are in the focus mode -- hide focus window. The main window is already hidden.
+                focus_window.hide()
+            else:
+                # Everything is hidden. We need to detect the mode before showing correct window.
+                # We do it by checking focus widget's parent.
+                if focus_widget.parent() == focus_window:
+                    focus_window.show()
+                elif focus_widget.parent() == root_layout_widget:
+                    window.show()
+                else:
+                    raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
     def show_search(self):
         search.show()
@@ -166,7 +189,7 @@ class MainWindow:
     def define_actions(actions: Actions):
         actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
         actions.add('window.pinWindow', "Pin Flowkeeper", None, ("tool-pin", "tool-unpin"), MainWindow.toggle_pin_window, True)
-        actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
+        actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
         backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
@@ -203,10 +226,14 @@ if __name__ == "__main__":
         logger.debug(f'UI thread: {threading.get_ident()}')
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
+        def _on_workitem_complete(workitem: Workitem, **_):
+            if pomodoro_timer is not None and pomodoro_timer.get_running_workitem() == workitem:
+                update_mode()
+
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
             source.on(SourceMessagesProcessed, update_mode, last=True)
-            source.on(AfterWorkitemComplete, update_mode, last=True)
+            source.on(AfterWorkitemComplete, _on_workitem_complete, last=True)
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
@@ -288,8 +315,11 @@ if __name__ == "__main__":
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
+        root_layout_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "rootLayout")
+
+        # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus_widget = FocusWidget(window,
+        focus_widget = FocusWidget(root_layout_widget,
                                    app,
                                    pomodoro_timer,
                                    app.get_source_holder(),

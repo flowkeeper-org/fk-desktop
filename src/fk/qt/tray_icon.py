@@ -92,10 +92,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                 settings.get('Pomodoro.default_rest_duration'),
             ])
         else:
-            if self.parent().isHidden():
-                self.parent().show()
-            else:
-                self.parent().hide()
+            if 'window.showMainWindow' in self._actions:
+                self._actions['window.showMainWindow'].trigger()
 
     def _paint_timer(self) -> None:
         tray_width = 48

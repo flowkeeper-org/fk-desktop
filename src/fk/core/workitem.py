@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime
 import re
+import textwrap
 from collections.abc import Set
 from typing import Iterable
 
@@ -141,3 +142,10 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         for t in TAG_REGEX.finditer(self._name):
             res.add(t.group(1).lower())
         return res
+
+    def get_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=60, placeholder='...')
+
+    def get_short_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=30, placeholder='...')
+
