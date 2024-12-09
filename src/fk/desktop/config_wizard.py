@@ -27,6 +27,17 @@ from fk.qt.qt_timer import QtTimer
 from fk.qt.timer_widget import TimerWidget
 
 
+def wrap_in_widget(widget: QWidget):
+    container = QWidget(widget.parent())
+    container.setObjectName('FocusBackground')
+    container.setContentsMargins(0, 0, 0, 0)
+    layout = QVBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.addWidget(widget)
+    container.setLayout(layout)
+    return container
+
+
 class PageConfigFocus(QWizardPage):
     _tick: int
     _widget1: TimerWidget
@@ -55,7 +66,7 @@ class PageConfigFocus(QWizardPage):
                                     actions,
                                     'minimal')
         self._widget1 = focus_minimal._timer_widget
-        layout_v.addWidget(focus_minimal)
+        layout_v.addWidget(wrap_in_widget(focus_minimal))
 
         option_classic = QRadioButton("Classic", self)
         option_classic.setChecked(False)
@@ -69,7 +80,7 @@ class PageConfigFocus(QWizardPage):
                                     actions,
                                     'classic')
         self._widget2 = focus_classic._timer_widget
-        layout_v.addWidget(focus_classic)
+        layout_v.addWidget(wrap_in_widget(focus_classic))
 
         label = QLabel("You can change this in Settings > Appearance")
         label.setWordWrap(True)

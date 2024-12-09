@@ -9,6 +9,7 @@
 - You can now choose between two timer widgets -- "Classic" and "Minimalistic".
 - Quick configuration wizard when you open Flowkeeper for the first time.
 - Miscellaneous UI improvements, notably new tray icon visualization (#44, #51, #39).
+- You can now enable main menu in Settings > Appearance.
 - [Bugfix] Couldn't open Settings when there's no audio devices (#38).
 
 ### v0.8.1 (13 November 2024)

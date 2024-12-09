@@ -13,7 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import math
+
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QColor, QPen, Qt, QConicalGradient
 
 
@@ -129,7 +132,7 @@ class NewTimerRenderer(QtCore.QObject):
         # Add a "darker" overlay for the "glass" looks
         painter.setPen(Qt.PenStyle.NoPen)
         center = my_rect.center()
-        center.setX(center.x() + 1)
+        center.setX(center.x())
         gradient = QConicalGradient(center, 90)
         gradient.setColorAt(0, QColor.fromHsl(0, 0, 0, 128))
         gradient.setColorAt(1, QColor.fromHsl(0, 0, 255, 128))
@@ -144,6 +147,15 @@ class NewTimerRenderer(QtCore.QObject):
             painter.drawPie(my_rect.adjusted(int(rw * margin) / 4, int(rh * margin) / 4, -int(rw * margin) / 4, -int(rh * margin) / 4),
                             int(5760 * (1.0 - self._my_value) + 1440),
                             int(5760 * self._my_value))
+
+        # Draw the "hand"
+        outline.setWidth(rw * margin / 2)
+        outline.setColor(QColor("#ffffff"))
+        painter.setPen(outline)
+        c = rect.center()
+        radius = (rw * (1 - 3 * margin)) / 2
+        painter.drawLine(c, QPoint(c.x() + radius * math.sin(2 * math.pi * self._my_value),
+                                   c.y() - radius * math.cos(2 * math.pi * self._my_value)))
 
         painter.end()
 

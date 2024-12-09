@@ -216,7 +216,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "highlight:Highlight",
                 ], _always_show),
                 ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
-                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
+                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _always_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
                 ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),

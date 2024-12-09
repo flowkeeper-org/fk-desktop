@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QAction
-from PySide6.QtWidgets import QMessageBox, QMainWindow
+from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -56,32 +56,37 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
-def set_window_flags():
-    flags = default_flags
+def pin_if_needed():
+    window_was_visible = window.isVisible()
+    focus_window_was_visible = focus_window.isVisible()
+
     is_pinned = settings.get('Application.always_on_top') == 'True'
-    if is_pinned:
-        flags = flags | Qt.WindowType.WindowStaysOnTopHint
-    window.setWindowFlags(flags)
+    window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
+                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+    focus_window.setWindowFlags(focus_window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
+                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+    if window_was_visible:
+        window.show()
+    if focus_window_was_visible:
+        focus_window.show()
 
 
-def focus(**kwargs) -> None:
+def to_focus_mode(**kwargs) -> None:
     window.hide()
     root_layout.removeWidget(focus_widget)
 
     focus_widget.setParent(focus_window)
     focus_window.setCentralWidget(focus_widget)
-    # focus_window.setFixedWidth(focus_widget.width())
+    focus_window.setFixedWidth(focus_widget.width())
     focus_window.setFixedHeight(focus_widget.height())
 
-    if settings.get('Application.show_window_title') == 'True':
-        focus_window.setWindowFlags(default_flags)
-    else:
-        focus_window.setWindowFlags(default_flags | Qt.WindowType.FramelessWindowHint)
-
+    show_title = settings.get('Application.show_window_title') == 'True'
+    focus_window.setWindowFlags(focus_window.windowFlags() & ~Qt.WindowType.FramelessWindowHint if show_title else
+                                focus_window.windowFlags() | Qt.WindowType.FramelessWindowHint)
     focus_window.show()
 
 
-def defocus(**kwargs) -> None:
+def from_focus_mode(**kwargs) -> None:
     focus_window.hide()
     focus_widget.setParent(window)
     root_layout.insertWidget(0, focus_widget)
@@ -96,22 +101,26 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def on_messages(event: str, source: AbstractEventSource) -> None:
+def update_mode(**kwargs) -> None:
+    mode = get_timer_ui_mode()
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
-        focus()
+        if mode == 'focus':
+            to_focus_mode()
+        elif mode == 'minimize':
+            window.hide()
+    else:
+        if mode == 'focus':
+            from_focus_mode()
+        elif mode == 'minimize':
+            window.show()
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
-
     status.showMessage('Settings changed')
     for name in new_values.keys():
         new_value = new_values[name]
-        if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
-            # TODO: This really doesn't work well
-            defocus()
-            focus()
-        elif name == 'Application.show_main_menu':
+        if name == 'Application.show_main_menu':
             main_menu.setVisible(new_value == 'True')
         elif name == 'Application.show_status_bar':
             status.setVisible(new_value == 'True')
@@ -122,8 +131,7 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.shortcuts':
             actions.update_from_settings()
         elif name == 'Application.always_on_top':
-            set_window_flags()
-            window.show()
+            pin_if_needed()
 
 
 class MainWindow:
@@ -132,16 +140,13 @@ class MainWindow:
 
     def toggle_focus_mode(self, state: bool):
         if state:
-            focus()
+            to_focus_mode()
         else:
-            defocus()
+            from_focus_mode()
 
     def toggle_pin_window(self, state: bool):
         is_checked: bool = actions['window.pinWindow'].isChecked()
         settings.set({'Application.always_on_top': str(is_checked)})
-
-    def unpin_window(self):
-        settings.set({'Application.always_on_top': 'False'})
 
     def show_window(self):
         window.show()
@@ -200,14 +205,14 @@ if __name__ == "__main__":
 
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
-            source.on(SourceMessagesProcessed, on_messages)
-            source.on(AfterWorkitemComplete, defocus)
+            source.on(SourceMessagesProcessed, update_mode, last=True)
+            source.on(AfterWorkitemComplete, update_mode, last=True)
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: defocus())
-        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: focus())
+        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
+        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
 
         loader = QtUiTools.QUiLoader(app)
 
@@ -219,8 +224,6 @@ if __name__ == "__main__":
         file.close()
 
         app.upgraded.connect(lambda v: ConfigWizard(app, actions, window).show())
-
-        default_flags = window.windowFlags()
 
         # Collect actions from all widget types
         actions = Actions(window, settings)
@@ -296,6 +299,7 @@ if __name__ == "__main__":
         root_layout.insertWidget(0, focus_widget)
 
         focus_window = QMainWindow(window)
+        focus_window.addActions(list(actions.values()))
 
         # Layouts
         # noinspection PyTypeChecker
@@ -310,7 +314,40 @@ if __name__ == "__main__":
         # Main menu
         # noinspection PyTypeChecker
         main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
+        # Application.define_actions(actions)
+        # BacklogTableView.define_actions(actions)
+        # UserTableView.define_actions(actions)
+        # WorkitemTableView.define_actions(actions)
+        # FocusWidget.define_actions(actions)
+        # MainWindow.define_actions(actions)
         if main_menu is not None:
+            main_menu.addMenu(menu_file)
+            view_menu = QMenu('View', main_menu)
+            view_menu.addAction(actions['window.focusMode'])
+            view_menu.addAction(actions['window.pinWindow'])
+            view_menu.addAction(actions['window.showBacklogs'])
+            view_menu.addAction(actions['application.toolbar'])
+            view_menu.addSeparator()
+            view_menu.addAction(actions['workitems_table.hideCompleted'])
+            view_menu.addAction(actions['window.showSearch'])
+            main_menu.addMenu(view_menu)
+            backlogs_menu = QMenu('Backlogs', main_menu)
+            backlogs_menu.addAction(actions['backlogs_table.newBacklog'])
+            backlogs_menu.addAction(actions['backlogs_table.newBacklogFromIncomplete'])
+            backlogs_menu.addAction(actions['backlogs_table.renameBacklog'])
+            backlogs_menu.addAction(actions['backlogs_table.deleteBacklog'])
+            main_menu.addMenu(backlogs_menu)
+            workitems_menu = QMenu('Work items', main_menu)
+            workitems_menu.addAction(actions['workitems_table.newItem'])
+            workitems_menu.addAction(actions['workitems_table.renameItem'])
+            workitems_menu.addAction(actions['workitems_table.deleteItem'])
+            workitems_menu.addAction(actions['workitems_table.startItem'])
+            workitems_menu.addAction(actions['workitems_table.completeItem'])
+            workitems_menu.addSeparator()
+            workitems_menu.addAction(actions['workitems_table.addPomodoro'])
+            workitems_menu.addAction(actions['workitems_table.removePomodoro'])
+            workitems_menu.addAction(actions['focus.voidPomodoro'])
+            main_menu.addMenu(workitems_menu)
             show_main_menu = (settings.get('Application.show_main_menu') == 'True')
             main_menu.setVisible(show_main_menu)
 
@@ -374,7 +411,7 @@ if __name__ == "__main__":
         actions.bind('focus', focus_widget)
         actions.bind('window', main_window)
 
-        set_window_flags()
+        pin_if_needed()
 
         tutorial = Tutorial(app.get_source_holder(), settings, window)
 

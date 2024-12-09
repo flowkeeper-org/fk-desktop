@@ -29,9 +29,10 @@ action = mc.get_actions()['focus.voidPomodoro']
 
 timer = TimerWidget(mc.get_window(),
                     'timer',
-                    mc.get_settings().get('Application.focus_flavor'),
+                    #mc.get_settings().get('Application.focus_flavor'),
+                    'minimal',
                     None)
-timer.set_values(0, True)
+timer.set_values(0.25, True)
 mc.get_window().setCentralWidget(timer)
 
 mc.main_loop()
