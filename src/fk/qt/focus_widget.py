@@ -50,6 +50,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _timer_widget: TimerWidget
     _moving_around: QPoint | None
     _hint_label: QLabel | None
+    _context_menu: QMenu | None
 
     def __init__(self,
                  parent: QWidget,
@@ -71,6 +72,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._continue_workitem = None
         self._moving_around = None
         self._hint_label = None
+        self._context_menu = None
 
         self._border_color = QColor('#000000')
         self._set_border_color()
@@ -280,6 +282,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def _timer_clicked(self, pos: QPoint) -> None:
         self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
+        # Flowkeeper sometimes segfaults when we allocate context menu on the stack
+        self._context_menu = context_menu
         context_menu.setStyle(QApplication.style())
         context_menu.addAction(self._actions['focus.nextPomodoro'])
         context_menu.addAction(self._actions['focus.voidPomodoro'])

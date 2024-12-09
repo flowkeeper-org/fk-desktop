@@ -24,10 +24,12 @@ from fk.qt.info_overlay import show_info_overlay
 
 class ConfigurableToolBar(QToolBar):
     _actions: Actions
+    _context_menu: QMenu | None
 
     def __init__(self, parent: QWidget, actions: Actions, name: str):
         super().__init__(parent)
         self._actions = actions
+        self._context_menu = None
         settings = actions.get_settings()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setStyle(QStyleFactory.create("windows"))
@@ -54,10 +56,13 @@ class ConfigurableToolBar(QToolBar):
             act.setText("Hide toolbar")
             act.triggered.connect(lambda: self._hide(event.pos()))
             context_menu = QMenu(self)
+            # Flowkeeper sometimes segfaults when we allocate context menu on the stack
+            self._context_menu = context_menu
             context_menu.setStyle(QApplication.style())
             context_menu.addAction(act)
             context_menu.exec(
-                self.parentWidget().mapToGlobal(event.pos()))
+                self.parentWidget().mapToGlobal(
+                    event.pos()))
 
     def get_button_geometry(self, action_name: str) -> QRect | None:
         for a in self.actions():
