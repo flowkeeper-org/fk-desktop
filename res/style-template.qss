@@ -135,3 +135,21 @@ InfoOverlay #overlay_text, #prev_button {
 #work_summary_results {
     font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
 }
+
+#trayDark {
+    background-color: #17242c;
+    border: 1px solid #555555;
+}
+
+#trayLight {
+    background-color: #d6dff3;
+    border: 1px solid #555555;
+}
+
+#fakeClockDark {
+    color: #ffffff;
+}
+
+#fakeClockLight {
+    color: #000000;
+}

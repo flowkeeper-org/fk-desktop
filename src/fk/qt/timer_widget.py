@@ -79,6 +79,7 @@ class TimerWidget(QWidget):
             0,
             120)
         self.installEventFilter(self._timer_display)
+        self._timer_display.setObjectName('TimerWidgetRenderer')
 
     def _init_timer_display(self):
         self._timer_display.set_colors(self._fg_color, self._bg_color)
