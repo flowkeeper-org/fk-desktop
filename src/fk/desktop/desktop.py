@@ -397,7 +397,7 @@ if __name__ == "__main__":
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, NewTimerRenderer)
+        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, NewTimerRenderer, True)   # TODO: Detect automatically
         tray.setVisible(show_tray_icon)
 
         # Some global variables to support "Next pomodoro" mode

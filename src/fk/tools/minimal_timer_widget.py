@@ -31,7 +31,8 @@ timer = TimerWidget(mc.get_window(),
                     'timer',
                     #mc.get_settings().get('Application.focus_flavor'),
                     'minimal',
-                    None)
+                    None,
+                    500)
 timer.set_values(0.25, True)
 mc.get_window().setCentralWidget(timer)
 

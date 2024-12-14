@@ -44,8 +44,9 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  timer: PomodoroTimer,
                  source_holder: EventSourceHolder,
                  actions: Actions,
-                 size: int = 48,
-                 cls: Type = None):
+                 size: int,
+                 cls: Type,
+                 is_dark: bool):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
         self._default_icon = QIcon(":/icons/logo.png")
@@ -63,6 +64,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             2,
             0,
             120,
+            is_dark
         )
         self._timer_renderer.setObjectName('TrayIconRenderer')
 

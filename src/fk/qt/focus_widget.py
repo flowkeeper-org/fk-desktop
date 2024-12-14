@@ -111,7 +111,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._timer_widget = TimerWidget(self,
                                          'timer',
                                          flavor,
-                                         self._create_button("focus.voidPomodoro") if flavor == 'classic' else None)
+                                         self._create_button("focus.voidPomodoro") if flavor == 'classic' else None,
+                                         63)
 
         if flavor == 'classic':
             layout.addWidget(self._timer_widget)
