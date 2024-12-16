@@ -106,7 +106,7 @@ class TestWorkitems(TestCase):
         workitem6 = backlog['w16']
         self.assertEqual(workitem6.get_name(), 'Six #workitem and #workitems')
         tags = user.get_tags()
-        self.assertEqual(len(tags.keys()), 4)
+        self.assertEqual(len(tags), 4)
         self.assertIn('workitem', tags)
         self.assertIn('second', tags)
         self.assertIn('third', tags)

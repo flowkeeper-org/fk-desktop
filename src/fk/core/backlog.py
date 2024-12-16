@@ -39,21 +39,21 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
         return f'Backlog "{self._name}"'
 
     def get_running_workitem(self) -> (Workitem, Pomodoro):
-        for workitem in self._children.values():
+        for workitem in self.values():
             for pomodoro in workitem.values():
                 if pomodoro.is_running():
                     return workitem, pomodoro
         return None, None
 
     def get_incomplete_workitems(self) -> Iterable[Workitem]:
-        for workitem in self._children.values():
+        for workitem in self.values():
             if not workitem.is_sealed():
                 yield workitem
 
     def is_today(self) -> bool:
-        # "Today" = Created within the last 12 hours
-        # UC-3: The backlog is marked as "today" if it was created within the last 12 hours
-        return (datetime.datetime.now(datetime.timezone.utc) - self.get_create_date()).total_seconds() < 3600 * 12
+        # "Today" = Backlog date corresponds to today's date
+        # UC-3: The backlog is marked as "today" if it was created on the same date as today (day, month, year)
+        return datetime.date.today() == self.get_create_date().date()
 
     def get_owner(self) -> 'User':
         return self._parent

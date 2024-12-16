@@ -109,7 +109,7 @@ class QtSettings(AbstractSettings):
             old_value = self.get(name)
             if old_value != values[name] or force_fire:
                 old_values[name] = old_value
-        if len(old_values.keys()) > 0:
+        if len(old_values) > 0:
             params = {
                 'old_values': old_values,
                 'new_values': values,

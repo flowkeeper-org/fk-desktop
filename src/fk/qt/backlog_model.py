@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import datetime
 import logging
 
 from PySide6 import QtGui, QtWidgets, QtCore
@@ -22,11 +23,13 @@ from PySide6.QtCore import Qt
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_timer import AbstractTimer
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy, ReorderBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
 from fk.qt.abstract_drop_model import AbstractDropModel
+from fk.qt.qt_timer import QtTimer
 
 logger = logging.getLogger(__name__)
 font_new = QtGui.QFont()
@@ -63,10 +66,14 @@ class BacklogItem(QtGui.QStandardItem):
 
 
 class BacklogModel(AbstractDropModel):
+    _midnight_timer: AbstractTimer
+
     def __init__(self,
                  parent: QtCore.QObject,
                  source_holder: EventSourceHolder):
         super().__init__(1, parent, source_holder)
+        self._midnight_timer = QtTimer('Midnight check for BacklogModel')
+        self._schedule_at_midnight()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.itemChanged.connect(lambda item: self._handle_rename(item))
 
@@ -111,6 +118,21 @@ class BacklogModel(AbstractDropModel):
             if bl == backlog:
                 self.item(i).update_display()
                 return
+
+    def _schedule_at_midnight(self):
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        diff: datetime.timedelta = datetime.datetime(year=tomorrow.year,
+                                                     month=tomorrow.month,
+                                                     day=tomorrow.day) - datetime.datetime.now()
+        wait_for = (int(diff.total_seconds()) + 60) * 1000
+        print(f'Scheduled _at_midnight in {wait_for}ms')
+        self._midnight_timer.schedule(wait_for, self._at_midnight, None, True)
+
+    def _at_midnight(self, **kwargs) -> None:
+        print(f'Fired _at_midnight at {datetime.datetime.now()}')
+        for i in range(self.rowCount()):
+            self.item(i).update_font()
+        self._schedule_at_midnight()    # Reschedule
 
     def _backlog_reordered(self, backlog: Backlog, new_index: int, carry: str, **kwargs) -> None:
         if carry != 'ui':
