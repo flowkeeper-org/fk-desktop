@@ -37,6 +37,7 @@ from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
+from fk.qt.new_timer_renderer import NewTimerRenderer
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
@@ -177,6 +178,9 @@ class MainWindow:
     def show_search(self):
         search.show()
 
+    def show_quick_config(self):
+        ConfigWizard(app, actions, window).show()
+
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
         update_tables_visibility()
@@ -191,6 +195,7 @@ class MainWindow:
         actions.add('window.pinWindow', "Pin Flowkeeper", None, ("tool-pin", "tool-unpin"), MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+        actions.add('window.quickConfig', "Quick Config", '', None, MainWindow.show_quick_config)
 
         backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -250,8 +255,6 @@ if __name__ == "__main__":
         window: QtWidgets.QMainWindow = loader.load(file, None)
         file.close()
 
-        app.upgraded.connect(lambda v: ConfigWizard(app, actions, window).show())
-
         # Collect actions from all widget types
         actions = Actions(window, settings)
         Application.define_actions(actions)
@@ -262,11 +265,14 @@ if __name__ == "__main__":
         MainWindow.define_actions(actions)
         actions.all_actions_defined()
 
+        app.upgraded.connect(lambda v: ConfigWizard(app, actions, window).show())
+
         audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
+        menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
@@ -391,7 +397,7 @@ if __name__ == "__main__":
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
+        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, NewTimerRenderer, True)   # TODO: Detect automatically
         tray.setVisible(show_tray_icon)
 
         # Some global variables to support "Next pomodoro" mode

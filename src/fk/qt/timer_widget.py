@@ -23,7 +23,6 @@ from fk.qt.new_timer_renderer import NewTimerRenderer
 from fk.qt.timer_renderer import TimerRenderer
 
 logger = logging.getLogger(__name__)
-DISPLAY_SIZE = 63
 
 
 class TimerWidget(QWidget):
@@ -37,7 +36,9 @@ class TimerWidget(QWidget):
                  parent: QWidget,
                  name: str,
                  flavor: str,
-                 center_button: QToolButton = None):
+                 center_button: QToolButton = None,
+                 display_size: int = 63,
+                 is_dark: bool = True):
         super().__init__(parent)
         self.setObjectName(name)
 
@@ -48,10 +49,10 @@ class TimerWidget(QWidget):
         sp3.setHorizontalStretch(0)
         sp3.setVerticalStretch(0)
         self.setSizePolicy(sp3)
-        self.setMinimumHeight(DISPLAY_SIZE)
-        self.setMinimumWidth(DISPLAY_SIZE)
-        self.setMaximumHeight(DISPLAY_SIZE)
-        self.setMaximumWidth(DISPLAY_SIZE)
+        self.setMinimumHeight(display_size)
+        self.setMinimumWidth(display_size)
+        self.setMaximumHeight(display_size)
+        self.setMaximumWidth(display_size)
         self.setBaseSize(QSize(0, 0))
 
         inner_timer_layout = QHBoxLayout(self)
@@ -77,8 +78,11 @@ class TimerWidget(QWidget):
             self._fg_color,
             2,
             0,
-            120)
+            120,
+            is_dark
+        )
         self.installEventFilter(self._timer_display)
+        self._timer_display.setObjectName('TimerWidgetRenderer')
 
     def _init_timer_display(self):
         self._timer_display.set_colors(self._fg_color, self._bg_color)

@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QPushButton
 from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
+from fk.qt.new_timer_renderer import NewTimerRenderer
 from fk.qt.qt_timer import QtTimer
 from fk.qt.tray_icon import TrayIcon
 from fk.tools.minimal_common import MinimalCommon
@@ -29,7 +30,7 @@ window = mc.get_window()
 actions = mc.get_actions()
 
 pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), app.get_source_holder())
-tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
+tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, NewTimerRenderer, True)   # TODO: Detect automatically
 
 tray.setVisible(True)
 tray.mode_changed('idle', 'working')

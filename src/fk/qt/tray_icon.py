@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Type
+
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
@@ -33,21 +35,25 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _timer_widget: NewTimerRenderer | None
+    _timer_renderer: NewTimerRenderer | None
     _continue_workitem: Workitem | None
+    _size: int
 
     def __init__(self,
                  parent: QWidget,
                  timer: PomodoroTimer,
                  source_holder: EventSourceHolder,
-                 actions: Actions):
+                 actions: Actions,
+                 size: int,
+                 cls: Type,
+                 is_dark: bool):
         super().__init__(parent, timer=timer, source_holder=source_holder)
-
+        self._size = size
         self._default_icon = QIcon(":/icons/logo.png")
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._continue_workitem = None
-        self._timer_widget = NewTimerRenderer(
+        self._timer_renderer = cls(
             None,
             None,
             None,
@@ -58,7 +64,9 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             2,
             0,
             120,
+            is_dark
         )
+        self._timer_renderer.setObjectName('TrayIconRenderer')
 
         self.activated.connect(lambda reason:
                                self._tray_clicked() if reason == QSystemTrayIcon.ActivationReason.Trigger else None)
@@ -75,6 +83,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             menu.addAction(self._actions['window.showMainWindow'])
         if 'application.settings' in self._actions:
             menu.addAction(self._actions['application.settings'])
+        if 'window.quickConfig' in self._actions:
+            menu.addAction(self._actions['window.quickConfig'])
         if 'application.quit' in self._actions:
             menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
@@ -95,19 +105,20 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             if 'window.showMainWindow' in self._actions:
                 self._actions['window.showMainWindow'].trigger()
 
-    def _paint_timer(self) -> None:
-        tray_width = 48
-        tray_height = 48
+    def paint(self) -> None:
+        tray_width = 48 if self._size is None else self._size
+        tray_height = 48 if self._size is None else self._size
         pixmap = QPixmap(tray_width, tray_height)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
-        self._timer_widget.repaint(painter, QRect(0, 0, tray_width, tray_height))
+        self._timer_renderer.repaint(painter, QRect(0, 0, tray_width, tray_height))
         self.setIcon(pixmap)
 
     def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
-        self._timer_widget.set_values(completion, self._timer.is_working())
-        self._paint_timer()
+        is_working = self._timer.is_working() if self._timer is not None else state_text == 'Working'
+        self._timer_renderer.set_values(completion, is_working)
+        self.paint()
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
@@ -117,6 +128,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         elif new_mode == 'resting' and old_mode == 'working':
             self.showMessage("Work is done", "Have some rest", self._default_icon)
         elif new_mode == 'ready':
-            self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
+            if self._continue_workitem is not None:
+                self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
             self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
             self.setIcon(self._next_icon)

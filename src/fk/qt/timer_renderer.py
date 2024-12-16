@@ -34,6 +34,7 @@ class TimerRenderer(QtCore.QObject):
     _hue_from: int
     _hue_to: int
     _pen_border: QPen
+    _is_dark: bool
 
     def __init__(self,
                  parent: QtWidgets.QWidget | None,
@@ -45,7 +46,8 @@ class TimerRenderer(QtCore.QObject):
                  font_color: QtGui.QColor | None,
                  pen_width: int,
                  hue_from: int,
-                 hue_to: int):
+                 hue_to: int,
+                 is_dark: bool):
         super(TimerRenderer, self).__init__(parent)
         self._widget = parent
         self._bg_brush = bg_brush
@@ -57,6 +59,7 @@ class TimerRenderer(QtCore.QObject):
         self._pen_width = pen_width
         self._hue_from = hue_from
         self._hue_to = hue_to
+        self._is_dark = is_dark
 
         self._pen_border = QPen()
         self._pen_border.setWidth(pen_width)

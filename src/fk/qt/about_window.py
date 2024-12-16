@@ -87,8 +87,10 @@ class AboutWindow(QObject):
             2,
             0,
             120,
+            True    # TODO: Detect automatically
         )
         about_icon.installEventFilter(self._timer_display)
+        self._timer_display.setObjectName('AboutWindowRenderer')
         self._timer_display.reset()
         self._timer.schedule(100, self._handle_tick, None)
         self._handle_tick(None, None)
