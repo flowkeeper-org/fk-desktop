@@ -17,8 +17,8 @@ import logging
 
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QApplication, \
-    QToolButton, QSpacerItem
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
+    QSpacerItem
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -285,7 +285,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         context_menu = QMenu(self)
         # Flowkeeper sometimes segfaults when we allocate context menu on the stack
         self._context_menu = context_menu
-        context_menu.setStyle(QApplication.style())
         context_menu.addAction(self._actions['focus.nextPomodoro'])
         context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()

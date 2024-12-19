@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtCore import QEvent, QPoint, QRect
 from PySide6.QtGui import Qt, QMouseEvent, QAction
-from PySide6.QtWidgets import QWidget, QToolBar, QMenu, QStyleFactory, QApplication, QToolButton
+from PySide6.QtWidgets import QWidget, QToolBar, QMenu
 
 from fk.core.events import AfterSettingsChanged
 from fk.qt.actions import Actions
@@ -32,7 +32,6 @@ class ConfigurableToolBar(QToolBar):
         self._context_menu = None
         settings = actions.get_settings()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
-        self.setStyle(QStyleFactory.create("windows"))
         self.setVisible(settings.get('Application.show_toolbar') == 'True')
         self.setObjectName(name)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -58,7 +57,6 @@ class ConfigurableToolBar(QToolBar):
             context_menu = QMenu(self)
             # Flowkeeper sometimes segfaults when we allocate context menu on the stack
             self._context_menu = context_menu
-            context_menu.setStyle(QApplication.style())
             context_menu.addAction(act)
             context_menu.exec(
                 self.parentWidget().mapToGlobal(
