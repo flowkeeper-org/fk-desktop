@@ -337,6 +337,10 @@ if __name__ == "__main__":
         focus_window = QMainWindow(window)
         focus_window.addActions(list(actions.values()))
 
+        # Focus window should keep the same title as the main one
+        focus_window.setWindowTitle(window.windowTitle())
+        window.windowTitleChanged.connect(focus_window.setWindowTitle)
+
         # Layouts
         # noinspection PyTypeChecker
         main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
