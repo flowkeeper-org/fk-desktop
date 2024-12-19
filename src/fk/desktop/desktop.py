@@ -19,7 +19,7 @@ import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 
 from fk.core import events
@@ -106,7 +106,7 @@ def update_mode(**kwargs) -> None:
     mode = get_timer_ui_mode()
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
         if mode == 'focus':
-            to_focus_mode()
+            actions['window.focusMode'].setChecked(True)  # This will trigger to_focus_mode() automatically
         elif mode == 'minimize':
             window.hide()
     else:
