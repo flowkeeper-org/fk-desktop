@@ -362,3 +362,10 @@ class TestWorkitems(TestCase):
         self.assertEqual(fired[1], 'BeforeWorkitemRename')
         self.assertEqual(fired[2], 'AfterWorkitemRename')
         self.assertEqual(fired[3], 'AfterMessageProcessed')
+
+    # Reordering tests:
+    # - Positive test -- move up and down
+    # - Negative index and index > len()
+    # - No move -- up and down
+    # - Events
+

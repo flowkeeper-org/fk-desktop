@@ -284,6 +284,19 @@ class WorkitemModel(AbstractDropModel):
         ]
 
     def reorder(self, to_index: int, uid: str):
+        # Convert to_index into the "item index".
+        # We are sure it's a Backlog, since reordering is disabled for tags.
+        to_add = 0
+        visible_index = 0
+        if self._hide_completed:
+            for item in self._backlog_or_tag.values():
+                if item.is_sealed():
+                    to_add += 1
+                else:
+                    visible_index += 1
+                    if visible_index >= to_index:
+                        break
+        logger.debug(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
-                                                 [uid, str(to_index)],
+                                                 [uid, str(to_index + to_add)],
                                                  carry='ui')

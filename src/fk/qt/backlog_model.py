@@ -125,11 +125,11 @@ class BacklogModel(AbstractDropModel):
                                                      month=tomorrow.month,
                                                      day=tomorrow.day) - datetime.datetime.now()
         wait_for = (int(diff.total_seconds()) + 60) * 1000
-        print(f'Scheduled _at_midnight in {wait_for}ms')
+        logger.debug(f'Scheduled _at_midnight in {wait_for}ms')
         self._midnight_timer.schedule(wait_for, self._at_midnight, None, True)
 
-    def _at_midnight(self, **kwargs) -> None:
-        print(f'Fired _at_midnight at {datetime.datetime.now()}')
+    def _at_midnight(self, params: dict | None, when: datetime.datetime | None = None) -> None:
+        logger.debug(f'Fired _at_midnight at {datetime.datetime.now()}')
         for i in range(self.rowCount()):
             self.item(i).update_font()
         self._schedule_at_midnight()    # Reschedule
