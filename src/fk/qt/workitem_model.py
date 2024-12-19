@@ -61,18 +61,21 @@ class WorkitemTitle(QtGui.QStandardItem):
         self._workitem = workitem
         self.setData(workitem, 500)
         self.setData('title', 501)
-        flags = (Qt.ItemFlag.ItemIsSelectable |
-                 Qt.ItemFlag.ItemIsEnabled |
-                 Qt.ItemFlag.ItemIsDragEnabled)
-        if not workitem.is_sealed():
-            flags |= Qt.ItemFlag.ItemIsEditable
-        self.setFlags(flags)
         self.update_display()
         self.update_font(font)
+        self.update_flags()
 
     def update_display(self):
         self.setData(self._workitem.get_name(), Qt.ItemDataRole.DisplayRole)
         self.setData(self._workitem.get_name(), Qt.ItemDataRole.ToolTipRole)
+
+    def update_flags(self):
+        flags = (Qt.ItemFlag.ItemIsSelectable |
+                 Qt.ItemFlag.ItemIsEnabled |
+                 Qt.ItemFlag.ItemIsDragEnabled)
+        if not self._workitem.is_sealed():
+            flags |= Qt.ItemFlag.ItemIsEditable
+        self.setFlags(flags)
 
     def update_font(self, font: QtGui.QFont):
         self.setData(font, Qt.ItemDataRole.FontRole)
@@ -228,6 +231,7 @@ class WorkitemModel(AbstractDropModel):
                     item1: WorkitemTitle = self.item(i, 1)
                     item1.update_font(font)
                     item1.update_display()
+                    item1.update_flags()
 
                     item2: WorkitemPomodoro = self.item(i, 2)
                     item2.update_display()
