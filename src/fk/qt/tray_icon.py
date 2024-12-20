@@ -16,7 +16,7 @@
 from typing import Type
 
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter
+from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -26,8 +26,8 @@ from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
-from fk.qt.new_timer_renderer import NewTimerRenderer
-from fk.qt.timer_renderer import TimerRenderer
+from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 
 
 class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
@@ -35,7 +35,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _timer_renderer: NewTimerRenderer | None
+    _timer_renderer: MinimalTimerRenderer | None
     _continue_workitem: Workitem | None
     _size: int
 
@@ -45,7 +45,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  source_holder: EventSourceHolder,
                  actions: Actions,
                  size: int,
-                 cls: Type,
+                 cls: Type[AbstractTimerRenderer],
                  is_dark: bool):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
@@ -53,19 +53,9 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._next_icon = QIcon.fromTheme('tool-next')
         self._actions = actions
         self._continue_workitem = None
-        self._timer_renderer = cls(
-            None,
-            None,
-            None,
-            0.05,
-            0.5,
-            None,
-            None,
-            2,
-            0,
-            120,
-            is_dark
-        )
+        self._timer_renderer = cls(None,
+                                   QColor('#000000' if is_dark else '#ffffff'),
+                                   QColor('#ffffff' if is_dark else '#000000'))
         self._timer_renderer.setObjectName('TrayIconRenderer')
 
         self.activated.connect(lambda reason:
@@ -114,10 +104,9 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._timer_renderer.repaint(painter, QRect(0, 0, tray_width, tray_height))
         self.setIcon(pixmap)
 
-    def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
+    def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
-        is_working = self._timer.is_working() if self._timer is not None else state_text == 'Working'
-        self._timer_renderer.set_values(completion, is_working)
+        self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:

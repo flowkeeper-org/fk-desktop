@@ -37,10 +37,10 @@ from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
-from fk.qt.new_timer_renderer import NewTimerRenderer
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
+from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
@@ -401,7 +401,13 @@ if __name__ == "__main__":
 
         # Tray icon
         show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, NewTimerRenderer, True)   # TODO: Detect automatically
+        tray = TrayIcon(window,
+                        pomodoro_timer,
+                        app.get_source_holder(),
+                        actions,
+                        48,
+                        ClassicTimerRenderer,
+                        True)   # TODO: Detect automatically
         tray.setVisible(show_tray_icon)
 
         # Some global variables to support "Next pomodoro" mode

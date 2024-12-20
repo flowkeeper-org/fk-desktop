@@ -18,7 +18,8 @@ from PySide6.QtWidgets import QPushButton
 from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.qt.new_timer_renderer import NewTimerRenderer
+from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.qt_timer import QtTimer
 from fk.qt.tray_icon import TrayIcon
 from fk.tools.minimal_common import MinimalCommon
@@ -30,29 +31,31 @@ window = mc.get_window()
 actions = mc.get_actions()
 
 pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), app.get_source_holder())
-tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, NewTimerRenderer, True)   # TODO: Detect automatically
+tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, MinimalTimerRenderer, True)   # TODO: Detect automatically
 
 tray.setVisible(True)
 tray.mode_changed('idle', 'working')
 wi = Workitem('Test', '123', None, None)
 
-ratio = 0
+value = 0
 pomodoro_timer._state = 'work'
 
 
 def tick():
-    global ratio
+    global value
     global pomodoro_timer
     tray.tick(Pomodoro(False, pomodoro_timer._state, 5000, 5000, "123", wi, None),
               'State',
-              ratio)
-    ratio += 0.1
-    if ratio > 1:
+              value,
+              10,
+              'working')
+    value += 1
+    if value > 10:
         if pomodoro_timer._state == 'work':
             pomodoro_timer._state = 'rest'
         else:
             pomodoro_timer._state = 'work'
-        ratio = 0
+        value = 0
 
 
 button = QPushButton(window)

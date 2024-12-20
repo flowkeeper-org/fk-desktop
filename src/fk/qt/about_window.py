@@ -22,13 +22,13 @@ from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow
 
 from fk.core.abstract_timer import AbstractTimer
 from fk.qt.app_version import get_current_version
-from fk.qt.new_timer_renderer import NewTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.qt_timer import QtTimer
 
 
 class AboutWindow(QObject):
     _about_window: QMainWindow
-    _timer_display: NewTimerRenderer
+    _timer_display: MinimalTimerRenderer
     _timer: AbstractTimer
     _tick: int
 
@@ -76,19 +76,9 @@ class AboutWindow(QObject):
         about_icon.setFixedHeight(150)
         bg_color = about_icon.palette().color(QPalette.ColorRole.Base)
         fg_color = about_icon.palette().color(QPalette.ColorRole.Text)
-        self._timer_display = NewTimerRenderer(
-            about_icon,
-            fg_color,
-            bg_color,
-            0.05,
-            0.3,
-            QFont(),
-            fg_color,
-            2,
-            0,
-            120,
-            True    # TODO: Detect automatically
-        )
+        self._timer_display = MinimalTimerRenderer(about_icon,
+                                                   bg_color,
+                                                   fg_color)
         about_icon.installEventFilter(self._timer_display)
         self._timer_display.setObjectName('AboutWindowRenderer')
         self._timer_display.reset()
@@ -98,8 +88,7 @@ class AboutWindow(QObject):
         self._about_window.show()
 
     def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
-        self._timer_display.set_values(self._tick / 300)
-        self._timer_display.set_hues(self._tick / 300 * 360, 0)
+        self._timer_display.set_values(self._tick, 300, None, None, 'working')
         self._timer_display.repaint()
         self._tick -= 1
         if self._tick < 0:

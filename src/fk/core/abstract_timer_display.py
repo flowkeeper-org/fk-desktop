@@ -87,7 +87,11 @@ class AbstractTimerDisplay:
     def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
         state = 'Focus' if self._timer.is_working() else 'Rest'
         state_text = f"{state}: {self._timer.format_remaining_duration()} left"
-        self.tick(pomodoro, state_text, self._timer.get_completion())
+        self.tick(pomodoro,
+                  state_text,
+                  self._timer.get_remaining_duration(),
+                  self._timer.get_planned_duration(),
+                  self._mode)
 
     def _on_work_start(self, **kwargs) -> None:
         # UC-3: Timer display goes into "working" state when work period starts
@@ -123,7 +127,7 @@ class AbstractTimerDisplay:
 
     # Override those in the child widgets
 
-    def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
+    def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         pass
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:

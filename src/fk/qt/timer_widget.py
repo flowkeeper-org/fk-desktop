@@ -16,17 +16,17 @@
 import logging
 
 from PySide6.QtCore import QSize, Property, QEvent, Signal, QPoint
-from PySide6.QtGui import QFont, QColor, QPalette, QMouseEvent, Qt
-from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton, QMenu, QApplication
+from PySide6.QtGui import QFont, QColor, QPalette, QMouseEvent
+from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
 
-from fk.qt.new_timer_renderer import NewTimerRenderer
-from fk.qt.timer_renderer import TimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
+from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 
 logger = logging.getLogger(__name__)
 
 
 class TimerWidget(QWidget):
-    _timer_display: NewTimerRenderer
+    _timer_display: MinimalTimerRenderer
     _fg_color: QColor
     _bg_color: QColor
 
@@ -64,29 +64,18 @@ class TimerWidget(QWidget):
             inner_timer_layout.addWidget(center_button)
 
         if flavor == 'classic':
-            cls = TimerRenderer
+            cls = ClassicTimerRenderer
         elif flavor == 'minimal':
-            cls = NewTimerRenderer
+            cls = MinimalTimerRenderer
 
-        self._timer_display = cls(
-            self,
-            self._fg_color,
-            self._bg_color,
-            0.05,
-            0.3,
-            QFont(),
-            self._fg_color,
-            2,
-            0,
-            120,
-            is_dark
-        )
+        self._timer_display = cls(self,
+                                  self._bg_color,
+                                  self._fg_color)
         self.installEventFilter(self._timer_display)
         self._timer_display.setObjectName('TimerWidgetRenderer')
 
     def _init_timer_display(self):
-        self._timer_display.set_colors(self._fg_color, self._bg_color)
-        self._timer_display.repaint()
+        self._timer_display.set_colors(self._bg_color, self._fg_color)
 
     @Property('QColor')
     def fg_color(self):
@@ -112,8 +101,13 @@ class TimerWidget(QWidget):
         self._timer_display.reset()
         self._timer_display.repaint()
 
-    def set_values(self, completion, is_work) -> None:
-        self._timer_display.set_values(completion, is_work=is_work)
+    def set_values(self,
+                   my_value: float,
+                   my_max: float,
+                   team_value: float | None,
+                   team_max: float | None,
+                   mode: str) -> None:
+        self._timer_display.set_values(my_value, my_max, team_value, team_max, mode)
         self._timer_display.repaint()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:

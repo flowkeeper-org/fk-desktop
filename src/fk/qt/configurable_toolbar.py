@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtCore import QEvent, QPoint, QRect
 from PySide6.QtGui import Qt, QMouseEvent, QAction
-from PySide6.QtWidgets import QWidget, QToolBar, QMenu
+from PySide6.QtWidgets import QWidget, QToolBar, QMenu, QStyleFactory
 
 from fk.core.events import AfterSettingsChanged
 from fk.qt.actions import Actions
@@ -28,6 +28,7 @@ class ConfigurableToolBar(QToolBar):
     def __init__(self, parent: QWidget, actions: Actions, name: str):
         super().__init__(parent)
         self._actions = actions
+        self.setStyle(QStyleFactory.create("windows"))
         settings = actions.get_settings()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setVisible(settings.get('Application.show_toolbar') == 'True')
@@ -52,7 +53,7 @@ class ConfigurableToolBar(QToolBar):
             act = QAction(self)
             act.setText("Hide toolbar")
             act.triggered.connect(lambda: self._hide(event.pos()))
-            context_menu = QMenu(self)
+            context_menu = QMenu()
             context_menu.addAction(act)
             context_menu.exec(
                 self.parentWidget().mapToGlobal(

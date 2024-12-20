@@ -27,10 +27,11 @@ from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.focus_widget import FocusWidget
-from fk.qt.new_timer_renderer import NewTimerRenderer
+from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
-from fk.qt.timer_renderer import TimerRenderer
+from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 from fk.qt.timer_widget import TimerWidget
 from fk.qt.tray_icon import TrayIcon
 
@@ -101,8 +102,8 @@ class PageConfigFocus(QWizardPage):
         self._handle_tick()
 
     def _handle_tick(self, params: dict | None = None, when: datetime.datetime | None = None) -> None:
-        self._widget1.set_values(self._tick / 10, is_work=True)
-        self._widget2.set_values(self._tick / 10, is_work=True)
+        self._widget1.set_values(self._tick, 10, None, None, 'working')
+        self._widget2.set_values(self._tick, 10, None, None, 'working')
         self._tick -= 1
         if self._tick < 0:
             self._tick = 10
@@ -113,7 +114,7 @@ class FakeTrayIcon(TrayIcon):
     _kind: str
     _state: str
 
-    def __init__(self, tray: QLabel, actions: Actions, kind: str, state: str, cls: Type):
+    def __init__(self, tray: QLabel, actions: Actions, kind: str, state: str, cls: Type[AbstractTimerRenderer]):
         self._tray = tray
         self._kind = kind
         self._state = state
@@ -152,7 +153,7 @@ class PageConfigIcons(QWizardPage):
         layout_v.addWidget(option_monochrome_light)
         widget_tray_light = QWidget(self)
         widget_tray_light.setObjectName('trayLight')
-        self._create_icons(widget_tray_light, 'Light', NewTimerRenderer)
+        self._create_icons(widget_tray_light, 'Light', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_light)
 
         option_monochrome_dark = QRadioButton("Monochrome dark", self)
@@ -160,7 +161,7 @@ class PageConfigIcons(QWizardPage):
         layout_v.addWidget(option_monochrome_dark)
         widget_tray_dark = QWidget(self)
         widget_tray_dark.setObjectName('trayDark')
-        self._create_icons(widget_tray_dark, 'Dark', NewTimerRenderer)
+        self._create_icons(widget_tray_dark, 'Dark', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_dark)
 
         option_classic_light = QRadioButton("Classic light", self)
@@ -168,7 +169,7 @@ class PageConfigIcons(QWizardPage):
         layout_v.addWidget(option_classic_light)
         widget_tray_classic_light = QWidget(self)
         widget_tray_classic_light.setObjectName('trayLight')
-        self._create_icons(widget_tray_classic_light, 'Light', TimerRenderer)
+        self._create_icons(widget_tray_classic_light, 'Light', ClassicTimerRenderer)
         layout_v.addWidget(widget_tray_classic_light)
 
         option_classic_dark = QRadioButton("Classic dark", self)
@@ -176,12 +177,12 @@ class PageConfigIcons(QWizardPage):
         layout_v.addWidget(option_classic_dark)
         widget_tray_classic_dark = QWidget(self)
         widget_tray_classic_dark.setObjectName('trayDark')
-        self._create_icons(widget_tray_classic_dark, 'Dark', TimerRenderer)
+        self._create_icons(widget_tray_classic_dark, 'Dark', ClassicTimerRenderer)
         layout_v.addWidget(widget_tray_classic_dark)
 
         self.setLayout(layout_v)
 
-    def _create_icons(self, container: QWidget, kind: str, cls: Type):
+    def _create_icons(self, container: QWidget, kind: str, cls: Type[AbstractTimerRenderer]):
         layout = QHBoxLayout(container)
         layout.setContentsMargins(8, 8, 8, 8)
         icon_size = 22
@@ -209,13 +210,13 @@ class PageConfigIcons(QWizardPage):
         icon2 = QLabel('', container)
         icon2.setFixedHeight(icon_size)
         f2 = FakeTrayIcon(icon2, self._actions, kind, 'working', cls)
-        f2.tick(pomodoro, 'Working', 0.33)
+        f2.tick(pomodoro, 'Working', 0.33, 1, 'working')
         layout.addWidget(icon2)
 
         icon3 = QLabel('', container)
         icon3.setFixedHeight(icon_size)
         f3 = FakeTrayIcon(icon3, self._actions, kind, 'resting', cls)
-        f3.tick(pomodoro, 'Resting', 0.66)
+        f3.tick(pomodoro, 'Resting', 0.66, 1, 'resting')
         layout.addWidget(icon3)
 
         icon4 = QLabel('', container)

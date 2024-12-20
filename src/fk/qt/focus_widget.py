@@ -73,7 +73,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._hint_label = None
 
         self._border_color = QColor('#000000')
-        self._set_border_color()
+        self._update_colors()
 
         self.setObjectName('focus')
 
@@ -205,12 +205,16 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             painter.setPen(self._border_color)
             painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 
-    def _set_border_color(self):
-        self._border_color = self._application.get_theme_variables()['FOCUS_BORDER_COLOR']
+    def _update_colors(self):
+        # UNDO
+        return
+        variables = self._application.get_theme_variables()
+        # TODO: Update timer render colors
+        self._border_color = variables['FOCUS_BORDER_COLOR']
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.theme' in new_values:
-            self._set_border_color()
+            self._update_colors()
         if 'Application.eyecandy_type' in new_values or \
                 'Application.eyecandy_gradient' in new_values or \
                 'Application.eyecandy_image' in new_values:
@@ -250,9 +254,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._source_holder.get_source().execute(CompleteWorkitemStrategy,
                                  [item.get_uid(), "finished"])
 
-    def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
-        self._header_text.setText(state_txt)
-        self._timer_widget.set_values(completion, self._timer.is_working())
+    def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        # UNDO
+        return
+        self._header_text.setText(state_text)
+        self._timer_widget.set_values(my_value, my_max, None, None, mode)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
