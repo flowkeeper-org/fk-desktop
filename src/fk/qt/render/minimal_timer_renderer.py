@@ -16,7 +16,7 @@
 import math
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import QPoint, QPointF
+from PySide6.QtCore import QPointF, QLineF
 from PySide6.QtGui import QColor, QPen, Qt
 
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
@@ -29,39 +29,54 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                  fg_color: QColor = None):
         super(MinimalTimerRenderer, self).__init__(parent, bg_color, fg_color)
 
-    def _outline_pen(self, size: float) -> QPen:
-        th2 = size * 0.12
-        outline = QPen(QColor("#ff5555" if self.get_mode() == 'working' else '#55ff55'), th2)
+    def _dial_pen(self, th: float) -> QPen:
+        if self._bg_color.value() < 128:
+            # Dark background
+            if self.get_mode() == 'working':
+                color = '#FF3633'
+            elif self.get_mode() == 'resting':
+                color = '#5DB6EA'
+            else:
+                color = '#CECECE'
+        else:
+            # Light background
+            if self.get_mode() == 'working':
+                color = '#CC0300'
+            elif self.get_mode() == 'resting':
+                color = '#1A91D5'
+            else:
+                color = '#5C6872'
+        outline = QPen(QColor(color), th)
         outline.setCapStyle(Qt.PenCapStyle.RoundCap)
         return outline
 
-    def _hand_pen(self, size: float) -> QPen:
-        th2 = size * 0.12
-        hand = QPen(QColor(self._fg_color), th2)
+    def _hand_pen(self, th: float) -> QPen:
+        hand = QPen(QColor(self._fg_color), th)
         hand.setCapStyle(Qt.PenCapStyle.RoundCap)
         return hand
 
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
-        size = rect.width() * 0.72
+        size = rect.width() * 0.8
+        th = size * 0.1
         radius = size / 2
         hand_length = size / 2 - 2
         sin = math.sin(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 else 0
         cos = math.cos(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 else 0
         center = rect.center()
-        center.setY(center.y() + 1)
+        center.setY(center.y() * 1.1)
         cx = center.x()
         cy = center.y()
 
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-        outline = self._outline_pen(size)
-        hand = self._hand_pen(size)
 
-        # Outline
-        painter.setPen(outline)
+        # Dial
+        painter.setPen(self._dial_pen(th))
         painter.drawEllipse(center, radius, radius)
+        painter.drawLine(QLineF(cx * 0.8, th / 2, cx * 1.2, th / 2))
+        painter.drawLine(QLineF(cx, th / 2 + 1, cx, (rect.width() - size) / 2))
 
         # Draw the "hand"
-        painter.setPen(hand)
+        painter.setPen(self._hand_pen(th))
         hx = cx + hand_length * sin
         hy = cy - hand_length * cos
         painter.drawLine(center, QPointF(hx, hy))

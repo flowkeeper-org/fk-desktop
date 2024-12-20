@@ -243,7 +243,7 @@ class ConfigWizard(QWizard):
         self.addPage(self.page_icons)
 
         # Account for a Qt bug which shrinks dialogs opened on non-primary displays
-        self.setMinimumSize(500, 350)
+        self.setMinimumSize(600, 500)
         if os.name == 'nt':
             # AeroStyle is default on Windows 11, but it looks all white (another Qt bug?) The Classic style looks fine.
             self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)

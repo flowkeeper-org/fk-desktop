@@ -33,7 +33,11 @@ timer = TimerWidget(mc.get_window(),
                     'minimal',
                     None,
                     500)
-timer.set_values(0.25 * 25 * 60 * 1000, 25 * 60 * 1000, None, None, 'resting')
+timer.set_values(0.25 * 25 * 60 * 1000,
+                 25 * 60 * 1000,
+                 None,
+                 None,
+                 'working')
 mc.get_window().setCentralWidget(timer)
 
 mc.main_loop()

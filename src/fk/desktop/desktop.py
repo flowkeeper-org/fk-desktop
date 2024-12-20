@@ -41,6 +41,7 @@ from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
@@ -192,7 +193,7 @@ class MainWindow:
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
-        actions.add('window.pinWindow', "Pin Flowkeeper", None, ("tool-pin", "tool-unpin"), MainWindow.toggle_pin_window, True)
+        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
         actions.add('window.quickConfig', "Quick Config", '', None, MainWindow.show_quick_config)
@@ -406,7 +407,7 @@ if __name__ == "__main__":
                         app.get_source_holder(),
                         actions,
                         48,
-                        ClassicTimerRenderer,
+                        MinimalTimerRenderer,
                         True)   # TODO: Detect automatically
         tray.setVisible(show_tray_icon)
 
