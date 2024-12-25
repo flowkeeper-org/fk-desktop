@@ -200,6 +200,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
                 ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)', 'minimal:Minimalistic (with context menu)'], _always_show),
+                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'monochrome-light', ['monochrome-light:Monochrome light', 'monochrome-dark:Monochrome dark', 'classic-light:Classic light', 'classic-dark:Classic dark'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",

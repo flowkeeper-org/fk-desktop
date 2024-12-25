@@ -124,6 +124,39 @@ def update_mode(**kwargs) -> None:
                 raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
 
+def recreate_focus_widget() -> None:
+    global focus_widget
+    if focus_widget is not None:
+        focus_widget.kill()
+        root_layout.removeWidget(focus_widget)
+    focus_widget = FocusWidget(root_layout_widget,
+                               app,
+                               pomodoro_timer,
+                               app.get_source_holder(),
+                               settings,
+                               actions,
+                               settings.get('Application.focus_flavor'))
+    root_layout.insertWidget(0, focus_widget)
+    focus_widget.update_fonts()
+    actions.bind('focus', focus_widget)
+
+
+def recreate_tray_icon() -> None:
+    global tray
+    if tray is not None:
+        tray.kill()
+        tray.setVisible(False)
+    flavor = settings.get('Application.tray_icon_flavor')
+    tray = TrayIcon(window,
+                    pomodoro_timer,
+                    app.get_source_holder(),
+                    actions,
+                    48,
+                    MinimalTimerRenderer if 'monochrome' in flavor else ClassicTimerRenderer,
+                    'dark' in flavor)
+    tray.setVisible(settings.get('Application.show_tray_icon') == 'True')
+
+
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
     status.showMessage('Settings changed')
@@ -141,6 +174,10 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
             actions.update_from_settings()
         elif name == 'Application.always_on_top':
             pin_if_needed()
+        elif name == 'Application.focus_flavor':
+            recreate_focus_widget()
+        elif name == 'Application.tray_icon_flavor':
+            recreate_tray_icon()
 
 
 class MainWindow:
@@ -180,7 +217,8 @@ class MainWindow:
         search.show()
 
     def show_quick_config(self):
-        ConfigWizard(app, actions, window).show()
+        wizard = ConfigWizard(app, actions, window)
+        wizard.show()
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
@@ -266,8 +304,6 @@ if __name__ == "__main__":
         MainWindow.define_actions(actions)
         actions.all_actions_defined()
 
-        app.upgraded.connect(lambda v: ConfigWizard(app, actions, window).show())
-
         audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 
         # File menu
@@ -326,14 +362,8 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus_widget = FocusWidget(root_layout_widget,
-                                   app,
-                                   pomodoro_timer,
-                                   app.get_source_holder(),
-                                   settings,
-                                   actions,
-                                   settings.get('Application.focus_flavor'))
-        root_layout.insertWidget(0, focus_widget)
+        focus_widget = None
+        recreate_focus_widget()
 
         focus_window = QMainWindow(window)
         focus_window.addActions(list(actions.values()))
@@ -401,15 +431,8 @@ if __name__ == "__main__":
             status.setVisible(show_status_bar)
 
         # Tray icon
-        show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window,
-                        pomodoro_timer,
-                        app.get_source_holder(),
-                        actions,
-                        48,
-                        MinimalTimerRenderer,
-                        True)   # TODO: Detect automatically
-        tray.setVisible(show_tray_icon)
+        tray = None
+        recreate_tray_icon()
 
         # Some global variables to support "Next pomodoro" mode
         # TODO Empty it if it gets deleted or completed
@@ -449,6 +472,7 @@ if __name__ == "__main__":
         window.installEventFilter(theme_change_event_filter)
 
         main_window = MainWindow()
+        app.upgraded.connect(main_window.show_quick_config)
 
         # Bind action domains to widget instances
         actions.bind('application', app)

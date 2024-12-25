@@ -44,6 +44,7 @@ class TimerWidget(QWidget):
 
         self._bg_color = self.palette().color(QPalette.ColorRole.Base)
         self._fg_color = self.palette().color(QPalette.ColorRole.Text)
+        self._timer_display = None
 
         sp3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sp3.setHorizontalStretch(0)
@@ -63,19 +64,26 @@ class TimerWidget(QWidget):
         if center_button is not None:
             inner_timer_layout.addWidget(center_button)
 
+        self._init_renderer(flavor)
+
+    def _init_renderer(self, flavor):
         if flavor == 'classic':
             cls = ClassicTimerRenderer
         elif flavor == 'minimal':
             cls = MinimalTimerRenderer
 
+        if self._timer_display is not None:
+            self.removeEventFilter(self._timer_display)
         self._timer_display = cls(self,
                                   self._bg_color,
-                                  self._fg_color)
+                                  self._fg_color,
+                                  True)
         self.installEventFilter(self._timer_display)
         self._timer_display.setObjectName('TimerWidgetRenderer')
 
     def _init_timer_display(self):
-        self._timer_display.set_colors(self._bg_color, self._fg_color)
+        if self._timer_display is not None:
+            self._timer_display.set_colors(self._bg_color, self._fg_color)
 
     @Property('QColor')
     def fg_color(self):

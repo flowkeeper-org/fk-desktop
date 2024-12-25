@@ -15,17 +15,21 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QColor, QPainterPath, QPen
+from PySide6.QtGui import QColor, QPainterPath, QPen, QIcon, QImage, QPixmap
 
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
 
 
 class ClassicTimerRenderer(AbstractTimerRenderer):
+    _default_icon: QImage
+
     def __init__(self,
                  parent: QtWidgets.QWidget | None,
                  bg_color: QColor = None,
-                 fg_color: QColor = None):
-        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color)
+                 fg_color: QColor = None,
+                 monochrome: bool = False):
+        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome)
+        self._default_icon = QImage(":/icons/logo.png")
 
     def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
         # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly
@@ -59,7 +63,16 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                         int(5760 * (1.0 - value / max_value) + 1440),
                         int(5760 * value / max_value))
 
+    def _paint_icon(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
+        pixmap = QPixmap(self._default_icon)
+        painter.drawPixmap(rect, pixmap)
+
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
+        if self.get_mode() not in ('working', 'resting'):
+            self._paint_icon(painter, rect)
+            painter.end()
+            return
+
         margin = 0.05
         thickness = 0.3
         pen_width = 2

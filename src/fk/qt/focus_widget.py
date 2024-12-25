@@ -93,7 +93,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         text_layout.addWidget(header_text)
         header_text.setText("Idle")
         header_text.setFont(application.get_header_font())
-        application.on(AfterFontsChanged, lambda header_font, **kwargs: header_text.setFont(header_font))
+        application.on(AfterFontsChanged, self._on_fonts_changed)
         self._header_text = header_text
 
         header_subtext = QLabel(self)
@@ -132,6 +132,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._update_colors()
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def kill(self):
+        self._settings.unsubscribe(self._on_setting_changed)
+        self._application.unsubscribe(self._on_fonts_changed)
 
     def _initialize_hint_label(self) -> QLabel:
         hint_label = QLabel(self)
@@ -219,6 +223,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self.eye_candy()
         if self._hint_label is not None and 'Application.show_click_here_hint' in new_values:
             self._hint_label.hide()
+
+    def _on_fonts_changed(self, event, header_font, **kwargs):
+        self._header_text.setFont(header_font)
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

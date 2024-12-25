@@ -15,23 +15,22 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import os
-import sys
 from typing import Type
 
 from PySide6.QtGui import QPixmap, QIcon
-from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMainWindow, QMenu, \
+from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMenu, \
     QHBoxLayout, QSpacerItem, QSizePolicy
 
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.focus_widget import FocusWidget
-from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
-from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
-from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
+from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.timer_widget import TimerWidget
 from fk.qt.tray_icon import TrayIcon
 
@@ -50,11 +49,14 @@ def wrap_in_widget(widget: QWidget):
 class PageConfigFocus(QWizardPage):
     _tick: int
     _widget1: TimerWidget
+    _option_minimal: QRadioButton
     _widget2: TimerWidget
+    _option_classic: QRadioButton
 
     def __init__(self, application: Application, actions: Actions):
         super().__init__()
         self._tick = 10
+        flavor = application.get_settings().get('Application.focus_flavor')
 
         layout_v = QVBoxLayout()
 
@@ -63,9 +65,9 @@ class PageConfigFocus(QWizardPage):
         label.setWordWrap(True)
         layout_v.addWidget(label)
 
-        option_minimal = QRadioButton("Minimalistic", self)
-        option_minimal.setChecked(True)
-        layout_v.addWidget(option_minimal)
+        self._option_minimal = QRadioButton("Minimalistic", self)
+        self._option_minimal.setChecked(flavor == 'minimal')
+        layout_v.addWidget(self._option_minimal)
 
         focus_minimal = FocusWidget(self,
                                     application,
@@ -77,9 +79,9 @@ class PageConfigFocus(QWizardPage):
         self._widget1 = focus_minimal._timer_widget
         layout_v.addWidget(wrap_in_widget(focus_minimal))
 
-        option_classic = QRadioButton("Classic", self)
-        option_classic.setChecked(False)
-        layout_v.addWidget(option_classic)
+        self._option_classic = QRadioButton("Classic", self)
+        self._option_classic.setChecked(flavor == 'classic')
+        layout_v.addWidget(self._option_classic)
 
         focus_classic = FocusWidget(self,
                                     application,
@@ -107,6 +109,9 @@ class PageConfigFocus(QWizardPage):
         self._tick -= 1
         if self._tick < 0:
             self._tick = 10
+
+    def get_setting(self) -> str:
+        return 'classic' if self._option_classic.isChecked() else 'minimal'
 
 
 class FakeTrayIcon(TrayIcon):
@@ -138,49 +143,55 @@ class FakeTrayIcon(TrayIcon):
 
 class PageConfigIcons(QWizardPage):
     _actions: Actions
+    _option_classic_light: QRadioButton
+    _option_monochrome_light: QRadioButton
+    _option_classic_dark: QRadioButton
+    _option_monochrome_dark: QRadioButton
 
-    def __init__(self, actions: Actions):
+    def __init__(self, application: Application, actions: Actions):
         super().__init__()
         self._actions = actions
+        flavor = application.get_settings().get('Application.tray_icon_flavor')
 
         layout_v = QVBoxLayout()
         label = QLabel("Now choose how you prefer your icons:")
         label.setWordWrap(True)
         layout_v.addWidget(label)
 
-        option_monochrome_light = QRadioButton("Monochrome light", self)
-        option_monochrome_light.setChecked(True)
-        layout_v.addWidget(option_monochrome_light)
+        self._option_monochrome_light = QRadioButton("Monochrome light", self)
+        self._option_monochrome_light.setChecked(flavor == 'monochrome-light')
+        layout_v.addWidget(self._option_monochrome_light)
         widget_tray_light = QWidget(self)
         widget_tray_light.setObjectName('trayLight')
         self._create_icons(widget_tray_light, 'Light', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_light)
 
-        option_monochrome_dark = QRadioButton("Monochrome dark", self)
-        option_monochrome_dark.setChecked(False)
-        layout_v.addWidget(option_monochrome_dark)
+        self._option_monochrome_dark = QRadioButton("Monochrome dark", self)
+        self._option_monochrome_dark.setChecked(flavor == 'monochrome-dark')
+        layout_v.addWidget(self._option_monochrome_dark)
         widget_tray_dark = QWidget(self)
         widget_tray_dark.setObjectName('trayDark')
         self._create_icons(widget_tray_dark, 'Dark', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_dark)
 
-        option_classic_light = QRadioButton("Classic light", self)
-        option_classic_light.setChecked(False)
-        layout_v.addWidget(option_classic_light)
+        self._option_classic_light = QRadioButton("Classic light", self)
+        self._option_classic_light.setChecked(flavor == 'classic-light')
+        layout_v.addWidget(self._option_classic_light)
         widget_tray_classic_light = QWidget(self)
         widget_tray_classic_light.setObjectName('trayLight')
         self._create_icons(widget_tray_classic_light, 'Light', ClassicTimerRenderer)
         layout_v.addWidget(widget_tray_classic_light)
 
-        option_classic_dark = QRadioButton("Classic dark", self)
-        option_classic_dark.setChecked(False)
-        layout_v.addWidget(option_classic_dark)
+        self._option_classic_dark = QRadioButton("Classic dark", self)
+        self._option_classic_dark.setChecked(flavor == 'classic-dark')
+        layout_v.addWidget(self._option_classic_dark)
         widget_tray_classic_dark = QWidget(self)
         widget_tray_classic_dark.setObjectName('trayDark')
         self._create_icons(widget_tray_classic_dark, 'Dark', ClassicTimerRenderer)
         layout_v.addWidget(widget_tray_classic_dark)
 
         self.setLayout(layout_v)
+        self.setFinalPage(True)
 
     def _create_icons(self, container: QWidget, kind: str, cls: Type[AbstractTimerRenderer]):
         layout = QHBoxLayout(container)
@@ -228,19 +239,30 @@ class PageConfigIcons(QWizardPage):
         clock.setObjectName(f'fakeClock{kind}')
         layout.addWidget(clock)
 
+    def get_setting(self) -> str:
+        if self._option_classic_light.isChecked():
+            return 'classic-light'
+        elif self._option_monochrome_light.isChecked():
+            return 'monochrome-light'
+        elif self._option_classic_dark.isChecked():
+            return 'classic-dark'
+        elif self._option_monochrome_dark.isChecked():
+            return 'monochrome-dark'
+
 
 class ConfigWizard(QWizard):
-    page_focus: PageConfigFocus
-    page_icons: PageConfigIcons
+    _page_focus: PageConfigFocus
+    _page_icons: PageConfigIcons
+    _settings: AbstractSettings
 
     def __init__(self, application: Application, actions: Actions, parent: QWidget | None):
         super().__init__(parent)
         self._settings = application.get_settings()
+        self._page_focus = PageConfigFocus(application, actions)
+        self._page_icons = PageConfigIcons(application, actions)
+        self.addPage(self._page_focus)
+        self.addPage(self._page_icons)
         self.setWindowTitle("First-time configuration")
-        self.page_focus = PageConfigFocus(application, actions)
-        self.page_icons = PageConfigIcons(actions)
-        self.addPage(self.page_focus)
-        self.addPage(self.page_icons)
 
         # Account for a Qt bug which shrinks dialogs opened on non-primary displays
         self.setMinimumSize(600, 500)
@@ -248,15 +270,10 @@ class ConfigWizard(QWizard):
             # AeroStyle is default on Windows 11, but it looks all white (another Qt bug?) The Classic style looks fine.
             self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
 
+        self.button(QWizard.WizardButton.FinishButton).clicked.connect(self._on_finish)
 
-if __name__ == '__main__':
-    app = Application([])
-    window = QMainWindow()
-    actions = Actions(window, app.get_settings())
-    FocusWidget.define_actions(actions)
-    from fk.desktop.desktop import MainWindow
-    MainWindow.define_actions(actions)
-    settings = QtSettings()
-    wizard = ConfigWizard(app, actions, None)
-    wizard.show()
-    sys.exit(app.exec())
+    def _on_finish(self):
+        self._settings.set({
+            'Application.focus_flavor': self._page_focus.get_setting(),
+            'Application.tray_icon_flavor': self._page_icons.get_setting(),
+        })

@@ -27,7 +27,6 @@ from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
-from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 
 
 class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
@@ -35,7 +34,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _default_icon: QIcon
     _next_icon: QIcon
     _actions: Actions
-    _timer_renderer: MinimalTimerRenderer | None
+    _timer_renderer: AbstractTimerRenderer | None
     _continue_workitem: Workitem | None
     _size: int
 
@@ -55,7 +54,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._continue_workitem = None
         self._timer_renderer = cls(None,
                                    QColor('#000000' if is_dark else '#ffffff'),
-                                   QColor('#ffffff' if is_dark else '#000000'))
+                                   QColor('#ffffff' if is_dark else '#000000'),
+                                   False)
         self._timer_renderer.setObjectName('TrayIconRenderer')
 
         self.activated.connect(lambda reason:
@@ -79,9 +79,13 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
 
+    def kill(self):
+        pass    # Unsubscribe any externals here
+
     def reset(self):
         self.setToolTip("It's time for the next Pomodoro.")
-        self.setIcon(self._default_icon)
+        # self.setIcon(self._default_icon)
+        self.paint()
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():

@@ -14,16 +14,22 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
+import math
 from abc import abstractmethod
-from typing import Self
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import QObject, QRect
+from PySide6.QtCore import QObject, QRect, QPointF
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import QWidget
 
-
 logger = logging.getLogger(__name__)
+
+
+def rotate_point(x: float, y: float, cx: float, cy: float, phi: float) -> QPointF:
+    sin = math.sin(phi)
+    cos = math.cos(phi)
+    return QPointF(cos * (x - cx) - sin * (y - cy) + cx,
+                   sin * (x - cx) + cos * (y - cy) + cy)
 
 
 class AbstractTimerRenderer(QObject):
@@ -35,17 +41,20 @@ class AbstractTimerRenderer(QObject):
     _mode: str
     _bg_color: QColor
     _fg_color: QColor
+    _monochrome: bool
 
     def __init__(self,
                  parent: QWidget | None,
                  bg_color: QColor = None,
-                 fg_color: QColor = None) -> Self:
+                 fg_color: QColor = None,
+                 monochrome: bool = False):
         super(AbstractTimerRenderer, self).__init__(parent)
         self._widget = parent
         if bg_color is None or fg_color is None:
             raise Exception('Renderer needs to know the colors')
         self._bg_color = bg_color
         self._fg_color = fg_color
+        self._monochrome = monochrome
         self.reset()
 
     def set_colors(self, bg_color: QColor, fg_color: QColor):
