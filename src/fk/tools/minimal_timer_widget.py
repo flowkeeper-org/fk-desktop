@@ -37,7 +37,7 @@ timer.set_values(0 * 25 * 60 * 1000,
                  25 * 60 * 1000,
                  None,
                  None,
-                 'working')
+                 'ready')
 mc.get_window().setCentralWidget(timer)
 
 mc.main_loop()

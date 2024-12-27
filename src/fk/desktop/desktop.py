@@ -309,7 +309,7 @@ if __name__ == "__main__":
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
-        menu_file.addAction(actions['window.quickConfig'])
+        # menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])

@@ -42,12 +42,14 @@ class AbstractTimerRenderer(QObject):
     _bg_color: QColor
     _fg_color: QColor
     _monochrome: bool
+    _small: bool
 
     def __init__(self,
                  parent: QWidget | None,
                  bg_color: QColor = None,
                  fg_color: QColor = None,
-                 monochrome: bool = False):
+                 monochrome: bool = False,
+                 small: bool = False):
         super(AbstractTimerRenderer, self).__init__(parent)
         self._widget = parent
         if bg_color is None or fg_color is None:
@@ -55,6 +57,7 @@ class AbstractTimerRenderer(QObject):
         self._bg_color = bg_color
         self._fg_color = fg_color
         self._monochrome = monochrome
+        self._small = small
         self.reset()
 
     def set_colors(self, bg_color: QColor, fg_color: QColor):
@@ -83,6 +86,14 @@ class AbstractTimerRenderer(QObject):
 
     @abstractmethod
     def paint(self, painter: QPainter, rect: QRect) -> None:
+        pass
+
+    @abstractmethod
+    def has_idle_display(self) -> bool:
+        pass
+
+    @abstractmethod
+    def has_next_display(self) -> bool:
         pass
 
     def eventFilter(self, widget: QtWidgets.QWidget, event: QtCore.QEvent) -> bool:

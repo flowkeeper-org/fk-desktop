@@ -15,21 +15,19 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QColor, QPainterPath, QPen, QIcon, QImage, QPixmap
+from PySide6.QtGui import QColor, QPainterPath, QPen, QPixmap
 
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
 
 
 class ClassicTimerRenderer(AbstractTimerRenderer):
-    _default_icon: QImage
-
     def __init__(self,
                  parent: QtWidgets.QWidget | None,
                  bg_color: QColor = None,
                  fg_color: QColor = None,
-                 monochrome: bool = False):
-        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome)
-        self._default_icon = QImage(":/icons/logo.png")
+                 monochrome: bool = False,
+                 small: bool = False):
+        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome, small)
 
     def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
         # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly
@@ -67,15 +65,19 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
         pixmap = QPixmap(self._default_icon)
         painter.drawPixmap(rect, pixmap)
 
+    def has_idle_display(self) -> bool:
+        return False
+
+    def has_next_display(self) -> bool:
+        return False
+
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
         if self.get_mode() not in ('working', 'resting'):
-            self._paint_icon(painter, rect)
             painter.end()
             return
 
         margin = 0.05
         thickness = 0.3
-        pen_width = 2
 
         rw = rect.width()
         rh = rect.height()
@@ -103,7 +105,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
             team_width = 0
             team_height = 0
 
-        if thickness < 0.5:
+        if thickness < 0.5 and not self._small:
             # Hole
             hole_rect = QtCore.QRect(
                 my_rect.left() + my_width + team_width,
@@ -125,7 +127,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
             self.clear_pie(painter, team_rect, rect)
             self.draw_sector(painter, team_rect, self._team_value, self._team_max)
 
-        if thickness < 0.5:
+        if thickness < 0.5 and not self._small:
             # Draw the hole outline
             self.clear_pie_outline(painter, hole_rect, rect)
 

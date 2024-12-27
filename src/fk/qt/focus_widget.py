@@ -278,6 +278,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._actions['focus.completeItem'].setDisabled(False)
         elif new_mode == 'ready':
             self.reset('Start another Pomodoro?', self._continue_workitem.get_display_name())
+            self._timer_widget.set_values(0, 1, None, None, 'ready')
             self._actions['focus.nextPomodoro'].setDisabled(False)
             self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 

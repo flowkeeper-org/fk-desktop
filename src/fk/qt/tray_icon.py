@@ -49,13 +49,18 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
         self._default_icon = QIcon(":/icons/logo.png")
-        self._next_icon = QIcon.fromTheme('tool-next')
+        if is_dark:
+            # We don't use QIcon.fromTheme() here because we can't predict the tray background color
+            self._next_icon = QIcon(':/icons/dark/24x24/tool-next.svg')
+        else:
+            self._next_icon = QIcon(':/icons/light/24x24/tool-next.svg')
         self._actions = actions
         self._continue_workitem = None
         self._timer_renderer = cls(None,
                                    QColor('#000000' if is_dark else '#ffffff'),
                                    QColor('#ffffff' if is_dark else '#000000'),
-                                   False)
+                                   False,
+                                   True)
         self._timer_renderer.setObjectName('TrayIconRenderer')
 
         self.activated.connect(lambda reason:
@@ -73,8 +78,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             menu.addAction(self._actions['window.showMainWindow'])
         if 'application.settings' in self._actions:
             menu.addAction(self._actions['application.settings'])
-        if 'window.quickConfig' in self._actions:
-            menu.addAction(self._actions['window.quickConfig'])
+        # if 'window.quickConfig' in self._actions:
+        #     menu.addAction(self._actions['window.quickConfig'])
         if 'application.quit' in self._actions:
             menu.addAction(self._actions['application.quit'])
         self.setContextMenu(menu)
@@ -84,8 +89,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def reset(self):
         self.setToolTip("It's time for the next Pomodoro.")
-        # self.setIcon(self._default_icon)
-        self.paint()
+        if self._timer_renderer.has_idle_display():
+            self._timer_renderer.set_values(0, 1, None, None, 'idle')
+            self.paint()
+        else:
+            self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
@@ -124,4 +132,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             if self._continue_workitem is not None:
                 self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
             self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
-            self.setIcon(self._next_icon)
+            self._timer_renderer.set_values(0, 1, None, None, 'ready')
+            if self._timer_renderer.has_next_display():
+                self.paint()
+            else:
+                self.setIcon(self._next_icon)
