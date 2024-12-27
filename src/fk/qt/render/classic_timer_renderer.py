@@ -114,7 +114,9 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                 my_rect.height() - 2 * (my_height + team_height),
             )
             self.clear_pie(painter, hole_rect, rect)
-        self.draw_sector(painter, my_rect, self._my_value, self._my_max)
+
+        if self._my_max > 0:
+            self.draw_sector(painter, my_rect, self._my_value, self._my_max)
 
         if self._team_value is not None:
             # Team
@@ -125,7 +127,8 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                 my_rect.height() - 2 * my_height,
             )
             self.clear_pie(painter, team_rect, rect)
-            self.draw_sector(painter, team_rect, self._team_value, self._team_max)
+            if self._team_max > 0:
+                self.draw_sector(painter, team_rect, self._team_value, self._team_max)
 
         if thickness < 0.5 and not self._small:
             # Draw the hole outline
