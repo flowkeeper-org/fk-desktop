@@ -48,6 +48,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
             'Application.theme': 'mixed',
+            'Application.last_version': '0.9.0',
         }
         if os.name == 'nt':
             custom['Application.font_main_size'] = '10'
