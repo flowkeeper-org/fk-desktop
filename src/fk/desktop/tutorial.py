@@ -17,7 +17,7 @@ import logging
 from typing import Callable
 
 from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QWidget, QAbstractItemView, QToolButton
+from PySide6.QtWidgets import QWidget, QAbstractItemView
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -134,7 +134,6 @@ class Tutorial:
     def _after_source_changed(self, event: str, source: AbstractEventSource) -> None:
         logger.debug(f'Subscribing tutorial to new source events')
         for e in self._steps:
-            print(f'Subscribe {e}')
             source.on(e, self._on_event)
 
     def _get_toolbar_button_position(self, action_name: str, arrow: str):
