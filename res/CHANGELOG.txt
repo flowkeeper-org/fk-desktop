@@ -1,4 +1,4 @@
-### v0.9.0 (TODO)
+### v0.9.0 (30 December 2024)
 - You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.
 - Unplanned work items are now highlighted with asterisk (*).
 - You can now choose between two timer widgets -- "Classic" and "Minimalistic".
