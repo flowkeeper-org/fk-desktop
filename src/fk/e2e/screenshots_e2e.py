@@ -48,6 +48,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
             'Application.theme': 'mixed',
+            'Application.tray_icon_flavor': 'monochrome-dark',
             'Application.last_version': '0.9.0',
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
@@ -221,6 +222,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         settings_tabs.setCurrentIndex(5)
         self.window().setFixedWidth(800)
+        await self.instant_pause()
+        self.center_window()
         await self.instant_pause()
         integration_callbacks: QTableWidget = self.window().findChild(QTableWidget, "Integration.callbacks")
         integration_callbacks.selectRow(6)
