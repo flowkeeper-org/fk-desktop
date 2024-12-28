@@ -35,7 +35,8 @@ class InfoOverlay(QFrame):
                  on_close: Callable[[], None] = None,
                  on_prev: Callable[[], None] = None,
                  on_skip: Callable[[], None] = None,
-                 arrow: str = None):
+                 arrow: str = None,
+                 is_last: bool = False):
         super().__init__()
         self._on_close = on_close
         self._text = text
@@ -66,7 +67,8 @@ class InfoOverlay(QFrame):
                                     icon,
                                     font_scale,
                                     on_prev,
-                                    on_skip)
+                                    on_skip,
+                                    is_last)
         main_layout.addWidget(widget)
 
         if arrow == 'down':
@@ -113,7 +115,8 @@ class InfoOverlayContent(QWidget):
                  icon: str = None,
                  font_scale: float = 0.8,
                  on_prev: Callable[[], None] = None,
-                 on_skip: Callable[[], None] = None):
+                 on_skip: Callable[[], None] = None,
+                 is_last: bool = False):
         super().__init__()
 
         main_layout = QVBoxLayout()
@@ -146,7 +149,7 @@ class InfoOverlayContent(QWidget):
             bottom_layout = QHBoxLayout()
             bottom_layout.setContentsMargins(0, 8, 0, 0)
             main_layout.addLayout(bottom_layout)
-            skip_button = QPushButton(' Skip tutorial ', self)
+            skip_button = QPushButton(' Finish ' if is_last else ' Skip tutorial ', self)
             skip_button.setObjectName('skip_button')
             skip_button.clicked.connect(on_skip)
             skip_button.clicked.connect(lambda: parent.close())
@@ -231,7 +234,8 @@ def show_tutorial_overlay(text: str,
                           icon: str,
                           on_close: Callable[[], None] = None,
                           on_skip: Callable[[], None] = None,
-                          arrow: str = 'down'):
+                          arrow: str = 'down',
+                          is_last: bool = False):
     if text is not None and pos is not None:
         global INFO_OVERLAY_INSTANCE
         if INFO_OVERLAY_INSTANCE is not None:
@@ -248,5 +252,6 @@ def show_tutorial_overlay(text: str,
                                             on_close,
                                             None,
                                             on_skip,
-                                            arrow)
+                                            arrow,
+                                            is_last)
         INFO_OVERLAY_INSTANCE.show()

@@ -31,6 +31,7 @@ from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.info_overlay import show_tutorial_overlay
 from fk.qt.qt_timer import QtTimer
+from fk.qt.timer_widget import TimerWidget
 from fk.qt.workitem_tableview import WorkitemTableView
 
 logger = logging.getLogger(__name__)
@@ -48,17 +49,20 @@ class Tutorial:
     _source_holder: EventSourceHolder
     _settings: AbstractSettings
     _main_window: QWidget
+    _focus_window: QWidget
 
     _steps: dict[str, Callable]
 
     def __init__(self,
                  source_holder: EventSourceHolder,
                  settings: AbstractSettings,
-                 main_window: QWidget):
+                 main_window: QWidget,
+                 focus_window: QWidget):
         super().__init__()
         self._settings = settings
         self._source_holder = source_holder
         self._main_window = main_window
+        self._focus_window = focus_window
         self._steps = {
             SourceMessagesProcessed: self._on_messages,
             AfterBacklogCreate: self._on_backlog_create,
@@ -75,6 +79,11 @@ class Tutorial:
         settings.on(AfterSettingsChanged, self._on_setting_changed)
         if settings.get('Application.show_tutorial') == 'True':
             self._subscribe()
+            source = source_holder.get_source()
+            if source is not None:
+                self._after_source_changed('Auto', source)
+                if source.get_last_sequence() > 0:
+                    self._on_event(SourceMessagesProcessed)
 
     def _subscribe(self):
         logger.debug(f'Subscribing tutorial to source_holder changes')
@@ -124,8 +133,9 @@ class Tutorial:
 
     def _after_source_changed(self, event: str, source: AbstractEventSource) -> None:
         logger.debug(f'Subscribing tutorial to new source events')
-        for event in self._steps:
-            source.on(event, self._on_event)
+        for e in self._steps:
+            print(f'Subscribe {e}')
+            source.on(e, self._on_event)
 
     def _get_toolbar_button_position(self, action_name: str, arrow: str):
         toolbar: ConfigurableToolBar
@@ -217,15 +227,20 @@ class Tutorial:
 
     def _on_pomodoro_work_start(self, complete: Callable, skip: Callable, **kwargs) -> None:
         def do(_1, _2):
-            timer: QToolButton = self._main_window.findChild(QToolButton, "focus.voidPomodoro")
+            window: QWidget = self._main_window if self._main_window.isVisible() else self._focus_window
+            is_classic: bool = self._settings.get('Application.focus_flavor') == 'classic'
+            timer: TimerWidget = window.findChild(TimerWidget, "timer")
             pt: QPoint = timer.rect().center()
-            pt.setY(timer.rect().bottom() + 15)
+            pt.setY(timer.rect().bottom() + 10)
+            if is_classic:
+                action = 'clicking X button in the middle of the timer indicator'
+            else:
+                action = 'clicking the timer indicator and selecting "Void Pomodoro"'
             show_tutorial_overlay(f'8 / 11: Take a minute to explore this view. We call it Focus Mode, and this is '
                                   f'where Flowkeeper spends most of its time. You can customize this view in the '
                                   f'Settings.\n\n'
                                   f'You probably don\'t want to wait for 25 minutes to continue this tutorial, so '
-                                  f'please void this pomodoro by clicking X button in the middle of the timer '
-                                  f'indicator.',
+                                  f'please void this pomodoro by {action}.',
                                   timer.mapToGlobal(pt),
                                   'info',
                                   complete,
@@ -272,4 +287,5 @@ class Tutorial:
                               'info',
                               complete,
                               skip,
-                              'up')
+                              'up',
+                              True)

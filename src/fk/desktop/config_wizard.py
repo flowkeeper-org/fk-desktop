@@ -17,7 +17,9 @@ import datetime
 import os
 from typing import Type
 
-from PySide6.QtGui import QPixmap, QIcon
+from PySide6 import QtGui
+from PySide6.QtCore import Signal, QEvent
+from PySide6.QtGui import QPixmap, QIcon, QCloseEvent, QHideEvent
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMenu, \
     QHBoxLayout, QSpacerItem, QSizePolicy
 
@@ -255,6 +257,8 @@ class ConfigWizard(QWizard):
     _page_icons: PageConfigIcons
     _settings: AbstractSettings
 
+    closed = Signal(None)
+
     def __init__(self, application: Application, actions: Actions, parent: QWidget | None):
         super().__init__(parent)
         self._settings = application.get_settings()
@@ -277,3 +281,7 @@ class ConfigWizard(QWizard):
             'Application.focus_flavor': self._page_focus.get_setting(),
             'Application.tray_icon_flavor': self._page_icons.get_setting(),
         })
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        super(ConfigWizard, self).hideEvent(event)
+        self.closed.emit()

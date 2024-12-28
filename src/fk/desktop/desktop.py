@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
+from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu, QWizard
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -216,8 +216,13 @@ class MainWindow:
     def show_search(self):
         search.show()
 
+    def show_tutorial(self):
+        global tutorial
+        tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
+
     def show_quick_config(self):
         wizard = ConfigWizard(app, actions, window)
+        wizard.closed.connect(self.show_tutorial)
         wizard.show()
 
     def toggle_backlogs(self, enabled):
@@ -484,7 +489,7 @@ if __name__ == "__main__":
 
         pin_if_needed()
 
-        tutorial = Tutorial(app.get_source_holder(), settings, window)
+        tutorial: Tutorial = None
 
         window.show()
 
