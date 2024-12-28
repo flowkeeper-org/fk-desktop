@@ -139,9 +139,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
     def _initialize_hint_label(self) -> QLabel:
         hint_label = QLabel(self)
-        hint_font = hint_label.font()
-        hint_font.setPointSizeF(hint_font.pointSizeF() * 0.75)
-        hint_label.setFont(hint_font)
+        hint_label.setObjectName('headerSubSubtext')
         hint_label.setText("Click here →")
         return hint_label
 

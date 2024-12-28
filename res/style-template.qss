@@ -18,6 +18,11 @@ QMainWindow, #StatsWindow, #FocusBackground {
     color: $FOCUS_TEXT_COLOR;
 }
 
+#headerSubSubtext {
+    color: $FOCUS_TEXT_COLOR;
+    font-size: $FONT_SUBTEXT_SIZE;
+}
+
 #statusBar {
     color: $TABLE_TEXT_COLOR;
     background-color: $TOOLBAR_BG_COLOR;

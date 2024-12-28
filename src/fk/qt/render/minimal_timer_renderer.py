@@ -32,11 +32,11 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
         super(MinimalTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome, small)
 
     def _dial_pen(self, th: float) -> QPen:
-        if self._bg_color.value() < 128:
-            # Dark background
-            if self._monochrome:
-                color = self._fg_color
-            else:
+        if self._monochrome:
+            color = self._fg_color
+        else:
+            if self._bg_color.value() < 128:
+                # Dark background
                 if self.get_mode() == 'working':
                     color = '#e06666'
                 elif self.get_mode() == 'resting':
@@ -45,10 +45,6 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                     color = '#00e000'
                 else:
                     color = '#ffffff'
-        else:
-            # Light background
-            if self._monochrome:
-                color = self._bg_color
             else:
                 if self.get_mode() == 'working':
                     color = '#cc0000'
@@ -63,16 +59,12 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
         return outline
 
     def _next_brush(self) -> QBrush:
-        if self._bg_color.value() < 128:
-            # Dark background
-            if self._monochrome:
-                color = self._fg_color
-            else:
-                color = '#00e000'
+        if self._monochrome:
+            color = self._fg_color
         else:
-            # Light background
-            if self._monochrome:
-                color = self._bg_color
+            if self._bg_color.value() < 128:
+                # Dark background
+                color = '#00e000'
             else:
                 color = '#006400'
         return QBrush(QColor(color))
@@ -81,10 +73,6 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
         hand = QPen(QColor(self._fg_color), th)
         hand.setCapStyle(Qt.PenCapStyle.RoundCap)
         return hand
-
-    def _point_pen(self, th: float) -> QPen:
-        point = QPen(QColor(self._bg_color), th)
-        return point
 
     def has_idle_display(self) -> bool:
         return True

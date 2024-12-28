@@ -277,9 +277,10 @@ class Application(QApplication, AbstractEventEmitter):
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
         variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
-        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size')
+        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
         variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
-        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size')
+        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
+        variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
         return variables
 
     def get_icon_theme(self):
