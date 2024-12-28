@@ -3,7 +3,7 @@ import datetime
 import os
 
 from PySide6.QtCore import Qt, QPoint, QSize
-from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton
+from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.pomodoro import Pomodoro
@@ -49,6 +49,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_width': '820',
             'Application.theme': 'mixed',
             'Application.last_version': '0.9.0',
+            'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
+                                     '"echo \\"Created backlog {backlog.get_uid()}\\""}',
+            'Application.show_click_here_hint': 'False',
         }
         if os.name == 'nt':
             custom['Application.font_main_size'] = '10'
@@ -215,6 +218,14 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('07-settings-audio')
         sound_alarm_check.setChecked(False)
         await self.instant_pause()
+
+        settings_tabs.setCurrentIndex(5)
+        self.window().setFixedWidth(800)
+        await self.instant_pause()
+        integration_callbacks: QTableWidget = self.window().findChild(QTableWidget, "Integration.callbacks")
+        integration_callbacks.selectRow(6)
+        await self.instant_pause()
+        self.take_screenshot('21-settings-integration')
 
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()

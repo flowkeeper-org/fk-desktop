@@ -162,6 +162,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         btn.setIconSize(QSize(32, 32))
         btn.setDefaultAction(action)
         action.enabledChanged.connect(btn.setVisible)
+        btn.setVisible(action.isEnabled())
         self._buttons[name] = btn
         return btn
 
