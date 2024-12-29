@@ -300,7 +300,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Pomodoro.default_rest_duration': '300',
             'Application.timer_ui_mode': 'keep',
             'Application.theme': 'light',
-            'Application.eyecandy_gradient': 'HiddenJaguar',
+            'Application.eyecandy_gradient': 'OverSun',
         })
 
         # Start a Pomodoro in the past
@@ -408,11 +408,13 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('09-light-theme')
 
         self.get_application().get_settings().set({
-            'Application.theme': 'resort',
+            'Application.theme': 'mixed',
             'Application.eyecandy_type': 'image',
             'Application.eyecandy_image': ':/icons/bg.jpg',
-            'Application.font_header_family': 'Impact',
+            'Application.font_header_family': 'Quicksand Medium',
             'Application.font_header_size': '32',
+            'Application.font_main_family': 'Quicksand',
+            'Application.font_main_size': '12',
             'Application.show_toolbar': 'False',
         })
         await self.longer_pause()
