@@ -41,14 +41,14 @@ class AbstractTimerRenderer(QObject):
     _mode: str
     _bg_color: QColor
     _fg_color: QColor
-    _monochrome: bool
+    _thin: bool
     _small: bool
 
     def __init__(self,
                  parent: QWidget | None,
                  bg_color: QColor = None,
                  fg_color: QColor = None,
-                 monochrome: bool = False,
+                 thin: bool = False,
                  small: bool = False):
         super(AbstractTimerRenderer, self).__init__(parent)
         self._widget = parent
@@ -56,7 +56,7 @@ class AbstractTimerRenderer(QObject):
             raise Exception('Renderer needs to know the colors')
         self._bg_color = bg_color
         self._fg_color = fg_color
-        self._monochrome = monochrome
+        self._thin = thin
         self._small = small
         self.reset()
 

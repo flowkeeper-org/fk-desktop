@@ -25,9 +25,9 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                  parent: QtWidgets.QWidget | None,
                  bg_color: QColor = None,
                  fg_color: QColor = None,
-                 monochrome: bool = False,
+                 thin: bool = False,
                  small: bool = False):
-        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome, small)
+        super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, thin, small)
 
     def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
         # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly

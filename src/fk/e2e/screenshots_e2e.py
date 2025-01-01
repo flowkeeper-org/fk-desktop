@@ -48,7 +48,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
             'Application.theme': 'mixed',
-            'Application.tray_icon_flavor': 'monochrome-dark',
+            'Application.tray_icon_flavor': 'thin-dark',
             'Application.last_version': '0.9.0',
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',

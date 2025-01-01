@@ -17,9 +17,8 @@ import datetime
 import os
 from typing import Type
 
-from PySide6 import QtGui
-from PySide6.QtCore import Signal, QEvent
-from PySide6.QtGui import QPixmap, QIcon, QCloseEvent, QHideEvent
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QPixmap, QIcon, QHideEvent, Qt
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMenu, \
     QHBoxLayout, QSpacerItem, QSizePolicy
 
@@ -121,16 +120,30 @@ class FakeTrayIcon(TrayIcon):
     _kind: str
     _state: str
 
-    def __init__(self, tray: QLabel, actions: Actions, kind: str, state: str, cls: Type[AbstractTimerRenderer]):
+    def __init__(self,
+                 tray: QLabel,
+                 actions: Actions,
+                 kind: str,
+                 state: str,
+                 cls: Type[AbstractTimerRenderer]):
         self._tray = tray
         self._kind = kind
         self._state = state
-        super(FakeTrayIcon, self).__init__(tray, None, None, actions, 22, cls, kind == 'Dark')
+        super(FakeTrayIcon, self).__init__(tray,
+                                           None,
+                                           None,
+                                           actions,
+                                           48,
+                                           cls,
+                                           kind == 'Dark')
         self.mode_changed(None, state)
 
     def setIcon(self, icon: QIcon | QPixmap) -> None:
         if type(icon) is QIcon:
             icon = icon.pixmap(22, 22)
+        else:
+            pixmap: QPixmap = icon
+            icon = pixmap.scaled(22, 22, mode=Qt.TransformationMode.SmoothTransformation)
         self._tray.setPixmap(icon)
 
     def showMessage(self, title: str, msg: str, icon: QIcon = None, **_) -> None:
@@ -146,9 +159,9 @@ class FakeTrayIcon(TrayIcon):
 class PageConfigIcons(QWizardPage):
     _actions: Actions
     _option_classic_light: QRadioButton
-    _option_monochrome_light: QRadioButton
+    _option_thin_light: QRadioButton
     _option_classic_dark: QRadioButton
-    _option_monochrome_dark: QRadioButton
+    _option_thin_dark: QRadioButton
 
     def __init__(self, application: Application, actions: Actions):
         super().__init__()
@@ -160,23 +173,23 @@ class PageConfigIcons(QWizardPage):
         label.setWordWrap(True)
         layout_v.addWidget(label)
 
-        self._option_monochrome_light = QRadioButton("Monochrome light", self)
-        self._option_monochrome_light.setChecked(flavor == 'monochrome-light')
-        layout_v.addWidget(self._option_monochrome_light)
+        self._option_thin_light = QRadioButton("Thin, light background", self)
+        self._option_thin_light.setChecked(flavor == 'thin-light')
+        layout_v.addWidget(self._option_thin_light)
         widget_tray_light = QWidget(self)
         widget_tray_light.setObjectName('trayLight')
         self._create_icons(widget_tray_light, 'Light', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_light)
 
-        self._option_monochrome_dark = QRadioButton("Monochrome dark", self)
-        self._option_monochrome_dark.setChecked(flavor == 'monochrome-dark')
-        layout_v.addWidget(self._option_monochrome_dark)
+        self._option_thin_dark = QRadioButton("Thin, dark background", self)
+        self._option_thin_dark.setChecked(flavor == 'thin-dark')
+        layout_v.addWidget(self._option_thin_dark)
         widget_tray_dark = QWidget(self)
         widget_tray_dark.setObjectName('trayDark')
         self._create_icons(widget_tray_dark, 'Dark', MinimalTimerRenderer)
         layout_v.addWidget(widget_tray_dark)
 
-        self._option_classic_light = QRadioButton("Classic light", self)
+        self._option_classic_light = QRadioButton("Classic, light background", self)
         self._option_classic_light.setChecked(flavor == 'classic-light')
         layout_v.addWidget(self._option_classic_light)
         widget_tray_classic_light = QWidget(self)
@@ -184,7 +197,7 @@ class PageConfigIcons(QWizardPage):
         self._create_icons(widget_tray_classic_light, 'Light', ClassicTimerRenderer)
         layout_v.addWidget(widget_tray_classic_light)
 
-        self._option_classic_dark = QRadioButton("Classic dark", self)
+        self._option_classic_dark = QRadioButton("Classic, dark background", self)
         self._option_classic_dark.setChecked(flavor == 'classic-dark')
         layout_v.addWidget(self._option_classic_dark)
         widget_tray_classic_dark = QWidget(self)
@@ -244,12 +257,12 @@ class PageConfigIcons(QWizardPage):
     def get_setting(self) -> str:
         if self._option_classic_light.isChecked():
             return 'classic-light'
-        elif self._option_monochrome_light.isChecked():
-            return 'monochrome-light'
+        elif self._option_thin_light.isChecked():
+            return 'thin-light'
         elif self._option_classic_dark.isChecked():
             return 'classic-dark'
-        elif self._option_monochrome_dark.isChecked():
-            return 'monochrome-dark'
+        elif self._option_thin_dark.isChecked():
+            return 'thin-dark'
 
 
 class ConfigWizard(QWizard):

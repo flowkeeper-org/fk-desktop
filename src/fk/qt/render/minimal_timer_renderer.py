@@ -27,12 +27,12 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                  parent: QtWidgets.QWidget | None,
                  bg_color: QColor = None,
                  fg_color: QColor = None,
-                 monochrome: bool = False,
+                 thin: bool = False,
                  small: bool = False):
-        super(MinimalTimerRenderer, self).__init__(parent, bg_color, fg_color, monochrome, small)
+        super(MinimalTimerRenderer, self).__init__(parent, bg_color, fg_color, thin, small)
 
     def _dial_pen(self, th: float) -> QPen:
-        if self._monochrome:
+        if self._thin:
             color = self._fg_color
         else:
             if self._bg_color.value() < 128:
@@ -59,7 +59,7 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
         return outline
 
     def _next_brush(self) -> QBrush:
-        if self._monochrome:
+        if self._thin:
             color = self._fg_color
         else:
             if self._bg_color.value() < 128:

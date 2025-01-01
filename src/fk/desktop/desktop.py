@@ -152,7 +152,7 @@ def recreate_tray_icon() -> None:
                     app.get_source_holder(),
                     actions,
                     48,
-                    MinimalTimerRenderer if 'monochrome' in flavor else ClassicTimerRenderer,
+                    MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
                     'dark' in flavor)
     tray.setVisible(settings.get('Application.show_tray_icon') == 'True')
 
