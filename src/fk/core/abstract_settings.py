@@ -21,6 +21,7 @@ from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
+from fk.core.events import get_all_events
 
 logger = logging.getLogger(__name__)
 
@@ -125,12 +126,13 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
+                ('Application.hide_completed', 'bool', 'Hide completed items', 'False', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
+                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
@@ -146,6 +148,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
                 ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
+                ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
+                ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
@@ -195,6 +199,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
+                ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
+                                                                                       'minimal:Minimalistic (with context menu)'], _always_show),
+                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'thin-dark', ['thin-light:Thin, light background',
+                                                                                                   'thin-dark:Thin, dark background',
+                                                                                                   'classic-light:Classic, light background',
+                                                                                                   'classic-dark:Classic, dark background'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
@@ -211,7 +221,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "highlight:Highlight",
                 ], _always_show),
                 ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
-                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
+                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _always_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
                 ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
@@ -224,7 +234,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
-                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
+                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'NorseBeauty', ['NorseBeauty:NorseBeauty'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
@@ -233,6 +243,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
                 ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
+                ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', default_font_family, [], _always_show),
@@ -248,14 +259,21 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', '', 'Embedded music - "Madelene (ID 1315)"\n(C) Lobo Loco <https://www.musikbrause.de>,\nCC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
                 ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
-                ('Application.audio_output', 'choice', 'Output device', '#default', ['#default:Default'], _always_show),
+                ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
+            ],
+            'Integration': [
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{} syntax for variable substitution:\n'
+                                                             '$ espeak "Deleted work item {workitem.get_name()}"\n'
+                                                             '$ echo "Received {event}. Available variables: {dir()}"\n'
+                                                             'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
         for lst in self._definitions.values():

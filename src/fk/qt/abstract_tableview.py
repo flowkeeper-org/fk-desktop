@@ -19,7 +19,7 @@ from typing import TypeVar, Generic
 
 from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPainter, QStandardItemModel
-from PySide6.QtWidgets import QTableView, QWidget
+from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -83,6 +83,12 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
+
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(False)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.setDragDropOverwriteMode(False)
 
         self._update_row_height()
 
@@ -200,3 +206,17 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.selectionModel().blockSignals(False)
 
         self.update_actions(None)
+
+    def dragMoveEvent(self, event):
+        super().dragMoveEvent(event)
+        index: QModelIndex = self.indexAt(event.pos())
+        if index.data(501) == 'title':
+            # Hovering over a "real" item. Insert a "drop placeholder" here instead.
+            self.model().create_drop_placeholder(index)
+        else:
+            # Hovering over a "drop placeholder" item -- nothing to do
+            pass
+
+    def dragLeaveEvent(self, event):
+        super().dragLeaveEvent(event)
+        self.model().remove_drop_placeholder()

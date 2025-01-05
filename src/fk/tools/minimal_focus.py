@@ -22,7 +22,13 @@ mc = MinimalCommon()
 
 pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
 FocusWidget.define_actions(mc.get_actions())
-focus = FocusWidget(mc.get_window(), mc.get_app(), pomodoro_timer, mc.get_app().get_source_holder(), mc.get_settings(), mc.get_actions())
+focus = FocusWidget(mc.get_window(),
+                    mc.get_app(),
+                    pomodoro_timer,
+                    mc.get_app().get_source_holder(),
+                    mc.get_settings(),
+                    mc.get_actions(),
+                    mc.get_settings().get('Application.focus_flavor'))
 mc.get_actions().bind('focus', focus)
 mc.get_window().setCentralWidget(focus)
 

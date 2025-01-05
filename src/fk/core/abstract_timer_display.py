@@ -42,13 +42,15 @@ class AbstractTimerDisplay:
         self._continue_workitem = None
         self._mode = 'undefined'
 
-        timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
-        timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
-        timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
-        timer.on(PomodoroTimer.TimerTick, self._on_tick)
-        timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
+        if timer is not None:
+            timer.on(PomodoroTimer.TimerWorkStart, self._on_work_start)
+            timer.on(PomodoroTimer.TimerWorkComplete, self._on_work_complete)
+            timer.on(PomodoroTimer.TimerRestComplete, self._on_rest_complete)
+            timer.on(PomodoroTimer.TimerTick, self._on_tick)
+            timer.on(PomodoroTimer.TimerInitialized, self._on_timer_initialized)
 
-        source_holder.on(AfterSourceChanged, self._on_source_changed)
+        if source_holder is not None:
+            source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _set_mode(self, mode):
         old_mode = self._mode
@@ -85,7 +87,11 @@ class AbstractTimerDisplay:
     def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
         state = 'Focus' if self._timer.is_working() else 'Rest'
         state_text = f"{state}: {self._timer.format_remaining_duration()} left"
-        self.tick(pomodoro, state_text, self._timer.get_completion())
+        self.tick(pomodoro,
+                  state_text,
+                  self._timer.get_remaining_duration(),
+                  self._timer.get_planned_duration(),
+                  self._mode)
 
     def _on_work_start(self, **kwargs) -> None:
         # UC-3: Timer display goes into "working" state when work period starts
@@ -121,7 +127,7 @@ class AbstractTimerDisplay:
 
     # Override those in the child widgets
 
-    def tick(self, pomodoro: Pomodoro, state_text: str, completion: float) -> None:
+    def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         pass
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:

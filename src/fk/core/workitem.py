@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime
 import re
+import textwrap
 from collections.abc import Set
 from typing import Iterable
 
@@ -108,8 +109,11 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         return self._state in ('finished', 'canceled')
 
     def is_planned(self) -> bool:
-        # TODO: Calculate it based on the parent's state
-        return True
+        backlog_start_date = self.get_parent().get_start_date()
+        if backlog_start_date is None:
+            return True
+        else:
+            return self.get_create_date() <= backlog_start_date
 
     def is_startable(self) -> bool:
         for p in self.values():
@@ -120,6 +124,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     def start(self, when: datetime.datetime) -> None:
         self._state = 'running'
         self._date_work_started = when
+        self.get_parent().update_start_date(when)
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, mask_uid)}\n' \
@@ -137,3 +142,10 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         for t in TAG_REGEX.finditer(self._name):
             res.add(t.group(1).lower())
         return res
+
+    def get_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=60, placeholder='...')
+
+    def get_short_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=30, placeholder='...')
+

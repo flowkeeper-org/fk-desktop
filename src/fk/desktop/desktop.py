@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu, QWizard
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -28,6 +28,7 @@ from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
+from fk.desktop.config_wizard import ConfigWizard
 from fk.desktop.tutorial import Tutorial
 from fk.qt.abstract_tableview import AfterSelectionChanged
 from fk.qt.actions import Actions
@@ -39,6 +40,8 @@ from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
+from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.resize_event_filter import ResizeEventFilter
 from fk.qt.search_completer import SearchBar
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
@@ -55,72 +58,41 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
-def set_window_flags(is_focused: bool):
-    flags = default_flags
-
-    hide_frame = settings.get('Application.show_window_title') != 'True'
-    mode = get_timer_ui_mode()
-    if mode == 'focus' and is_focused and hide_frame:
-        flags = flags | Qt.WindowType.FramelessWindowHint
+def pin_if_needed():
+    window_was_visible = window.isVisible()
+    focus_window_was_visible = focus_window.isVisible()
 
     is_pinned = settings.get('Application.always_on_top') == 'True'
-    if is_pinned:
-        flags = flags | Qt.WindowType.WindowStaysOnTopHint
-
-    window.setWindowFlags(flags)
-
-
-def show_timer_automatically() -> None:
-    global continue_workitem
-    actions['focus.voidPomodoro'].setEnabled(True)
-    mode = get_timer_ui_mode()
-    if mode == 'focus':
-        set_window_flags(True)
-        height = focus.size().height()
-        focus.show()
-        main_layout.hide()
-        left_toolbar.hide()
-        window.setFixedWidth(window.width())    # TODO: Make it flexible
-        window.setFixedHeight(height)
-        window.adjustSize()
-        focus._buttons['window.showFocus'].hide()
-        focus._buttons['window.showAll'].show()
+    window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
+                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+    focus_window.setWindowFlags(focus_window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
+                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+    if window_was_visible:
         window.show()
-    elif mode == 'minimize':
-        window.hide()
+    if focus_window_was_visible:
+        focus_window.show()
 
 
-def hide_timer(event: str|None = None, **kwargs) -> None:
-    set_window_flags(False)
-    main_layout.show()
-    focus.show()
-    left_toolbar.show()
-    window.setMaximumHeight(16777215)
-    window.setMinimumHeight(0)
-    window.setMaximumWidth(16777215)
-    window.setMinimumWidth(0)
-    resize_event_filter.restore_size()
-    focus._buttons['window.showFocus'].show()
-    focus._buttons['window.showAll'].hide()
+def to_focus_mode(**kwargs) -> None:
+    window.hide()
+    root_layout.removeWidget(focus_widget)
+
+    focus_widget.setParent(focus_window)
+    focus_window.setCentralWidget(focus_widget)
+    focus_window.setFixedWidth(focus_widget.width())
+    focus_window.setFixedHeight(focus_widget.height())
+
+    show_title = settings.get('Application.show_window_title') == 'True'
+    focus_window.setWindowFlags(focus_window.windowFlags() & ~Qt.WindowType.FramelessWindowHint if show_title else
+                                focus_window.windowFlags() | Qt.WindowType.FramelessWindowHint)
+    focus_window.show()
+
+
+def from_focus_mode(**kwargs) -> None:
+    focus_window.hide()
+    focus_widget.setParent(root_layout_widget)
+    root_layout.insertWidget(0, focus_widget)
     window.show()
-
-    # Without this junk with Qt 6.7.0, KDE 5.18.8 on XOrg the window moves down every time its size is restored
-    pos = window.pos()
-    pos.setY(pos.y() - 1)
-    window.move(pos)
-    pos.setY(pos.y() + 1)
-    window.move(pos)
-
-
-def hide_timer_automatically() -> None:
-    actions['focus.voidPomodoro'].setDisabled(True)
-    mode = get_timer_ui_mode()
-    if mode == 'focus':
-        focus._buttons['window.showFocus'].show()
-        focus._buttons['window.showAll'].hide()
-        hide_timer()
-    elif mode == 'minimize':
-        window.show()
 
 
 def update_tables_visibility() -> None:
@@ -131,22 +103,66 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def on_messages(event: str, source: AbstractEventSource) -> None:
+def update_mode(**kwargs) -> None:
+    mode = get_timer_ui_mode()
     if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
-        show_timer_automatically()
+        if mode == 'focus':
+            actions['window.focusMode'].setChecked(True)  # This will trigger to_focus_mode() automatically
+        elif mode == 'minimize':
+            window.hide()
+    else:
+        if mode == 'focus':
+            from_focus_mode()
+        elif mode == 'minimize':
+            # It's a bit more complex than just showing the main window, because the user might have
+            # detached the focus widget in the meantime.
+            if focus_widget.parent() == focus_window:
+                from_focus_mode()
+            elif focus_widget.parent() == root_layout_widget:
+                window.show()
+            else:
+                raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
+
+
+def recreate_focus_widget() -> None:
+    global focus_widget
+    if focus_widget is not None:
+        focus_widget.kill()
+        root_layout.removeWidget(focus_widget)
+    focus_widget = FocusWidget(root_layout_widget,
+                               app,
+                               pomodoro_timer,
+                               app.get_source_holder(),
+                               settings,
+                               actions,
+                               settings.get('Application.focus_flavor'))
+    root_layout.insertWidget(0, focus_widget)
+    focus_widget.update_fonts()
+    actions.bind('focus', focus_widget)
+
+
+def recreate_tray_icon() -> None:
+    global tray
+    if tray is not None:
+        tray.kill()
+        tray.setVisible(False)
+    flavor = settings.get('Application.tray_icon_flavor')
+    tray = TrayIcon(window,
+                    pomodoro_timer,
+                    app.get_source_holder(),
+                    actions,
+                    48,
+                    MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
+                    'dark' in flavor)
+    tray.setVisible(settings.get('Application.show_tray_icon') == 'True')
 
 
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
-
     status.showMessage('Settings changed')
     for name in new_values.keys():
         new_value = new_values[name]
-        if name == 'Application.timer_ui_mode' and (pomodoro_timer.is_working() or pomodoro_timer.is_resting()):
-            # TODO: This really doesn't work well
-            hide_timer_automatically()
-            show_timer_automatically()
-        elif name == 'Application.show_main_menu':
+        if name == 'Application.show_main_menu':
             main_menu.setVisible(new_value == 'True')
         elif name == 'Application.show_status_bar':
             status.setVisible(new_value == 'True')
@@ -157,31 +173,57 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.shortcuts':
             actions.update_from_settings()
         elif name == 'Application.always_on_top':
-            set_window_flags(main_layout.isHidden())
-            window.show()
+            pin_if_needed()
+        elif name == 'Application.focus_flavor':
+            recreate_focus_widget()
+        elif name == 'Application.tray_icon_flavor':
+            recreate_tray_icon()
 
 
 class MainWindow:
     def __init__(self):
         super().__init__()
 
-    def show_all(self):
-        hide_timer()
+    def toggle_focus_mode(self, state: bool):
+        if state:
+            to_focus_mode()
+        else:
+            from_focus_mode()
 
-    def show_focus(self):
-        show_timer_automatically()
+    def toggle_pin_window(self, state: bool):
+        is_checked: bool = actions['window.pinWindow'].isChecked()
+        settings.set({'Application.always_on_top': str(is_checked)})
 
-    def pin_window(self):
-        settings.set({'Application.always_on_top': 'True'})
-
-    def unpin_window(self):
-        settings.set({'Application.always_on_top': 'False'})
-
-    def show_window(self):
-        window.show()
+    def toggle_main_window(self):
+        if window.isVisible():
+            # If main window is visible, then focus widget must be in it,
+            # then it's enough to just hide the main window
+            window.hide()
+        else:
+            if focus_window.isVisible():
+                # We are in the focus mode -- hide focus window. The main window is already hidden.
+                focus_window.hide()
+            else:
+                # Everything is hidden. We need to detect the mode before showing correct window.
+                # We do it by checking focus widget's parent.
+                if focus_widget.parent() == focus_window:
+                    focus_window.show()
+                elif focus_widget.parent() == root_layout_widget:
+                    window.show()
+                else:
+                    raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
     def show_search(self):
         search.show()
+
+    def show_tutorial(self):
+        global tutorial
+        tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
+
+    def show_quick_config(self):
+        wizard = ConfigWizard(app, actions, window)
+        wizard.closed.connect(self.show_tutorial)
+        wizard.show()
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
@@ -193,30 +235,29 @@ class MainWindow:
 
     @staticmethod
     def define_actions(actions: Actions):
-        actions.add('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
-        actions.add('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
-        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.pin_window)
-        actions.add('window.unpinWindow', "Unpin Flowkeeper", None, "tool-unpin", MainWindow.unpin_window)
-        actions.add('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
+        actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
+        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
+        actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+        actions.add('window.quickConfig', "Quick Config", '', None, MainWindow.show_quick_config)
 
-        backlogs_were_visible = (settings.get('Application.backlogs_visible') == 'True')
+        backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
-                    "Backlogs",
+                    "Show / Hide Backlogs",
                     'Ctrl+B',
-                    'tool-backlogs',
+                    ('tool-left-close', 'tool-left-open'),
                     MainWindow.toggle_backlogs,
                     True,
                     backlogs_were_visible)
 
-        users_were_visible = (settings.get('Application.users_visible') == 'True')
+        users_were_visible = (actions.get_settings().get('Application.users_visible') == 'True')
         actions.add('window.showUsers',
                     "Team",
                     'Ctrl+T',
                     'tool-teams',
                     MainWindow.toggle_users,
                     True,
-                    settings.is_team_supported() and users_were_visible)
+                    actions.get_settings().is_team_supported() and users_were_visible)
 
 
 if __name__ == "__main__":
@@ -234,16 +275,20 @@ if __name__ == "__main__":
         logger.debug(f'UI thread: {threading.get_ident()}')
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
+        def _on_workitem_complete(workitem: Workitem, **_):
+            if pomodoro_timer is not None and pomodoro_timer.get_running_workitem() == workitem:
+                update_mode()
+
         def _on_source_changed(event: str, source: AbstractEventSource):
-            main_window.show_all()
-            source.on(SourceMessagesProcessed, on_messages)
-            source.on(AfterWorkitemComplete, hide_timer)
+            actions['window.focusMode'].setChecked(False)
+            source.on(SourceMessagesProcessed, update_mode, last=True)
+            source.on(AfterWorkitemComplete, _on_workitem_complete, last=True)
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
         pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: hide_timer_automatically())
-        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: show_timer_automatically())
+        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
+        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
 
         loader = QtUiTools.QUiLoader(app)
 
@@ -253,8 +298,6 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         window: QtWidgets.QMainWindow = loader.load(file, None)
         file.close()
-
-        default_flags = window.windowFlags()
 
         # Collect actions from all widget types
         actions = Actions(window, settings)
@@ -271,6 +314,7 @@ if __name__ == "__main__":
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
+        # menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
@@ -319,18 +363,25 @@ if __name__ == "__main__":
         search_bar.addWidget(search)
 
         # noinspection PyTypeChecker
+        root_layout_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "rootLayout")
+
+        # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus = FocusWidget(window, app, pomodoro_timer, app.get_source_holder(), settings, actions)
-        root_layout.insertWidget(0, focus)
+        focus_widget = None
+        recreate_focus_widget()
+
+        focus_window = QMainWindow(window)
+        focus_window.addActions(list(actions.values()))
+
+        # Focus window should keep the same title as the main one
+        focus_window.setWindowTitle(window.windowTitle())
+        window.windowTitleChanged.connect(focus_window.setWindowTitle)
 
         # Layouts
         # noinspection PyTypeChecker
         main_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "mainLayout")
         # noinspection PyTypeChecker
         left_table_layout: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "leftTableLayout")
-
-        # Connect menu actions to the toolbar
-        # TODO -- migrate all those to Actions and remove all actions from .ui file
 
         # noinspection PyTypeChecker
         action_backlogs = actions['window.showBacklogs']
@@ -339,7 +390,40 @@ if __name__ == "__main__":
         # Main menu
         # noinspection PyTypeChecker
         main_menu: QtWidgets.QMenuBar = window.findChild(QtWidgets.QMenuBar, "menuBar")
+        # Application.define_actions(actions)
+        # BacklogTableView.define_actions(actions)
+        # UserTableView.define_actions(actions)
+        # WorkitemTableView.define_actions(actions)
+        # FocusWidget.define_actions(actions)
+        # MainWindow.define_actions(actions)
         if main_menu is not None:
+            main_menu.addMenu(menu_file)
+            view_menu = QMenu('View', main_menu)
+            view_menu.addAction(actions['window.focusMode'])
+            view_menu.addAction(actions['window.pinWindow'])
+            view_menu.addAction(actions['window.showBacklogs'])
+            view_menu.addAction(actions['application.toolbar'])
+            view_menu.addSeparator()
+            view_menu.addAction(actions['workitems_table.hideCompleted'])
+            view_menu.addAction(actions['window.showSearch'])
+            main_menu.addMenu(view_menu)
+            backlogs_menu = QMenu('Backlogs', main_menu)
+            backlogs_menu.addAction(actions['backlogs_table.newBacklog'])
+            backlogs_menu.addAction(actions['backlogs_table.newBacklogFromIncomplete'])
+            backlogs_menu.addAction(actions['backlogs_table.renameBacklog'])
+            backlogs_menu.addAction(actions['backlogs_table.deleteBacklog'])
+            main_menu.addMenu(backlogs_menu)
+            workitems_menu = QMenu('Work items', main_menu)
+            workitems_menu.addAction(actions['workitems_table.newItem'])
+            workitems_menu.addAction(actions['workitems_table.renameItem'])
+            workitems_menu.addAction(actions['workitems_table.deleteItem'])
+            workitems_menu.addAction(actions['workitems_table.startItem'])
+            workitems_menu.addAction(actions['workitems_table.completeItem'])
+            workitems_menu.addSeparator()
+            workitems_menu.addAction(actions['workitems_table.addPomodoro'])
+            workitems_menu.addAction(actions['workitems_table.removePomodoro'])
+            workitems_menu.addAction(actions['focus.voidPomodoro'])
+            main_menu.addMenu(workitems_menu)
             show_main_menu = (settings.get('Application.show_main_menu') == 'True')
             main_menu.setVisible(show_main_menu)
 
@@ -352,9 +436,8 @@ if __name__ == "__main__":
             status.setVisible(show_status_bar)
 
         # Tray icon
-        show_tray_icon = (settings.get('Application.show_tray_icon') == 'True')
-        tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions)
-        tray.setVisible(show_tray_icon)
+        tray = None
+        recreate_tray_icon()
 
         # Some global variables to support "Next pomodoro" mode
         # TODO Empty it if it gets deleted or completed
@@ -368,12 +451,10 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         tool_backlogs: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolBacklogs")
-        tool_backlogs.setIcon(QIcon.fromTheme('tool-backlogs'))
         tool_backlogs.setDefaultAction(action_backlogs)
 
         # noinspection PyTypeChecker
         tool_teams: QtWidgets.QToolButton = window.findChild(QtWidgets.QToolButton, "toolTeams")
-        tool_teams.setIcon(QIcon.fromTheme('tool-teams'))
         tool_teams.setDefaultAction(action_teams)
         action_teams.setEnabled(settings.is_team_supported())
         tool_teams.setVisible(settings.is_team_supported())
@@ -396,25 +477,26 @@ if __name__ == "__main__":
         window.installEventFilter(theme_change_event_filter)
 
         main_window = MainWindow()
+        app.upgraded.connect(main_window.show_quick_config)
 
         # Bind action domains to widget instances
         actions.bind('application', app)
         actions.bind('backlogs_table', backlogs_widget.get_table())
         actions.bind('users_table', users_table)
         actions.bind('workitems_table', workitems_widget.get_table())
-        actions.bind('focus', focus)
+        actions.bind('focus', focus_widget)
         actions.bind('window', main_window)
 
-        set_window_flags(False)
+        pin_if_needed()
 
-        tutorial = Tutorial(app.get_source_holder(), settings, window)
+        tutorial: Tutorial = None
 
         window.show()
 
         # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
         # Otherwise, the font size for the focus' header is picked correctly, but
         # default font family is used.
-        focus.update_fonts()
+        focus_widget.update_fonts()
 
         try:
             app.initialize_source()

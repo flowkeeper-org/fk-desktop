@@ -26,8 +26,9 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
+from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -42,6 +43,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.integration_executor import IntegrationExecutor
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
@@ -77,6 +79,10 @@ class Application(QApplication, AbstractEventEmitter):
     _source_holder: EventSourceHolder | None
     _heartbeat: Heartbeat
     _version_timer: QtTimer
+    _integration_executor: IntegrationExecutor
+    _current_version: Version
+
+    upgraded = Signal(Version)
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -85,10 +91,11 @@ class Application(QApplication, AbstractEventEmitter):
         # It's important to import Common theme very early, because we need it to get app version, etc.
         # noinspection PyUnresolvedReferences
         import fk.desktop.resources
+        self._current_version = get_current_version()
 
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
-            print(f'Flowkeeper v{get_current_version()}')
+            print(f'Flowkeeper v{self._current_version}')
             sys.exit(0)
 
         self._register_source_producers()
@@ -133,6 +140,9 @@ class Application(QApplication, AbstractEventEmitter):
                 })
             else:
                 self._settings = QtSettings()
+                if self._settings.get('Application.singleton') == 'True' and self.is_another_instance_running():
+                    logger.warning(f'Another instance of Flowkeeper is running - exiting')
+                    sys.exit(3)
             self._initialize_logger()
             if self._settings.is_keyring_enabled():
                 self._cryptograph = FernetCryptograph(self._settings)
@@ -154,6 +164,8 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
 
+        QtTimer('Upgrade checker').schedule(1000, self._check_upgrade, None, True)
+
         self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
@@ -161,6 +173,8 @@ class Application(QApplication, AbstractEventEmitter):
         self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
         self._heartbeat.on(events.WentOffline, self._on_went_offline)
         self._heartbeat.on(events.WentOnline, self._on_went_online)
+
+        self._integration_executor = IntegrationExecutor(self._settings)
 
     def _initialize_logger(self):
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -186,11 +200,18 @@ class Application(QApplication, AbstractEventEmitter):
         stdio_handler.setLevel(logging.WARNING)
         root.handlers.append(stdio_handler)
 
-        logger.debug(f'Flowkeeper: {get_current_version()}')
+        logger.debug(f'Flowkeeper: {self._current_version}')
         logger.debug(f'Qt: {QtCore.__version__}')
         logger.debug(f'Python: {sys.version}')
         logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
         logger.debug(f'Kernel: {platform.platform()}')
+
+    def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
+        last_version = Version(self._settings.get('Application.last_version'))
+        if self._current_version != last_version:
+            logger.info(f'We execute for the first time after upgrade from {last_version} to {self._current_version}')
+            self.upgraded.emit(self._current_version)
+            self._settings.set({'Application.last_version': str(self._current_version)})
 
     def initialize_source(self):
         self._source_holder.request_new_source()
@@ -256,9 +277,10 @@ class Application(QApplication, AbstractEventEmitter):
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
         variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
-        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size')
+        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
         variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
-        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size')
+        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
+        variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
         return variables
 
     def get_icon_theme(self):
@@ -369,7 +391,7 @@ class Application(QApplication, AbstractEventEmitter):
                 request_ui_refresh = True
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
-                    self._version_timer.schedule(1000, self.check_version, None, True)
+                    self._version_timer.schedule(2000, self.check_version, None, True)
             elif name.startswith('Logger.'):
                 request_logger_change = True
 
@@ -387,6 +409,15 @@ class Application(QApplication, AbstractEventEmitter):
         if request_logger_change:
             logger.debug(f'Reinitializing the logger because of a setting change')
             self._initialize_logger()
+
+    def is_another_instance_running(self) -> bool:
+        server = QTcpServer(self)
+        server.setMaxPendingConnections(0)
+        if server.listen(QHostAddress.SpecialAddress.Any, 11501):
+            logger.debug(f'Could create a TCP listener on port {server.serverPort()}')
+            return False
+        else:
+            return True
 
     def show_settings_dialog(self):
         SettingsDialog(
@@ -563,15 +594,14 @@ class Application(QApplication, AbstractEventEmitter):
     def check_version(self, event: str, when: datetime.datetime | None = None) -> None:
         def on_version(latest: Version, changelog: str):
             if latest is not None:
-                current: Version = get_current_version()
-                if latest > current:
+                if latest > self._current_version:
                     self._emit(NewReleaseAvailable, {
-                        'current': current,
+                        'current': self._current_version,
                         'latest': latest,
                         'changelog': changelog,
                     })
                 else:
-                    logger.debug(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+                    logger.debug(f'We are on the latest Flowkeeper version already (current is {self._current_version}, latest is {latest})')
             else:
                 logger.warning("Couldn't get the latest release info from GitHub")
         logger.debug('Will check GitHub releases for the latest version')

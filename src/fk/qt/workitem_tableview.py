@@ -103,10 +103,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             actions['workitems_table.renameItem'],
             actions['workitems_table.deleteItem'],
             actions['workitems_table.startItem'],
-            actions['workitems_table.completeItem'],
             actions['workitems_table.addPomodoro'],
             actions['workitems_table.removePomodoro'],
-            actions['workitems_table.showCompleted'],
+            actions['workitems_table.hideCompleted'],
+            actions['workitems_table.completeItem'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
@@ -121,17 +121,19 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', "tool-complete-item", WorkitemTableView.complete_selected_workitem)
         actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', "tool-add-pomodoro", WorkitemTableView.add_pomodoro)
         actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', "tool-remove-pomodoro", WorkitemTableView.remove_pomodoro)
-        actions.add('workitems_table.showCompleted',
-                    "Show Completed Items",
+        actions.add('workitems_table.hideCompleted',
+                    "Hide Completed Items",
                     '',
-                    "tool-show-completed",
-                    WorkitemTableView._toggle_show_completed_workitems,
+                    ("tool-filter-on", "tool-filter-off"),
+                    WorkitemTableView._toggle_hide_completed_workitems,
                     True,
-                    actions.get_settings().get('Application.show_completed') == 'True')
+                    actions.get_settings().get('Application.hide_completed') == 'True')
 
     def upstream_selected(self, backlog_or_tag: Backlog | Tag) -> None:
         super().upstream_selected(backlog_or_tag)
-        self._actions['workitems_table.newItem'].setEnabled(type(backlog_or_tag) is Backlog)
+        is_backlog = type(backlog_or_tag) is Backlog
+        self._actions['workitems_table.newItem'].setEnabled(is_backlog)
+        self.setDragEnabled(is_backlog)
         self._resize()
 
     def update_actions(self, selected: Workitem) -> None:
@@ -234,10 +236,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             "1"
         ])
 
-    def _toggle_show_completed_workitems(self, checked: bool) -> None:
-        self.model().show_completed(checked)
+    def _toggle_hide_completed_workitems(self, checked: bool) -> None:
+        self.model().hide_completed(checked)
         self._resize()
-        self._source.set_config_parameters({'Application.show_completed': str(checked)})
+        self._source.set_config_parameters({'Application.hide_completed': str(checked)})
 
     def _resize(self) -> None:
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)

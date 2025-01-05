@@ -131,7 +131,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                               settings)
 
         for w in set(pomodoros):
-            choice = andint(1, 10)
+            choice = randint(1, 10)
             if choice < 4:  # Ignore it
                 continue
             else:   # Complete it

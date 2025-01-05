@@ -42,11 +42,12 @@ def get_current_version() -> Version:
 
 def _success(reply: QNetworkReply, callback: Callable[[Version, str], None]) -> None:
     j = json.loads(reply.readAll().toStdString())
-    m = GITHUB_TAG_REGEX.search(j['name'])
-    if m is None:
-        raise Exception(f'Cannot extract the latest Flowkeeper version from GitHub tag name')
-    else:
-        callback(Version(m.group(1)), j['body'])
+    if j is not None and 'name' in j:
+        m = GITHUB_TAG_REGEX.search(j['name'])
+        if m is None:
+            raise Exception(f'Cannot extract the latest Flowkeeper version from GitHub tag name')
+        else:
+            callback(Version(m.group(1)), j['body'])
 
 
 def _error(err: QNetworkReply.NetworkError, callback: Callable[[Version, str], None]) -> None:

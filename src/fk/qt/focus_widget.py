@@ -16,9 +16,9 @@
 import logging
 
 from PySide6.QtCore import QSize, QPoint, QLine
-from PySide6.QtGui import QIcon, QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QToolButton, \
-    QMessageBox, QMenu, QSizePolicy
+from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
+    QSpacerItem
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -49,6 +49,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _continue_workitem: Workitem | None
     _timer_widget: TimerWidget
     _moving_around: QPoint | None
+    _hint_label: QLabel | None
 
     def __init__(self,
                  parent: QWidget,
@@ -56,7 +57,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                  timer: PomodoroTimer,
                  source_holder: EventSourceHolder,
                  settings: AbstractSettings,
-                 actions: Actions):
+                 actions: Actions,
+                 flavor: str = 'minimal'):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._apply_size_policy()
@@ -68,9 +70,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._pixmap = None
         self._continue_workitem = None
         self._moving_around = None
-
+        self._hint_label = None
         self._border_color = QColor('#000000')
-        self._set_border_color()
 
         self.setObjectName('focus')
 
@@ -92,7 +93,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         text_layout.addWidget(header_text)
         header_text.setText("Idle")
         header_text.setFont(application.get_header_font())
-        application.on(AfterFontsChanged, lambda header_font, **kwargs: header_text.setFont(header_font))
+        application.on(AfterFontsChanged, self._on_fonts_changed)
         self._header_text = header_text
 
         header_subtext = QLabel(self)
@@ -105,28 +106,42 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         self._timer_widget = TimerWidget(self,
                                          'timer',
-                                         self._create_button("focus.voidPomodoro"))
-        layout.addWidget(self._timer_widget)
-        layout.addWidget(self._create_button("focus.nextPomodoro"))
-        layout.addWidget(self._create_button("focus.completeItem"))
-        layout.addWidget(self._create_button("focus.showFilter"))
+                                         flavor,
+                                         self._create_button("focus.voidPomodoro") if flavor == 'classic' else None,
+                                         63)
 
-        if "window.showAll" in actions:
-            layout.addWidget(self._create_button("window.showAll"))
-            self._buttons['window.showAll'].hide()
-        if "window.showFocus" in actions:
-            layout.addWidget(self._create_button("window.showFocus"))
-        if "window.pinWindow" in actions:
-            layout.addWidget(self._create_button("window.pinWindow"))
-            layout.addWidget(self._create_button("window.unpinWindow"))
-            self._update_pinned_button(settings.get('Application.always_on_top') == 'True')
+        if flavor == 'classic':
+            layout.addWidget(self._timer_widget)
+            layout.addWidget(self._create_button("focus.nextPomodoro"))
+            layout.addWidget(self._create_button("focus.completeItem"))
+            if "window.pinWindow" in actions:
+                layout.addWidget(self._create_button("window.pinWindow"))
+        elif flavor == 'minimal':
+            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding))
+            if settings.get('Application.show_click_here_hint') == 'True':
+                self._hint_label = self._initialize_hint_label()
+                layout.addWidget(self._hint_label)
+            self._timer_widget.clicked.connect(self._timer_clicked)
+            layout.addWidget(self._timer_widget)
 
-        self._buttons['focus.nextPomodoro'].hide()
-        self._buttons['focus.completeItem'].hide()
-        self._buttons['focus.voidPomodoro'].hide()
+        self._actions['focus.nextPomodoro'].setDisabled(True)
+        self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
+        self._actions['focus.completeItem'].setDisabled(True)
+        self._actions['focus.voidPomodoro'].setDisabled(True)
 
+        self._update_colors()
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def kill(self):
+        self._settings.unsubscribe(self._on_setting_changed)
+        self._application.unsubscribe(self._on_fonts_changed)
+
+    def _initialize_hint_label(self) -> QLabel:
+        hint_label = QLabel(self)
+        hint_label.setObjectName('headerSubSubtext')
+        hint_label.setText("Click here →")
+        return hint_label
 
     def update_fonts(self):
         self._header_text.setFont(self._application.get_header_font())
@@ -136,7 +151,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
-        actions.add('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
     def _create_button(self,
                        name: str,
@@ -147,23 +161,15 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         btn.setIcon(QIcon(action.icon()))
         btn.setIconSize(QSize(32, 32))
         btn.setDefaultAction(action)
+        action.enabledChanged.connect(btn.setVisible)
+        btn.setVisible(action.isEnabled())
         self._buttons[name] = btn
         return btn
-
-    def _display_filter(self):
-        if 'workitems_table.showCompleted' not in self._actions:
-            raise Exception('Show Completed action is undefined')
-        menu_filter = QMenu("Filter", self.parent())
-        menu_filter.addAction(self._actions['workitems_table.showCompleted'])
-        menu_filter.exec(
-            self.parent().mapToGlobal(
-                self._buttons['focus.showFilter'].geometry().center()))
 
     def reset(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
         self._header_text.setText(text)
         self._header_subtext.setText(subtext)
-        self._buttons['focus.completeItem'].hide()
-        self._buttons['focus.voidPomodoro'].hide()
+        self._actions['focus.completeItem'].setDisabled(True)
         self._actions['focus.voidPomodoro'].setDisabled(True)
         self._timer_widget.reset()
 
@@ -202,22 +208,24 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             painter.setPen(self._border_color)
             painter.drawLine(QLine(rect.bottomLeft(), rect.bottomRight()))
 
-    def _set_border_color(self):
-        self._border_color = self._application.get_theme_variables()['FOCUS_BORDER_COLOR']
+    def _update_colors(self):
+        variables = self._application.get_theme_variables()
+        self._border_color = variables['FOCUS_BORDER_COLOR']
+        self._timer_widget.fg_color = QColor(variables['FOCUS_TEXT_COLOR'])
+        self._timer_widget.bg_color = QColor(variables['FOCUS_BG_COLOR'])
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.theme' in new_values:
-            self._set_border_color()
+            self._update_colors()
         if 'Application.eyecandy_type' in new_values or \
                 'Application.eyecandy_gradient' in new_values or \
                 'Application.eyecandy_image' in new_values:
             self.eye_candy()
-        if 'Application.always_on_top' in new_values:
-            self._update_pinned_button(new_values['Application.always_on_top'] == 'True')
+        if self._hint_label is not None and 'Application.show_click_here_hint' in new_values:
+            self._hint_label.hide()
 
-    def _update_pinned_button(self, pinned: bool):
-        self._buttons['window.pinWindow'].setVisible(not pinned)
-        self._buttons['window.unpinWindow'].setVisible(pinned)
+    def _on_fonts_changed(self, event, header_font, **kwargs):
+        self._header_text.setFont(header_font)
 
     def _void_pomodoro(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
@@ -244,30 +252,34 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         if QMessageBox().warning(
                 self,
                 "Confirmation",
-                f"Are you sure you want to complete workitem '{item.get_name()}'? This will void current pomodoro.",
+                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
                 QMessageBox.StandardButton.Ok,
                 QMessageBox.StandardButton.Cancel
                 ) == QMessageBox.StandardButton.Ok:
             self._source_holder.get_source().execute(CompleteWorkitemStrategy,
                                  [item.get_uid(), "finished"])
 
-    def tick(self, pomodoro: Pomodoro, state_txt: str, completion: float) -> None:
-        self._header_text.setText(state_txt)
-        self._timer_widget.set_values(completion)
+    def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        self._header_text.setText(state_text)
+        self._timer_widget.set_values(my_value, my_max, None, None, mode)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
-            self._buttons['focus.nextPomodoro'].hide()
+            self._actions['focus.nextPomodoro'].setDisabled(True)
+            self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         elif new_mode == 'working' or new_mode == 'resting':
-            self._header_subtext.setText(self._timer.get_running_workitem().get_name())
+            running_item = self._timer.get_running_workitem()
+            self._header_subtext.setText(running_item.get_display_name())
             self._actions['focus.voidPomodoro'].setDisabled(False)
-            self._buttons['focus.voidPomodoro'].show()
-            self._buttons['focus.nextPomodoro'].hide()
-            self._buttons['focus.completeItem'].show()
+            self._actions['focus.nextPomodoro'].setDisabled(True)
+            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
+            self._actions['focus.completeItem'].setDisabled(False)
         elif new_mode == 'ready':
-            self.reset('Start another Pomodoro?', self._continue_workitem.get_name())
-            self._buttons['focus.nextPomodoro'].show()
+            self.reset('Start another Pomodoro?', self._continue_workitem.get_display_name())
+            self._timer_widget.set_values(0, 1, None, None, 'ready')
+            self._actions['focus.nextPomodoro'].setDisabled(False)
+            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 
     def _apply_size_policy(self):
         sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -275,6 +287,18 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self.setSizePolicy(sp)
         self.setMinimumHeight(DISPLAY_HEIGHT)
         self.setMaximumHeight(DISPLAY_HEIGHT)
+
+    def _timer_clicked(self, pos: QPoint) -> None:
+        self._settings.set({'Application.show_click_here_hint': 'False'})
+        context_menu = QMenu(self)
+        context_menu.addAction(self._actions['focus.nextPomodoro'])
+        context_menu.addAction(self._actions['focus.voidPomodoro'])
+        context_menu.addSeparator()
+        context_menu.addAction(self._actions['window.focusMode'])
+        context_menu.addAction(self._actions['window.pinWindow'])
+        context_menu.addSeparator()
+        context_menu.addAction(self._actions['focus.completeItem'])
+        context_menu.exec(self._timer_widget.mapToGlobal(pos))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self._moving_around = event.pos()
@@ -287,9 +311,4 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._moving_around = None
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
-        show_all = self._buttons['window.showAll']
-        show_focus = self._buttons['window.showFocus']
-        if show_all.isVisible():
-            show_all.click()
-        elif show_focus.isVisible():
-            show_focus.click()
+        self._actions['window.focusMode'].toggle()

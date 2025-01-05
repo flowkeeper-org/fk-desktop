@@ -1,3 +1,18 @@
+### v0.9.0 (30 December 2024)
+- You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.
+- Unplanned work items are now highlighted with asterisk (*).
+- You can now choose between two timer widgets -- "Classic" and "Minimalistic".
+- Quick configuration wizard when you open Flowkeeper for the first time.
+- Moved "Hide completed items" to the toolbar (#42).
+- In "minimalistic" mode all focus mode actions are under the "stopwatch" menu.
+- You can now configure Flowkeeper to execute programs on different events, see Settings > Integration (#40).
+- All buttons and icons now have tooltips with shortcuts in them (#43, #52).
+- Journaling-friendly Work Summary (F3) -- more output formats and enhanced usability (#45, #49).
+- New setting: General > Single Flowkeeper instance (#50).
+- Miscellaneous UI improvements, notably new tray icon visualization (#44, #51, #39).
+- You can now enable main menu in Settings > Appearance.
+- [Bugfix] Couldn't open Settings when there's no audio devices (#38).
+
 ### v0.8.1 (13 November 2024)
 - [Bugfix] Fixed a bug in tutorial step 8.
 

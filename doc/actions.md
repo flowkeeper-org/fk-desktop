@@ -21,17 +21,15 @@
 - ('workitems_table.completeItem', "Complete Item", 'Ctrl+P', 'tool-complete', WorkitemTableView.complete_selected_workitem)
 - ('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', None, WorkitemTableView.add_pomodoro)
 - ('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', None, WorkitemTableView.remove_pomodoro)
-- ('workitems_table.showCompleted', "Show Completed Items", '', None, WorkitemTableView._toggle_show_completed_workitems, True, True)
+- ('workitems_table.hideCompleted', "Hide Completed Items", '', None, WorkitemTableView._toggle_hide_completed_workitems, True, True)
 
 ## FocusWidget
 - ('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
 - ('focus.nextPomodoro', "Next Pomodoro", None, "tool-next", FocusWidget._next_pomodoro)
 - ('focus.completeItem', "Complete Item", None, "tool-complete", FocusWidget._complete_item)
-- ('focus.showFilter', "Show Filter", None, "tool-filter", FocusWidget._display_filter)
 
 ## MainWindow
-- ('window.showAll', "Show All", None, "tool-show-all", MainWindow.show_all)
-- ('window.showFocus', "Show Focus", None, "tool-show-timer-only", MainWindow.show_focus)
+- ('window.focusMode', "Focus Mode", None, "tool-show-timer-only", MainWindow.toggle_focus_mode)
 - ('window.showMainWindow', "Show Main Window", None, "tool-show-timer-only", MainWindow.show_window)
 - ('window.showBacklogs', "Backlogs", 'Ctrl+B', 'tool-backlogs', MainWindow.show_about)
 - ('window.showUsers', "Team", 'Ctrl+T', 'tool-teams', MainWindow.toggle_users)

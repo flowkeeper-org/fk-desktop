@@ -200,8 +200,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                   source.get_settings())
                         seq += 1
 
-                # Here we rely on dict.values() having list semantics. Need to check if this is guaranteed behavior.
-                # Also, we rely on the fact that there are at least len(workitem) pomodoros now
+                # Here we rely on the fact that there are at least len(workitem) pomodoros now
                 pomodoros_old = list(existing_workitem.values())
                 for i, p_new in enumerate(workitem.values()):
                     p_old = pomodoros_old[i]

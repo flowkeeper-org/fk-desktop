@@ -52,7 +52,7 @@ class TestSettings(TestCase):
 
     def test_categories(self):
         categories = self.settings.get_categories()
-        self.assertEqual(len(categories), 5)
+        self.assertEqual(len(categories), 6)
         self.assertIn('General', categories)
         self.settings.set({
             'Pomodoro.default_work_duration': '10',
@@ -124,7 +124,7 @@ class TestSettings(TestCase):
         self.assertNotIn('Application.show_status_bar', visible)
         self.assertNotIn('WebsocketEventSource.refresh_token!', visible)
         self.assertNotIn('Source.fullname', visible)
-        self.assertNotIn('Application.show_completed', visible)
+        self.assertNotIn('Application.hide_completed', visible)
         # For file event source
         self.assertIn('FileEventSource.filename', visible)
         self.assertNotIn('WebsocketEventSource.auth_type', visible)

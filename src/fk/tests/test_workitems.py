@@ -106,7 +106,7 @@ class TestWorkitems(TestCase):
         workitem6 = backlog['w16']
         self.assertEqual(workitem6.get_name(), 'Six #workitem and #workitems')
         tags = user.get_tags()
-        self.assertEqual(len(tags.keys()), 4)
+        self.assertEqual(len(tags), 4)
         self.assertIn('workitem', tags)
         self.assertIn('second', tags)
         self.assertIn('third', tags)
@@ -362,3 +362,26 @@ class TestWorkitems(TestCase):
         self.assertEqual(fired[1], 'BeforeWorkitemRename')
         self.assertEqual(fired[2], 'AfterWorkitemRename')
         self.assertEqual(fired[3], 'AfterMessageProcessed')
+
+    # Reordering tests:
+    # - Positive test -- move up and down
+    # - Negative index and index > len()
+    # - No move -- up and down
+    # - Events
+
+    def _create_workitems_for_reorder_tests(self):
+        _, backlog = self._standard_backlog()
+        self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w13', 'b1', 'Third workitem'])
+        self.source.execute(CreateWorkitemStrategy, ['w14', 'b1', 'Fourth workitem'])
+        self.source.auto_seal()
+        return backlog
+
+    def _assert_workitem_order(self, backlog: Backlog, order: str):
+        pass
+
+    def test_reorder_workitem_up_normal(self):
+        backlog = self._create_workitems_for_reorder_tests()
+        self._assert_workitem_order(backlog, 'w11,w12,w13,w14')
+
