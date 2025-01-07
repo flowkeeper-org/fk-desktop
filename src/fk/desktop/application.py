@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile, Signal
+from PySide6.QtCore import QFile, Signal, QStandardPaths
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
@@ -36,7 +36,7 @@ from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import get_event_source_factory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -93,6 +93,9 @@ class Application(QApplication, AbstractEventEmitter):
         import fk.desktop.resources
         self._current_version = get_current_version()
 
+        self.setApplicationName('Flowkeeper')
+        self.setApplicationVersion(str(self._current_version))
+
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
             print(f'Flowkeeper v{self._current_version}')
@@ -126,7 +129,7 @@ class Application(QApplication, AbstractEventEmitter):
                 self._settings = QtSettings('flowkeeper-desktop-testing')
                 self._settings.reset_to_defaults()
                 self._settings.set({
-                    'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
+                    'FileEventSource.filename': str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)) / 'flowkeeper-testing.txt'),
                     'Application.show_tutorial': 'False',
                     'Application.check_updates': 'False',
                     'Pomodoro.default_work_duration': '5',
@@ -134,7 +137,7 @@ class Application(QApplication, AbstractEventEmitter):
                     'Application.play_alarm_sound': 'False',
                     'Application.play_rest_sound': 'False',
                     'Application.play_tick_sound': 'False',
-                    'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
+                    'Logger.filename': str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation)) / 'flowkeeper-testing.log'),
                     'Logger.level': 'DEBUG',
                     'Source.encryption_key!': 'test key',
                 })
@@ -195,13 +198,17 @@ class Application(QApplication, AbstractEventEmitter):
             existing_handle.close()
         root.handlers.clear()
 
-        # 2. Add FILE handler for whatever the user configured
-        file_handler = logging.FileHandler(filename=self._settings.get('Logger.filename'))
+        # 2. Check that the entire logger file path exists
+        filename = self._settings.get('Logger.filename')
+        prepare_file_for_writing(filename)
+
+        # 3. Add FILE handler for whatever the user configured
+        file_handler = logging.FileHandler(filename=filename)
         file_handler.setFormatter(log_format)
         file_handler.setLevel(self._settings.get('Logger.level'))
         root.handlers.append(file_handler)
 
-        # 3. Add STDIO handler for warnings and errors
+        # 4. Add STDIO handler for warnings and errors
         stdio_handler = logging.StreamHandler(sys.stdout)
         stdio_handler.setFormatter(log_format)
         stdio_handler.setLevel(logging.WARNING)

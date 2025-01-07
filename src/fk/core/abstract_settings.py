@@ -103,6 +103,10 @@ def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
 
 
+def prepare_file_for_writing(filename):
+    (Path(filename) / '..').resolve().mkdir(parents=True, exist_ok=True)
+
+
 class AbstractSettings(AbstractEventEmitter, ABC):
     # Category -> [(id, type, display, default, options, visibility)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
@@ -112,6 +116,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def __init__(self,
                  default_font_family: str,
                  default_font_size: int,
+                 default_data_dir: str,
+                 default_logs_dir: str,
                  callback_invoker: Callable,
                  is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
@@ -144,7 +150,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "WARNING:Errors and warnings",
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
-                ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
+                ('Logger.filename', 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
                 ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
                 ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
@@ -163,7 +169,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
                 ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
-                ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
+                ('FileEventSource.filename', 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),

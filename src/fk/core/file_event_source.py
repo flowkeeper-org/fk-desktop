@@ -27,7 +27,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
@@ -159,6 +159,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         filename = self._get_filename()
         if not path.isfile(filename):
+            prepare_file_for_writing(filename)
             with open(filename, 'w', encoding='UTF-8') as f:
                 s = self.get_init_strategy(self._emit)
                 f.write(f'{self._serializer.serialize(s)}\n')

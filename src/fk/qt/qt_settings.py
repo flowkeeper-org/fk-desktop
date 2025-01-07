@@ -19,6 +19,7 @@ import sys
 
 import keyring
 from PySide6 import QtCore
+from PySide6.QtCore import QStandardPaths
 from PySide6.QtGui import QFont, Qt, QGuiApplication, QFontDatabase
 from PySide6.QtWidgets import QMessageBox, QApplication
 
@@ -46,6 +47,8 @@ class QtSettings(AbstractSettings):
         self._app_name = app_name
         super().__init__(font.family(),
                          font.pointSize(),
+                         QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation),
+                         QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
                          invoke_in_main_thread,
                          QGuiApplication.platformName() == 'wayland')
         self._settings = QtCore.QSettings("flowkeeper", app_name)

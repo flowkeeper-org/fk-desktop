@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
+from pathlib import Path
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
@@ -29,7 +30,11 @@ class MockSettings(AbstractSettings):
     _settings: dict[str, str]
 
     def __init__(self, filename=None, username=None, source_type="local"):
-        super().__init__('Arial', 10, invoke_direct)
+        super().__init__('Noto Sans',
+                         10,
+                         Path.home().absolute(),
+                         Path.home().absolute(),
+                         invoke_direct)
         # UC-3: Mock settings used for testing predefine a fixed encryption key
         # UC-3: Mock settings do not persist between application / test restarts
         self._settings = {
