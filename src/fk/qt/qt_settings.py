@@ -19,7 +19,7 @@ import sys
 
 import keyring
 from PySide6 import QtCore
-from PySide6.QtGui import QFont, Qt, QGuiApplication
+from PySide6.QtGui import QFont, Qt, QGuiApplication, QFontDatabase
 from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
@@ -40,7 +40,9 @@ class QtSettings(AbstractSettings):
     _keyring_enabled: bool
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
-        font = QFont()
+        font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
+        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        font = QFont(font_family)
         self._app_name = app_name
         super().__init__(font.family(),
                          font.pointSize(),

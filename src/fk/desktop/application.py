@@ -176,6 +176,13 @@ class Application(QApplication, AbstractEventEmitter):
 
         self._integration_executor = IntegrationExecutor(self._settings)
 
+    def _get_versions(self):
+        return (f'- Flowkeeper: {self._current_version}\n'
+                f'- Qt: {QtCore.__version__} ({self.platformName()})\n'
+                f'- Python: {sys.version}\n'
+                f'- Platform: {platform.system()} {platform.release()} {platform.version()}\n'
+                f'- Kernel: {platform.platform()}\n')
+
     def _initialize_logger(self):
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         root = logging.getLogger()
@@ -200,11 +207,8 @@ class Application(QApplication, AbstractEventEmitter):
         stdio_handler.setLevel(logging.WARNING)
         root.handlers.append(stdio_handler)
 
-        logger.debug(f'Flowkeeper: {self._current_version}')
-        logger.debug(f'Qt: {QtCore.__version__}')
-        logger.debug(f'Python: {sys.version}')
-        logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
-        logger.debug(f'Kernel: {platform.platform()}')
+        logger.debug(f'Versions: \n'
+                     f'{self._get_versions()}')
 
     def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
         last_version = Version(self._settings.get('Application.last_version'))
@@ -356,7 +360,11 @@ class Application(QApplication, AbstractEventEmitter):
             params = urllib.parse.urlencode({
                 'labels': 'exception',
                 'title': f'Unhandled {exc_type.__name__}',
-                'body': f'PLEASE PROVIDE SOME DETAILS HERE.\nREVIEW THE BELOW PART FOR SENSITIVE DATA.\n\n```\n{to_log}```'
+                'body': f'**Please explain here what you were doing**\n\n'
+                        f'Versions:\n'
+                        f'{self._get_versions()}\n'
+                        f'Stack trace:\n'
+                        f'```\n{to_log}```'
             })
             webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
 
