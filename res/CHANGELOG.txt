@@ -1,6 +1,7 @@
-### v0.9.1 (7 January 2025)
+### v0.9.1 (X January 2025)
 - [Technical] Enhanced bug reporting - GitHub issues now include info about versions.
 - [Bugfix] Defaulting to embedded Noto Sans (#68).
+- [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
 
 ### v0.9.0 (30 December 2024)
 - You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.

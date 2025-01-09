@@ -25,6 +25,7 @@ from semantic_version import Version
 logger = logging.getLogger(__name__)
 CHANGELOG_REGEX = re.compile(r'### v(.+) \(.*')
 GITHUB_TAG_REGEX = re.compile(r'v(.+)')
+GITHUB_API_URL = 'https://api.flowkeeper.org/repos/flowkeeper-org/fk-desktop/releases/latest?source=desktop'
 
 
 def get_current_version() -> Version:
@@ -41,7 +42,13 @@ def get_current_version() -> Version:
 
 
 def _success(reply: QNetworkReply, callback: Callable[[Version, str], None]) -> None:
-    j = json.loads(reply.readAll().toStdString())
+    s = reply.readAll().toStdString()
+    try:
+        j = json.loads(s)
+    except Exception as err:
+        logger.warning(f'Warning -- cannot parse GitHub response (invalid JSON): {s}', exc_info=err)
+        callback(None, None)
+        return
     if j is not None and 'name' in j:
         m = GITHUB_TAG_REGEX.search(j['name'])
         if m is None:
@@ -51,13 +58,13 @@ def _success(reply: QNetworkReply, callback: Callable[[Version, str], None]) -> 
 
 
 def _error(err: QNetworkReply.NetworkError, callback: Callable[[Version, str], None]) -> None:
-    logger.warning('Warning -- cannot get the latest Flowkeeper version info from GitHub:', exc_info=err)
+    logger.warning(f'Warning -- cannot get the latest Flowkeeper version info from GitHub: {err}')
     callback(None, None)
 
 
 def get_latest_version(parent: QObject, callback: Callable[[Version], None]) -> None:
     mgr = QNetworkAccessManager(parent)
-    req = QNetworkRequest('https://api.github.com/repos/flowkeeper-org/fk-desktop/releases/latest')
+    req = QNetworkRequest(GITHUB_API_URL)
     reply = mgr.get(req)
     reply.readyRead.connect(lambda: _success(reply, callback))
     reply.errorOccurred.connect(lambda err: _error(err, callback))
