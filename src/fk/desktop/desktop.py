@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu, QWizard
+from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -347,7 +347,11 @@ if __name__ == "__main__":
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
         # Workitems table
-        workitems_widget: WorkitemWidget = WorkitemWidget(window, app, app.get_source_holder(), actions)
+        workitems_widget: WorkitemWidget = WorkitemWidget(window,
+                                                          app,
+                                                          app.get_source_holder(),
+                                                          pomodoro_timer,
+                                                          actions)
         right_layout.addWidget(workitems_widget)
 
         progress_widget = ProgressWidget(window, app.get_source_holder())

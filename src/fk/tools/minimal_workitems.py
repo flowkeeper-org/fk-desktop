@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from fk.core.tenant import Tenant
+from fk.core.timer import PomodoroTimer
+from fk.qt.qt_timer import QtTimer
 from fk.qt.workitem_tableview import WorkitemTableView
 from fk.tools.minimal_common import MinimalCommon
 
@@ -24,10 +26,15 @@ def select_first_backlog(data: Tenant):
 
 
 mc = MinimalCommon(select_first_backlog)
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
 
 mc.get_window().resize(600, 400)
 WorkitemTableView.define_actions(mc.get_actions())
-workitems_table: WorkitemTableView = WorkitemTableView(mc.get_window(), mc.get_app(), mc.get_app().get_source_holder(), mc.get_actions())
+workitems_table: WorkitemTableView = WorkitemTableView(mc.get_window(),
+                                                       mc.get_app(),
+                                                       mc.get_app().get_source_holder(),
+                                                       pomodoro_timer,
+                                                       mc.get_actions())
 mc.get_actions().bind('workitems_table', workitems_table)
 mc.get_window().setCentralWidget(workitems_table)
 

@@ -23,6 +23,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
+from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
 from fk.desktop.application import Application
@@ -36,11 +37,13 @@ from fk.qt.workitem_text_delegate import WorkitemTextDelegate
 class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
     _application: Application
     _menu: QMenu
+    _pomodoro_timer: PomodoroTimer
 
     def __init__(self,
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
+                 pomodoro_timer: PomodoroTimer,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -52,9 +55,11 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                          'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
                          1)
         self._application = application
+        self._pomodoro_timer = pomodoro_timer
         self._configure_delegate()
         self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        pomodoro_timer.on('Timer(Work|Rest)(Start|Complete)', lambda **_: self.update_actions(self.get_current()))
         self.update_actions(None)
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -138,15 +143,17 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
 
     def update_actions(self, selected: Workitem) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
-        # TODO: Call this on any workitem and timer event
         is_workitem_selected = selected is not None
         is_workitem_editable = is_workitem_selected and not selected.is_sealed()
         self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
         self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable and selected.is_startable())
+        self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable
+                                                              and selected.is_startable()
+                                                              and self._pomodoro_timer.is_idling())
         self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
         self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable and selected.is_startable())
+        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable
+                                                                   and selected.is_startable())
 
     # Actions
 
