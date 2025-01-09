@@ -25,7 +25,7 @@ from semantic_version import Version
 logger = logging.getLogger(__name__)
 CHANGELOG_REGEX = re.compile(r'### v(.+) \(.*')
 GITHUB_TAG_REGEX = re.compile(r'v(.+)')
-GITHUB_API_URL = 'https://api.flowkeeper.org/repos/flowkeeper-org/fk-desktop/releases/latest?source=desktop'
+GITHUB_API_URL = 'https://api.github.com/repos/flowkeeper-org/fk-desktop/releases/latest'
 
 
 def get_current_version() -> Version:

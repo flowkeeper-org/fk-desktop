@@ -1,5 +1,6 @@
 ### v0.9.1 (X January 2025)
 - [Technical] Enhanced bug reporting - GitHub issues now include info about versions.
+- [Technical] System proxy settings are applied automatically.
 - [Bugfix] Defaulting to embedded Noto Sans (#68).
 - [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
 

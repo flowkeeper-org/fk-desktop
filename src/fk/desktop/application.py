@@ -28,7 +28,7 @@ from typing import Callable
 from PySide6 import QtCore
 from PySide6.QtCore import QFile, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
-from PySide6.QtNetwork import QTcpServer, QHostAddress
+from PySide6.QtNetwork import QTcpServer, QHostAddress, QNetworkProxyFactory
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -100,6 +100,7 @@ class Application(QApplication, AbstractEventEmitter):
 
         self._register_source_producers()
         self._heartbeat = None
+        QNetworkProxyFactory.setUseSystemConfiguration(True)
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
