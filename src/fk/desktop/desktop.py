@@ -63,10 +63,11 @@ def pin_if_needed():
     focus_window_was_visible = focus_window.isVisible()
 
     is_pinned = settings.get('Application.always_on_top') == 'True'
+    # Adding Qt.WindowType.WindowCloseButtonHint explicitly to fix #77
     window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
-                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
     focus_window.setWindowFlags(focus_window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
-                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
     if window_was_visible:
         window.show()
     if focus_window_was_visible:
