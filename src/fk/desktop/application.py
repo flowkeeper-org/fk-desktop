@@ -369,6 +369,16 @@ class Application(QApplication, AbstractEventEmitter):
             })
             webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
 
+    def bad_file_for_file_source(self):
+        filename = self.get_settings().get('FileEventSource.filename')
+        if (QMessageBox().critical(self.activeWindow(),
+                                   "Bad data file",
+                                   f"The data file you chose ({filename}) is a directory. Please select a valid file.",
+                                   QMessageBox.StandardButton.Open)
+                == QMessageBox.StandardButton.Open):
+            SettingsDialog.do_browse_simple(filename,
+                                            lambda v: self.get_settings().set({'FileEventSource.filename': v}))
+
     def get_main_font(self):
         return self._font_main
 
