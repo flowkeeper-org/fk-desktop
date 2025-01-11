@@ -396,3 +396,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     def update_default(self, name: str, value: str) -> None:
         self._defaults[name] = value
+
+    @abstractmethod
+    def init_audio_outputs(self):
+        pass
+
+    @abstractmethod
+    def init_gradients(self):
+        pass

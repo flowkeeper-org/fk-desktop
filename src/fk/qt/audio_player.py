@@ -70,6 +70,7 @@ class AudioPlayer(QObject):
         for device in QMediaDevices.audioOutputs():
             if device.id().toStdString() == self._settings.get('Application.audio_output'):
                 found = device
+                break
         if found is None:
             self._audio_output = None
             self._audio_player = None

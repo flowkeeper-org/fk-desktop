@@ -15,13 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
-import re
 import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime, Qt
-from PySide6.QtGui import QFont, QKeySequence, QIcon, QGradient
-from PySide6.QtMultimedia import QMediaDevices
+from PySide6.QtGui import QFont, QKeySequence, QIcon
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
@@ -54,8 +52,6 @@ class SettingsDialog(QDialog):
         self.resize(QSize(500, 450))
         self.setWindowTitle("Settings")
 
-        self._init_gradients()
-        self._init_audio_outputs()
         self._init_sign_out_button()
 
         buttons = QDialogButtonBox(self)
@@ -90,6 +86,9 @@ class SettingsDialog(QDialog):
         self.setLayout(root_layout)
         self._set_buttons_state(False)
 
+        # Reinitialize audio outputs -- the sound devices might have changed while Flowkeeper was running
+        self._data.init_audio_outputs()
+
     def _init_sign_out_button(self):
         lst = self._data._definitions['Connection']
         for i, d in enumerate(lst):
@@ -98,36 +97,6 @@ class SettingsDialog(QDialog):
                 t[2] = f'Sign out <{self._data.get_username()}>'
                 lst[i] = tuple(t)
                 return
-
-    def _init_gradients(self):
-        regex = re.compile('([A-Z][a-z]+)([A-Z].+)')
-        for d in self._data._definitions['Appearance']:
-            if d[0] == 'Application.eyecandy_gradient':
-                choice = d[4]
-                choice.clear()
-                for preset in QGradient.Preset:
-                    if preset.name == 'NumPresets':
-                        continue
-                    m = regex.search(preset.name)
-                    if m is not None:
-                        display_name = f'{m.group(1)} {m.group(2)}'
-                        choice.append(f'{preset.name}:{display_name}')
-                break
-
-    def _init_audio_outputs(self):
-        for d in self._data._definitions['Audio']:
-            if d[0] == 'Application.audio_output':
-                choice = d[4]
-                choice.clear()
-                for output in QMediaDevices.audioOutputs():
-                    name = output.id().toStdString()
-                    choice.append(f'{name}:{output.description()}')
-                    if output.isDefault():
-                        self._data.update_default('Application.audio_output', name)
-                break
-        if len(choice) == 0:
-            choice.append('#none:No audio outputs detected')
-            self._data.update_default('Application.audio_output', '#none')
 
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
         if role == QDialogButtonBox.ButtonRole.ApplyRole:

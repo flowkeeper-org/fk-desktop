@@ -5,6 +5,8 @@
 - [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
 - [Bugfix] Error when trying to start another pomodoro while the timer is running (#72, #74).
 - [Bugfix] Flowkeeper crashes when you select a directory as a data file (#70).
+- [Bugfix] On Windows, the main window close button is disabled (#77).
+- [Bugfix] There's no sound until you change Audio settings once (#85).
 
 ### v0.9.0 (30 December 2024)
 - You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.

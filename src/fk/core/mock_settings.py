@@ -88,3 +88,9 @@ class MockSettings(AbstractSettings):
 
     def get_auto_theme(self) -> str:
         return 'mixed'
+
+    def init_gradients(self):
+        pass
+
+    def init_audio_outputs(self):
+        pass
