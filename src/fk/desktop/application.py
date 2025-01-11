@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile, Signal
+from PySide6.QtCore import QFile, Signal, Qt
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtNetwork import QTcpServer, QHostAddress, QNetworkProxyFactory
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
@@ -644,10 +644,12 @@ class Application(QApplication, AbstractEventEmitter):
         msg = QMessageBox(QMessageBox.Icon.Information,
                           "An update is available",
                           f"You currently use Flowkeeper {current}. A newer version {latest_str} is now available at "
-                          f"flowkeeper.org. Would you like to download it? The changes include:\n\n"
-                          f"{changelog}",
+                          f"flowkeeper.org. Would you like to download it? "
+                          f'[More...](https://flowkeeper.org/v{latest_str}/)',
                           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                           self.activeWindow())
+        msg.setDetailedText(changelog)
+        msg.setTextFormat(Qt.TextFormat.MarkdownText)
         check = QCheckBox("Ignore this update", msg)
         msg.setCheckBox(check)
         res = msg.exec()
