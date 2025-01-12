@@ -125,33 +125,6 @@ def update_mode(**kwargs) -> None:
                 raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
 
-def recreate_focus_widget() -> None:
-    global focus_widget
-
-    old_focus_widget = focus_widget
-    if old_focus_widget is not None:
-        old_focus_widget.kill()
-        old_focus_widget.deleteLater()
-
-    focus_widget = FocusWidget(root_layout_widget,
-                               app,
-                               pomodoro_timer,
-                               app.get_source_holder(),
-                               settings,
-                               actions,
-                               settings.get('Application.focus_flavor'))
-    print(f'Constructed {focus_widget.objectName()} / {id(focus_widget)}')
-    focus_widget.update_fonts()
-    actions.bind('focus', focus_widget)
-
-    if focus_window.isVisible():
-        from_focus_mode()
-        to_focus_mode()
-    else:
-        to_focus_mode()
-        from_focus_mode()
-
-
 def recreate_tray_icon() -> None:
     global tray
     if tray is not None:
@@ -186,7 +159,7 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.always_on_top':
             pin_if_needed()
         elif name == 'Application.focus_flavor':
-            recreate_focus_widget()
+            focus_widget.set_flavor(settings.get('Application.focus_flavor'))
         elif name == 'Application.tray_icon_flavor':
             recreate_tray_icon()
 
@@ -325,7 +298,7 @@ if __name__ == "__main__":
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
-        # menu_file.addAction(actions['window.quickConfig'])
+        menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
@@ -385,8 +358,14 @@ if __name__ == "__main__":
 
         # noinspection PyTypeChecker
         root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus_widget: FocusWidget = None
-        recreate_focus_widget()
+        focus_widget = FocusWidget(root_layout_widget,
+                                   app,
+                                   pomodoro_timer,
+                                   app.get_source_holder(),
+                                   settings,
+                                   actions,
+                                   settings.get('Application.focus_flavor'))
+        root_layout.insertWidget(0, focus_widget)
 
         # Focus window should keep the same title as the main one
         focus_window.setWindowTitle(window.windowTitle())
