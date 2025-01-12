@@ -20,7 +20,7 @@ import sys
 
 import keyring
 from PySide6 import QtCore
-from PySide6.QtGui import QFont, Qt, QGuiApplication, QFontDatabase, QGradient
+from PySide6.QtGui import QFont, Qt, QGuiApplication, QGradient
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication
 
@@ -42,13 +42,8 @@ class QtSettings(AbstractSettings):
     _keyring_enabled: bool
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
-        font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
-        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        font = QFont(font_family)
         self._app_name = app_name
-        super().__init__(font.family(),
-                         font.pointSize(),
-                         invoke_in_main_thread,
+        super().__init__(invoke_in_main_thread,
                          QGuiApplication.platformName() == 'wayland')
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
@@ -69,6 +64,7 @@ class QtSettings(AbstractSettings):
 
         self.init_audio_outputs()
         self.init_gradients()
+        self.init_fonts()
 
     def _display_warning_if_needed(self) -> None:
         if self.get('Application.ignore_keyring_errors') == 'False':
@@ -209,3 +205,10 @@ class QtSettings(AbstractSettings):
                         display_name = f'{m.group(1)} {m.group(2)}'
                         choice.append(f'{preset.name}:{display_name}')
                 break
+
+    def init_fonts(self):
+        default_font = QFont()
+        self.update_default('Application.font_main_family', default_font.family())
+        self.update_default('Application.font_main_size', str(default_font.pointSize()))
+        self.update_default('Application.font_header_family', default_font.family())
+        self.update_default('Application.font_header_size', str(int(24.0 / 9 * default_font.pointSize())))

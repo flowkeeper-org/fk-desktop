@@ -38,6 +38,10 @@ def _never_show(_) -> bool:
     return False
 
 
+def _show_for_system_font(values: dict[str, str]) -> bool:
+    return values['Application.font_embedded'] == 'False'
+
+
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
     return values['Application.eyecandy_type'] == 'gradient'
 
@@ -110,8 +114,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _callback_invoker: Callable
 
     def __init__(self,
-                 default_font_family: str,
-                 default_font_size: int,
                  callback_invoker: Callable,
                  is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
@@ -246,10 +248,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
-                ('Application.font_main_family', 'font', 'Main font family', default_font_family, [], _always_show),
-                ('Application.font_main_size', 'int', 'Main font size', str(default_font_size), [3, 48], _always_show),
-                ('Application.font_header_family', 'font', 'Title font family', default_font_family, [], _always_show),
-                ('Application.font_header_size', 'int', 'Title font size', str(int(24.0 / 9 * default_font_size)), [3, 72], _always_show),
+                ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
+                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
+                ('Application.font_main_size', 'int', 'Main font size', '12', [3, 48], _show_for_system_font),
+                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
+                ('Application.font_header_size', 'int', 'Title font size', '32', [3, 72], _show_for_system_font),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
@@ -403,4 +406,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     @abstractmethod
     def init_gradients(self):
+        pass
+
+    @abstractmethod
+    def init_fonts(self):
         pass

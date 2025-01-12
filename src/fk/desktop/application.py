@@ -27,7 +27,7 @@ from typing import Callable
 
 from PySide6 import QtCore
 from PySide6.QtCore import QFile, Signal, Qt
-from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor, QFontDatabase
 from PySide6.QtNetwork import QTcpServer, QHostAddress, QNetworkProxyFactory
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
@@ -316,20 +316,37 @@ class Application(QApplication, AbstractEventEmitter):
         self._initialize_fonts()
 
     def _initialize_fonts(self) -> (QFont, QFont):
-        self._font_header = QFont(self._settings.get('Application.font_header_family'),
-                                  int(self._settings.get('Application.font_header_size')))
+        # First import embedded font into Qt fonts database
+        embedded_font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
+        families = QFontDatabase.applicationFontFamilies(embedded_font_id)
+        if len(families) > 0:
+            embedded_font_family = families[0]
+        else:
+            embedded_font_family = None
+
+        # Create corresponding QFont objects
+        default_header_size = int(self._settings.get('Application.font_header_size'))
+        default_main_size = int(self._settings.get('Application.font_main_size'))
+        if self._settings.get('Application.font_embedded') == 'True' and embedded_font_family is not None:
+            self._font_header = QFont(embedded_font_family, default_header_size)
+            self._font_main = QFont(embedded_font_family, default_main_size)
+        else:
+            self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
+            self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
+
         if self._font_header is None:
             self._font_header = QFont()
             new_size = int(self._font_header.pointSize() * 24.0 / 9)
             self._font_header.setPointSize(new_size)
-    
-        self._font_main = QFont(self._settings.get('Application.font_main_family'),
-                                int(self._settings.get('Application.font_main_size')))
+
+        if self._font_main is None:
+            self._font_main = QFont()
 
         self.setFont(self._font_main)
         logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
         logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
 
+        # Notify everyone
         self._emit(AfterFontsChanged, {
             'main_font': self._font_main,
             'header_font': self._font_header,

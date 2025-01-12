@@ -1,7 +1,7 @@
 ### v0.9.1 (X January 2025)
 - [Technical] Enhanced bug reporting - GitHub issues now include info about versions.
 - [Technical] System proxy settings are applied automatically.
-- [Bugfix] Defaulting to embedded Noto Sans (#68).
+- [Bugfix] Using embedded Noto Sans font by default, see Settings > Fonts (#68).
 - [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
 - [Bugfix] Error when trying to start another pomodoro while the timer is running (#72, #74).
 - [Bugfix] Flowkeeper crashes when you select a directory as a data file (#70).
