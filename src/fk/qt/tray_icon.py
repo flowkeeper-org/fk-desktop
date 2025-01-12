@@ -85,6 +85,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setContextMenu(menu)
 
     def kill(self):
+        super().kill()
         pass    # Unsubscribe any externals here
 
     def reset(self):

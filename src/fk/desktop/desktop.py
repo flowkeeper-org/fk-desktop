@@ -127,9 +127,12 @@ def update_mode(**kwargs) -> None:
 
 def recreate_focus_widget() -> None:
     global focus_widget
-    if focus_widget is not None:
-        focus_widget.kill()
-        root_layout.removeWidget(focus_widget)
+
+    old_focus_widget = focus_widget
+    if old_focus_widget is not None:
+        old_focus_widget.kill()
+        old_focus_widget.deleteLater()
+
     focus_widget = FocusWidget(root_layout_widget,
                                app,
                                pomodoro_timer,
@@ -137,9 +140,16 @@ def recreate_focus_widget() -> None:
                                settings,
                                actions,
                                settings.get('Application.focus_flavor'))
-    root_layout.insertWidget(0, focus_widget)
+    print(f'Constructed {focus_widget.objectName()} / {id(focus_widget)}')
     focus_widget.update_fonts()
     actions.bind('focus', focus_widget)
+
+    if focus_window.isVisible():
+        from_focus_mode()
+        to_focus_mode()
+    else:
+        to_focus_mode()
+        from_focus_mode()
 
 
 def recreate_tray_icon() -> None:
@@ -370,13 +380,13 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         root_layout_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "rootLayout")
 
-        # noinspection PyTypeChecker
-        root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus_widget = None
-        recreate_focus_widget()
-
         focus_window = QMainWindow(window)
         focus_window.addActions(list(actions.values()))
+
+        # noinspection PyTypeChecker
+        root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
+        focus_widget: FocusWidget = None
+        recreate_focus_widget()
 
         # Focus window should keep the same title as the main one
         focus_window.setWindowTitle(window.windowTitle())

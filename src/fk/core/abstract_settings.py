@@ -26,8 +26,12 @@ from fk.core.events import get_all_events
 logger = logging.getLogger(__name__)
 
 
+def _get_desktop() -> [str]:
+    return [s.lower() for s in os.environ.get('XDG_SESSION_DESKTOP', '').split(':')]
+
+
 def _is_gnome() -> bool:
-    return os.environ.get('DESKTOP_SESSION', 'N/A') == 'gnome'
+    return 'gnome' in _get_desktop()
 
 
 def _always_show(_) -> bool:
@@ -105,6 +109,13 @@ def _show_if_madelene(values: dict[str, str]) -> bool:
 
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
+
+
+def _is_tiling_wm() -> bool:
+    wm = _get_desktop()
+    return ('hyprland' in wm
+            or 'i3' in wm
+            or 'awesome' in wm)
 
 
 class AbstractSettings(AbstractEventEmitter, ABC):
@@ -195,7 +206,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
             ],
             'Appearance': [
-                ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
+                ('Application.timer_ui_mode', 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
                     "keep:Keep application window as-is",
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",

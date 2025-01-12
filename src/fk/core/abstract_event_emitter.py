@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def _callback_display(callback) -> str:
     if inspect.ismethod(callback):
-        return f'{callback.__self__.__class__.__name__}.{callback.__name__}'
+        return f'{callback.__self__.__class__.__name__}[{id(callback.__self__)}].{callback.__name__}'
     else:
         return f'Function {callback.__name__}'
 

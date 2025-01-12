@@ -134,6 +134,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def kill(self):
+        super().kill()
         self._settings.unsubscribe(self._on_setting_changed)
         self._application.unsubscribe(self._on_fonts_changed)
 
@@ -260,6 +261,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                                  [item.get_uid(), "finished"])
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        print(f'tick({id(self)}')
         self._header_text.setText(state_text)
         self._timer_widget.set_values(my_value, my_max, None, None, mode)
 
