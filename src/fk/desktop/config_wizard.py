@@ -78,7 +78,8 @@ class PageConfigFocus(QWizardPage):
                                     application.get_source_holder(),
                                     application.get_settings(),
                                     actions,
-                                    'minimal')
+                                    'minimal',
+                                    True)
         self._widget1 = focus_minimal._timer_widget
         layout_v.addWidget(wrap_in_widget(focus_minimal))
         self._focus1 = focus_minimal
@@ -93,7 +94,8 @@ class PageConfigFocus(QWizardPage):
                                     application.get_source_holder(),
                                     application.get_settings(),
                                     actions,
-                                    'classic')
+                                    'classic',
+                                    True)
         self._widget2 = focus_classic._timer_widget
         layout_v.addWidget(wrap_in_widget(focus_classic))
         self._focus2 = focus_classic

@@ -50,6 +50,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _moving_around: QPoint | None
     _hint_label: QLabel | None
     _added: [QWidget]
+    _readonly: bool
 
     def __init__(self,
                  parent: QWidget,
@@ -58,7 +59,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                  source_holder: EventSourceHolder,
                  settings: AbstractSettings,
                  actions: Actions,
-                 flavor: str = 'minimal'):
+                 flavor: str = 'minimal',
+                 readonly: bool = False):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._apply_size_policy()
@@ -73,6 +75,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._border_color = QColor('#000000')
         self._timer_widget = None
         self._added = []
+        self._readonly = readonly
 
         self.setObjectName('focus')
 
@@ -107,10 +110,13 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         self.set_flavor(flavor)
 
-        self._actions['focus.nextPomodoro'].setDisabled(True)
-        self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
-        self._actions['focus.completeItem'].setDisabled(True)
-        self._actions['focus.voidPomodoro'].setDisabled(True)
+        if self._timer is not None:
+            if self._timer.is_working():
+                self._set_mode('working')
+            elif self._timer.is_resting():
+                self._set_mode('resting')
+            elif self._timer.is_idling():
+                self._set_mode('idle')
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -133,7 +139,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         center_button = None
         if flavor == 'classic':
             center_button = self._create_button("focus.voidPomodoro")
-            print(f'Appended center button: {center_button.isVisible()}')
             self._added.append(center_button)
 
         self._timer_widget = TimerWidget(self,
@@ -205,7 +210,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                        name: str,
                        parent: QWidget = None):
         action = self._actions[name]
-        print(f'Creating {name}, {action.isEnabled()}')
         btn = QToolButton(self if parent is None else parent)
         btn.setObjectName(name)
         btn.setIcon(QIcon(action.icon()))
@@ -216,11 +220,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         return btn
 
     def reset(self, text: str = 'Idle', subtext: str = "It's time for the next Pomodoro.") -> None:
-        print('reset')
         self._header_text.setText(text)
         self._header_subtext.setText(subtext)
-        self._actions['focus.completeItem'].setDisabled(True)
-        self._actions['focus.voidPomodoro'].setDisabled(True)
+        if not self._readonly:
+            self._actions['focus.completeItem'].setDisabled(True)
+            self._actions['focus.voidPomodoro'].setDisabled(True)
         self._timer_widget.reset()
 
     def eye_candy(self):
@@ -314,24 +318,25 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._timer_widget.set_values(my_value, my_max, None, None, mode)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
-        print(f'mode changed to {new_mode}')
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
-            self._actions['focus.nextPomodoro'].setDisabled(True)
-            self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
+            if not self._readonly:
+                self._actions['focus.nextPomodoro'].setDisabled(True)
+                self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         elif new_mode == 'working' or new_mode == 'resting':
             running_item = self._timer.get_running_workitem()
             self._header_subtext.setText(running_item.get_display_name())
-            self._actions['focus.voidPomodoro'].setDisabled(False)
-            print(f'focus.voidPomodoro: {self._actions["focus.voidPomodoro"].isEnabled()}')
-            self._actions['focus.nextPomodoro'].setDisabled(True)
-            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
-            self._actions['focus.completeItem'].setDisabled(False)
+            if not self._readonly:
+                self._actions['focus.voidPomodoro'].setDisabled(False)
+                self._actions['focus.nextPomodoro'].setDisabled(True)
+                self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
+                self._actions['focus.completeItem'].setDisabled(False)
         elif new_mode == 'ready':
             self.reset('Start another Pomodoro?', self._continue_workitem.get_display_name())
             self._timer_widget.set_values(0, 1, None, None, 'ready')
-            self._actions['focus.nextPomodoro'].setDisabled(False)
-            self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
+            if not self._readonly:
+                self._actions['focus.nextPomodoro'].setDisabled(False)
+                self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 
     def _apply_size_policy(self):
         sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -363,4 +368,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._moving_around = None
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
-        self._actions['window.focusMode'].toggle()
+        if not self._readonly:
+            self._actions['window.focusMode'].toggle()
+
