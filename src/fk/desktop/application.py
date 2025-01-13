@@ -75,9 +75,10 @@ class Application(QApplication, AbstractEventEmitter):
     _cryptograph: AbstractCryptograph
     _font_main: QFont
     _font_header: QFont
+    _embedded_font_family: str | None
     _row_height: int
     _source_holder: EventSourceHolder | None
-    _heartbeat: Heartbeat
+    _heartbeat: Heartbeat | None
     _version_timer: QtTimer
     _integration_executor: IntegrationExecutor
     _current_version: Version
@@ -100,6 +101,7 @@ class Application(QApplication, AbstractEventEmitter):
 
         self._register_source_producers()
         self._heartbeat = None
+        self._embedded_font_family = None
         QNetworkProxyFactory.setUseSystemConfiguration(True)
 
         # It's important to initialize settings after the QApplication
@@ -281,9 +283,13 @@ class Application(QApplication, AbstractEventEmitter):
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
-        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            variables['FONT_HEADER_FAMILY'] = self._embedded_font_family
+            variables['FONT_MAIN_FAMILY'] = self._embedded_font_family
+        else:
+            variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+            variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
         variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
-        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
         variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
         variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
         return variables
@@ -294,6 +300,8 @@ class Application(QApplication, AbstractEventEmitter):
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
+        
+        self._load_embedded_font()
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
@@ -315,22 +323,23 @@ class Application(QApplication, AbstractEventEmitter):
         # are not loaded correctly at startup
         self._initialize_fonts()
 
-    def _initialize_fonts(self) -> (QFont, QFont):
+    def _load_embedded_font(self):
         # First import embedded font into Qt fonts database
         embedded_font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
         families = QFontDatabase.applicationFontFamilies(embedded_font_id)
         if len(families) > 0:
-            embedded_font_family = families[0]
-        else:
-            embedded_font_family = None
+            self._embedded_font_family = families[0]
 
+    def _initialize_fonts(self) -> (QFont, QFont):
         # Create corresponding QFont objects
         default_header_size = int(self._settings.get('Application.font_header_size'))
         default_main_size = int(self._settings.get('Application.font_main_size'))
-        if self._settings.get('Application.font_embedded') == 'True' and embedded_font_family is not None:
-            self._font_header = QFont(embedded_font_family, default_header_size)
-            self._font_main = QFont(embedded_font_family, default_main_size)
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            logger.debug(f'Embedded font {self._embedded_font_family}, size {default_main_size} / {default_header_size}')
+            self._font_header = QFont(self._embedded_font_family, default_header_size)
+            self._font_main = QFont(self._embedded_font_family, default_main_size)
         else:
+            logger.debug(f'Custom font {self._settings.get("Application.font_main_family")}, size {default_main_size} / {default_header_size}')
             self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
             self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
 

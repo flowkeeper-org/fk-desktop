@@ -211,4 +211,4 @@ class QtSettings(AbstractSettings):
         self.update_default('Application.font_main_family', default_font.family())
         self.update_default('Application.font_main_size', str(default_font.pointSize()))
         self.update_default('Application.font_header_family', default_font.family())
-        self.update_default('Application.font_header_size', str(int(24.0 / 9 * default_font.pointSize())))
+        self.update_default('Application.font_header_size', str(int(8.0 / 3 * default_font.pointSize())))
