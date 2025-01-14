@@ -75,6 +75,7 @@ def pin_if_needed():
 
 
 def to_focus_mode(**kwargs) -> None:
+    logger.debug('Switching to focus mode')
     window.hide()
     root_layout.removeWidget(focus_widget)
 
@@ -90,6 +91,7 @@ def to_focus_mode(**kwargs) -> None:
 
 
 def from_focus_mode(**kwargs) -> None:
+    logger.debug('Switching from focus mode')
     focus_window.hide()
     focus_widget.setParent(root_layout_widget)
     root_layout.insertWidget(0, focus_widget)
@@ -113,12 +115,12 @@ def update_mode(**kwargs) -> None:
             window.hide()
     else:
         if mode == 'focus':
-            from_focus_mode()
+            actions['window.focusMode'].setChecked(False)  # This will trigger from_focus_mode() automatically
         elif mode == 'minimize':
             # It's a bit more complex than just showing the main window, because the user might have
             # detached the focus widget in the meantime.
             if focus_widget.parent() == focus_window:
-                from_focus_mode()
+                actions['window.focusMode'].setChecked(False)  # This will trigger from_focus_mode() automatically
             elif focus_widget.parent() == root_layout_widget:
                 window.show()
             else:

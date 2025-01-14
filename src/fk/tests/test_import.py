@@ -20,7 +20,7 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import get_event_source_factory, EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.import_export import import_
@@ -79,7 +79,7 @@ class TestImport(TestCase):
             # for the purpose of this unit test
             return EphemeralEventSource[Tenant](settings, cryptograph, root)
 
-        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
     def test_initialize(self):
         self.assertIn('user@local.host', self.data_temp)

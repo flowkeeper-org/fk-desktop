@@ -38,7 +38,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import get_event_source_factory, EventSourceFactory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
@@ -187,11 +187,13 @@ class Application(QApplication, AbstractEventEmitter):
                 f'- Kernel: {platform.platform()}\n')
 
     def _initialize_logger(self):
+        debug = '--debug' in self.arguments()
+
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         root = logging.getLogger()
 
         # 0. Set the overall log level that would apply to ALL handlers
-        root.setLevel(self._settings.get('Logger.level'))
+        root.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
 
         # 1. Remove existing handlers, if any
         for existing_handle in root.handlers:
@@ -201,13 +203,13 @@ class Application(QApplication, AbstractEventEmitter):
         # 2. Add FILE handler for whatever the user configured
         file_handler = logging.FileHandler(filename=self._settings.get('Logger.filename'))
         file_handler.setFormatter(log_format)
-        file_handler.setLevel(self._settings.get('Logger.level'))
+        file_handler.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
         root.handlers.append(file_handler)
 
         # 3. Add STDIO handler for warnings and errors
         stdio_handler = logging.StreamHandler(sys.stdout)
         stdio_handler.setFormatter(log_format)
-        stdio_handler.setLevel(logging.WARNING)
+        stdio_handler.setLevel(logging.DEBUG if debug else logging.WARNING)
         root.handlers.append(stdio_handler)
 
         logger.debug(f'Versions: \n'
@@ -228,20 +230,20 @@ class Application(QApplication, AbstractEventEmitter):
             inner_source = FileEventSource[Tenant](settings, cryptograph, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('local', local_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('local', local_source_producer)
 
         def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
 
-        get_event_source_factory().register_producer('websocket', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
