@@ -20,7 +20,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import EventSourceFactory
 from fk.core.tenant import Tenant
 
 BeforeSourceChanged = "BeforeSourceChanged"
@@ -45,7 +45,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
     def request_new_source(self) -> AbstractEventSource[TRoot]:
         source_type = self._settings.get('Source.type')
         logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
-        if not get_event_source_factory().is_valid(source_type):
+        if not EventSourceFactory.get_event_source_factory().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source
             raise Exception(f"Source type {source_type} not supported")
 
@@ -62,7 +62,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
             self._source.cancel('*')
             self._source.disconnect()
 
-        producer = get_event_source_factory().get_producer(source_type)
+        producer = EventSourceFactory.get_event_source_factory().get_producer(source_type)
         logger.debug(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')
         # UC-3: An empty new data structure is created for each new event source request
         self._source = producer(

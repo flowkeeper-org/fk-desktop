@@ -26,7 +26,7 @@ TRoot = TypeVar('TRoot')
 
 
 class EventSourceFactory(Generic[TRoot]):
-    _source_producers: dict[str, Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]]
+    _source_producers: dict[str, Callable[[AbstractSettings, AbstractCryptograph, TRoot], AbstractEventSource[TRoot]]]
     _instance: EventSourceFactory[TRoot] = None
 
     def __init__(self):
@@ -35,16 +35,16 @@ class EventSourceFactory(Generic[TRoot]):
     def is_valid(self, name: str) -> bool:
         return name in self._source_producers
 
-    def get_producer(self, name: str) -> Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]:
+    def get_producer(self, name: str) -> Callable[[AbstractSettings, AbstractCryptograph, TRoot], AbstractEventSource[TRoot]]:
         return self._source_producers.get(name)
 
     def register_producer(self,
                           name: str,
-                          producer: Callable[[AbstractSettings, AbstractCryptograph, object], AbstractEventSource[TRoot]]) -> None:
+                          producer: Callable[[AbstractSettings, AbstractCryptograph, TRoot], AbstractEventSource[TRoot]]) -> None:
         self._source_producers[name] = producer
 
-
-def get_event_source_factory() -> EventSourceFactory[Tenant]:
-    if EventSourceFactory._instance is None:
-        EventSourceFactory._instance = EventSourceFactory[Tenant]()
-    return EventSourceFactory._instance
+    @staticmethod
+    def get_event_source_factory() -> EventSourceFactory[Tenant]:
+        if EventSourceFactory._instance is None:
+            EventSourceFactory._instance = EventSourceFactory[Tenant]()
+        return EventSourceFactory._instance
