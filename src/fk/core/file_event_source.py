@@ -158,7 +158,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.mute()
 
         filename = self._get_filename()
-        if not path.isfile(filename):
+        if path.isdir(filename):
+            raise IsADirectoryError(f'{filename} is a directory. Expected a filename.')
+        elif not path.isfile(filename):
             with open(filename, 'w', encoding='UTF-8') as f:
                 s = self.get_init_strategy(self._emit)
                 f.write(f'{self._serializer.serialize(s)}\n')

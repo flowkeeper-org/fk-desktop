@@ -29,7 +29,7 @@ class MockSettings(AbstractSettings):
     _settings: dict[str, str]
 
     def __init__(self, filename=None, username=None, source_type="local"):
-        super().__init__('Arial', 10, invoke_direct)
+        super().__init__(invoke_direct)
         # UC-3: Mock settings used for testing predefine a fixed encryption key
         # UC-3: Mock settings do not persist between application / test restarts
         self._settings = {
@@ -88,3 +88,12 @@ class MockSettings(AbstractSettings):
 
     def get_auto_theme(self) -> str:
         return 'mixed'
+
+    def init_gradients(self):
+        pass
+
+    def init_audio_outputs(self):
+        pass
+
+    def init_fonts(self):
+        pass

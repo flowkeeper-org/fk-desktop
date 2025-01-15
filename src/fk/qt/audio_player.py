@@ -70,6 +70,7 @@ class AudioPlayer(QObject):
         for device in QMediaDevices.audioOutputs():
             if device.id().toStdString() == self._settings.get('Application.audio_output'):
                 found = device
+                break
         if found is None:
             self._audio_output = None
             self._audio_player = None
@@ -103,10 +104,15 @@ class AudioPlayer(QObject):
                 self._audio_player.stop()     # In case it was ticking or playing rest music
                 alarm_file = self._settings.get('Application.alarm_sound_file')
                 self._reset()
-                self._set_volume('Application.alarm_sound_volume')
-                self._audio_player.setSource(alarm_file)
-                self._audio_player.setLoops(1)
-                self._audio_player.play()
+
+                # We've already checked it, but our audio device could've mysteriously disappeared
+                #  in the meantime, setting self._audio_player to None in _reset(). Bug #81 was
+                #  reported when this happened due to computer waking up from sleep.
+                if self._audio_player is not None:
+                    self._set_volume('Application.alarm_sound_volume')
+                    self._audio_player.setSource(alarm_file)
+                    self._audio_player.setLoops(1)
+                    self._audio_player.play()
 
             # Rest music
             if event == 'TimerWorkComplete':
@@ -119,10 +125,13 @@ class AudioPlayer(QObject):
                 self._audio_player.stop()     # Just in case
                 tick_file = self._settings.get('Application.tick_sound_file')
                 self._reset()
-                self._set_volume('Application.tick_sound_volume')
-                self._audio_player.setSource(tick_file)
-                self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
-                self._audio_player.play()
+
+                # See comment in _play_audio()
+                if self._audio_player is not None:
+                    self._set_volume('Application.tick_sound_volume')
+                    self._audio_player.setSource(tick_file)
+                    self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
+                    self._audio_player.play()
 
     def _start_rest_sound(self) -> None:
         if self._audio_player is not None:
@@ -131,10 +140,13 @@ class AudioPlayer(QObject):
                 self._audio_player.stop()     # In case it was ticking
                 rest_file = self._settings.get('Application.rest_sound_file')
                 self._reset()
-                self._set_volume('Application.rest_sound_volume')
-                self._audio_player.setSource(rest_file)
-                self._audio_player.setLoops(1)
-                self._audio_player.play()     # This will substitute the bell sound
+
+                # See comment in _play_audio()
+                if self._audio_player is not None:
+                    self._set_volume('Application.rest_sound_volume')
+                    self._audio_player.setSource(rest_file)
+                    self._audio_player.setLoops(1)
+                    self._audio_player.play()     # This will substitute the bell sound
 
     def _start_what_is_needed(self) -> None:
         if self._timer.is_working():

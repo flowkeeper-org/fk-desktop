@@ -69,6 +69,14 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._initialize_menu()
         self.reset()
 
+        if self._timer is not None:
+            if self._timer.is_working():
+                self._set_mode('working')
+            elif self._timer.is_resting():
+                self._set_mode('resting')
+            elif self._timer.is_idling():
+                self._set_mode('idle')
+
     def _initialize_menu(self):
         menu = QMenu()
         if 'focus.voidPomodoro' in self._actions:
@@ -85,6 +93,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setContextMenu(menu)
 
     def kill(self):
+        super().kill()
         pass    # Unsubscribe any externals here
 
     def reset(self):

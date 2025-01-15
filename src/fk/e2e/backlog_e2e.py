@@ -369,6 +369,30 @@ class BacklogE2eTest(AbstractE2eTest):
             'focus.voidPomodoro',
         ])
 
+        #######################################
+        # Check actions on a started workitem #
+        #######################################
+        self.info('Start a workitem to check actions visibility')
+        await self._find_workitem('Workitem 13')
+        await self._start_pomodoro()
+        await self._wait_mid_pomodoro()
+
+        assert_backlog_actions_enabled(True)
+        self.assert_actions_enabled([
+            'workitems_table.deleteItem',
+            'workitems_table.addPomodoro',
+            'workitems_table.completeItem',
+            'workitems_table.renameItem',
+            'workitems_table.removePomodoro',
+            'focus.voidPomodoro',
+        ])
+        self.assert_actions_disabled([
+            'workitems_table.startItem',
+        ])
+
+        self.info('Void pomodoro to reset the state')
+        await self._void_pomodoro()
+
     async def test_03_renames(self):
         # noinspection PyTypeChecker
         backlogs_table: BacklogTableView = self.window().findChild(BacklogTableView, "backlogs_table")
