@@ -177,6 +177,7 @@ class QtSettings(AbstractSettings):
             return 'mixed'
 
     def init_audio_outputs(self):
+        choice = []
         for d in self._definitions['Audio']:
             if d[0] == 'Application.audio_output':
                 choice = d[4]

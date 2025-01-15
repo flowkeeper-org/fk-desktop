@@ -1,4 +1,4 @@
-### v0.9.1 (X January 2025)
+### v0.9.1 (15 January 2025)
 
 This is a bugfix release, it has no new features.
 
@@ -17,8 +17,6 @@ This is a bugfix release, it has no new features.
 - [Technical] New command-line flag: --debug, enables debug logs for this session.
 - [Technical] System proxy settings are applied automatically.
 - [Technical] Using embedded Noto Sans font by default, see Settings > Fonts.
-
-TODO #82
 
 ### v0.9.0 (30 December 2024)
 - You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.
