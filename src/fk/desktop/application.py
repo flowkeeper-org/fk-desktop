@@ -26,6 +26,9 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
+from PySide6.QtCore import QFile, Signal, Qt
+from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor, QFontDatabase
+from PySide6.QtNetwork import QTcpServer, QHostAddress, QNetworkProxyFactory
 from PySide6.QtCore import QFile, Signal, QStandardPaths
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtNetwork import QTcpServer, QHostAddress
@@ -38,7 +41,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import EventSourceFactory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
@@ -75,9 +78,10 @@ class Application(QApplication, AbstractEventEmitter):
     _cryptograph: AbstractCryptograph
     _font_main: QFont
     _font_header: QFont
+    _embedded_font_family: str | None
     _row_height: int
     _source_holder: EventSourceHolder | None
-    _heartbeat: Heartbeat
+    _heartbeat: Heartbeat | None
     _version_timer: QtTimer
     _integration_executor: IntegrationExecutor
     _current_version: Version
@@ -103,6 +107,8 @@ class Application(QApplication, AbstractEventEmitter):
 
         self._register_source_producers()
         self._heartbeat = None
+        self._embedded_font_family = None
+        QNetworkProxyFactory.setUseSystemConfiguration(True)
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
@@ -187,11 +193,13 @@ class Application(QApplication, AbstractEventEmitter):
                 f'- Kernel: {platform.platform()}\n')
 
     def _initialize_logger(self):
+        debug = '--debug' in self.arguments()
+
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         root = logging.getLogger()
 
         # 0. Set the overall log level that would apply to ALL handlers
-        root.setLevel(self._settings.get('Logger.level'))
+        root.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
 
         # 1. Remove existing handlers, if any
         for existing_handle in root.handlers:
@@ -205,13 +213,13 @@ class Application(QApplication, AbstractEventEmitter):
         # 3. Add FILE handler for whatever the user configured
         file_handler = logging.FileHandler(filename=filename)
         file_handler.setFormatter(log_format)
-        file_handler.setLevel(self._settings.get('Logger.level'))
+        file_handler.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
         root.handlers.append(file_handler)
 
         # 4. Add STDIO handler for warnings and errors
         stdio_handler = logging.StreamHandler(sys.stdout)
         stdio_handler.setFormatter(log_format)
-        stdio_handler.setLevel(logging.WARNING)
+        stdio_handler.setLevel(logging.DEBUG if debug else logging.WARNING)
         root.handlers.append(stdio_handler)
 
         logger.debug(f'Versions: \n'
@@ -232,20 +240,20 @@ class Application(QApplication, AbstractEventEmitter):
             inner_source = FileEventSource[Tenant](settings, cryptograph, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('local', local_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('local', local_source_producer)
 
         def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
 
-        get_event_source_factory().register_producer('websocket', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
@@ -287,9 +295,13 @@ class Application(QApplication, AbstractEventEmitter):
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
-        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            variables['FONT_HEADER_FAMILY'] = self._embedded_font_family
+            variables['FONT_MAIN_FAMILY'] = self._embedded_font_family
+        else:
+            variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+            variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
         variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
-        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
         variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
         variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
         return variables
@@ -300,6 +312,8 @@ class Application(QApplication, AbstractEventEmitter):
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
+
+        self._load_embedded_font()
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
@@ -321,21 +335,39 @@ class Application(QApplication, AbstractEventEmitter):
         # are not loaded correctly at startup
         self._initialize_fonts()
 
+    def _load_embedded_font(self):
+        # First import embedded font into Qt fonts database
+        embedded_font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
+        families = QFontDatabase.applicationFontFamilies(embedded_font_id)
+        if len(families) > 0:
+            self._embedded_font_family = families[0]
+
     def _initialize_fonts(self) -> (QFont, QFont):
-        self._font_header = QFont(self._settings.get('Application.font_header_family'),
-                                  int(self._settings.get('Application.font_header_size')))
+        # Create corresponding QFont objects
+        default_header_size = int(self._settings.get('Application.font_header_size'))
+        default_main_size = int(self._settings.get('Application.font_main_size'))
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            logger.debug(f'Embedded font {self._embedded_font_family}, size {default_main_size} / {default_header_size}')
+            self._font_header = QFont(self._embedded_font_family, default_header_size)
+            self._font_main = QFont(self._embedded_font_family, default_main_size)
+        else:
+            logger.debug(f'Custom font {self._settings.get("Application.font_main_family")}, size {default_main_size} / {default_header_size}')
+            self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
+            self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
+
         if self._font_header is None:
             self._font_header = QFont()
             new_size = int(self._font_header.pointSize() * 24.0 / 9)
             self._font_header.setPointSize(new_size)
-    
-        self._font_main = QFont(self._settings.get('Application.font_main_family'),
-                                int(self._settings.get('Application.font_main_size')))
+
+        if self._font_main is None:
+            self._font_main = QFont()
 
         self.setFont(self._font_main)
         logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
         logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
 
+        # Notify everyone
         self._emit(AfterFontsChanged, {
             'main_font': self._font_main,
             'header_font': self._font_header,
@@ -374,6 +406,16 @@ class Application(QApplication, AbstractEventEmitter):
                         f'```\n{to_log}```'
             })
             webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
+
+    def bad_file_for_file_source(self):
+        filename = self.get_settings().get('FileEventSource.filename')
+        if (QMessageBox().critical(self.activeWindow(),
+                                   "Bad data file",
+                                   f"The data file you chose ({filename}) is a directory. Please select a valid file.",
+                                   QMessageBox.StandardButton.Open)
+                == QMessageBox.StandardButton.Open):
+            SettingsDialog.do_browse_simple(filename,
+                                            lambda v: self.get_settings().set({'FileEventSource.filename': v}))
 
     def get_main_font(self):
         return self._font_main
@@ -640,10 +682,12 @@ class Application(QApplication, AbstractEventEmitter):
         msg = QMessageBox(QMessageBox.Icon.Information,
                           "An update is available",
                           f"You currently use Flowkeeper {current}. A newer version {latest_str} is now available at "
-                          f"flowkeeper.org. Would you like to download it? The changes include:\n\n"
-                          f"{changelog}",
+                          f"flowkeeper.org. Would you like to download it? "
+                          f'[More...](https://flowkeeper.org/v{latest_str}/)',
                           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                           self.activeWindow())
+        msg.setDetailedText(changelog)
+        msg.setTextFormat(Qt.TextFormat.MarkdownText)
         check = QCheckBox("Ignore this update", msg)
         msg.setCheckBox(check)
         res = msg.exec()

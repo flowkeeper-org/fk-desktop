@@ -1,6 +1,22 @@
-### v0.9.1 (7 January 2025)
+### v0.9.1 (15 January 2025)
+
+This is a bugfix release, it has no new features.
+
+- [Bugfix] Main window doesn't restore correctly on Hyprland (#48).
+- [Bugfix] Unhandled SystemError if Flowkeeper is upgraded while a pomodoro is running (#62).
+- [Bugfix] Broken fonts / squares instead of characters on Ubuntu 23.10 (#68).
+- [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
+- [Bugfix] Flowkeeper crashes when you select a directory as a data file (#70).
+- [Bugfix] Error when trying to start another pomodoro while the timer is running (#72, #74).
+- [Bugfix] On Windows, the main window close button is disabled (#77).
+- [Bugfix] Flowkeeper doesn't switch to focus mode after one completed pomodoro (#79).
+- [Bugfix] Unhandled AttributeError when computer wakes up from sleep while playing audio (#81).
+- [Bugfix] There's no sound until you change Audio settings once (#85).
+- [Bugfix] Able to click "next pomodoro" after marking workitem complete (#88).
 - [Technical] Enhanced bug reporting - GitHub issues now include info about versions.
-- [Bugfix] Defaulting to embedded Noto Sans (#68).
+- [Technical] New command-line flag: --debug, enables debug logs for this session.
+- [Technical] System proxy settings are applied automatically.
+- [Technical] Using embedded Noto Sans font by default, see Settings > Fonts.
 
 ### v0.9.0 (30 December 2024)
 - You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.

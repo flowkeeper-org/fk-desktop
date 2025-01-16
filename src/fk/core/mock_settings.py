@@ -30,9 +30,7 @@ class MockSettings(AbstractSettings):
     _settings: dict[str, str]
 
     def __init__(self, filename=None, username=None, source_type="local"):
-        super().__init__('Noto Sans',
-                         10,
-                         Path.home().absolute(),
+        super().__init__(Path.home().absolute(),
                          Path.home().absolute(),
                          invoke_direct)
         # UC-3: Mock settings used for testing predefine a fixed encryption key
@@ -93,3 +91,12 @@ class MockSettings(AbstractSettings):
 
     def get_auto_theme(self) -> str:
         return 'mixed'
+
+    def init_gradients(self):
+        pass
+
+    def init_audio_outputs(self):
+        pass
+
+    def init_fonts(self):
+        pass

@@ -18,7 +18,7 @@ import logging
 import threading
 from typing import Callable
 
-from PySide6.QtCore import QEvent, QCoreApplication, QTimer
+from PySide6.QtCore import QEvent, QCoreApplication, QTimer, QObject
 
 from fk.core.timer import AbstractTimer
 
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class QExtendedTimer(QTimer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
 
     def customEvent(self, event: QEvent) -> None:
         logger.debug(f'QExtendedTimer - customEvent, {threading.get_ident()}, {self.objectName()}')
@@ -49,10 +49,10 @@ class QtTimer(AbstractTimer):
     _once: bool
     _name: str
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, parent: QObject | None = None):
         self._name = name
         logger.debug(f'Creating timer {name}')
-        self._timer = QExtendedTimer()
+        self._timer = QExtendedTimer(parent)
         self._timer.setObjectName(name)
         self._timer.timeout.connect(lambda: self._call())
 

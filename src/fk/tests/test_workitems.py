@@ -185,6 +185,14 @@ class TestWorkitems(TestCase):
         self.assertFalse(workitem.is_running())
         self.assertFalse(workitem.has_running_pomodoro())
 
+    def test_complete_workitem_with_two_pomodoros(self):
+        user, backlog = self._standard_backlog()
+        self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
+        self.source.execute(AddPomodoroStrategy, ['w11', '2'])
+        self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
+        self.source.auto_seal()
+        self.assertFalse(backlog['w11'].is_startable())
+
     def test_complete_workitem_invalid_state(self):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])

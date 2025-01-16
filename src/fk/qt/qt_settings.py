@@ -15,12 +15,15 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
+import re
 import sys
 
 import keyring
 from PySide6 import QtCore
 from PySide6.QtCore import QStandardPaths
 from PySide6.QtGui import QFont, Qt, QGuiApplication, QFontDatabase
+from PySide6.QtGui import QFont, Qt, QGuiApplication, QGradient
+from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
@@ -41,13 +44,8 @@ class QtSettings(AbstractSettings):
     _keyring_enabled: bool
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
-        font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
-        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        font = QFont(font_family)
         self._app_name = app_name
-        super().__init__(font.family(),
-                         font.pointSize(),
-                         QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation),
+        super().__init__(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation),
                          QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
                          invoke_in_main_thread,
                          QGuiApplication.platformName() == 'wayland')
@@ -67,6 +65,10 @@ class QtSettings(AbstractSettings):
         connect_feature_enabled = self.get('Application.feature_connect') == 'True'
         if not connect_feature_enabled:
             self._disable_connected_sources()
+
+        self.init_audio_outputs()
+        self.init_gradients()
+        self.init_fonts()
 
     def _display_warning_if_needed(self) -> None:
         if self.get('Application.ignore_keyring_errors') == 'False':
@@ -177,3 +179,41 @@ class QtSettings(AbstractSettings):
             return 'dark'
         else:
             return 'mixed'
+
+    def init_audio_outputs(self):
+        choice = []
+        for d in self._definitions['Audio']:
+            if d[0] == 'Application.audio_output':
+                choice = d[4]
+                choice.clear()
+                for output in QMediaDevices.audioOutputs():
+                    name = output.id().toStdString()
+                    choice.append(f'{name}:{output.description()}')
+                    if output.isDefault():
+                        self.update_default('Application.audio_output', name)
+                break
+        if len(choice) == 0:
+            choice.append('#none:No audio outputs detected')
+            self.update_default('Application.audio_output', '#none')
+
+    def init_gradients(self):
+        regex = re.compile('([A-Z][a-z]+)([A-Z].+)')
+        for d in self._definitions['Appearance']:
+            if d[0] == 'Application.eyecandy_gradient':
+                choice = d[4]
+                choice.clear()
+                for preset in QGradient.Preset:
+                    if preset.name == 'NumPresets':
+                        continue
+                    m = regex.search(preset.name)
+                    if m is not None:
+                        display_name = f'{m.group(1)} {m.group(2)}'
+                        choice.append(f'{preset.name}:{display_name}')
+                break
+
+    def init_fonts(self):
+        default_font = QFont()
+        self.update_default('Application.font_main_family', default_font.family())
+        self.update_default('Application.font_main_size', str(default_font.pointSize()))
+        self.update_default('Application.font_header_family', default_font.family())
+        self.update_default('Application.font_header_size', str(int(8.0 / 3 * default_font.pointSize())))

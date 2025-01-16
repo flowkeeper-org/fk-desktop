@@ -116,7 +116,6 @@ class TestSettings(TestCase):
         # Always
         self.assertIn('Source.type', visible)
         self.assertIn('Application.eyecandy_type', visible)
-        self.assertIn('Application.font_header_size', visible)
         self.assertIn('Pomodoro.default_work_duration', visible)
         self.assertIn('Application.play_tick_sound', visible)
         # Never

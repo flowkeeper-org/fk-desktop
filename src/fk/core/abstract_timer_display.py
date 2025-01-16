@@ -119,9 +119,7 @@ class AbstractTimerDisplay:
 
     def _on_pomodoro_remove(self, workitem: Workitem, **kwargs) -> None:
         # UC-1: Timer display goes into idle state from "ready for next pomodoro" state if that pomodoro is deleted
-        if workitem == self._continue_workitem \
-                and self._timer.is_idling() \
-                and not workitem.is_startable():
+        if workitem == self._continue_workitem and self._timer.is_idling() and not workitem.is_startable():
             self._continue_workitem = None
             self._set_mode('idle')
 
@@ -132,3 +130,18 @@ class AbstractTimerDisplay:
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         pass
+
+    def kill(self) -> None:
+        if self._timer is not None:
+            self._timer.unsubscribe(self._on_work_start)
+            self._timer.unsubscribe(self._on_work_complete)
+            self._timer.unsubscribe(self._on_rest_complete)
+            self._timer.unsubscribe(self._on_tick)
+            self._timer.unsubscribe(self._on_timer_initialized)
+        if self._source_holder is not None:
+            self._source_holder.unsubscribe(self._on_source_changed)
+            source = self._source_holder.get_source()
+            if source is not None:
+                source.unsubscribe(self._on_workitem_complete_or_delete)
+                source.unsubscribe(self._on_workitem_complete_or_delete)
+                source.unsubscribe(self._on_pomodoro_remove)

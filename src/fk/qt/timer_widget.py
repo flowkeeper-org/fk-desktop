@@ -29,6 +29,7 @@ class TimerWidget(QWidget):
     _timer_display: MinimalTimerRenderer
     _fg_color: QColor
     _bg_color: QColor
+    _last_values: dict | None
 
     clicked = Signal(QPoint)
 
@@ -40,6 +41,8 @@ class TimerWidget(QWidget):
                  display_size: int = 63,
                  is_dark: bool = True):
         super().__init__(parent)
+        self._last_values = None
+
         self.setObjectName(name)
 
         self._bg_color = self.palette().color(QPalette.ColorRole.Base)
@@ -117,6 +120,16 @@ class TimerWidget(QWidget):
                    mode: str) -> None:
         self._timer_display.set_values(my_value, my_max, team_value, team_max, mode)
         self._timer_display.repaint()
+        self._last_values = {
+            'my_value': my_value,
+            'my_max': my_max,
+            'team_value': team_value,
+            'team_max': team_max,
+            'mode': mode,
+        }
+
+    def get_last_values(self) -> dict():
+        return self._last_values
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.type() == QEvent.Type.MouseButtonPress:

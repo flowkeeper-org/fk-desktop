@@ -39,4 +39,4 @@ The Windows installer is created using Inno Setup by Jordan Russell <https://jrs
 
 The Debian installer is created using dpkg-deb tool <https://www.apt-browse.org/browse/ubuntu/bionic/main/amd64/dpkg/1.19.0.5ubuntu2/file/usr/share/doc/dpkg/copyright>.
 
-The embedded font is Noto Sans, distributed under Open Font License. Copyright 2022 The Noto Project Authors <https://github.com/notofonts/latin-greek-cyrillic>.
+The embedded font is Noto Sans, licensed under the SIL Open Font License, Version 1.1. Copyright 2022 The Noto Project Authors <https://github.com/notofonts/latin-greek-cyrillic>.

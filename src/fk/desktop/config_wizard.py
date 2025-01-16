@@ -49,8 +49,10 @@ def wrap_in_widget(widget: QWidget):
 
 class PageConfigFocus(QWizardPage):
     _tick: int
+    _focus1: FocusWidget
     _widget1: TimerWidget
     _option_minimal: QRadioButton
+    _focus2: FocusWidget
     _widget2: TimerWidget
     _option_classic: QRadioButton
 
@@ -76,9 +78,11 @@ class PageConfigFocus(QWizardPage):
                                     application.get_source_holder(),
                                     application.get_settings(),
                                     actions,
-                                    'minimal')
+                                    'minimal',
+                                    True)
         self._widget1 = focus_minimal._timer_widget
         layout_v.addWidget(wrap_in_widget(focus_minimal))
+        self._focus1 = focus_minimal
 
         self._option_classic = QRadioButton("Classic", self)
         self._option_classic.setChecked(flavor == 'classic')
@@ -90,9 +94,11 @@ class PageConfigFocus(QWizardPage):
                                     application.get_source_holder(),
                                     application.get_settings(),
                                     actions,
-                                    'classic')
+                                    'classic',
+                                    True)
         self._widget2 = focus_classic._timer_widget
         layout_v.addWidget(wrap_in_widget(focus_classic))
+        self._focus2 = focus_classic
 
         label = QLabel("You can change this in Settings > Appearance")
         label.setWordWrap(True)
@@ -113,6 +119,11 @@ class PageConfigFocus(QWizardPage):
 
     def get_setting(self) -> str:
         return 'classic' if self._option_classic.isChecked() else 'minimal'
+
+    def unsubscribe(self) -> None:
+        self._timer.cancel()
+        self._focus1.kill()
+        self._focus2.kill()
 
 
 class FakeTrayIcon(TrayIcon):
@@ -288,12 +299,16 @@ class ConfigWizard(QWizard):
             self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
 
         self.button(QWizard.WizardButton.FinishButton).clicked.connect(self._on_finish)
+        self.closed.connect(self.unsubscribe)
 
     def _on_finish(self):
         self._settings.set({
             'Application.focus_flavor': self._page_focus.get_setting(),
             'Application.tray_icon_flavor': self._page_icons.get_setting(),
         })
+
+    def unsubscribe(self):
+        self._page_focus.unsubscribe()
 
     def hideEvent(self, event: QHideEvent) -> None:
         super(ConfigWizard, self).hideEvent(event)

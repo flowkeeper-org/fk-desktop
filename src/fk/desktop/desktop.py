@@ -20,7 +20,7 @@ import threading
 from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu, QWizard
+from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -63,10 +63,11 @@ def pin_if_needed():
     focus_window_was_visible = focus_window.isVisible()
 
     is_pinned = settings.get('Application.always_on_top') == 'True'
+    # Adding Qt.WindowType.WindowCloseButtonHint explicitly to fix #77
     window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
-                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+                          window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
     focus_window.setWindowFlags(focus_window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
-                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+                                focus_window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
     if window_was_visible:
         window.show()
     if focus_window_was_visible:
@@ -74,6 +75,7 @@ def pin_if_needed():
 
 
 def to_focus_mode(**kwargs) -> None:
+    logger.debug('Switching to focus mode')
     window.hide()
     root_layout.removeWidget(focus_widget)
 
@@ -89,6 +91,7 @@ def to_focus_mode(**kwargs) -> None:
 
 
 def from_focus_mode(**kwargs) -> None:
+    logger.debug('Switching from focus mode')
     focus_window.hide()
     focus_widget.setParent(root_layout_widget)
     root_layout.insertWidget(0, focus_widget)
@@ -112,33 +115,16 @@ def update_mode(**kwargs) -> None:
             window.hide()
     else:
         if mode == 'focus':
-            from_focus_mode()
+            actions['window.focusMode'].setChecked(False)  # This will trigger from_focus_mode() automatically
         elif mode == 'minimize':
             # It's a bit more complex than just showing the main window, because the user might have
             # detached the focus widget in the meantime.
             if focus_widget.parent() == focus_window:
-                from_focus_mode()
+                actions['window.focusMode'].setChecked(False)  # This will trigger from_focus_mode() automatically
             elif focus_widget.parent() == root_layout_widget:
                 window.show()
             else:
                 raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
-
-
-def recreate_focus_widget() -> None:
-    global focus_widget
-    if focus_widget is not None:
-        focus_widget.kill()
-        root_layout.removeWidget(focus_widget)
-    focus_widget = FocusWidget(root_layout_widget,
-                               app,
-                               pomodoro_timer,
-                               app.get_source_holder(),
-                               settings,
-                               actions,
-                               settings.get('Application.focus_flavor'))
-    root_layout.insertWidget(0, focus_widget)
-    focus_widget.update_fonts()
-    actions.bind('focus', focus_widget)
 
 
 def recreate_tray_icon() -> None:
@@ -175,7 +161,7 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.always_on_top':
             pin_if_needed()
         elif name == 'Application.focus_flavor':
-            recreate_focus_widget()
+            focus_widget.set_flavor(settings.get('Application.focus_flavor'))
         elif name == 'Application.tray_icon_flavor':
             recreate_tray_icon()
 
@@ -314,7 +300,7 @@ if __name__ == "__main__":
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
-        # menu_file.addAction(actions['window.quickConfig'])
+        menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
@@ -347,7 +333,11 @@ if __name__ == "__main__":
         right_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rightTableLayoutInternal")
 
         # Workitems table
-        workitems_widget: WorkitemWidget = WorkitemWidget(window, app, app.get_source_holder(), actions)
+        workitems_widget: WorkitemWidget = WorkitemWidget(window,
+                                                          app,
+                                                          app.get_source_holder(),
+                                                          pomodoro_timer,
+                                                          actions)
         right_layout.addWidget(workitems_widget)
 
         progress_widget = ProgressWidget(window, app.get_source_holder())
@@ -365,13 +355,19 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         root_layout_widget: QtWidgets.QWidget = window.findChild(QtWidgets.QWidget, "rootLayout")
 
-        # noinspection PyTypeChecker
-        root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
-        focus_widget = None
-        recreate_focus_widget()
-
         focus_window = QMainWindow(window)
         focus_window.addActions(list(actions.values()))
+
+        # noinspection PyTypeChecker
+        root_layout: QtWidgets.QVBoxLayout = window.findChild(QtWidgets.QVBoxLayout, "rootLayoutInternal")
+        focus_widget = FocusWidget(root_layout_widget,
+                                   app,
+                                   pomodoro_timer,
+                                   app.get_source_holder(),
+                                   settings,
+                                   actions,
+                                   settings.get('Application.focus_flavor'))
+        root_layout.insertWidget(0, focus_widget)
 
         # Focus window should keep the same title as the main one
         focus_window.setWindowTitle(window.windowTitle())

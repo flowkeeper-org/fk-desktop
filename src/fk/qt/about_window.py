@@ -17,17 +17,17 @@ import datetime
 
 from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject
-from PySide6.QtGui import QFont, QPalette
-from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QDialog
 
 from fk.core.abstract_timer import AbstractTimer
 from fk.qt.app_version import get_current_version
-from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.qt_timer import QtTimer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 
 
 class AboutWindow(QObject):
-    _about_window: QMainWindow
+    _about_window: QDialog
     _timer_display: MinimalTimerRenderer
     _timer: AbstractTimer
     _tick: int
@@ -35,13 +35,13 @@ class AboutWindow(QObject):
     def __init__(self, parent: QWidget | None):
         super().__init__(parent)
         self._timer_display = None
-        self._timer = QtTimer('About window')
+        self._timer = QtTimer('About window', self)
         self._tick = 299
 
         file = QFile(":/about.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
         # noinspection PyTypeChecker
-        self._about_window: QMainWindow = QtUiTools.QUiLoader().load(file, parent)
+        self._about_window = QtUiTools.QUiLoader().load(file, parent)
         file.close()
 
     def show(self):
@@ -84,6 +84,8 @@ class AboutWindow(QObject):
         self._timer_display.reset()
         self._timer.schedule(100, self._handle_tick, None)
         self._handle_tick(None, None)
+
+        self._about_window.rejected.connect(lambda: self._timer.cancel())
 
         self._about_window.show()
 

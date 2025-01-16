@@ -116,9 +116,10 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
             return self.get_create_date() <= backlog_start_date
 
     def is_startable(self) -> bool:
-        for p in self.values():
-            if p.is_startable():
-                return True
+        if not self.is_sealed():
+            for p in self.values():
+                if p.is_startable():
+                    return True
         return False
 
     def start(self, when: datetime.datetime) -> None:

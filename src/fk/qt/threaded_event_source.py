@@ -23,6 +23,7 @@ from PySide6.QtCore import QThreadPool, Slot
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
+from fk.core.file_event_source import FileEventSource
 from fk.core.pomodoro import Pomodoro
 from fk.core.tag import Tag
 from fk.core.user import User
@@ -50,7 +51,11 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                 self._wrapped.start(mute_events)
             except Exception as e:
                 def fail(ex):
-                    self._app.on_exception(type(ex), ex, ex.__traceback__)
+                    if type(ex) == IsADirectoryError and type(self._wrapped) == FileEventSource:
+                        # Fixing #70 -- a rare case when the user selected a directory instead of a filename
+                        self._app.bad_file_for_file_source()
+                    else:
+                        self._app.on_exception(type(ex), ex, ex.__traceback__)
                 invoke_in_main_thread(fail, ex=e)
         self._thread_pool.start(job)
 
