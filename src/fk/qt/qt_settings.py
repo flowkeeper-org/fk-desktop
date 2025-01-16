@@ -21,7 +21,6 @@ import sys
 import keyring
 from PySide6 import QtCore
 from PySide6.QtCore import QStandardPaths
-from PySide6.QtGui import QFont, Qt, QGuiApplication, QFontDatabase
 from PySide6.QtGui import QFont, Qt, QGuiApplication, QGradient
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication

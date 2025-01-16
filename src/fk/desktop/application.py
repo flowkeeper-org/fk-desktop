@@ -26,11 +26,11 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile, Signal, Qt
-from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor, QFontDatabase
-from PySide6.QtNetwork import QTcpServer, QHostAddress, QNetworkProxyFactory
 from PySide6.QtCore import QFile, Signal, QStandardPaths
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
+from PySide6.QtGui import QFontDatabase
+from PySide6.QtNetwork import QNetworkProxyFactory
 from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
