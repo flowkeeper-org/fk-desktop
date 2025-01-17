@@ -316,6 +316,13 @@ def import_(source: AbstractEventSource[TRoot],
                        completion_callback)
 
 
+def import_github_issues(source: AbstractEventSource[TRoot],
+                         issues: list[object]) -> None:
+    # source.execute(CreateWorkitemStrategy, ['b1', 'w1', 'Test'])
+    for issue in issues:
+        print(f'Issue: {issue["title"]}')
+
+
 def _merge_sources(existing_source,
                    new_source,
                    completion_callback: Callable[[int], None]) -> None:
