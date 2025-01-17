@@ -3,8 +3,10 @@
 TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
  content to the new default location. Mention it in the Config wizard.
 - Voided pomodoros are displayed as ticks to better match the textbook (#92).
-- Import from GitHub Issues (#00).
+- Basic import from GitHub Issues, try Ctrl+I (#00).
 TODO: A bug with going back in the import wizard
+TODO: GitHub import needs pagination
+TODO: Test GitHub import on a large public project
 
 ### v0.9.1 (15 January 2025)
 
