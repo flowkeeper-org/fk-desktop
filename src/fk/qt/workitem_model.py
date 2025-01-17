@@ -98,7 +98,13 @@ class WorkitemPomodoro(QtGui.QStandardItem):
 
     def update_display(self):
         self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
-        self.setData(QSize(len(self._workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
+
+        # Calculate its size, given that voided pomodoros are just narrow ticks
+        sz = 0
+        for p in self._workitem.values():
+            width = self._row_height / 4 if p.is_canceled() else self._row_height
+            sz += width
+        self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
 
 
 class WorkitemModel(AbstractDropModel):

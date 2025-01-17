@@ -42,12 +42,15 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         if index.data(501) == 'pomodoro':  # We can also get a drop placeholder here, which we don't want to paint
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
-            size = s.height()
+            height = s.height()
+            left = option.rect.left()
             for i, p in enumerate(index.data().split(',')):
                 if p != '':
+                    width = height if p != '[x]' and p != '(x)' else height / 4
                     rect = QtCore.QRect(
-                        option.rect.left() + size * i,
+                        left,
                         option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
-                        size,
-                        size)
+                        width,
+                        height)
                     self._svg_renderer[p].render(painter, rect)
+                    left += width
