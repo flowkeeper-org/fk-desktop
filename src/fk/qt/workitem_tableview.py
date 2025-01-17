@@ -178,8 +178,8 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         # if ok:
         #     self._source.execute(CreateWorkitemStrategy, [generate_uid(), backlog.get_uid(), new_name])
 
-    def _on_new_workitem(self, workitem: Workitem, carry: any, **kwargs):
-        if carry == 'edit':
+    def _on_new_workitem(self, workitem: Workitem, **kwargs):
+        if 'carry' in kwargs and kwargs['carry'] == 'edit':
             index: QModelIndex = self.select(workitem)
             self.edit(index)
 

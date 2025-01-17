@@ -26,7 +26,6 @@ from fk.core.event_source_holder import EventSourceHolder
 from fk.core.import_export import import_, import_github_issues
 from fk.desktop.settings import SettingsDialog
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -105,6 +104,12 @@ class PageImportSettings(QWizardPage):
     import_type_smart: QRadioButton | None
     import_type_replay: QRadioButton | None
 
+    tag_creator: QCheckBox | None
+    tag_assignee: QCheckBox | None
+    tag_labels: QCheckBox | None
+    tag_milestone: QCheckBox | None
+    tag_state: QCheckBox | None
+
     def isComplete(self):
         import_type = self.get_type()
         if import_type == 'file':
@@ -123,6 +128,11 @@ class PageImportSettings(QWizardPage):
         self.import_ignore_errors = None
         self.import_type_smart = None
         self.import_type_replay = None
+        self.tag_creator = None
+        self.tag_assignee = None
+        self.tag_labels = None
+        self.tag_milestone = None
+        self.tag_state = None
 
     def initializePage(self):
         layout_v = QVBoxLayout(self)
@@ -184,6 +194,26 @@ class PageImportSettings(QWizardPage):
         self.import_token = QLineEdit(self)
         layout_v.addWidget(self.import_token)
 
+        self.tag_state = QCheckBox('Create tags for issue state', self)
+        self.tag_state.setChecked(False)
+        layout_v.addWidget(self.tag_state)
+
+        self.tag_assignee = QCheckBox('Create tags for issue assignee', self)
+        self.tag_assignee.setChecked(False)
+        layout_v.addWidget(self.tag_assignee)
+
+        self.tag_creator = QCheckBox('Create tags for issue creator', self)
+        self.tag_creator.setChecked(False)
+        layout_v.addWidget(self.tag_creator)
+
+        self.tag_labels = QCheckBox('Create tags for issue labels', self)
+        self.tag_labels.setChecked(True)
+        layout_v.addWidget(self.tag_labels)
+
+        self.tag_milestone = QCheckBox('Create tags for issue milestone', self)
+        self.tag_milestone.setChecked(True)
+        layout_v.addWidget(self.tag_milestone)
+
     def _init_for_other(self, layout_v):
         label = QLabel("Not implemented, sorry", self)
         label.setWordWrap(True)
@@ -205,6 +235,16 @@ class PageImportSettings(QWizardPage):
             res['type_smart'] = self.import_type_smart.isChecked()
         if self.import_type_replay is not None:
             res['type_replay'] = self.import_type_replay.isChecked()
+        if self.tag_assignee is not None:
+            res['tag_assignee'] = self.tag_assignee.isChecked()
+        if self.tag_creator is not None:
+            res['tag_creator'] = self.tag_creator.isChecked()
+        if self.tag_labels is not None:
+            res['tag_labels'] = self.tag_labels.isChecked()
+        if self.tag_state is not None:
+            res['tag_state'] = self.tag_state.isChecked()
+        if self.tag_milestone is not None:
+            res['tag_milestone'] = self.tag_milestone.isChecked()
         return res
 
 
@@ -273,27 +313,26 @@ class PageImportProgress(QWizardPage):
         if headers is not None:
             for k in headers.keys():
                 req.setRawHeader(bytes(k, 'iso8859-1'), bytes(headers[k], 'iso8859-1'))
-        reply = mgr.get(req)
 
         def _success() -> None:
-            s = reply.readAll().toStdString()
-            try:
-                callback(json.loads(s))
-            except Exception as err:
-                msg = f'Cannot parse REST API response (invalid JSON): {s}'
-                logger.warning(msg, exc_info=err)
+            if reply.error() == QNetworkReply.NetworkError.NoError:
+                s = reply.readAll().toStdString()
+                try:
+                    callback(json.loads(s))
+                except Exception as err:
+                    msg = f'Cannot import REST API response: {err}'
+                    logger.warning(msg, exc_info=err)
+                    self.log.append(msg)
+                    callback(None)
+                    return
+            else:
+                msg = f'REST API request failed: {reply.errorString()}'
+                logger.warning(msg)
                 self.log.append(msg)
                 callback(None)
-                return
 
-        def _error(err: QNetworkReply.NetworkError) -> None:
-            msg = f'REST API request failed: {err}'
-            logger.warning(msg)
-            self.log.append(msg)
-            callback(None)
-
-        reply.readyRead.connect(_success)
-        reply.errorOccurred.connect(_error)
+        reply: QNetworkReply = mgr.get(req)
+        reply.finished.connect(_success)
 
     def start(self):
         settings = self._get_settings()
@@ -312,13 +351,21 @@ class PageImportProgress(QWizardPage):
             url = f'https://api.github.com/repos/{repo}/issues'
             token = settings['token']
             logger.debug(f'Will import from GitHub at {repo}')
-            def process_response(data: object | None):
+            def process_response(data: list[object] | None):
                 if data is None:
                     self.label.setText('ERROR: Cannot get the list of issues from GitHub')
                 else:
-                    # TODO: Execute the actual import here
-                    self.log.append(json.dumps(data))
-                    import_github_issues(self._source_holder.get_source(), data)
+                    # TODO: Implement pagination here
+                    # TODO: Try to import as much as we can
+                    log = import_github_issues(self._source_holder.get_source(),
+                                               repo,
+                                               data,
+                                               settings['tag_creator'],
+                                               settings['tag_assignee'],
+                                               settings['tag_labels'],
+                                               settings['tag_milestone'],
+                                               settings['tag_state'])
+                    self.log.append(log)
                     self.finish()
             headers = {'Accept': 'application/vnd.github+json',
                        'X-GitHub-Api-Version': '2022-11-28'}
