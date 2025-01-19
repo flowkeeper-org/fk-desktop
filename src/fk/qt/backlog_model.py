@@ -19,7 +19,7 @@ import datetime
 import logging
 
 from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QMimeData, QModelIndex
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -28,6 +28,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy, ReorderBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
+from fk.core.workitem_strategies import MoveWorkitemStrategy
 from fk.qt.abstract_drop_model import AbstractDropModel
 from fk.qt.qt_timer import QtTimer
 
@@ -49,6 +50,7 @@ class BacklogItem(QtGui.QStandardItem):
         default_flags = (Qt.ItemFlag.ItemIsSelectable |
                          Qt.ItemFlag.ItemIsEnabled |
                          Qt.ItemFlag.ItemIsDragEnabled |
+                         Qt.ItemFlag.ItemIsDropEnabled |    # For workitems
                          Qt.ItemFlag.ItemIsEditable)
         self.setFlags(default_flags)
         self.update_display()
@@ -164,3 +166,30 @@ class BacklogModel(AbstractDropModel):
                                                  # We display backlogs in reverse order, so need to subtract here
                                                  [uid, str(self.rowCount() - to_index - 1)],
                                                  carry='ui')
+
+    def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
+        print('BacklogModel - canDropMimeData')
+        for_backlogs = super().canDropMimeData(data, action, row, column, where)
+        # We also allow dropping workitems here
+        workitem_uid = data.data('application/flowkeeper.workitem.id')
+        for_workitems = (workitem_uid is not None and workitem_uid != b'') and where.isValid()
+        print('canDropMimeData - Backlog', for_backlogs, for_workitems)
+        print(' - ', workitem_uid)
+        print(' - ', where)
+        return for_backlogs or for_workitems
+
+    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
+        #print('BacklogModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
+        if where.data(501) == 'title' and data.hasFormat('application/flowkeeper.workitem.id'):
+            # We are dropping a workitem on a backlog
+            item_id = data.data('application/flowkeeper.workitem.id').toStdString()
+            backlog = where.data(500)
+            for wi in backlog.values():
+                if wi.get_uid() == item_id:
+                    return False
+            # TODO: Handle external move
+            self._source_holder.get_source().execute(MoveWorkitemStrategy,
+                                                     [item_id, backlog.get_uid()])
+            return True
+        else:
+            return super().dropMimeData(data, action, row, column, where)

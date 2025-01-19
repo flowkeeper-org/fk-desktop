@@ -89,3 +89,12 @@ class AbstractDataItem(ABC, Generic[TParent]):
             self._last_modified_date = date
         if self._parent is not None:
             self._parent.item_updated(date)
+
+    def supports_children(self) -> bool:
+        return False
+
+    def change_parent(self, new_parent: TParent) -> None:
+        if self._parent is not None and self._parent.supports_children():
+            del self._parent[self._uid]
+            new_parent[self._uid] = self
+        self._parent = new_parent

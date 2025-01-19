@@ -17,8 +17,8 @@ import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
-from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
-from PySide6.QtGui import QPainter, QStandardItemModel
+from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel, QEvent
+from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
 from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
@@ -86,7 +86,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDropIndicatorShown(False)
+        self.setDropIndicatorShown(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.setDragDropOverwriteMode(False)
 
@@ -207,16 +207,16 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.update_actions(None)
 
-    def dragMoveEvent(self, event):
-        super().dragMoveEvent(event)
+    def dragMoveEvent(self, event: QDragMoveEvent):
         index: QModelIndex = self.indexAt(event.pos())
         if index.data(501) == 'title':
             # Hovering over a "real" item. Insert a "drop placeholder" here instead.
             self.model().create_drop_placeholder(index)
+            event.ignore()
         else:
             # Hovering over a "drop placeholder" item -- nothing to do
-            pass
+            event.acceptProposedAction()
 
-    def dragLeaveEvent(self, event):
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
         super().dragLeaveEvent(event)
         self.model().remove_drop_placeholder()

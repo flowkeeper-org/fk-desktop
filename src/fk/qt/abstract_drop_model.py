@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QMimeData, QModelIndex
@@ -52,13 +52,22 @@ class AbstractDropModel(QStandardItemModel):
     def supportedDropActions(self) -> Qt.DropAction:
         return Qt.DropAction.MoveAction
 
+    def supportedDragActions(self) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction
+
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        if where.data(501) == 'drop':
+        #print('AbstractDropModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
+        if where.data(501) == 'drop' and data.hasFormat(self.get_type()):
             item_id = data.data(self.get_type()).toStdString()
             self.reorder(where.row(), item_id)
             self.remove_drop_placeholder()
             self.insertRow(where.row(), self.item_by_id(item_id))
-        return True
+            print('Reordered')
+            return True
+        else:
+            print('Dropped somewhere else')
+            self.remove_drop_placeholder()
+            return False
 
     @abstractmethod
     def get_type(self) -> str:
@@ -73,7 +82,9 @@ class AbstractDropModel(QStandardItemModel):
         pass
 
     def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        return data.data(self.get_type()) is not None and where.isValid()
+        print('AbstractDropModel - canDropMimeData', where.isValid())
+        value = data.data(self.get_type())
+        return value is not None and value != b'' and where.isValid()
 
     def mimeTypes(self):
         return [self.get_type()]
@@ -87,11 +98,10 @@ class AbstractDropModel(QStandardItemModel):
         return data
 
     def remove_drop_placeholder(self):
-        # We can only have one placeholder
         for i in range(self.rowCount()):
             if self.index(i, 0).data(501) == 'drop':
                 self.removeRow(i)
-                return  # We won't have more than one
+                return  # We won't have more than one placeholder
 
     def create_drop_placeholder(self, index: QModelIndex):
         self.remove_drop_placeholder()

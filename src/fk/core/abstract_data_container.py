@@ -87,6 +87,9 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         else:
             return default
 
+    def supports_children(self) -> bool:
+        return True
+
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         if len(self) > 0:
             children = f'\n'.join(child.dump(indent + '  ', mask_uid) for child in self.values())

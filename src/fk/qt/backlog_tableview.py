@@ -17,6 +17,7 @@ import datetime
 import logging
 
 from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtGui import QDragMoveEvent, QDragEnterEvent
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
@@ -243,3 +244,17 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Backlog dump",
                                       "Technical information for debug / development purposes",
                                       selected.dump())
+
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
+            # Don't create placeholders when we drop a workitem
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        # By default it only allows its own data. Here we say we accept workitems, too.
+        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
