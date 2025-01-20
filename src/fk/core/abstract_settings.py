@@ -152,6 +152,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),

@@ -46,15 +46,15 @@ echo "3. Copied application files"
 
 # 4. Create a desktop shortcut
 mkdir -p deb/usr/share/applications
+export FK_AUTOSTART_ARGS=""
 cat ../installer/flowkeeper.desktop | envsubst > deb/usr/share/applications/flowkeeper.desktop
 echo "4. Created a desktop shortcut:"
 cat deb/usr/share/applications/flowkeeper.desktop
 
-# 5. Add it to autostart
+# 5. Create another one for autostart (with --autostart argument)
 mkdir -p deb/etc/xdg/autostart
-cd deb/etc/xdg/autostart
-ln -s ../../../usr/share/applications/flowkeeper.desktop .
-cd ../../../..
+export FK_AUTOSTART_ARGS="--autostart"
+cat ../installer/flowkeeper.desktop | envsubst > deb/etc/xdg/autostart/flowkeeper.desktop
 echo "5. Added it to autostart"
 
 # 6. Create a relative symlink in /usr/local/bin

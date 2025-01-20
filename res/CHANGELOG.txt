@@ -7,6 +7,7 @@ TODO: Check if the data filename is default and exists. If we upgrade from <0.10
 TODO: A bug with going back in the import wizard
 TODO: GitHub import needs pagination
 TODO: Test GitHub import on a large public project
+- Flowkeeper window now hides automatically on auto-start (#102).
 
 ### v0.9.1 (15 January 2025)
 

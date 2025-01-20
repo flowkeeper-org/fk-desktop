@@ -21,7 +21,7 @@ Source: "..\dist\flowkeeper\_internal\*"; DestDir: "{app}\_internal"; Flags: ign
 [Icons]
 Name: "{group}\Flowkeeper"; Filename: "{app}\Flowkeeper.exe"
 Name: "{userdesktop}\Flowkeeper"; Filename: "{app}\Flowkeeper.exe"; Tasks: desktopicon
-Name: "{userstartup}\Flowkeeper"; Filename: "{app}\Flowkeeper.exe"; Tasks: autostart
+Name: "{userstartup}\Flowkeeper"; Parameters: "--autostart"; Filename: "{app}\Flowkeeper.exe"; Tasks: autostart
 
 [Run]
 Filename: "{app}\Flowkeeper.exe"; Description: "Launch Flowkeeper"; Flags: nowait postinstall skipifsilent

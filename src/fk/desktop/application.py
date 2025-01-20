@@ -268,6 +268,11 @@ class Application(QApplication, AbstractEventEmitter):
     def is_e2e_mode(self):
         return '--e2e' in self.arguments()
 
+    def is_hide_on_start(self):
+        return ('--autostart' in self.arguments() and
+                self.get_settings().get('Application.hide_on_autostart') == 'True' and
+                self.get_settings().get('Application.show_tray_icon') == 'True')
+
     def is_screenshot_mode(self):
         return '--screenshots' in self.arguments()
 
