@@ -17,7 +17,7 @@ import re
 from html import escape
 
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
-from PySide6.QtCore import QSize, Qt, QRect
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QTextDocument
 
 from fk.core.workitem import Workitem
@@ -43,9 +43,8 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         return (f'<span '
                 f'style="color: {self._text_color}; '
                 f'text-decoration: {"line-through" if workitem.is_sealed() else "none"}; '
-                f'font-weight: {"bold" if workitem.is_running() else "normal"};">'
-                f'{text}'
-                f'</span>')
+                # f'font-weight: {"bold" if workitem.is_running() else "normal"};'
+                f'">{text}</span>')
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         if index.data(501) == 'title':  # We can also get a drop placeholder here, which we don't want to paint

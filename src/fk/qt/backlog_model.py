@@ -35,7 +35,7 @@ from fk.qt.qt_timer import QtTimer
 logger = logging.getLogger(__name__)
 font_new = QtGui.QFont()
 font_today = QtGui.QFont()
-font_today.setBold(True)
+# font_today.setBold(True)
 
 
 class BacklogItem(QtGui.QStandardItem):

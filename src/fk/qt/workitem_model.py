@@ -119,7 +119,7 @@ class WorkitemModel(AbstractDropModel):
         super().__init__(1, parent, source_holder)
         self._font_new = QtGui.QFont()
         self._font_running = QtGui.QFont()
-        self._font_running.setWeight(QtGui.QFont.Weight.Bold)
+        # self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog_or_tag = None
