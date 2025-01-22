@@ -16,7 +16,6 @@
 import re
 from html import escape
 
-from PIL.ImageDraw2 import Brush
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QTextDocument, QColor, QBrush
