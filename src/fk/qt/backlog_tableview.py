@@ -18,7 +18,7 @@ import logging
 
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtGui import QDragMoveEvent, QDragEnterEvent
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog, QTableView, QAbstractItemView
 
 from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
@@ -27,6 +27,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
@@ -207,8 +208,9 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                  [new_workitem_uid, new_backlog_uid, workitem.get_name()],
                                  carry="")  # Note that we don't carry "edit" in this case
             added_workitems += 1
-            pomodoros_to_add = len(list(workitem.get_incomplete_pomodoros()))
-            if pomodoros_to_add > 0:
+            incomplete_pomodoros = list(workitem.get_incomplete_pomodoros())
+            pomodoros_to_add = len(incomplete_pomodoros)
+            if pomodoros_to_add > 0 and incomplete_pomodoros[0].get_type() == POMODORO_TYPE_NORMAL:
                 self._source.execute(AddPomodoroStrategy,
                                      [new_workitem_uid, str(pomodoros_to_add)])
 
@@ -245,12 +247,17 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Technical information for debug / development purposes",
                                       selected.dump())
 
-    def dragMoveEvent(self, event: QDragMoveEvent):
+    def dragMoveEventa(self, event: QDragMoveEvent):
         if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
             # Don't create placeholders when we drop a workitem
+            print('Standard',
+                  self.dragDropMode() == AbstractTableView.DragDropMode.InternalMove,
+                  self.showDropIndicator(),
+                  )
+            super(QAbstractItemView, self).dragMoveEvent(event)
             event.acceptProposedAction()
         else:
-            super().dragMoveEvent(event)
+            super(AbstractTableView, self).dragMoveEvent(event)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         # By default it only allows its own data. Here we say we accept workitems, too.

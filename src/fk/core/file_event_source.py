@@ -32,7 +32,7 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
-    RemovePomodoroStrategy
+    RemovePomodoroStrategy, FinishTrackingStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -371,6 +371,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     t is StartWorkStrategy or \
                     t is AddPomodoroStrategy or \
                     t is VoidPomodoroStrategy or \
+                    t is FinishTrackingStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
                 uid = cast.get_workitem_uid()

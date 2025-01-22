@@ -71,6 +71,8 @@ class UserModel(QtGui.QStandardItemModel):
         col1 = QtGui.QStandardItem()
         if state == 'Idle':
             txt = f'{user.get_name()}'
+        elif state == 'Tracking':
+            txt = f'{user.get_name()}: {state}'
         else:
             txt = f'{user.get_name()}: {state}, {remaining} left'
         col1.setData(txt, Qt.ItemDataRole.DisplayRole)

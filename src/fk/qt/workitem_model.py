@@ -17,6 +17,8 @@ import logging
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFontMetrics
+from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
@@ -99,11 +101,19 @@ class WorkitemPomodoro(QtGui.QStandardItem):
     def update_display(self):
         self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
 
-        # Calculate its size, given that voided pomodoros are just narrow ticks
-        sz = 0
-        for p in self._workitem.values():
-            width = self._row_height / 4 if p.is_canceled() else self._row_height
-            sz += width
+        if self._workitem.is_tracker():
+            elapsed = str(self._workitem.get_total_elapsed_time())
+            if self._workitem.has_running_pomodoro():
+                elapsed += '+'
+            self.setData(elapsed, Qt.ItemDataRole.DisplayRole)
+            sz = QFontMetrics(QApplication.font()).horizontalAdvance(elapsed) + 8
+        else:
+            # Calculate its size, given that voided pomodoros are just narrow ticks
+            sz = 0
+            for p in self._workitem.values():
+                width = self._row_height / 4 if p.is_canceled() else self._row_height
+                sz += width
+
         self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
 
 

@@ -428,6 +428,7 @@ if __name__ == "__main__":
             workitems_menu.addAction(actions['workitems_table.addPomodoro'])
             workitems_menu.addAction(actions['workitems_table.removePomodoro'])
             workitems_menu.addAction(actions['focus.voidPomodoro'])
+            workitems_menu.addAction(actions['focus.finishTracking'])
             main_menu.addMenu(workitems_menu)
             show_main_menu = (settings.get('Application.show_main_menu') == 'True')
             main_menu.setVisible(show_main_menu)

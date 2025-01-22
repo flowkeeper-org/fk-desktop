@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import logging
+from datetime import timedelta
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -22,7 +23,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
@@ -102,15 +103,19 @@ class PomodoroTimer(AbstractEventEmitter):
             self._transition_timer.cancel()
             self._tick_timer.cancel()
         elif workitem is not None and pomodoro is not None:
-            self._state = 'rest' if pomodoro.is_resting() else 'work'
+            self._state = 'rest' if pomodoro.get_type() == POMODORO_TYPE_NORMAL and pomodoro.is_resting() else 'work'
             logger.debug(f'PomodoroTimer: Current state is "{self._state}"')
             self._pomodoro = pomodoro
             self._workitem = workitem
-            self._planned_duration = pomodoro.get_rest_duration() \
-                if pomodoro.is_resting() else pomodoro.get_work_duration()
-            self._remaining_duration = max(pomodoro.remaining_time_in_current_state(when), 0)
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                self._planned_duration = pomodoro.get_rest_duration() \
+                    if pomodoro.is_resting() else pomodoro.get_work_duration()
+                self._remaining_duration = max(pomodoro.remaining_time_in_current_state(when), 0)
+            else:
+                self._planned_duration = None
+                self._remaining_duration = None
             self._transition_timer.cancel()
-            if self._remaining_duration > 0:
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL and self._remaining_duration > 0:
                 self._schedule_tick()
                 if pomodoro.is_working():
                     logger.debug(f'PomodoroTimer: Is working')
@@ -128,6 +133,8 @@ class PomodoroTimer(AbstractEventEmitter):
                         'finished')
                 else:
                     raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
+            elif pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                self._schedule_tick()
 
         self._emit(PomodoroTimer.TimerInitialized, {
             'timer': self,
@@ -141,7 +148,8 @@ class PomodoroTimer(AbstractEventEmitter):
 
     def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
         if self._pomodoro is not None:
-            self._remaining_duration = max(self._pomodoro.remaining_time_in_current_state(when), 0)
+            if self._pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                self._remaining_duration = max(self._pomodoro.remaining_time_in_current_state(when), 0)
             # Only tick if there's something running
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': self,
@@ -207,7 +215,8 @@ class PomodoroTimer(AbstractEventEmitter):
         self._emit(PomodoroTimer.TimerWorkStart, {
             'timer': self,
         })
-        self._schedule_transition(work_duration * 1000, pomodoro, workitem, 'rest')
+        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+            self._schedule_transition(work_duration * 1000, pomodoro, workitem, 'rest')
         self._schedule_tick()
         logger.debug(f'PomodoroTimer: Done - Handling work start')
 
@@ -293,11 +302,19 @@ class PomodoroTimer(AbstractEventEmitter):
     def get_remaining_duration(self) -> float:
         return self._remaining_duration
 
+    def get_elapsed_duration(self) -> float:
+        return self._pomodoro.get_elapsed_duration()
+
     def format_remaining_duration(self) -> str:
         remaining_duration = self.get_remaining_duration()     # This is always >= 0
         remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
         remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
         return f'{remaining_minutes}:{remaining_seconds}'
+
+    def format_elapsed_duration(self) -> str:
+        elapsed_duration = int(self.get_elapsed_duration())     # This is always >= 0
+        td = timedelta(seconds=elapsed_duration)
+        return f'{td}'
 
     def get_completion(self) -> float:
         planned = self.get_planned_duration()

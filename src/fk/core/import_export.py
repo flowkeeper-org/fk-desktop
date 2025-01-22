@@ -92,7 +92,7 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                 for pomodoro in workitem.values():
                     # We could create all at once, but then we'd lose the information about unplanned pomodoros
                     yield AddPomodoroStrategy(seq, pomodoro.get_create_date(), user.get_identity(),
-                                              [workitem.get_uid(), '1'],
+                                              [workitem.get_uid(), '1', pomodoro.get_type()],
                                               source.get_settings())
                     seq += 1
                     if pomodoro.is_canceled() or pomodoro.is_finished():
@@ -198,7 +198,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                     for p_old in tail(num_pomodoros_to_add, workitem.values()):
                         # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
                         yield AddPomodoroStrategy(seq, p_old.get_create_date(), user.get_identity(),
-                                                  [workitem.get_uid(), '1'],
+                                                  [workitem.get_uid(), '1', p_old.get_type()],
                                                   source.get_settings())
                         seq += 1
 

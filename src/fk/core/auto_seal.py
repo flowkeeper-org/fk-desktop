@@ -18,6 +18,7 @@ import logging
 from typing import Iterable, Callable, Type
 
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
@@ -34,7 +35,7 @@ def auto_seal(workitems: Iterable[Workitem],
     #  This should make it faster, and work more correctly with scenarios where we delete stuff.
     for workitem in workitems:
         for pomodoro in workitem.values():
-            if pomodoro.is_running():
+            if pomodoro.is_running() and pomodoro.get_type() == POMODORO_TYPE_NORMAL:
                 remaining_time = pomodoro.total_remaining_time(when)
                 if remaining_time < 0:
                     # TODO: Introduce the concept of "fake now", so that we don't need to compare against wall clock

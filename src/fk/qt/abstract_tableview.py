@@ -207,16 +207,30 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.update_actions(None)
 
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        print('LEAVE')
+        super().dragLeaveEvent(event)
+        original = self.model().remove_drop_placeholder()
+        self.selectRow(original)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        # TODO: We don't know if it was an outside enter, or we started dragging
+        super().dragEnterEvent(event)
+        index: QModelIndex = self.indexAt(event.pos())
+        if index.isValid():
+            print(f'ENTER: {event}')
+            self.deselect()
+            self.model().create_drop_placeholder(index, self.rowHeight(index.row()))
+
     def dragMoveEvent(self, event: QDragMoveEvent):
         index: QModelIndex = self.indexAt(event.pos())
-        if index.data(501) == 'title':
-            # Hovering over a "real" item. Insert a "drop placeholder" here instead.
-            self.model().create_drop_placeholder(index)
-            event.ignore()
-        else:
-            # Hovering over a "drop placeholder" item -- nothing to do
-            event.acceptProposedAction()
-
-    def dragLeaveEvent(self, event: QDragLeaveEvent):
-        super().dragLeaveEvent(event)
-        self.model().remove_drop_placeholder()
+        self.model().move_drop_placeholder(index)
+        event.ignore()
+        # if index.data(501) == 'title':
+        #     # Hovering over a "real" item. Insert a "drop placeholder" here instead.
+        #     self.model().move_drop_placeholder(index)
+        #     event.ignore()
+        # else:
+        #     # Hovering over a "drop placeholder" item -- nothing to do
+        #     event.acceptProposedAction()
+        #     super(QAbstractItemView, self).dragMoveEvent(event)
