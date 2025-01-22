@@ -299,7 +299,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
                                                              'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
-                ('Integration.flatpak_spawn', 'bool', 'Execute commands via flatpak-spawn', 'True', [], _show_for_flatpak),
+                ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
+                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
+                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }

@@ -84,6 +84,7 @@ class IntegrationExecutor:
             args = shlex.split(formatted)
             if get_sandbox_type() == 'Flatpak' and self._settings.get('Integration.flatpak_spawn') == 'True':
                 # Use flatpak-spawn to execute commands outside the sandbox
+                args.insert(0, '--host')
                 args.insert(0, 'flatpak-spawn')
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Received event {full_event}. Executing: {args}')

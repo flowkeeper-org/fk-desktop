@@ -406,7 +406,7 @@ class Application(QApplication, AbstractEventEmitter):
                 'title': f'Unhandled {exc_type.__name__}',
                 'body': f'**Please explain here what you were doing**\n\n'
                         f'Versions:\n'
-                        f'{self._get_versions()}\n'
+                        f'{self._get_versions().replace('#', '# ')}\n'
                         f'Stack trace:\n'
                         f'```\n{to_log}```'
             })
