@@ -77,14 +77,16 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             self.setItemDelegateForColumn(1,
                                           WorkitemTextDelegate(self,
                                                                self._application.get_icon_theme(),
-                                                               self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
+                                                               self._application.get_theme_variables()['TABLE_TEXT_COLOR'],
+                                                               self._application.get_theme_variables()['SELECTION_BG_COLOR']))
         else:
             self.setItemDelegateForColumn(1, None)
 
         # Pomodoros display
         self.setItemDelegateForColumn(2,
                                       PomodoroDelegate(self,
-                                                       self._application.get_icon_theme()))
+                                                       self._application.get_icon_theme(),
+                                                       self._application.get_theme_variables()['SELECTION_BG_COLOR']))
 
     def _update_actions_if_needed(self, workitem: Workitem):
         current = self.get_current()

@@ -15,17 +15,21 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 from PySide6.QtCore import QSize
-from PySide6.QtGui import Qt
+from PySide6.QtGui import Qt, QBrush, QColor
 
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
     _svg_renderer: dict[str, QtSvg.QSvgRenderer]
+    _selection_brush: QBrush
     _theme: str
 
     def _get_renderer(self, name):
         return QtSvg.QSvgRenderer(f':/icons/{self._theme}/24x24/pomodoro-{name}.svg')
 
-    def __init__(self, parent: QtCore.QObject = None, theme: str = 'mixed'):
+    def __init__(self,
+                 parent: QtCore.QObject = None,
+                 theme: str = 'mixed',
+                 selection_color: str = '#555'):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._theme = theme
         self._svg_renderer = {
@@ -38,9 +42,16 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
             '(v)': self._get_renderer("(v)"),
             '(#)': self._get_renderer("(#)"),
         }
+        self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         if index.data(501) == 'pomodoro':  # We can also get a drop placeholder here, which we don't want to paint
+            painter.save()
+
+            # Qt 6.8 forced delegates to paint their backgrounds themselves
+            if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
+                painter.fillRect(option.rect, self._selection_brush)
+
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
             left = option.rect.left()
@@ -52,5 +63,8 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
                         option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
                         width,
                         height)
+
                     self._svg_renderer[p].render(painter, rect)
                     left += width
+
+            painter.restore()

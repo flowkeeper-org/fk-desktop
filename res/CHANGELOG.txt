@@ -9,6 +9,7 @@ TODO: GitHub import needs pagination
 TODO: Test GitHub import on a large public project
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Flowkeeper now supports Flatpak (#63).
+- [Technical] Added support for Qt 6.8.1.
 
 ### v0.9.1 (15 January 2025)
 
