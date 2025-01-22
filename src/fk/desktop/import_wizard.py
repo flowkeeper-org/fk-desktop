@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckB
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.import_export import import_, import_github_issues
 from fk.desktop.settings import SettingsDialog
+from fk.qt.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +162,10 @@ class PageImportSettings(QWizardPage):
         self.import_location.setPlaceholderText('Import filename')
         self.import_location.textChanged.connect(lambda s: self.completeChanged.emit())
         layout_h.addWidget(self.import_location)
+
+        if get_sandbox_type() is not None:
+            # Force the user to use the XDG portal-aware file chooser
+            self.import_location.setDisabled(True)
 
         import_location_browse = QPushButton("Browse...", self)
         import_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.import_location))

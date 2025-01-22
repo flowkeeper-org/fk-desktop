@@ -410,7 +410,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.get_application().get_settings().set({
             'Application.theme': 'mixed',
             'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': ':/icons/bg.jpg',
+            'Application.eyecandy_image': ':/img/bg.jpg',
             'Application.font_header_family': 'Quicksand Medium',
             'Application.font_header_size': '32',
             'Application.font_main_family': 'Quicksand',

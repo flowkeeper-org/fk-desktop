@@ -27,6 +27,7 @@ from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLa
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
+from fk.qt.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +231,9 @@ class SettingsDialog(QDialog):
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
             self._widgets_get_value[option_id] = ed3.text
             self._widgets_set_value[option_id] = ed3.setText
+            if get_sandbox_type() is not None:
+                # Force the user to use the XDG portal-aware file chooser
+                ed3.setDisabled(True)
             layout.addWidget(ed3)
             browse_btn = QPushButton(parent)
             browse_btn.setObjectName(f'{option_id}-button')
