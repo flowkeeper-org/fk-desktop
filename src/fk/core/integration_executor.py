@@ -23,6 +23,7 @@ from subprocess import Popen
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterSettingsChanged, ALL_EVENTS, set_emitter_added_callback
+from fk.qt.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,9 @@ class IntegrationExecutor:
             # This is a safer, but less flexible alternative:
             # formatted = command.format(**kwargs)
             args = shlex.split(formatted)
+            if get_sandbox_type() == 'Flatpak' and self._settings.get('Integration.flatpak_spawn') == 'True':
+                # Use flatpak-spawn to execute commands outside the sandbox
+                args.insert(0, 'flatpak-spawn')
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'Received event {full_event} with args {kwargs}. Executing: {args}')
+                logger.debug(f'Received event {full_event}. Executing: {args}')
             Popen(args)

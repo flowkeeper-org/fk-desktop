@@ -22,6 +22,7 @@ from typing import Iterable, Callable
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.events import get_all_events
+from fk.qt.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,10 @@ def _show_if_madelene(values: dict[str, str]) -> bool:
 
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
+
+
+def _show_for_flatpak(values: dict[str, str]) -> bool:
+    return get_sandbox_type() == 'Flatpak'
 
 
 def _is_tiling_wm() -> bool:
@@ -294,6 +299,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
                                                              'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                ('Integration.flatpak_spawn', 'bool', 'Execute commands via flatpak-spawn', 'True', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
