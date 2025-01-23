@@ -1,4 +1,8 @@
-Constantine Kulak <https://github.com/co-stig>: Author and maintaner.
+Constantine Kulak <https://github.com/co-stig>: Flowkeeper author.
+
+Marco Sarti <marco@elogiclab.com>: AUR package maintainer.
+
+faveoled <https://github.com/faveoled>: Flatpak package maintainer.
 
 Flowkeeper is built using Qt Community Edition by The Qt Company <https://www.qt.io/licensing>.
 

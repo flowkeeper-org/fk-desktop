@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
@@ -410,7 +410,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.get_application().get_settings().set({
             'Application.theme': 'mixed',
             'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': ':/icons/bg.jpg',
+            'Application.eyecandy_image': ':/img/bg.jpg',
             'Application.font_header_family': 'Quicksand Medium',
             'Application.font_header_size': '32',
             'Application.font_main_family': 'Quicksand',
@@ -457,5 +457,5 @@ class ScreenshotE2eTest(AbstractE2eTest):
                     state = 'finished'
                 else:
                     state = 'new'
-                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, uid, workitem, now)
+                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

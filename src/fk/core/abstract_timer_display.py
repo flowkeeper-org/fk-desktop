@@ -18,7 +18,7 @@ import logging
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemDelete, AfterWorkitemComplete, AfterPomodoroRemove
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 
@@ -85,13 +85,21 @@ class AbstractTimerDisplay:
             self._set_mode('idle')
 
     def _on_tick(self, pomodoro: Pomodoro, **kwargs) -> None:
-        state = 'Focus' if self._timer.is_working() else 'Rest'
-        state_text = f"{state}: {self._timer.format_remaining_duration()} left"
-        self.tick(pomodoro,
-                  state_text,
-                  self._timer.get_remaining_duration(),
-                  self._timer.get_planned_duration(),
-                  self._mode)
+        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+            state = 'Focus' if self._timer.is_working() else 'Rest'
+            state_text = f"{state}: {self._timer.format_remaining_duration()} left"
+            self.tick(pomodoro,
+                      state_text,
+                      self._timer.get_remaining_duration(),
+                      self._timer.get_planned_duration(),
+                      self._mode)
+        else:
+            self.tick(pomodoro,
+                      f'Tracking: {self._timer.format_elapsed_duration()}',
+                      0,
+                      0,
+                      self._mode)
+
 
     def _on_work_start(self, **kwargs) -> None:
         # UC-3: Timer display goes into "working" state when work period starts

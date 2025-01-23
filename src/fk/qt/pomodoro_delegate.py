@@ -13,19 +13,25 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
+
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
-from PySide6.QtCore import QSize
-from PySide6.QtGui import Qt
+from PySide6.QtCore import QSize, QPoint, QRect
+from PySide6.QtGui import Qt, QBrush, QColor
 
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
     _svg_renderer: dict[str, QtSvg.QSvgRenderer]
+    _selection_brush: QBrush
     _theme: str
 
     def _get_renderer(self, name):
         return QtSvg.QSvgRenderer(f':/icons/{self._theme}/24x24/pomodoro-{name}.svg')
 
-    def __init__(self, parent: QtCore.QObject = None, theme: str = 'mixed'):
+    def __init__(self,
+                 parent: QtCore.QObject = None,
+                 theme: str = 'mixed',
+                 selection_color: str = '#555'):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._theme = theme
         self._svg_renderer = {
@@ -38,19 +44,40 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
             '(v)': self._get_renderer("(v)"),
             '(#)': self._get_renderer("(#)"),
         }
+        self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         if index.data(501) == 'pomodoro':  # We can also get a drop placeholder here, which we don't want to paint
+            painter.save()
+
+            # Qt 6.8 forced delegates to paint their backgrounds themselves
+            if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
+                painter.fillRect(option.rect, self._selection_brush)
+
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
             left = option.rect.left()
-            for i, p in enumerate(index.data().split(',')):
-                if p != '':
-                    width = height if p != '[x]' and p != '(x)' else height / 4
-                    rect = QtCore.QRect(
-                        left,
-                        option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
-                        width,
-                        height)
-                    self._svg_renderer[p].render(painter, rect)
-                    left += width
+
+            workitem = index.data(500)
+            if workitem.is_tracker():
+                elapsed: str = index.data()
+                rect = QtCore.QRect(
+                    left + 4,
+                    option.rect.top() + 4,
+                    option.rect.width() - 4,
+                    height - 4)
+                painter.drawText(rect, elapsed)
+            else:
+                for i, p in enumerate(index.data().split(',')):
+                    if p != '':
+                        width = height if p != '[x]' and p != '(x)' else height / 4
+                        rect = QtCore.QRect(
+                            left,
+                            option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
+                            width,
+                            height)
+
+                        self._svg_renderer[p].render(painter, rect)
+                        left += width
+
+            painter.restore()

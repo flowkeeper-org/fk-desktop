@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget
     QHBoxLayout, QSpacerItem, QSizePolicy
 
 from fk.core.abstract_settings import AbstractSettings
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
@@ -233,6 +233,7 @@ class PageConfigIcons(QWizardPage):
                             'new',
                             25 * 60 * 1000,
                             5 * 60 * 1000,
+                            POMODORO_TYPE_NORMAL,
                             '1',
                             workitem,
                             datetime.datetime.now())

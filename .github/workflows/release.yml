@@ -122,6 +122,49 @@ jobs:
             dist/flowkeeper-legacy.deb
             dist/flowkeeper-legacy.tar.gz
 
+  package-linux-arm:
+    runs-on: ubuntu-22.04-arm
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-build.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+          cd dist
+          tar -czf flowkeeper.tar.gz flowkeeper
+          cd ..
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Rename files to avoid conflicts
+        run: |
+          mv dist/Flowkeeper dist/Flowkeeper-arm64
+          mv dist/flowkeeper.deb dist/flowkeeper-arm64.deb
+          mv dist/flowkeeper.tar.gz dist/flowkeeper-arm64.tar.gz
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/Flowkeeper-arm64
+            dist/flowkeeper-arm64.deb
+            dist/flowkeeper-arm64.tar.gz
+
   package-windows:
     runs-on: windows-latest
     needs: run-tests

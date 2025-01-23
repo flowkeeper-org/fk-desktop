@@ -48,7 +48,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  is_dark: bool):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
-        self._default_icon = QIcon(":/icons/logo.png")
+        self._default_icon = QIcon(":/flowkeeper.png")
         if is_dark:
             # We don't use QIcon.fromTheme() here because we can't predict the tray background color
             self._next_icon = QIcon(':/icons/dark/24x24/tool-next.svg')
@@ -81,6 +81,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         menu = QMenu()
         if 'focus.voidPomodoro' in self._actions:
             menu.addAction(self._actions['focus.voidPomodoro'])
+        if 'focus.finishTracking' in self._actions:
+            menu.addAction(self._actions['focus.finishTracking'])
         menu.addSeparator()
         if 'window.showMainWindow' in self._actions:
             menu.addAction(self._actions['window.showMainWindow'])

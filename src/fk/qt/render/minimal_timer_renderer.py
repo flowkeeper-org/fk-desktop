@@ -86,8 +86,8 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
         shift = th / 2
         radius = (size - 2 * shift - th) / 2
         hand_length = radius - 2
-        sin = math.sin(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 else 0
-        cos = math.cos(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 else 0
+        sin = math.sin(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 and self._my_max is not None else 0
+        cos = math.cos(2 * math.pi * self._my_value / self._my_max) if self._my_max != 0 and self._my_max is not None else 0
         center = rect.center()
         center.setY(center.y() + shift)
         cx = center.x()

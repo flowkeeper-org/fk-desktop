@@ -80,6 +80,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterWorkitemRename,
             events.BeforeWorkitemReorder,
             events.AfterWorkitemReorder,
+            events.BeforeWorkitemMove,
+            events.AfterWorkitemMove,
             events.BeforePomodoroAdd,
             events.AfterPomodoroAdd,
             events.BeforePomodoroRemove,

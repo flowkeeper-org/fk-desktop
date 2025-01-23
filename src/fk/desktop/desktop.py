@@ -76,6 +76,8 @@ def pin_if_needed():
 
 def to_focus_mode(**kwargs) -> None:
     logger.debug('Switching to focus mode')
+
+    was_already_hidden = window.isHidden()
     window.hide()
     root_layout.removeWidget(focus_widget)
 
@@ -83,6 +85,11 @@ def to_focus_mode(**kwargs) -> None:
     focus_window.setCentralWidget(focus_widget)
     focus_window.setFixedWidth(focus_widget.width())
     focus_window.setFixedHeight(focus_widget.height())
+
+    if was_already_hidden:
+        # This must be due to hiding with --autostart. Make sure focus window has adequate size.
+        logger.debug('Main window was already hidden when we entered focus mode.')
+        focus_window.setFixedWidth(window.width())
 
     show_title = settings.get('Application.show_window_title') == 'True'
     focus_window.setWindowFlags(focus_window.windowFlags() & ~Qt.WindowType.FramelessWindowHint if show_title else
@@ -207,6 +214,9 @@ class MainWindow:
         tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
 
     def show_quick_config(self):
+        if window.isHidden() and focus_window.isHidden():
+            # Even if it was configured to hide, typically thanks to --autostart
+            window.show()
         wizard = ConfigWizard(app, actions, window)
         wizard.closed.connect(self.show_tutorial)
         wizard.show()
@@ -300,7 +310,6 @@ if __name__ == "__main__":
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
-        menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
@@ -419,6 +428,7 @@ if __name__ == "__main__":
             workitems_menu.addAction(actions['workitems_table.addPomodoro'])
             workitems_menu.addAction(actions['workitems_table.removePomodoro'])
             workitems_menu.addAction(actions['focus.voidPomodoro'])
+            workitems_menu.addAction(actions['focus.finishTracking'])
             main_menu.addMenu(workitems_menu)
             show_main_menu = (settings.get('Application.show_main_menu') == 'True')
             main_menu.setVisible(show_main_menu)
@@ -432,7 +442,7 @@ if __name__ == "__main__":
             status.setVisible(show_status_bar)
 
         # Tray icon
-        tray = None
+        tray: TrayIcon | None = None
         recreate_tray_icon()
 
         # Some global variables to support "Next pomodoro" mode
@@ -487,7 +497,8 @@ if __name__ == "__main__":
 
         tutorial: Tutorial = None
 
-        window.show()
+        if not app.is_hide_on_start():
+            window.show()
 
         # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
         # Otherwise, the font size for the focus' header is picked correctly, but
@@ -507,7 +518,11 @@ if __name__ == "__main__":
             if '--reset' in app.arguments():
                 settings.reset_to_defaults()
             # This would work on any Qt 6.6.x
-            sys.exit(app.exec())
+            code = app.exec()
+            if tray is not None and tray.isVisible():
+                # To avoid tray icon getting stuck on Windows
+                tray.hide()
+            sys.exit(code)
 
     except Exception as exc:
         logger.error("FATAL: Exception on startup", exc_info=exc)

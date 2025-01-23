@@ -13,26 +13,17 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from __future__ import annotations
-
-from fk.core.abstract_data_container import AbstractDataContainer
-from fk.core.tag import Tag
+import os
+import platform
 
 
-def sanitize_tag(tag: str) -> str:
-    return ''.join(filter(str.isalnum, tag))
-
-
-class Tags(AbstractDataContainer[Tag, 'User']):
-    def __init__(self, user: 'User'):
-        super().__init__(f'Tags',
-                         user,
-                         f'tags-{user.get_identity()}',
-                         user.get_create_date())
-
-    def __str__(self):
-        return f'Tags {self.get_name()}'
-
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, mask_uid)}\n' \
-               f'{indent} - Tags'
+def get_sandbox_type() -> str | None:
+    # See https://stackoverflow.com/questions/75274925/is-there-a-way-to-find-out-if-i-am-running-inside-a-flatpak-appimage-or-another
+    if platform.system() == 'Linux':
+        if os.environ.get('container') is not None:
+            return 'Flatpak'
+        elif os.environ.get('SNAP') is not None:
+            return 'Snap'
+        elif os.environ.get('APPIMAGE') is not None:
+            return 'AppImage'
+    return None

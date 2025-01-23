@@ -22,6 +22,7 @@ from typing import Iterable, Callable
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.events import get_all_events
+from fk.qt.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,10 @@ def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
 
 
+def _show_for_flatpak(values: dict[str, str]) -> bool:
+    return get_sandbox_type() == 'Flatpak'
+
+
 def _is_tiling_wm() -> bool:
     wm = _get_desktop()
     return ('hyprland' in wm
@@ -152,6 +157,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
@@ -293,6 +299,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
                                                              'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
+                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
+                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
