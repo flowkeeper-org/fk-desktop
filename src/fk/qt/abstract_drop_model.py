@@ -18,7 +18,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 from PySide6 import QtCore
-from PySide6.QtCore import Qt, QMimeData, QModelIndex
+from PySide6.QtCore import Qt, QMimeData, QModelIndex, QSize
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
 from fk.core.abstract_data_item import AbstractDataItem
@@ -26,13 +26,12 @@ from fk.core.event_source_holder import EventSourceHolder
 
 
 class DropPlaceholderItem(QStandardItem):
-    def __init__(self, based_on_index: QModelIndex):
+    def __init__(self, height: int):
         super().__init__()
         self.setData(None, 500)
-        self.setData(based_on_index.data(Qt.ItemDataRole.FontRole), Qt.ItemDataRole.FontRole)
-        self.setData(based_on_index.data(Qt.ItemDataRole.SizeHintRole), Qt.ItemDataRole.SizeHintRole)
+        if height > 0:
+            self.setData(QSize(1, height), Qt.ItemDataRole.SizeHintRole)
         self.setData('drop', 501)
-        self.setData('', Qt.ItemDataRole.DisplayRole)
         flags = (Qt.ItemFlag.ItemIsSelectable |
                  Qt.ItemFlag.ItemIsEnabled |
                  Qt.ItemFlag.ItemIsDropEnabled)
@@ -41,6 +40,8 @@ class DropPlaceholderItem(QStandardItem):
 
 class AbstractDropModel(QStandardItemModel):
     _source_holder: EventSourceHolder
+    _dragging_row: int | None
+    _dragging_uid: str | None
 
     def __init__(self,
                  columns: int,
@@ -48,6 +49,8 @@ class AbstractDropModel(QStandardItemModel):
                  source_holder: EventSourceHolder):
         super().__init__(0, columns, parent)
         self._source_holder = source_holder
+        self._dragging_row = None
+        self._dragging_uid = None
 
     def supportedDropActions(self) -> Qt.DropAction:
         return Qt.DropAction.MoveAction
@@ -56,14 +59,14 @@ class AbstractDropModel(QStandardItemModel):
         return Qt.DropAction.MoveAction
 
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        #print('AbstractDropModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
+        print('AbstractDropModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
         if where.data(501) == 'drop' and data.hasFormat(self.get_type()):
             item_id = data.data(self.get_type()).toStdString()
             self.reorder(where.row(), item_id)
             self.remove_drop_placeholder()
             self.insertRow(where.row(), self.item_by_id(item_id))
             print('Reordered')
-            return True
+            return False
         else:
             print('Dropped somewhere else')
             self.remove_drop_placeholder()
@@ -97,13 +100,47 @@ class AbstractDropModel(QStandardItemModel):
         data.setData(self.get_type(), bytes(item.get_uid(), 'iso8859-1'))
         return data
 
-    def remove_drop_placeholder(self):
+    def _find_drop_placeholder(self) -> int | None:
         for i in range(self.rowCount()):
             if self.index(i, 0).data(501) == 'drop':
-                self.removeRow(i)
-                return  # We won't have more than one placeholder
+                return i    # We won't have more than one placeholder
+        return None
 
-    def create_drop_placeholder(self, index: QModelIndex):
-        self.remove_drop_placeholder()
-        items = [DropPlaceholderItem(index) for _ in range(0, self.columnCount())]
-        self.insertRow(index.row(), items)
+    def remove_drop_placeholder(self) -> int:
+        i = self._find_drop_placeholder()
+        if i is not None:
+            self.removeRow(i)
+        # Restore the original row we removed when we started dragging
+        self.insertRow(self._dragging_row,
+                       self.item_by_id(self._dragging_uid))
+        print(f'Restored original {self._dragging_uid}')
+        inserted = self._dragging_row
+        self._dragging_row = None
+        self._dragging_uid = None
+        return inserted
+
+    def _insert_placeholder(self, row: int, height: int):
+        items = [DropPlaceholderItem(height) for _ in range(0, self.columnCount())]
+        self.insertRow(row, items)
+
+    def create_drop_placeholder(self, index: QModelIndex, height: int):
+        print(f'Original height: {height}')
+        self._dragging_row = index.row()
+        self._dragging_uid = index.data(500).get_uid()
+        print(f'Saved original {self._dragging_uid}')
+        self.removeRow(index.row())
+        self._insert_placeholder(index.row(), height)
+        print(f'Created drop placeholder at {index}')
+
+    def move_drop_placeholder(self, index: QModelIndex):
+        i = self._find_drop_placeholder()
+        if i is not None and i != index.row():
+            size: QSize = self.index(i, 0).data(Qt.ItemDataRole.SizeHintRole)
+            if size is not None:
+                height = size.height()
+            else:
+                height = 0
+
+            self.removeRow(i)
+            self._insert_placeholder(index.row(), height)
+            print(f'Moved drop placeholder to {index}')

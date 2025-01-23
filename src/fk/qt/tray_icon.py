@@ -81,6 +81,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         menu = QMenu()
         if 'focus.voidPomodoro' in self._actions:
             menu.addAction(self._actions['focus.voidPomodoro'])
+        if 'focus.finishTracking' in self._actions:
+            menu.addAction(self._actions['focus.finishTracking'])
         menu.addSeparator()
         if 'window.showMainWindow' in self._actions:
             menu.addAction(self._actions['window.showMainWindow'])

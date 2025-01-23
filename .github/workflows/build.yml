@@ -60,6 +60,52 @@ jobs:
           path: |
             dist/flowkeeper.deb
 
+  build-linux-arm:
+    runs-on: ubuntu-22.04-arm
+    if:  ${{ inputs.OS == 'linux' || inputs.OS == 'all' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-test.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+      - name: Archive portable build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-arm64-standalone
+          path: |
+            dist/Flowkeeper
+      - name: Archive one-folder build
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-arm64-one-folder
+          path: |
+            dist/flowkeeper
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Archive DEB installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-arm64-deb
+          path: |
+            dist/flowkeeper.deb
+
   build-linux-legacy:
     runs-on: ubuntu-20.04
     if:  ${{ inputs.OS == 'linux' || inputs.OS == 'all' }}

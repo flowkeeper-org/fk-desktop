@@ -14,13 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
+from PySide6.QtGui import QDragMoveEvent
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QAbstractItemView
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
@@ -150,7 +152,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
         self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
         self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable
-                                                              and selected.is_startable()
+                                                              and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
                                                               and self._pomodoro_timer.is_idling())
         self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
         self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable)
@@ -208,11 +210,25 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         if selected is None:
             raise Exception("Trying to start a workitem, while there's none selected")
         settings = self._source.get_settings()
-        self._source.execute(StartWorkStrategy, [
-            selected.get_uid(),
-            settings.get('Pomodoro.default_work_duration'),
-            settings.get('Pomodoro.default_rest_duration'),
-        ])
+
+        if len(selected) == 0 or selected.is_tracker():
+            # This is going to be a tracker workitem
+            self._source.execute(AddPomodoroStrategy, [
+                selected.get_uid(),
+                "1",
+                POMODORO_TYPE_TRACKER
+            ])
+            self._source.execute(StartWorkStrategy, [
+                selected.get_uid(),
+                '0',
+                '0',
+            ])
+        else:
+            self._source.execute(StartWorkStrategy, [
+                selected.get_uid(),
+                settings.get('Pomodoro.default_work_duration'),
+                settings.get('Pomodoro.default_rest_duration'),
+            ])
 
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
@@ -233,7 +249,8 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             raise Exception("Trying to add pomodoro to a workitem, while there's none selected")
         self._source.execute(AddPomodoroStrategy, [
             selected.get_uid(),
-            "1"
+            "1",
+            POMODORO_TYPE_NORMAL
         ])
 
     def remove_pomodoro(self) -> None:

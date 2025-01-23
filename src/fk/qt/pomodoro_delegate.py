@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
+
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QPoint, QRect
 from PySide6.QtGui import Qt, QBrush, QColor
 
 
@@ -55,16 +57,27 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
             left = option.rect.left()
-            for i, p in enumerate(index.data().split(',')):
-                if p != '':
-                    width = height if p != '[x]' and p != '(x)' else height / 4
-                    rect = QtCore.QRect(
-                        left,
-                        option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
-                        width,
-                        height)
 
-                    self._svg_renderer[p].render(painter, rect)
-                    left += width
+            workitem = index.data(500)
+            if workitem.is_tracker():
+                elapsed: str = index.data()
+                rect = QtCore.QRect(
+                    left + 4,
+                    option.rect.top() + 4,
+                    option.rect.width() - 4,
+                    height - 4)
+                painter.drawText(rect, elapsed)
+            else:
+                for i, p in enumerate(index.data().split(',')):
+                    if p != '':
+                        width = height if p != '[x]' and p != '(x)' else height / 4
+                        rect = QtCore.QRect(
+                            left,
+                            option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
+                            width,
+                            height)
+
+                        self._svg_renderer[p].render(painter, rect)
+                        left += width
 
             painter.restore()
