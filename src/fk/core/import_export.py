@@ -361,16 +361,16 @@ def import_github_issues(source: AbstractEventSource[TRoot],
 
         tags = ''
         if tag_creator and issue.get('user', None) is not None:
-            tags += f' #{sanitize_tag(issue['user']['login'])}'
+            tags += ' #' + sanitize_tag(issue['user']['login'])
         if tag_assignee and issue.get('assignee', None) is not None:
-            tags += f' #{sanitize_tag(issue['assignee']['login'])}'
+            tags += ' #' + sanitize_tag(issue['assignee']['login'])
         if tag_labels and issue.get('labels', None) is not None:
             for label in issue['labels']:
-                tags += f' #{sanitize_tag(label['name'])}'
+                tags += ' #' + sanitize_tag(label['name'])
         if tag_milestone and issue.get('milestone', None) is not None:
-            tags += f' #{sanitize_tag(issue['milestone']['title'])}'
+            tags += ' #' + sanitize_tag(issue['milestone']['title'])
         if tag_state and issue.get('state', None) is not None:
-            tags += f' #{sanitize_tag(issue['state'])}'
+            tags += ' #' + sanitize_tag(issue['state'])
         if tags != '':
             title += f' [ {tags[1:]} ]'
 
