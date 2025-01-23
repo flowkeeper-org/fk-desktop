@@ -5,7 +5,6 @@ sdk: org.kde.Sdk
 base: io.qt.PySide.BaseApp
 base-version: '6.8'
 command: run.sh
-# rename-appdata-file: flowkeeper.appdata.xml
 rename-desktop-file: flowkeeper.desktop
 rename-icon: flowkeeper
 finish-args:
@@ -42,6 +41,8 @@ modules:
 
   - name: python3-cffi
     buildsystem: simple
+    only-arches:
+      - x86_64
     build-commands:
       - pip3 install --no-index --find-links=file://${PWD} --prefix=${FLATPAK_DEST}
         cffi
@@ -49,6 +50,21 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/b2/d5/da47df7004cb17e4955df6a43d14b3b4ae77737dff8bf7f8f333196717bf/cffi-1.17.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
         sha256: b62ce867176a75d03a665bad002af8e6d54644fad99a3c70905c543130e39d93
+        x-checker-data:
+          type: pypi
+          name: cffi
+
+  - name: python3-cffi
+    buildsystem: simple
+    only-arches:
+      - aarch64
+    build-commands:
+      - pip3 install --no-index --find-links=file://${PWD} --prefix=${FLATPAK_DEST}
+        cffi
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/1a/df/f8d151540d8c200eb1c6fba8cd0dfd40904f1b0682ea705c36e6c2e97ab3/cffi-1.17.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+        sha256: da95af8214998d77a98cc14e3a3bd00aa191526343078b530ceb0bd710fb48a5
         x-checker-data:
           type: pypi
           name: cffi
@@ -68,7 +84,6 @@ modules:
           type: pypi
           name: cryptography
 
-
   - name: python3-cryptography
     buildsystem: simple
     only-arches:
@@ -85,7 +100,6 @@ modules:
           name: cryptography
 
   - python3-modules.yaml
-
 
   - name: flowkeeper
     buildsystem: simple
@@ -110,7 +124,7 @@ modules:
       - type: archive
         url: https://github.com/flowkeeper-org/fk-desktop/archive/refs/tags/v0.10.0.tar.gz
         dest: flowkeeper
-        sha256: b7003db84d4c77024103642cdb428f8ae2cf559a1f05714eb5b66f8c5a964d5d
+        sha256: ab7f0e88ca34462f54a092d47b111df292211c5d18e993973b3ed3c75471dc3b
 
       - type: script
         commands:
