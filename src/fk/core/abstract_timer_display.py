@@ -96,9 +96,9 @@ class AbstractTimerDisplay:
         else:
             self.tick(pomodoro,
                       f'Tracking: {self._timer.format_elapsed_duration()}',
+                      pomodoro.get_elapsed_duration(),
                       0,
-                      0,
-                      self._mode)
+                      'tracking')
 
 
     def _on_work_start(self, **kwargs) -> None:
