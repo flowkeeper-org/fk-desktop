@@ -136,7 +136,7 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                          cy - hand_length * 0.75 * cos)
             painter.drawLine(center, pt)
             # 3. Hour hand
-            hour = ((self._my_value / 60 / 24) % 24) / 24.0
+            hour = ((self._my_value / 60 / 60) % 12) / 12.0
             sin = math.sin(2 * math.pi * hour)
             cos = math.cos(2 * math.pi * hour)
             painter.setPen(self._hand_pen(th / 2))
