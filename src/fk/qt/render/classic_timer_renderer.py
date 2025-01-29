@@ -128,7 +128,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
             self.clip(painter, team_rect, rect, 1)
 
         if self.get_mode() == 'tracking':
-            minutes = ((self._my_value / 60) % 60.0) / 60.0
+            minutes = (self._my_value / 60) % 60.0
             self.draw_sector(painter, my_rect, minutes, 60)
         elif self._my_max > 0:
             self.draw_sector(painter, my_rect, self._my_value, self._my_max)
