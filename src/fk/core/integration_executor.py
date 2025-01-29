@@ -23,7 +23,7 @@ from subprocess import Popen
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.events import AfterSettingsChanged, ALL_EVENTS, set_emitter_added_callback
-from fk.qt.sandbox import get_sandbox_type
+from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 

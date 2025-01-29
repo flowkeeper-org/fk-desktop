@@ -30,7 +30,7 @@ from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.oauth import open_url
 from fk.qt.qt_settings import QtSettings
-from fk.qt.sandbox import get_sandbox_type
+from fk.core.sandbox import get_sandbox_type
 
 
 class PageExportIntro(QWizardPage):

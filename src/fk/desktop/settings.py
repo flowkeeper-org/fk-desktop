@@ -27,7 +27,7 @@ from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLa
 from fk.core.abstract_settings import AbstractSettings
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
-from fk.qt.sandbox import get_sandbox_type
+from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 

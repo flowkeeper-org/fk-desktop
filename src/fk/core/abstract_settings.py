@@ -22,7 +22,7 @@ from typing import Iterable, Callable
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.events import get_all_events
-from fk.qt.sandbox import get_sandbox_type
+from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
