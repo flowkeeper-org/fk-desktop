@@ -138,6 +138,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         center_button = None
         if flavor == 'classic':
+            # We add both buttons, but one of them will always be hidden
             center_button = QWidget(self)
             center_button.setContentsMargins(0, 0, 0, 0)
             center_button_layout = QHBoxLayout()
@@ -215,7 +216,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
         actions.add('focus.finishTracking', "Stop Tracking", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
-        actions.add('focus.completeItem', "Complete Item", '', "tool-focus-complete", FocusWidget._complete_item)
+        actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
 
     def _create_button(self,
                        name: str,
