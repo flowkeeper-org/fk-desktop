@@ -21,7 +21,6 @@ from typing import TypeVar, Generic
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
-from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.caching_mixin import CachingMixin

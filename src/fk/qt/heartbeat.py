@@ -17,7 +17,6 @@ import datetime
 import logging
 
 from fk.core import events
-from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.timer import AbstractTimer

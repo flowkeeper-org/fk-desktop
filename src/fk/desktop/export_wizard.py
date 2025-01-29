@@ -26,11 +26,11 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.import_export import export
 from fk.core.no_cryptograph import NoCryptograph
+from fk.core.sandbox import get_sandbox_type
 from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.oauth import open_url
 from fk.qt.qt_settings import QtSettings
-from fk.core.sandbox import get_sandbox_type
 
 
 class PageExportIntro(QWizardPage):

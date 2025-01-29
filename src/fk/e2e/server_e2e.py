@@ -8,7 +8,6 @@ from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
-from fk.qt.workitem_tableview import WorkitemTableView
 
 TEMP_FILENAME = './backlog-e2e.txt'
 POMODORO_WORK_DURATION = 0.25  # seconds

@@ -17,7 +17,7 @@ import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
-from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel, QEvent
+from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
 from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 

@@ -13,10 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import datetime
 
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
-from PySide6.QtCore import QSize, QPoint, QRect
+from PySide6.QtCore import QSize
 from PySide6.QtGui import Qt, QBrush, QColor
 
 

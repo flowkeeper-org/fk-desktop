@@ -2,8 +2,8 @@
 # Copied with minor modifications from here:
 # https://doc-snapshots.qt.io/qtforpython-6.2/examples/example_widgets_layouts_flowlayout.html
 
-from PySide6.QtCore import Qt, QMargins, QPoint, QRect, QSize
-from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget, QLayoutItem
+from PySide6.QtCore import Qt, QPoint, QRect, QSize
+from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget
 
 
 class FlowLayout(QLayout):

@@ -24,8 +24,8 @@ from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckB
 
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.import_export import import_, import_github_issues
-from fk.desktop.settings import SettingsDialog
 from fk.core.sandbox import get_sandbox_type
+from fk.desktop.settings import SettingsDialog
 
 logger = logging.getLogger(__name__)
 

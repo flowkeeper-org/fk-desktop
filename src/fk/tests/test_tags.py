@@ -19,12 +19,11 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.file_event_source import FileEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
+from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
-from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
 from fk.core.tags import Tags
 from fk.core.tenant import Tenant

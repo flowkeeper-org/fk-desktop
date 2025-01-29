@@ -18,9 +18,8 @@ import logging
 
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtGui import QDragMoveEvent, QDragEnterEvent
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog, QTableView, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog, QAbstractItemView
 
-from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog

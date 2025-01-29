@@ -21,9 +21,9 @@ from typing import Iterable, Callable
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
-from fk.core.userpic import DEFAULT_USERPIC
 from fk.core.events import get_all_events
 from fk.core.sandbox import get_sandbox_type
+from fk.core.userpic import DEFAULT_USERPIC
 
 logger = logging.getLogger(__name__)
 

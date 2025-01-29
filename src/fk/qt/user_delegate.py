@@ -17,7 +17,7 @@ import random
 
 from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 from PySide6.QtCore import QSize, Qt, QRect, QPoint
-from PySide6.QtGui import QPen, QBrush, QColor
+from PySide6.QtGui import QBrush, QColor
 
 
 class UserDelegate(QtWidgets.QItemDelegate):

@@ -21,8 +21,8 @@ from PySide6.QtCore import QThreadPool, Slot
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_event_source_wrapper import AbstractEventSourceWrapper
-from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.core.file_event_source import FileEventSource
+from fk.qt.qt_invoker import invoke_in_main_thread
 
 TRoot = TypeVar('TRoot')
 

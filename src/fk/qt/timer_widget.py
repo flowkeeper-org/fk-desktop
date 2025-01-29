@@ -16,11 +16,11 @@
 import logging
 
 from PySide6.QtCore import QSize, Property, QEvent, Signal, QPoint
-from PySide6.QtGui import QFont, QColor, QPalette, QMouseEvent
+from PySide6.QtGui import QColor, QPalette, QMouseEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QToolButton
 
-from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 
 logger = logging.getLogger(__name__)
 
