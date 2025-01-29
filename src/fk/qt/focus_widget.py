@@ -138,8 +138,18 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         center_button = None
         if flavor == 'classic':
-            center_button = self._create_button("focus.voidPomodoro")
-            self._added.append(center_button)
+            center_button = QWidget(self)
+            center_button.setContentsMargins(0, 0, 0, 0)
+            center_button_layout = QHBoxLayout()
+            center_button_layout.setContentsMargins(0, 0, 0, 0)
+            center_button_layout.setSpacing(0)
+            center_button.setLayout(center_button_layout)
+            void_pomodoro_button = self._create_button("focus.voidPomodoro")
+            center_button_layout.addWidget(void_pomodoro_button)
+            self._added.append(void_pomodoro_button)
+            finish_tracking_button = self._create_button("focus.finishTracking")
+            center_button_layout.addWidget(finish_tracking_button)
+            self._added.append(finish_tracking_button)
 
         self._timer_widget = TimerWidget(self,
                                          'timer',
@@ -203,9 +213,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
-        actions.add('focus.finishTracking', "Finish Tracking", 'Ctrl+T', "tool-finish-tracking", FocusWidget._finish_tracking)
+        actions.add('focus.finishTracking', "Stop Tracking", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
-        actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
+        actions.add('focus.completeItem', "Complete Item", '', "tool-focus-complete", FocusWidget._complete_item)
 
     def _create_button(self,
                        name: str,
@@ -225,7 +235,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._header_subtext.setText(subtext)
         if not self._readonly:
             self._actions['focus.completeItem'].setDisabled(True)
+            self._actions['focus.voidPomodoro'].setVisible(False)
             self._actions['focus.voidPomodoro'].setDisabled(True)
+            self._actions['focus.finishTracking'].setVisible(False)
             self._actions['focus.finishTracking'].setDisabled(True)
         self._timer_widget.reset()
 
@@ -335,9 +347,16 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             running_item = self._timer.get_running_workitem()
             self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
-                self._actions['focus.voidPomodoro'].setDisabled(False)
                 if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+                    self._actions['focus.voidPomodoro'].setVisible(False)
+                    self._actions['focus.voidPomodoro'].setDisabled(True)
+                    self._actions['focus.finishTracking'].setVisible(True)
                     self._actions['focus.finishTracking'].setDisabled(False)
+                else:
+                    self._actions['focus.voidPomodoro'].setVisible(True)
+                    self._actions['focus.voidPomodoro'].setDisabled(False)
+                    self._actions['focus.finishTracking'].setVisible(False)
+                    self._actions['focus.finishTracking'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
                 self._actions['focus.completeItem'].setDisabled(False)
@@ -359,8 +378,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
         context_menu.addAction(self._actions['focus.nextPomodoro'])
-        context_menu.addAction(self._actions['focus.voidPomodoro'])
-        context_menu.addAction(self._actions['focus.finishTracking'])
+        if self._timer.is_working() or self._timer.is_resting():
+            if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+                context_menu.addAction(self._actions['focus.finishTracking'])
+            else:
+                context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
         context_menu.addAction(self._actions['window.pinWindow'])
