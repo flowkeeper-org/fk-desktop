@@ -50,14 +50,24 @@
       <widget class="QComboBox" name="format"/>
      </item>
      <item>
+      <widget class="QComboBox" name="period"/>
+     </item>
+     <item>
       <widget class="QCheckBox" name="view_time_spent">
        <property name="text">
-        <string>Show time spent</string>
+        <string>Include time spent</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="results"/>
+      <widget class="QCheckBox" name="view_backlogs">
+       <property name="text">
+        <string>Include information about backlogs</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTextEdit" name="work_summary_results"/>
      </item>
      <item>
       <widget class="QDialogButtonBox" name="buttons">

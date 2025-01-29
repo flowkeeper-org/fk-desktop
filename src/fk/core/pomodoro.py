@@ -23,9 +23,15 @@ from fk.core.abstract_data_item import AbstractDataItem
 logger = logging.getLogger(__name__)
 
 
+POMODORO_TYPE_NORMAL = 'normal'
+POMODORO_TYPE_TRACKER = 'tracker'
+POMODORO_TYPE_COUNTER = 'counter'
+
+
 class Pomodoro(AbstractDataItem['Workitem']):
     _is_planned: bool
     _state: str
+    _type: str
     _work_duration: float
     _rest_duration: float
     _date_work_started: datetime.datetime | None
@@ -38,12 +44,14 @@ class Pomodoro(AbstractDataItem['Workitem']):
                  state: str,
                  work_duration: float,
                  rest_duration: float,
+                 type_: str,
                  uid: str,
                  workitem: 'Workitem',
                  create_date: datetime.datetime):
         super().__init__(uid=uid, parent=workitem, create_date=create_date)
         self._is_planned = is_planned
         self._state = state
+        self._type = type_
         self._work_duration = work_duration
         self._rest_duration = rest_duration
         self._date_work_started = None
@@ -77,7 +85,10 @@ class Pomodoro(AbstractDataItem['Workitem']):
         return self._date_work_started
 
     def get_rest_start_date(self) -> datetime.datetime:
-        return self._date_rest_started
+        if self._type == POMODORO_TYPE_NORMAL:
+            return self._date_rest_started
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't support rest")
 
     def update_rest_duration(self, rest_duration: float) -> None:
         if self.is_startable() or self.is_working():
@@ -86,34 +97,50 @@ class Pomodoro(AbstractDataItem['Workitem']):
             raise Exception(f'Trying to update rest duration of a pomodoro in state {self._state}')
 
     def seal(self, target_state: str, when: datetime.datetime) -> None:
-        if (target_state == 'finished' and self.is_resting()) or target_state == 'canceled':
-            self._state = target_state
-            self._date_completed = when
-            self._last_modified_date = when
-        elif target_state == 'finished' and self.is_working():
-            # This is a rare corner case, which we may encounter in the field. The client went down while
-            # the pomodoro was in work, and came back up when it was in rest. The timer then transitioned
-            # it to Finished state correctly. This results in a missing "StartRest" historical record.
-            # We can work around this situation reliably if the Finish happened "after" the work + rest
-            # should've finished (take into account some little margin for error, just a few seconds).
-            if when > self.planned_end_of_rest() - datetime.timedelta(seconds=5):
-                logger.debug(f"Warning - skipped rest for a pomodoro on {self.get_parent().get_name()}, but still "
-                             "authorized its completion (transition happened when the client was offline)")
+        if self._type == POMODORO_TYPE_NORMAL:
+            if (target_state == 'finished' and self.is_resting()) or target_state == 'canceled':
                 self._state = target_state
                 self._date_completed = when
                 self._last_modified_date = when
-        else:
-            raise Exception(f'Cannot seal pomodoro from {self._state} to {target_state}')
+            elif target_state == 'finished' and self.is_working():
+                # This is a rare corner case, which we may encounter in the field. The client went down while
+                # the pomodoro was in work, and came back up when it was in rest. The timer then transitioned
+                # it to Finished state correctly. This results in a missing "StartRest" historical record.
+                # We can work around this situation reliably if the Finish happened "after" the work + rest
+                # should've finished (take into account some little margin for error, just a few seconds).
+                if when > self.planned_end_of_rest() - datetime.timedelta(seconds=5):
+                    logger.debug(f"Warning - skipped rest for a pomodoro on {self.get_parent().get_name()}, but still "
+                                 "authorized its completion (transition happened when the client was offline)")
+                    self._state = target_state
+                    self._date_completed = when
+                    self._last_modified_date = when
+            else:
+                raise Exception(f'Cannot seal normal pomodoro from {self._state} to {target_state}')
+        elif self._type == POMODORO_TYPE_TRACKER:
+            if (target_state == 'finished' or target_state == 'canceled') and self.is_working():
+                self._state = target_state
+                self._date_completed = when
+                self._last_modified_date = when
+            else:
+                raise Exception(f'Cannot seal tracker pomodoro from {self._state} to {target_state}')
+        elif self._type == POMODORO_TYPE_COUNTER:
+            raise Exception(f'Cannot seal counter pomodoro')
 
     def start_work(self, when: datetime.datetime) -> None:
-        self._state = 'work'
-        self._date_work_started = when
-        self._last_modified_date = when
+        if self._type != POMODORO_TYPE_COUNTER:
+            self._state = 'work'
+            self._date_work_started = when
+            self._last_modified_date = when
+        else:
+            raise Exception(f"Pomodoros of type counter don't have work")
 
     def start_rest(self, when: datetime.datetime) -> None:
-        self._state = 'rest'
-        self._date_rest_started = when
-        self._last_modified_date = when
+        if self._type == POMODORO_TYPE_NORMAL:
+            self._state = 'rest'
+            self._date_rest_started = when
+            self._last_modified_date = when
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't support rest")
 
     def is_running(self) -> bool:
         return self._state == 'work' or self._state == 'rest'
@@ -122,10 +149,16 @@ class Pomodoro(AbstractDataItem['Workitem']):
         return self._state == 'new'
 
     def is_working(self) -> bool:
-        return self._state == 'work'
+        if self._type != POMODORO_TYPE_COUNTER:
+            return self._state == 'work'
+        else:
+            raise Exception(f"Pomodoros of type counter don't have work")
 
     def is_resting(self) -> bool:
-        return self._state == 'rest'
+        if self._type == POMODORO_TYPE_NORMAL:
+            return self._state == 'rest'
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't have rest")
 
     def is_finished(self) -> bool:
         return self._state == 'finished'
@@ -133,11 +166,37 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def is_canceled(self) -> bool:
         return self._state == 'canceled'
 
-    def get_work_duration(self) -> float:
-        return self._work_duration
+    def get_elapsed_duration(self, when: datetime.datetime = None) -> float:
+        if self._date_work_started is not None and not self.is_canceled():
+            if self.is_working():
+                now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+            elif self.is_finished():
+                now = self._last_modified_date
+            return (now - self._date_work_started).total_seconds()
+        else:
+            return 0
+
+    def get_work_duration(self, when: datetime.datetime = None) -> float:
+        if self._type == POMODORO_TYPE_NORMAL:
+            return self._work_duration
+        elif self._type == POMODORO_TYPE_TRACKER:
+            if self.is_working():
+                return self.get_elapsed_duration(when)
+            elif self.is_startable():
+                return 0
+            else:
+                return (self._date_completed - self._date_work_started).total_seconds()
+        elif self._type == POMODORO_TYPE_COUNTER:
+            raise Exception(f"Pomodoros of type counter don't have work")
 
     def get_rest_duration(self) -> float:
-        return self._rest_duration
+        if self._type == POMODORO_TYPE_NORMAL:
+            return self._rest_duration
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't have rest")
+
+    def get_type(self):
+        return self._type
 
     def total_remaining_time(self, when: datetime.datetime) -> float:
         # Total remaining time in seconds. Can be negative, if it has expired. Can be None, if it hasn't started yet.
@@ -148,17 +207,20 @@ class Pomodoro(AbstractDataItem['Workitem']):
             return remaining_in_current
 
     def remaining_time_in_current_state(self, when: datetime.datetime) -> float:
-        # Remaining time in the current state in seconds.
-        # Can be negative, if it has expired.
-        # Will be 0 if it hasn't started yet.
-        if self.is_working():
-            now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-            return (self.planned_end_of_work() - now).total_seconds()
-        elif self.is_resting():
-            now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-            return (self.planned_end_of_rest() - now).total_seconds()
+        if self._type == POMODORO_TYPE_NORMAL:
+            # Remaining time in the current state in seconds.
+            # Can be negative, if it has expired.
+            # Will be 0 if it hasn't started yet.
+            if self.is_working():
+                now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+                return (self.planned_end_of_work() - now).total_seconds()
+            elif self.is_resting():
+                now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+                return (self.planned_end_of_rest() - now).total_seconds()
+            else:
+                return 0
         else:
-            return 0
+            raise Exception(f"Pomodoros of type {self._type} don't have remaining time")
 
     def remaining_minutes_in_current_state(self, when: datetime.datetime) -> str:
         m = self.remaining_time_in_current_state(when) / 60
@@ -168,17 +230,23 @@ class Pomodoro(AbstractDataItem['Workitem']):
             return f"{round(m)} minutes"
 
     def planned_time_in_current_state(self) -> float:
-        # Planned time in the current state in seconds. Will be 0 if this pomodoro is
-        # sealed or hasn't started yet.
-        if self.is_resting():
-            return self._rest_duration
-        elif self.is_working():
-            return self._work_duration
+        if self._type == POMODORO_TYPE_NORMAL:
+            # Planned time in the current state in seconds. Will be 0 if this pomodoro is
+            # sealed or hasn't started yet.
+            if self.is_resting():
+                return self._rest_duration
+            elif self.is_working():
+                return self._work_duration
+            else:
+                return 0
         else:
-            return 0
+            raise Exception(f"Pomodoros of type {self._type} don't have planned time")
 
     def planned_end_of_work(self) -> datetime.datetime:
-        return self._date_work_started + datetime.timedelta(seconds=self._work_duration)
+        if self._type == POMODORO_TYPE_NORMAL:
+            return self._date_work_started + datetime.timedelta(seconds=self._work_duration)
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't have planned time")
 
     def planned_end_of_rest(self) -> datetime.datetime:
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
@@ -196,6 +264,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, True)}\n' \
+               f'{indent}  Type: {self._type}\n' \
                f'{indent}  State: {self._state}\n' \
                f'{indent}  Is planned: {self._is_planned}\n' \
                f'{indent}  Work duration: {self._work_duration}\n' \

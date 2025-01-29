@@ -22,12 +22,18 @@ from typing import Iterable, Callable
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.userpic import DEFAULT_USERPIC
+from fk.core.events import get_all_events
+from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
 
+def _get_desktop() -> [str]:
+    return [s.lower() for s in os.environ.get('XDG_SESSION_DESKTOP', '').split(':')]
+
+
 def _is_gnome() -> bool:
-    return os.environ.get('DESKTOP_SESSION', 'N/A') == 'gnome'
+    return 'gnome' in _get_desktop()
 
 
 def _always_show(_) -> bool:
@@ -36,6 +42,10 @@ def _always_show(_) -> bool:
 
 def _never_show(_) -> bool:
     return False
+
+
+def _show_for_system_font(values: dict[str, str]) -> bool:
+    return values['Application.font_embedded'] == 'False'
 
 
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
@@ -103,6 +113,21 @@ def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
 
 
+def _show_for_flatpak(values: dict[str, str]) -> bool:
+    return get_sandbox_type() == 'Flatpak'
+
+
+def _is_tiling_wm() -> bool:
+    wm = _get_desktop()
+    return ('hyprland' in wm
+            or 'i3' in wm
+            or 'awesome' in wm)
+
+
+def prepare_file_for_writing(filename):
+    (Path(filename) / '..').resolve().mkdir(parents=True, exist_ok=True)
+
+
 class AbstractSettings(AbstractEventEmitter, ABC):
     # Category -> [(id, type, display, default, options, visibility)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
@@ -110,8 +135,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _callback_invoker: Callable
 
     def __init__(self,
-                 default_font_family: str,
-                 default_font_size: int,
+                 default_data_dir: str,
+                 default_logs_dir: str,
                  callback_invoker: Callable,
                  is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
@@ -126,12 +151,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'General': [
                 ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Application.show_completed', 'bool', 'Show completed items', 'True', [], _never_show),
+                ('Application.hide_completed', 'bool', 'Hide completed items', 'False', [], _never_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
+                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
@@ -142,10 +169,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "WARNING:Errors and warnings",
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
-                ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
+                ('Logger.filename', 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
                 ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
                 ('Application.feature_connect', 'bool', 'Enable Connect feature', 'True', [], _never_show),
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'True', [], _never_show),
+                ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
+                ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', '', [], _never_show),
@@ -161,7 +190,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _show_for_websocket_source),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _show_for_websocket_source),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
-                ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
+                ('FileEventSource.filename', 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),
@@ -195,12 +224,18 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
             ],
             'Appearance': [
-                ('Application.timer_ui_mode', 'choice', 'When timer starts', 'focus', [
+                ('Application.timer_ui_mode', 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
                     "keep:Keep application window as-is",
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ], _always_show),
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
+                ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
+                                                                                       'minimal:Minimalistic (with context menu)'], _always_show),
+                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'thin-dark', ['thin-light:Thin, light background',
+                                                                                                   'thin-dark:Thin, dark background',
+                                                                                                   'classic-light:Classic, light background',
+                                                                                                   'classic-dark:Classic, dark background'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
@@ -217,7 +252,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "highlight:Highlight",
                 ], _always_show),
                 ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
-                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _never_show),
+                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _always_show),
                 ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
                 ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
                 ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
@@ -230,7 +265,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
                 ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
-                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'SugarLollipop', ['SugarLollipop:SugarLollipop'], _show_for_gradient_eyecandy),
+                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'NorseBeauty', ['NorseBeauty:NorseBeauty'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
                 ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
                 ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
@@ -239,12 +274,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
                 ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
+                ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
-                ('Application.font_main_family', 'font', 'Main font family', default_font_family, [], _always_show),
-                ('Application.font_main_size', 'int', 'Main font size', str(default_font_size), [3, 48], _always_show),
-                ('Application.font_header_family', 'font', 'Title font family', default_font_family, [], _always_show),
-                ('Application.font_header_size', 'int', 'Title font size', str(int(24.0 / 9 * default_font_size)), [3, 72], _always_show),
+                ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
+                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
+                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _show_for_system_font),
+                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
+                ('Application.font_header_size', 'int', 'Title font size', '26', [3, 72], _show_for_system_font),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
@@ -254,7 +291,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', '', 'Embedded music - "Madelene (ID 1315)"\n(C) Lobo Loco <https://www.musikbrause.de>,\nCC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
@@ -262,6 +299,18 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
+            ],
+            'Integration': [
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{} syntax for variable substitution:\n'
+                                                             '$ espeak "Deleted work item {workitem.get_name()}"\n'
+                                                             '$ echo "Received {event}. Available variables: {dir()}"\n'
+                                                             'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
+                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
+                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
+                ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
         for lst in self._definitions.values():
@@ -402,3 +451,15 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     def update_default(self, name: str, value: str) -> None:
         self._defaults[name] = value
+
+    @abstractmethod
+    def init_audio_outputs(self):
+        pass
+
+    @abstractmethod
+    def init_gradients(self):
+        pass
+
+    @abstractmethod
+    def init_fonts(self):
+        pass

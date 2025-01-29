@@ -19,6 +19,10 @@ from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.tag import Tag
 
 
+def sanitize_tag(tag: str) -> str:
+    return ''.join(filter(str.isalnum, tag))
+
+
 class Tags(AbstractDataContainer[Tag, 'User']):
     def __init__(self, user: 'User'):
         super().__init__(f'Tags',

@@ -13,22 +13,35 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
+
 from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject
-from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QMainWindow
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QDialog
 
+from fk.core.abstract_timer import AbstractTimer
 from fk.qt.app_version import get_current_version
+from fk.qt.qt_timer import QtTimer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 
 
 class AboutWindow(QObject):
-    _about_window: QMainWindow
+    _about_window: QDialog
+    _timer_display: MinimalTimerRenderer
+    _timer: AbstractTimer
+    _tick: int
 
     def __init__(self, parent: QWidget | None):
         super().__init__(parent)
+        self._timer_display = None
+        self._timer = QtTimer('About window', self)
+        self._tick = 299
+
         file = QFile(":/about.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
         # noinspection PyTypeChecker
-        self._about_window: QMainWindow = QtUiTools.QUiLoader().load(file, parent)
+        self._about_window = QtUiTools.QUiLoader().load(file, parent)
         file.close()
 
     def show(self):
@@ -57,6 +70,28 @@ class AboutWindow(QObject):
         about_license.setMarkdown(file.readAll().toStdString())
         file.close()
 
+        # noinspection PyTypeChecker
+        about_icon: QLabel = self._about_window.findChild(QLabel, "icon")
+        about_icon.setFixedWidth(150)
+        about_icon.setFixedHeight(150)
+        bg_color = about_icon.palette().color(QPalette.ColorRole.Base)
+        fg_color = about_icon.palette().color(QPalette.ColorRole.Text)
+        self._timer_display = MinimalTimerRenderer(about_icon,
+                                                   bg_color,
+                                                   fg_color)
+        about_icon.installEventFilter(self._timer_display)
+        self._timer_display.setObjectName('AboutWindowRenderer')
+        self._timer_display.reset()
+        self._timer.schedule(100, self._handle_tick, None)
+        self._handle_tick(None, None)
+
+        self._about_window.rejected.connect(lambda: self._timer.cancel())
+
         self._about_window.show()
 
-
+    def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
+        self._timer_display.set_values(self._tick, 300, None, None, 'working')
+        self._timer_display.repaint()
+        self._tick -= 1
+        if self._tick < 0:
+            self._tick = 299

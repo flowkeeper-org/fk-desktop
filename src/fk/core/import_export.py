@@ -21,6 +21,7 @@ from typing import Iterable, Callable, TypeVar
 from more_itertools import tail
 
 from fk.core import events
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_strategy import AbstractStrategy
@@ -31,6 +32,7 @@ from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy
 from fk.core.simple_serializer import SimpleSerializer
+from fk.core.tags import sanitize_tag
 from fk.core.tenant import ADMIN_USER
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
@@ -90,7 +92,7 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                 for pomodoro in workitem.values():
                     # We could create all at once, but then we'd lose the information about unplanned pomodoros
                     yield AddPomodoroStrategy(seq, pomodoro.get_create_date(), user.get_identity(),
-                                              [workitem.get_uid(), '1'],
+                                              [workitem.get_uid(), '1', pomodoro.get_type()],
                                               source.get_settings())
                     seq += 1
                     if pomodoro.is_canceled() or pomodoro.is_finished():
@@ -196,12 +198,11 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                     for p_old in tail(num_pomodoros_to_add, workitem.values()):
                         # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
                         yield AddPomodoroStrategy(seq, p_old.get_create_date(), user.get_identity(),
-                                                  [workitem.get_uid(), '1'],
+                                                  [workitem.get_uid(), '1', p_old.get_type()],
                                                   source.get_settings())
                         seq += 1
 
-                # Here we rely on dict.values() having list semantics. Need to check if this is guaranteed behavior.
-                # Also, we rely on the fact that there are at least len(workitem) pomodoros now
+                # Here we rely on the fact that there are at least len(workitem) pomodoros now
                 pomodoros_old = list(existing_workitem.values())
                 for i, p_new in enumerate(workitem.values()):
                     p_old = pomodoros_old[i]
@@ -315,6 +316,89 @@ def import_(source: AbstractEventSource[TRoot],
                        start_callback,
                        progress_callback,
                        completion_callback)
+
+
+def import_github_issues(source: AbstractEventSource[TRoot],
+                         name: str,
+                         issues: list[object],
+                         tag_creator: bool,
+                         tag_assignee: bool,
+                         tag_labels: bool,
+                         tag_milestone: bool,
+                         tag_state: bool) -> str:
+    log = ''
+    found: Backlog = None
+
+    user: User = source.get_data().get_current_user()
+    for b in user.values():
+        if b.get_name() == name:
+            found = b
+            log = f'Found existing backlog "{name}"\n'
+            break
+
+    if found is None:
+        b_uid = generate_uid()
+        source.execute(CreateBacklogStrategy, [b_uid, name])
+        found = user[b_uid]
+        log = f'Created backlog "{name}"\n'
+
+    created = 0
+    updated = 0
+    skipped = 0
+    for issue in issues:
+        title = f'{issue["number"]} - {issue["title"]}'
+
+        # Check if such workitem already exists
+        existing: Workitem = None
+        for wi in found.values():
+            if wi.get_name().startswith(title):
+                existing = wi
+                break
+
+        if existing is not None and existing.is_sealed():
+            skipped += 1
+            continue    # Nothing we can do with it
+
+        tags = ''
+        if tag_creator and issue.get('user', None) is not None:
+            tags += ' #' + sanitize_tag(issue['user']['login'])
+        if tag_assignee and issue.get('assignee', None) is not None:
+            tags += ' #' + sanitize_tag(issue['assignee']['login'])
+        if tag_labels and issue.get('labels', None) is not None:
+            for label in issue['labels']:
+                tags += ' #' + sanitize_tag(label['name'])
+        if tag_milestone and issue.get('milestone', None) is not None:
+            tags += ' #' + sanitize_tag(issue['milestone']['title'])
+        if tag_state and issue.get('state', None) is not None:
+            tags += ' #' + sanitize_tag(issue['state'])
+        if tags != '':
+            title += f' [ {tags[1:]} ]'
+
+        if existing is not None and existing.get_name() == title:
+            skipped += 1
+            continue    # Nothing to do
+
+        if existing is None:
+            w_uid = generate_uid()
+            source.execute(CreateWorkitemStrategy, [w_uid, found.get_uid(), title])
+            created += 1
+        else:
+            source.execute(RenameWorkitemStrategy, [existing.get_uid(), title])
+            updated += 1
+
+
+    if created == 0:
+        log += 'Did not create any new work items\n'
+    else:
+        log += f'Created {created} work items\n'
+
+    if skipped > 0:
+        log += f'Skipped {skipped} existing work items\n'
+
+    if updated > 0:
+        log += f'Updated {updated} existing work items\n'
+
+    return log
 
 
 def _merge_sources(existing_source,

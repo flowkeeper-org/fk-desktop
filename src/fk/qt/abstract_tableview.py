@@ -17,9 +17,9 @@ import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
-from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
-from PySide6.QtGui import QPainter, QStandardItemModel
-from PySide6.QtWidgets import QTableView, QWidget
+from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel, QEvent
+from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
+from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -83,6 +83,12 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.horizontalHeader().setMinimumSectionSize(10)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setVisible(False)
+
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.setDragDropOverwriteMode(False)
 
         self._update_row_height()
 
@@ -200,3 +206,31 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.selectionModel().blockSignals(False)
 
         self.update_actions(None)
+
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        print('LEAVE')
+        super().dragLeaveEvent(event)
+        original = self.model().remove_drop_placeholder()
+        self.selectRow(original)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        # TODO: We don't know if it was an outside enter, or we started dragging
+        super().dragEnterEvent(event)
+        index: QModelIndex = self.indexAt(event.pos())
+        if index.isValid():
+            print(f'ENTER: {event}')
+            self.deselect()
+            self.model().create_drop_placeholder(index, self.rowHeight(index.row()))
+
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        index: QModelIndex = self.indexAt(event.pos())
+        self.model().move_drop_placeholder(index)
+        event.ignore()
+        # if index.data(501) == 'title':
+        #     # Hovering over a "real" item. Insert a "drop placeholder" here instead.
+        #     self.model().move_drop_placeholder(index)
+        #     event.ignore()
+        # else:
+        #     # Hovering over a "drop placeholder" item -- nothing to do
+        #     event.acceptProposedAction()
+        #     super(QAbstractItemView, self).dragMoveEvent(event)

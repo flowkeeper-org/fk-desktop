@@ -19,6 +19,7 @@ from typing import Callable
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.backlog import Backlog
 from fk.core.pomodoro_strategies import VoidPomodoroStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tag import Tag
@@ -296,4 +297,110 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
         emit(events.AfterWorkitemComplete, params, self._carry)
+        return None, None
+
+
+# ReorderWorkitem("123-456-789", "0")
+@strategy
+class ReorderWorkitemStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+    _new_index: int
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
+        self._new_index = int(params[1])
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        workitem: Workitem | None = None
+        backlog: Backlog | None = None
+        user: User = data[self._user_identity]
+        for b in user.values():
+            if self._workitem_uid in b:
+                workitem = b[self._workitem_uid]
+                backlog = b
+                break
+
+        if workitem is None:
+            raise Exception(f'Workitem "{self._workitem_uid}" not found')
+
+        params = {
+            'workitem': workitem,
+            'new_index': self._new_index,
+        }
+        emit(events.BeforeWorkitemReorder, params, self._carry)
+        backlog.move_child(workitem, self._new_index)
+        backlog.item_updated(self._when)
+        emit(events.AfterWorkitemReorder, params, self._carry)
+        return None, None
+
+
+# MoveWorkitem("123-456-789", "234-567-890")
+@strategy
+class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+    _backlog_uid: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
+    def get_backlog_uid(self) -> str:
+        return self._backlog_uid
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
+        self._backlog_uid = params[1]
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        workitem: Workitem | None = None
+        old_backlog: Backlog | None = None
+        user: User = data[self._user_identity]
+
+        if self._backlog_uid not in user:
+            raise Exception(f'Backlog "{self._backlog_uid}" not found')
+        new_backlog: Backlog = user[self._backlog_uid]
+
+        if old_backlog == new_backlog:
+            # Nothing to do
+            return None, None
+
+        for b in user.values():
+            if self._workitem_uid in b:
+                workitem = b[self._workitem_uid]
+                old_backlog = b
+                break
+
+        if workitem is None:
+            raise Exception(f'Workitem "{self._workitem_uid}" not found')
+
+        params = {
+            'workitem': workitem,
+            'old_backlog': old_backlog,
+            'new_backlog': new_backlog,
+        }
+        emit(events.BeforeWorkitemMove, params, self._carry)
+        workitem.change_parent(new_backlog)
+        old_backlog.item_updated(self._when)
+        workitem.item_updated(self._when)   # Update Backlog
+        emit(events.AfterWorkitemMove, params, self._carry)
         return None, None

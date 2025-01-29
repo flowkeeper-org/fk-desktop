@@ -22,6 +22,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.tag import Tag
+from fk.core.timer import PomodoroTimer
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.configurable_toolbar import ConfigurableToolBar
@@ -38,6 +39,7 @@ class WorkitemWidget(QWidget):
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
+                 pomodoro_timer: PomodoroTimer,
                  actions: Actions):
         super().__init__(parent)
         self.setObjectName('workitems_widget')
@@ -54,12 +56,17 @@ class WorkitemWidget(QWidget):
         tb.addAction(actions['workitems_table.deleteItem'])
         tb.addAction(actions['workitems_table.renameItem'])
         tb.addAction(actions['workitems_table.startItem'])
-        tb.addAction(actions['workitems_table.completeItem'])
         tb.addAction(actions['workitems_table.addPomodoro'])
         tb.addAction(actions['workitems_table.removePomodoro'])
+        tb.addAction(actions['workitems_table.hideCompleted'])
+        tb.addAction(actions['workitems_table.completeItem'])
         layout.addWidget(tb)
 
-        self._workitems_table = WorkitemTableView(self, application, source_holder, actions)
+        self._workitems_table = WorkitemTableView(self,
+                                                  application,
+                                                  source_holder,
+                                                  pomodoro_timer,
+                                                  actions)
         layout.addWidget(self._workitems_table)
 
         application.get_settings().on(AfterSettingsChanged, self.on_setting_changed)

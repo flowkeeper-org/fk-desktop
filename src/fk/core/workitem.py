@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import datetime
 import re
+import textwrap
 from collections.abc import Set
 from typing import Iterable
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import generate_uid
-from fk.core.pomodoro import Pomodoro
-
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 
 TAG_REGEX = re.compile('#(\\w+)')
 
@@ -69,6 +69,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                      num_pomodoros: int,
                      default_work_duration: float,
                      default_rest_duration: float,
+                     type_: str,
                      when: datetime.datetime) -> None:
         is_planned = not self.is_running()
         for i in range(num_pomodoros):
@@ -82,6 +83,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                 'new',
                 default_work_duration,
                 default_rest_duration,
+                type_,
                 uid,
                 self,
                 when)
@@ -108,18 +110,23 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         return self._state in ('finished', 'canceled')
 
     def is_planned(self) -> bool:
-        # TODO: Calculate it based on the parent's state
-        return True
+        backlog_start_date = self.get_parent().get_start_date()
+        if backlog_start_date is None:
+            return True
+        else:
+            return self.get_create_date() <= backlog_start_date
 
     def is_startable(self) -> bool:
-        for p in self.values():
-            if p.is_startable():
-                return True
+        if not self.is_sealed():
+            for p in self.values():
+                if p.is_startable():
+                    return True
         return False
 
     def start(self, when: datetime.datetime) -> None:
         self._state = 'running'
         self._date_work_started = when
+        self.get_parent().update_start_date(when)
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, mask_uid)}\n' \
@@ -128,7 +135,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                f'{indent}  Work ended: {self._date_work_ended}'
 
     def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
-        for pomodoro in self._children.values():
+        for pomodoro in self.values():
             if pomodoro.is_startable():
                 yield pomodoro
 
@@ -137,3 +144,19 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         for t in TAG_REGEX.finditer(self._name):
             res.add(t.group(1).lower())
         return res
+
+    def get_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=60, placeholder='...')
+
+    def get_short_display_name(self) -> str:
+        return textwrap.shorten(self.get_name(), width=30, placeholder='...')
+
+    def get_total_elapsed_time(self) -> datetime.timedelta:
+        total = sum([p.get_elapsed_duration() for p in self.values()])
+        return datetime.timedelta(seconds=round(total))
+
+    def is_tracker(self) -> bool:
+        for p in self.values():
+            if p.get_type() == POMODORO_TYPE_TRACKER:
+                return True
+        return False

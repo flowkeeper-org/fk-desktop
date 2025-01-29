@@ -26,8 +26,12 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6 import QtCore
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, Signal, QStandardPaths
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
+from PySide6.QtGui import QFontDatabase
+from PySide6.QtNetwork import QNetworkProxyFactory
+from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
 
@@ -35,13 +39,14 @@ from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import EventSourceFactory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
+from fk.core.integration_executor import IntegrationExecutor
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
@@ -73,10 +78,15 @@ class Application(QApplication, AbstractEventEmitter):
     _cryptograph: AbstractCryptograph
     _font_main: QFont
     _font_header: QFont
+    _embedded_font_family: str | None
     _row_height: int
     _source_holder: EventSourceHolder | None
-    _heartbeat: Heartbeat
+    _heartbeat: Heartbeat | None
     _version_timer: QtTimer
+    _integration_executor: IntegrationExecutor
+    _current_version: Version
+
+    upgraded = Signal(Version)
 
     def __init__(self, args: [str]):
         super().__init__(args,
@@ -85,14 +95,20 @@ class Application(QApplication, AbstractEventEmitter):
         # It's important to import Common theme very early, because we need it to get app version, etc.
         # noinspection PyUnresolvedReferences
         import fk.desktop.resources
+        self._current_version = get_current_version()
+
+        self.setApplicationName('Flowkeeper')
+        self.setApplicationVersion(str(self._current_version))
 
         if '--version' in self.arguments():
             # This might be useful on Windows or macOS, which store their settings in some obscure locations
-            print(f'Flowkeeper v{get_current_version()}')
+            print(f'Flowkeeper v{self._current_version}')
             sys.exit(0)
 
         self._register_source_producers()
         self._heartbeat = None
+        self._embedded_font_family = None
+        QNetworkProxyFactory.setUseSystemConfiguration(True)
 
         # It's important to initialize settings after the QApplication
         # has been constructed, as it uses default QFont and other
@@ -122,7 +138,7 @@ class Application(QApplication, AbstractEventEmitter):
                 self._settings = QtSettings('flowkeeper-desktop-testing')
                 self._settings.reset_to_defaults()
                 self._settings.set({
-                    'FileEventSource.filename': str(Path.home() / 'flowkeeper-testing.txt'),
+                    'FileEventSource.filename': str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)) / 'flowkeeper-testing.txt'),
                     'Application.show_tutorial': 'False',
                     'Application.check_updates': 'False',
                     'Pomodoro.default_work_duration': '5',
@@ -130,12 +146,15 @@ class Application(QApplication, AbstractEventEmitter):
                     'Application.play_alarm_sound': 'False',
                     'Application.play_rest_sound': 'False',
                     'Application.play_tick_sound': 'False',
-                    'Logger.filename': str(Path.home() / 'flowkeeper-testing.log'),
+                    'Logger.filename': str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation)) / 'flowkeeper-testing.log'),
                     'Logger.level': 'DEBUG',
                     'Source.encryption_key!': 'test key',
                 })
             else:
                 self._settings = QtSettings()
+                if self._settings.get('Application.singleton') == 'True' and self.is_another_instance_running():
+                    logger.warning(f'Another instance of Flowkeeper is running - exiting')
+                    sys.exit(3)
             self._initialize_logger()
             if self._settings.is_keyring_enabled():
                 self._cryptograph = FernetCryptograph(self._settings)
@@ -157,41 +176,62 @@ class Application(QApplication, AbstractEventEmitter):
         if self._settings.get('Application.check_updates') == 'True':
             self._version_timer.schedule(5000, self.check_version, None, True)
 
+        QtTimer('Upgrade checker').schedule(1000, self._check_upgrade, None, True)
+
         self._source_holder = EventSourceHolder(self._settings, self._cryptograph)
         self._source_holder.on(AfterSourceChanged, self._on_source_changed, True)
 
         # Heartbeat
         self._heartbeat = Heartbeat(self._source_holder, 3000, 500)
 
+        self._integration_executor = IntegrationExecutor(self._settings)
+
+    def _get_versions(self):
+        return (f'- Flowkeeper: {self._current_version}\n'
+                f'- Qt: {QtCore.__version__} ({self.platformName()})\n'
+                f'- Python: {sys.version}\n'
+                f'- Platform: {platform.system()} {platform.release()} {platform.version()}\n'
+                f'- Kernel: {platform.platform()}\n')
+
     def _initialize_logger(self):
+        debug = '--debug' in self.arguments()
+
         log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         root = logging.getLogger()
 
         # 0. Set the overall log level that would apply to ALL handlers
-        root.setLevel(self._settings.get('Logger.level'))
+        root.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
 
         # 1. Remove existing handlers, if any
         for existing_handle in root.handlers:
             existing_handle.close()
         root.handlers.clear()
 
-        # 2. Add FILE handler for whatever the user configured
-        file_handler = logging.FileHandler(filename=self._settings.get('Logger.filename'))
+        # 2. Check that the entire logger file path exists
+        filename = self._settings.get('Logger.filename')
+        prepare_file_for_writing(filename)
+
+        # 3. Add FILE handler for whatever the user configured
+        file_handler = logging.FileHandler(filename=filename)
         file_handler.setFormatter(log_format)
-        file_handler.setLevel(self._settings.get('Logger.level'))
+        file_handler.setLevel(logging.DEBUG if debug else self._settings.get('Logger.level'))
         root.handlers.append(file_handler)
 
-        # 3. Add STDIO handler for warnings and errors
+        # 4. Add STDIO handler for warnings and errors
         stdio_handler = logging.StreamHandler(sys.stdout)
         stdio_handler.setFormatter(log_format)
-        stdio_handler.setLevel(logging.WARNING)
+        stdio_handler.setLevel(logging.DEBUG if debug else logging.WARNING)
         root.handlers.append(stdio_handler)
 
-        logger.debug(f'Flowkeeper: {get_current_version()}')
-        logger.debug(f'Qt: {QtCore.__version__}')
-        logger.debug(f'Python: {sys.version}')
-        logger.debug(f'Platform: {platform.system()} {platform.release()} {platform.version()}')
-        logger.debug(f'Kernel: {platform.platform()}')
+        logger.debug(f'Versions: \n'
+                     f'{self._get_versions()}')
+
+    def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
+        last_version = Version(self._settings.get('Application.last_version'))
+        if self._current_version != last_version:
+            logger.info(f'We execute for the first time after upgrade from {last_version} to {self._current_version}')
+            self.upgraded.emit(self._current_version)
+            self._settings.set({'Application.last_version': str(self._current_version)})
 
     def initialize_source(self):
         self._source_holder.request_new_source()
@@ -201,13 +241,13 @@ class Application(QApplication, AbstractEventEmitter):
             inner_source = FileEventSource[Tenant](settings, cryptograph, root, QtFilesystemWatcher())
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('local', local_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('local', local_source_producer)
 
         def ephemeral_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             inner_source = EphemeralEventSource[Tenant](settings, cryptograph, root)
             return ThreadedEventSource(inner_source, self)
 
-        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
         def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
             return CachedWebsocketEventSource[Tenant](settings=settings,
@@ -215,9 +255,9 @@ class Application(QApplication, AbstractEventEmitter):
                                                       application=self,
                                                       root=root)
 
-        get_event_source_factory().register_producer('websocket', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
-        get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
@@ -233,6 +273,11 @@ class Application(QApplication, AbstractEventEmitter):
 
     def is_e2e_mode(self):
         return '--e2e' in self.arguments()
+
+    def is_hide_on_start(self):
+        return ('--autostart' in self.arguments() and
+                self.get_settings().get('Application.hide_on_autostart') == 'True' and
+                self.get_settings().get('Application.show_tray_icon') == 'True')
 
     def is_screenshot_mode(self):
         return '--screenshots' in self.arguments()
@@ -261,10 +306,15 @@ class Application(QApplication, AbstractEventEmitter):
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
-        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
-        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size')
-        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
-        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size')
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            variables['FONT_HEADER_FAMILY'] = self._embedded_font_family
+            variables['FONT_MAIN_FAMILY'] = self._embedded_font_family
+        else:
+            variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+            variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
+        variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
+        variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
+        variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
         return variables
 
     def get_icon_theme(self):
@@ -273,6 +323,8 @@ class Application(QApplication, AbstractEventEmitter):
     # noinspection PyUnresolvedReferences
     def refresh_theme_and_fonts(self):
         logger.debug('Refreshing theme and fonts')
+
+        self._load_embedded_font()
 
         template_file = QFile(":/style-template.qss")
         template_file.open(QFile.OpenModeFlag.ReadOnly)
@@ -294,21 +346,39 @@ class Application(QApplication, AbstractEventEmitter):
         # are not loaded correctly at startup
         self._initialize_fonts()
 
+    def _load_embedded_font(self):
+        # First import embedded font into Qt fonts database
+        embedded_font_id = QFontDatabase.addApplicationFont(":/NotoSans.ttf")
+        families = QFontDatabase.applicationFontFamilies(embedded_font_id)
+        if len(families) > 0:
+            self._embedded_font_family = families[0]
+
     def _initialize_fonts(self) -> (QFont, QFont):
-        self._font_header = QFont(self._settings.get('Application.font_header_family'),
-                                  int(self._settings.get('Application.font_header_size')))
+        # Create corresponding QFont objects
+        default_header_size = int(self._settings.get('Application.font_header_size'))
+        default_main_size = int(self._settings.get('Application.font_main_size'))
+        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
+            logger.debug(f'Embedded font {self._embedded_font_family}, size {default_main_size} / {default_header_size}')
+            self._font_header = QFont(self._embedded_font_family, default_header_size)
+            self._font_main = QFont(self._embedded_font_family, default_main_size)
+        else:
+            logger.debug(f'Custom font {self._settings.get("Application.font_main_family")}, size {default_main_size} / {default_header_size}')
+            self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
+            self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
+
         if self._font_header is None:
             self._font_header = QFont()
             new_size = int(self._font_header.pointSize() * 24.0 / 9)
             self._font_header.setPointSize(new_size)
 
-        self._font_main = QFont(self._settings.get('Application.font_main_family'),
-                                int(self._settings.get('Application.font_main_size')))
+        if self._font_main is None:
+            self._font_main = QFont()
 
         self.setFont(self._font_main)
         logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
         logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
 
+        # Notify everyone
         self._emit(AfterFontsChanged, {
             'main_font': self._font_main,
             'header_font': self._font_header,
@@ -341,9 +411,23 @@ class Application(QApplication, AbstractEventEmitter):
             params = urllib.parse.urlencode({
                 'labels': 'exception',
                 'title': f'Unhandled {exc_type.__name__}',
-                'body': f'PLEASE PROVIDE SOME DETAILS HERE.\nREVIEW THE BELOW PART FOR SENSITIVE DATA.\n\n```\n{to_log}```'
+                'body': f'**Please explain here what you were doing**\n\n'
+                        f'Versions:\n'
+                        f'{self._get_versions().replace('#', '# ')}\n'
+                        f'Stack trace:\n'
+                        f'```\n{to_log}```'
             })
             webbrowser.open(f"https://github.com/flowkeeper-org/fk-desktop/issues/new?{params}")
+
+    def bad_file_for_file_source(self):
+        filename = self.get_settings().get('FileEventSource.filename')
+        if (QMessageBox().critical(self.activeWindow(),
+                                   "Bad data file",
+                                   f"The data file you chose ({filename}) is a directory. Please select a valid file.",
+                                   QMessageBox.StandardButton.Open)
+                == QMessageBox.StandardButton.Open):
+            SettingsDialog.do_browse_simple(filename,
+                                            lambda v: self.get_settings().set({'FileEventSource.filename': v}))
 
     def get_main_font(self):
         return self._font_main
@@ -376,7 +460,7 @@ class Application(QApplication, AbstractEventEmitter):
                 request_ui_refresh = True
             elif name == 'Application.check_updates':
                 if new_values[name] == 'True':
-                    self._version_timer.schedule(1000, self.check_version, None, True)
+                    self._version_timer.schedule(2000, self.check_version, None, True)
             elif name.startswith('Logger.'):
                 request_logger_change = True
 
@@ -394,6 +478,15 @@ class Application(QApplication, AbstractEventEmitter):
         if request_logger_change:
             logger.debug(f'Reinitializing the logger because of a setting change')
             self._initialize_logger()
+
+    def is_another_instance_running(self) -> bool:
+        server = QTcpServer(self)
+        server.setMaxPendingConnections(0)
+        if server.listen(QHostAddress.SpecialAddress.Any, 11501):
+            logger.debug(f'Could create a TCP listener on port {server.serverPort()}')
+            return False
+        else:
+            return True
 
     def show_settings_dialog(self):
         SettingsDialog(
@@ -583,15 +676,14 @@ class Application(QApplication, AbstractEventEmitter):
     def check_version(self, event: str, when: datetime.datetime | None = None) -> None:
         def on_version(latest: Version, changelog: str):
             if latest is not None:
-                current: Version = get_current_version()
-                if latest > current:
+                if latest > self._current_version:
                     self._emit(NewReleaseAvailable, {
-                        'current': current,
+                        'current': self._current_version,
                         'latest': latest,
                         'changelog': changelog,
                     })
                 else:
-                    logger.debug(f'We are on the latest Flowkeeper version already (current is {current}, latest is {latest})')
+                    logger.debug(f'We are on the latest Flowkeeper version already (current is {self._current_version}, latest is {latest})')
             else:
                 logger.warning("Couldn't get the latest release info from GitHub")
         logger.debug('Will check GitHub releases for the latest version')
@@ -615,10 +707,12 @@ class Application(QApplication, AbstractEventEmitter):
         msg = QMessageBox(QMessageBox.Icon.Information,
                           "An update is available",
                           f"You currently use Flowkeeper {current}. A newer version {latest_str} is now available at "
-                          f"flowkeeper.org. Would you like to download it? The changes include:\n\n"
-                          f"{changelog}",
+                          f"flowkeeper.org. Would you like to download it? "
+                          f'[More...](https://flowkeeper.org/v{latest_str}/)',
                           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                           self.activeWindow())
+        msg.setDetailedText(changelog)
+        msg.setTextFormat(Qt.TextFormat.MarkdownText)
         check = QCheckBox("Ignore this update", msg)
         msg.setCheckBox(check)
         res = msg.exec()

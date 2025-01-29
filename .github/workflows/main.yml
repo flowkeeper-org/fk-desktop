@@ -48,7 +48,7 @@ jobs:
           curl --version
   remote-pipeline:
     runs-on: ubuntu-22.04
-    # needs: run-tests
+    needs: run-tests
     steps:
       - name: Trigger remote job
         env:

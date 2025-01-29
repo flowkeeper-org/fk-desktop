@@ -33,6 +33,7 @@ class BacklogE2eTest(AbstractE2eTest):
             'Application.play_tick_sound': 'False',
             'Logger.filename': 'backlog-e2e.log',
             'Logger.level': 'DEBUG',
+            'Application.last_version': self.get_application()._current_version,
         }
 
     def teardown(self) -> None:
@@ -247,18 +248,17 @@ class BacklogE2eTest(AbstractE2eTest):
         # workitems_table.completeItem
         # workitems_table.addPomodoro
         # workitems_table.removePomodoro
-        # workitems_table.showCompleted
+        # workitems_table.hideCompleted
         # focus.voidPomodoro
         # focus.nextPomodoro
         # focus.completeItem
-        # focus.showFilter
         def assert_backlog_actions_enabled(new_from_incomplete: bool):
             self.assert_actions_enabled([
                 'backlogs_table.newBacklog',
                 'backlogs_table.renameBacklog',
                 'backlogs_table.deleteBacklog',
                 'workitems_table.newItem',
-                'workitems_table.showCompleted',
+                'workitems_table.hideCompleted',
             ])
             if new_from_incomplete:
                 self.assert_actions_enabled(['backlogs_table.newBacklogFromIncomplete'])
@@ -369,6 +369,30 @@ class BacklogE2eTest(AbstractE2eTest):
             'focus.voidPomodoro',
         ])
 
+        #######################################
+        # Check actions on a started workitem #
+        #######################################
+        self.info('Start a workitem to check actions visibility')
+        await self._find_workitem('Workitem 13')
+        await self._start_pomodoro()
+        await self._wait_mid_pomodoro()
+
+        assert_backlog_actions_enabled(True)
+        self.assert_actions_enabled([
+            'workitems_table.deleteItem',
+            'workitems_table.addPomodoro',
+            'workitems_table.completeItem',
+            'workitems_table.renameItem',
+            'workitems_table.removePomodoro',
+            'focus.voidPomodoro',
+        ])
+        self.assert_actions_disabled([
+            'workitems_table.startItem',
+        ])
+
+        self.info('Void pomodoro to reset the state')
+        await self._void_pomodoro()
+
     async def test_03_renames(self):
         # noinspection PyTypeChecker
         backlogs_table: BacklogTableView = self.window().findChild(BacklogTableView, "backlogs_table")
@@ -431,7 +455,7 @@ class BacklogE2eTest(AbstractE2eTest):
     #     pass
     #
     # async def test_05_filtering(self):
-    #     # Check that the "show completed workitems" does what it should
+    #     # Check that the "hide completed workitems" does what it should
     #     pass
     #
     # async def test_06_focus(self):

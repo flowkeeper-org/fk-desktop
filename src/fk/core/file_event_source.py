@@ -28,12 +28,12 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
-    RemovePomodoroStrategy
+    RemovePomodoroStrategy, FinishTrackingStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -188,7 +188,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def read_strategies(self) -> Iterable[AbstractStrategy]:
         filename = self._get_filename()
-        if not path.isfile(filename):
+        if path.isdir(filename):
+            raise IsADirectoryError(f'{filename} is a directory. Expected a filename.')
+        elif not path.isfile(filename):
+            prepare_file_for_writing(filename)
             with open(filename, 'w', encoding='UTF-8') as f:
                 s = self.get_init_strategy(self._emit)
                 f.write(f'{self._serializer.serialize(s)}\n')
@@ -375,6 +378,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     t is StartWorkStrategy or \
                     t is AddPomodoroStrategy or \
                     t is VoidPomodoroStrategy or \
+                    t is FinishTrackingStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
                 uid = cast.get_workitem_uid()

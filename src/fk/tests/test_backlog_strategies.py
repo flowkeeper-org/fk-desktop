@@ -36,7 +36,7 @@ class TestBacklogStrategies(TestCase):
 
     def test_create_backlog_strategy_basic(self):
         data = TestBacklogStrategies._create_sample_backlog()
-        self.assertEqual(4, len(data.keys()))   # It also includes admin user
+        self.assertEqual(4, len(data))   # It also includes admin user
         user = data[TEST_USERNAMES[0]]
         self.assertEqual(1, len(user))
         self.assertIn(predefined_uid(0), user)

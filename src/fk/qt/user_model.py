@@ -33,7 +33,7 @@ class UserModel(QtGui.QStandardItemModel):
         super().__init__(0, 1, parent)
         self._font_normal = QtGui.QFont()
         self._font_busy = QtGui.QFont()
-        self._font_busy.setBold(True)
+        # self._font_busy.setBold(True)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
@@ -71,6 +71,8 @@ class UserModel(QtGui.QStandardItemModel):
         col1 = QtGui.QStandardItem()
         if state == 'Idle':
             display = f'{user.get_name()}'
+        elif state == 'Tracking':
+            display = f'{user.get_name()}: {state}'
         else:
             display = f'{user.get_name()}: {state}, {remaining} left'
         col1.setData(display, Qt.ItemDataRole.DisplayRole)

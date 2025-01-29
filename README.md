@@ -47,7 +47,7 @@ the corresponding Python classes. Whenever you make changes to files in `/res` d
 to rerun this command, too:
 
 ```shell
-./generate-resource.sh
+./generate-resources.sh
 ```
 
 From here you can start coding. If you want to build an installer, refer to the CI/CD pipeline in

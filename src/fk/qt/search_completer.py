@@ -30,7 +30,7 @@ class SearchBar(QtWidgets.QLineEdit):
     _source_holder: EventSourceHolder
     _backlogs_table: AbstractTableView[User, Backlog]
     _workitems_table: AbstractTableView[Backlog, Workitem]
-    _show_completed: bool
+    _hide_completed: bool
     _actions: Actions
 
     def __init__(self,
@@ -44,12 +44,12 @@ class SearchBar(QtWidgets.QLineEdit):
         self._source_holder = source_holder
         self._backlogs_table = backlogs_table
         self._workitems_table = workitems_table
-        self._show_completed = True
+        self._hide_completed = False
         self.hide()
         self.setPlaceholderText('Search')
         self.installEventFilter(self)
         self._actions = actions
-        actions['workitems_table.showCompleted'].toggled.connect(self.show_completed)
+        actions['workitems_table.hideCompleted'].toggled.connect(self.hide_completed)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
@@ -76,7 +76,7 @@ class SearchBar(QtWidgets.QLineEdit):
 
         model = QStandardItemModel()
         for wi in self._source_holder.get_source().workitems():
-            if not self._show_completed and wi.is_sealed():
+            if self._hide_completed and wi.is_sealed():
                 continue
             item = QStandardItem()
             item.setText(wi.get_name())
@@ -96,5 +96,5 @@ class SearchBar(QtWidgets.QLineEdit):
                 self.hide()
         return False
 
-    def show_completed(self, show: bool) -> None:
-        self._show_completed = show
+    def hide_completed(self, hide: bool) -> None:
+        self._hide_completed = hide

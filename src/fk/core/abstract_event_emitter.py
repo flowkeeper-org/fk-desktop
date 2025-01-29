@@ -18,12 +18,14 @@ import logging
 import re
 from typing import Callable
 
+from fk.core.events import register_event
+
 logger = logging.getLogger(__name__)
 
 
 def _callback_display(callback) -> str:
     if inspect.ismethod(callback):
-        return f'{callback.__self__.__class__.__name__}.{callback.__name__}'
+        return f'{callback.__self__.__class__.__name__}[{id(callback.__self__)}].{callback.__name__}'
     else:
         return f'Function {callback.__name__}'
 
@@ -45,6 +47,9 @@ class AbstractEventEmitter:
         for event in allowed_events:
             self._connections_1[event] = list[Callable]()
             self._connections_2[event] = list[Callable]()
+        # We need to do it in the separate loop, because registration might already trigger subscriptions
+        for event in allowed_events:
+            register_event(event, self)
 
     # Event subscriptions. Here event_pattern can contain * characters
     # and other regex syntax.
@@ -76,6 +81,15 @@ class AbstractEventEmitter:
         for callables in self._connections_2.values():
             if callback in callables:
                 callables.remove(callback)
+
+    def unsubscribe_one(self, callback: Callable, event_pattern: str) -> None:
+        regex = re.compile(event_pattern.replace('*', '.*'))
+        for event in self._connections_1:
+            if regex.match(event):
+                if callback in self._connections_1[event]:
+                    self._connections_1[event].remove(callback)
+                if callback in self._connections_2[event]:
+                    self._connections_2[event].remove(callback)
 
     def _emit(self, event: str, params: dict[str, any], carry: any = None, force: bool = False) -> None:
         if not self._is_muted() or force:

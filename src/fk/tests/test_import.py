@@ -20,7 +20,7 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.event_source_factory import get_event_source_factory
+from fk.core.event_source_factory import EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.import_export import import_
@@ -79,7 +79,7 @@ class TestImport(TestCase):
             # for the purpose of this unit test
             return EphemeralEventSource[Tenant](settings, cryptograph, root)
 
-        get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
     def test_initialize(self):
         self.assertIn('user@local.host', self.data_temp)
@@ -88,7 +88,7 @@ class TestImport(TestCase):
 
         self.assertIn('user@local.host', self.data_rand)
         user_rand = self.data_rand['user@local.host']
-        self.assertEqual(len(user_rand), 22)
+        self.assertEqual(len(user_rand), 23)
 
         dump = user_rand.dump()
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
@@ -126,7 +126,7 @@ class TestImport(TestCase):
     def test_import_classic_ok(self):
         total_start, total_end = self._execute_import(False, False)
         self.assertEqual(total_start, total_end)
-        self.assertEqual(total_end, 708)    # That's how many strategies are in random.txt
+        self.assertEqual(total_end, 907)    # That's how many strategies are in random.txt
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
@@ -162,7 +162,7 @@ class TestImport(TestCase):
 
     def test_import_smart_ok(self):
         total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 707)
+        self.assertEqual(total_end, 906)
         self._compare_imported_and_original_dumps()
 
     def test_import_smart_twice_ok(self):

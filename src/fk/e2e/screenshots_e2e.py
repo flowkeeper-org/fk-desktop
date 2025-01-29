@@ -3,10 +3,10 @@ import datetime
 import os
 
 from PySide6.QtCore import Qt, QPoint, QSize
-from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton
+from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
@@ -48,6 +48,11 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_splitter_width': '260',
             'Application.window_width': '820',
             'Application.theme': 'mixed',
+            'Application.tray_icon_flavor': 'thin-dark',
+            'Application.last_version': '0.9.0',
+            'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
+                                     '"echo \\"Created backlog {backlog.get_uid()}\\""}',
+            'Application.show_click_here_hint': 'False',
         }
         if os.name == 'nt':
             custom['Application.font_main_size'] = '10'
@@ -215,6 +220,16 @@ class ScreenshotE2eTest(AbstractE2eTest):
         sound_alarm_check.setChecked(False)
         await self.instant_pause()
 
+        settings_tabs.setCurrentIndex(5)
+        self.window().setFixedWidth(800)
+        await self.instant_pause()
+        self.center_window()
+        await self.instant_pause()
+        integration_callbacks: QTableWidget = self.window().findChild(QTableWidget, "Integration.callbacks")
+        integration_callbacks.selectRow(6)
+        await self.instant_pause()
+        self.take_screenshot('21-settings-integration')
+
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
@@ -285,7 +300,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Pomodoro.default_rest_duration': '300',
             'Application.timer_ui_mode': 'keep',
             'Application.theme': 'light',
-            'Application.eyecandy_gradient': 'HiddenJaguar',
+            'Application.eyecandy_gradient': 'OverSun',
         })
 
         # Start a Pomodoro in the past
@@ -393,11 +408,13 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('09-light-theme')
 
         self.get_application().get_settings().set({
-            'Application.theme': 'resort',
+            'Application.theme': 'mixed',
             'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': ':/icons/bg.jpg',
-            'Application.font_header_family': 'Impact',
+            'Application.eyecandy_image': ':/img/bg.jpg',
+            'Application.font_header_family': 'Quicksand Medium',
             'Application.font_header_size': '32',
+            'Application.font_main_family': 'Quicksand',
+            'Application.font_main_size': '12',
             'Application.show_toolbar': 'False',
         })
         await self.longer_pause()
@@ -440,5 +457,5 @@ class ScreenshotE2eTest(AbstractE2eTest):
                     state = 'finished'
                 else:
                     state = 'new'
-                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, uid, workitem, now)
+                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

@@ -30,6 +30,7 @@ from fk.core.tenant import Tenant
 from fk.desktop.settings import SettingsDialog
 from fk.qt.oauth import open_url
 from fk.qt.qt_settings import QtSettings
+from fk.core.sandbox import get_sandbox_type
 
 
 class PageExportIntro(QWizardPage):
@@ -67,11 +68,16 @@ class PageExportSettings(QWizardPage):
         self.label.setWordWrap(True)
         self.layout_v.addWidget(self.label)
         self.layout_h = QHBoxLayout()
+
         self.export_location = QLineEdit()
         self.export_location.textChanged.connect(lambda s: self.completeChanged.emit())
         # noinspection PyUnresolvedReferences
         self.export_location.textChanged.connect(lambda s: self.wizard().set_filename(s))
         self.export_location.setPlaceholderText('Export filename')
+        if get_sandbox_type() is not None:
+            # Force the user to use the XDG portal-aware file chooser
+            self.export_location.setDisabled(True)
+
         self.layout_h.addWidget(self.export_location)
         self.export_location_browse = QPushButton("Browse...")
         self.export_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.export_location))

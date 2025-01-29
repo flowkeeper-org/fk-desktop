@@ -124,7 +124,7 @@ class TestBacklogs(TestCase):
     def test_today(self):
         user = self.data['user@local.host']
         s = CreateBacklogStrategy(2,
-                                  datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=14),
+                                  datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24),
                                   user.get_identity(),
                                   ['123-456-789-1', 'First backlog'],
                                   self.settings)

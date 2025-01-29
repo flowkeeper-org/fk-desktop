@@ -38,7 +38,8 @@ class Screenshot:
             Screenshot._take_scrot,
             Screenshot._take_gnome_screenshot,
             Screenshot._take_xfce4_screenshooter,
-            Screenshot._take_imagemagick,
+            Screenshot._take_imagemagick1,
+            Screenshot._take_imagemagick2,
             Screenshot._take_xwd,
             Screenshot._take_flameshot,
             Screenshot._take_ksnip,
@@ -100,8 +101,16 @@ class Screenshot:
                         filename])
 
     @staticmethod
-    def _take_imagemagick(filename: str) -> None:
+    def _take_imagemagick1(filename: str) -> None:
         subprocess.run(["import",
+                        "-window",
+                        "root",
+                        filename])
+
+    @staticmethod
+    def _take_imagemagick2(filename: str) -> None:
+        subprocess.run(["magick",
+                        "import",
                         "-window",
                         "root",
                         filename])
