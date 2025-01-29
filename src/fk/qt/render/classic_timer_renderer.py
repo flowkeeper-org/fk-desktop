@@ -29,18 +29,19 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                  small: bool = False):
         super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, thin, small)
 
-    def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRectF, entire: QtCore.QRectF) -> None:
+    def clip(self, painter: QtGui.QPainter, rect: QtCore.QRectF | None, entire: QtCore.QRectF, shift: float = 0) -> None:
         # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly
         full = QPainterPath()
         full.addRect(entire)
-        hole = QPainterPath()
-        hole.addEllipse(rect.center(), rect.width() / 2, rect.height() / 2)
-        full = full.subtracted(hole)
+        if rect is not None:
+            hole = QPainterPath()
+            hole.addEllipse(rect.center(), rect.width() / 2 + shift, rect.height() / 2 + shift)
+            full = full.subtracted(hole)
         painter.setClipPath(full)
 
-    def clear_pie_outline(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
+    def clear_pie_outline(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
         pen_border = QPen(self._fg_color)
-        pen_border.setWidth(2)
+        pen_border.setWidthF(3)
         painter.setPen(pen_border)
         painter.drawEllipse(rect)
 
@@ -65,7 +66,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
     def has_next_display(self) -> bool:
         return False
 
-    def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
+    def paint(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
         if self.get_mode() not in ('working', 'resting', 'tracking'):
             painter.end()
             return
@@ -109,15 +110,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                 my_rect.width() - 2 * (my_width + team_width),
                 my_rect.height() - 2 * (my_height + team_height),
             )
-            self.clear_pie(painter, hole_rect, rect)
-
-        if self.get_mode() == 'tracking':
-            minutes = (self._my_value / 60) % 60.0
-            print(f'Painting {minutes} minutes for tracking')
-            hour = (self._my_value / 60 / 60) % 12
-            self.draw_sector(painter, my_rect, minutes, 60)
-        elif self._my_max > 0:
-            self.draw_sector(painter, my_rect, self._my_value, self._my_max)
+            self.clip(painter, hole_rect, rect, 1)
 
         if has_two_sectors:
             # Team or tracking
@@ -127,16 +120,22 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                 my_rect.width() - 2 * my_width,
                 my_rect.height() - 2 * my_height,
             )
-            self.clear_pie(painter, team_rect, rect)
             if self._team_value is not None and self._team_max > 0:
                 self.draw_sector(painter, team_rect, self._team_value, self._team_max)
             elif self.get_mode() == 'tracking':
-                seconds = self._my_value % 60
-                minutes = ((self._my_value / 60) % 60.0) / 60.0
-                self.draw_sector(painter, team_rect, seconds, 60)
+                hours = (self._my_value / 60 / 60) % 12
+                self.draw_sector(painter, team_rect, hours, 12)
+            self.clip(painter, team_rect, rect, 1)
+
+        if self.get_mode() == 'tracking':
+            minutes = ((self._my_value / 60) % 60.0) / 60.0
+            self.draw_sector(painter, my_rect, minutes, 60)
+        elif self._my_max > 0:
+            self.draw_sector(painter, my_rect, self._my_value, self._my_max)
 
         if hole_rect is not None:
             # Draw the hole outline
-            self.clear_pie_outline(painter, hole_rect, rect)
+            self.clip(painter, hole_rect, rect, 0)
+            self.clear_pie_outline(painter, hole_rect)
 
         painter.end()
