@@ -20,7 +20,8 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy
+from fk.core.pomodoro import POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import VoidPomodoroStrategy, FinishTrackingStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tag import Tag
 from fk.core.tenant import Tenant
@@ -95,16 +96,23 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         return None, None
 
 
-def void_running_pomodoro(strategy_: AbstractStrategy,
+def seal_running_pomodoro(strategy_: AbstractStrategy,
                           emit: Callable[[str, dict[str, any], any], None],
                           data: Tenant,
                           workitem: Workitem) -> None:
     for pomodoro in workitem.values():
         if pomodoro.is_running():
-            strategy_.execute_another(emit,
-                                      data,
-                                      VoidPomodoroStrategy,
-                                      [workitem.get_uid()])
+            if pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                strategy_.execute_another(emit,
+                                          data,
+                                          FinishTrackingStrategy,
+                                          [workitem.get_uid()])
+            else:
+                strategy_.execute_another(emit,
+                                          data,
+                                          VoidPomodoroStrategy,
+                                          [workitem.get_uid()])
+            return
 
 
 # DeleteWorkitem("123-456-789")
@@ -143,7 +151,7 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         }
         emit(events.BeforeWorkitemDelete, params, self._carry)
 
-        void_running_pomodoro(self, emit, data, workitem)   # Void pomodoros
+        seal_running_pomodoro(self, emit, data, workitem)   # Void pomodoros
 
         workitem.item_updated(self._when)   # Update Backlog
 
@@ -291,7 +299,7 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
         emit(events.BeforeWorkitemComplete, params, self._carry)
 
         # First void pomodoros if needed
-        void_running_pomodoro(self, emit, data, workitem)
+        seal_running_pomodoro(self, emit, data, workitem)
 
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)

@@ -14,8 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtGui import QDragMoveEvent
-from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
@@ -27,10 +26,11 @@ from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, 
 from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
+from fk.qt.focus_widget import complete_item
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 from fk.qt.workitem_text_delegate import WorkitemTextDelegate
@@ -232,16 +232,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
 
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
-        if selected is None:
-            raise Exception("Trying to complete a workitem, while there's none selected")
-        if not selected.has_running_pomodoro() or QMessageBox().warning(
-                self,
-                "Confirmation",
-                f"Are you sure you want to complete current workitem? This will void current pomodoro.",
-                QMessageBox.StandardButton.Ok,
-                QMessageBox.StandardButton.Cancel
-                ) == QMessageBox.StandardButton.Ok:
-            self._source.execute(CompleteWorkitemStrategy, [selected.get_uid(), "finished"])
+        complete_item(selected, self, self._source)
 
     def add_pomodoro(self) -> None:
         selected: Workitem = self.get_current()

@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import math
+
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QColor, QPainterPath, QPen
 
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
@@ -45,9 +47,14 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
         painter.setPen(pen_border)
         painter.drawEllipse(rect)
 
-    def draw_sector(self, painter: QtGui.QPainter, my_rect: QtCore.QRectF, value: float, max_value: float):
-        hue_from = 0
-        hue_to = 120
+    def draw_sector(self,
+                    painter: QtGui.QPainter,
+                    my_rect: QtCore.QRectF,
+                    value: float,
+                    max_value: float,
+                    invert_colors: bool = False):
+        hue_from = 120 if invert_colors else 0
+        hue_to = 0 if invert_colors else 120
         pen_width = 2
 
         my_hue = int((hue_to - hue_from) * value / max_value + hue_from)
@@ -59,6 +66,20 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
         painter.drawPie(my_rect,
                         int(5760 * (1.0 - value / max_value) + 1440),
                         int(5760 * value / max_value))
+
+    def draw_points(self,
+                    painter: QtGui.QPainter,
+                    my_rect: QtCore.QRectF):
+        pen_width = 2
+        pen = QtGui.QPen(self._fg_color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        center = my_rect.center()
+        radius = my_rect.width() / 2.0
+        for hour in range(0, 12):
+            sin = math.sin(hour * math.pi / 6)
+            cos = math.cos(hour * math.pi / 6)
+            painter.drawPoint(QPointF(center.x() + radius * sin, center.y() + radius * cos))
 
     def has_idle_display(self) -> bool:
         return False
@@ -73,7 +94,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
 
         margin = 0.05
         thickness = 0.3
-        has_two_sectors = self._team_value is not None or self._mode == 'tracking'
+        has_two_sectors = self._team_value is not None
 
         rw = rect.width()
         rh = rect.height()
@@ -122,16 +143,15 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
             )
             if self._team_value is not None and self._team_max > 0:
                 self.draw_sector(painter, team_rect, self._team_value, self._team_max)
-            elif self.get_mode() == 'tracking':
-                hours = (self._my_value / 60 / 60) % 12
-                self.draw_sector(painter, team_rect, hours, 12)
             self.clip(painter, team_rect, rect, 1)
 
         if self.get_mode() == 'tracking':
             minutes = (self._my_value / 60) % 60.0
-            self.draw_sector(painter, my_rect, minutes, 60)
+            self.draw_sector(painter, my_rect, minutes, 60, True)
         elif self._my_max > 0:
             self.draw_sector(painter, my_rect, self._my_value, self._my_max)
+
+        self.draw_points(painter, my_rect)
 
         if hole_rect is not None:
             # Draw the hole outline

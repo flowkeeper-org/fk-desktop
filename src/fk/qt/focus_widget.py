@@ -20,6 +20,7 @@ from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent,
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
     QSpacerItem
 
+from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
@@ -35,6 +36,19 @@ from fk.qt.timer_widget import TimerWidget
 
 logger = logging.getLogger(__name__)
 DISPLAY_HEIGHT = 80
+
+
+def complete_item(item: Workitem, parent: QWidget, source: AbstractEventSource) -> None:
+    if item is None:
+        raise Exception("Trying to complete a workitem, while there's none selected")
+    if not item.has_running_pomodoro() or item.is_tracker() or QMessageBox().warning(
+            parent,
+            "Confirmation",
+            f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
+            QMessageBox.StandardButton.Ok,
+            QMessageBox.StandardButton.Cancel
+    ) == QMessageBox.StandardButton.Ok:
+        source.execute(CompleteWorkitemStrategy, [item.get_uid(), "finished"])
 
 
 class FocusWidget(QWidget, AbstractTimerDisplay):
@@ -214,7 +228,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
-        actions.add('focus.finishTracking', "Stop Tracking", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
+        actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
 
@@ -324,15 +338,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
     def _complete_item(self) -> None:
         item = self._timer.get_running_workitem()
-        if QMessageBox().warning(
-                self,
-                "Confirmation",
-                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
-                QMessageBox.StandardButton.Ok,
-                QMessageBox.StandardButton.Cancel
-                ) == QMessageBox.StandardButton.Ok:
-            self._source_holder.get_source().execute(CompleteWorkitemStrategy,
-                                 [item.get_uid(), "finished"])
+        complete_item(item, self, self._source_holder.get_source())
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         self._header_text.setText(state_text)
