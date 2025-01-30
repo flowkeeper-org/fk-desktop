@@ -5,6 +5,7 @@
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Flowkeeper now supports Flatpak (#63).
 - [Technical] Added support for Qt 6.8.1.
+- [Bugfix] Window icon on Wayland (#110).
 
 TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
  content to the new default location. Mention it in the Config wizard.

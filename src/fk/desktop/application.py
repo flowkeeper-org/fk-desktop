@@ -97,7 +97,9 @@ class Application(QApplication, AbstractEventEmitter):
         import fk.desktop.resources
         self._current_version = get_current_version()
 
-        self.setApplicationName('Flowkeeper')
+        self.setDesktopFileName('org.flowkeeper.Flowkeeper')    # This makes KDE on Wayland use the correct icon
+        self.setApplicationName('flowkeeper')
+        self.setApplicationDisplayName('Flowkeeper')
         self.setApplicationVersion(str(self._current_version))
 
         if '--version' in self.arguments():
@@ -401,12 +403,13 @@ class Application(QApplication, AbstractEventEmitter):
                                    QMessageBox.StandardButton.Ok,
                                    QMessageBox.StandardButton.Open)
                 == QMessageBox.StandardButton.Open):
+            versions = self._get_versions().replace('#', '# ')
             params = urllib.parse.urlencode({
                 'labels': 'exception',
                 'title': f'Unhandled {exc_type.__name__}',
                 'body': f'**Please explain here what you were doing**\n\n'
                         f'Versions:\n'
-                        f'{self._get_versions().replace('#', '# ')}\n'
+                        f'{versions}\n'
                         f'Stack trace:\n'
                         f'```\n{to_log}```'
             })
