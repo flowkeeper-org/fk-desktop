@@ -126,7 +126,7 @@ class TestImport(TestCase):
     def test_import_classic_ok(self):
         total_start, total_end = self._execute_import(False, False)
         self.assertEqual(total_start, total_end)
-        self.assertEqual(total_end, 907)    # That's how many strategies are in random.txt
+        self.assertEqual(total_end, 886)    # That's how many strategies are in random.txt
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
@@ -162,7 +162,7 @@ class TestImport(TestCase):
 
     def test_import_smart_ok(self):
         total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 906)
+        self.assertEqual(total_end, 885)
         self._compare_imported_and_original_dumps()
 
     def test_import_smart_twice_ok(self):

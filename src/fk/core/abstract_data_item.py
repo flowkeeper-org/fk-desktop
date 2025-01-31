@@ -66,7 +66,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
         owner = self.get_owner()
         owner_name = owner.get_uid() if owner is not None else 'N/A'
         parent_uid = self._parent.get_uid() if self._parent is not None else 'N/A'
-        return f'{indent}- Type: {self.__class__.__name__}\n' \
+        return f'{indent}- Class: {self.__class__.__name__}\n' \
                f'{indent}  UID: {"<MASKED>" if mask_uid else self._uid}\n' \
                f'{indent}  Owner: {owner_name}\n' \
                f'{indent}  Parent UID: {parent_uid}\n' \

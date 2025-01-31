@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import random
 import sys
 from typing import Iterable
 
@@ -54,7 +55,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
             continue
 
         now = datetime.datetime(now.year, now.month, now.day,
-                                rand_normal(8, 10), randint(1, 59),
+                                rand_normal(8, 10), randint(0, 59),
                                 tzinfo=datetime.timezone.utc)
 
         if seq == 1:
@@ -116,7 +117,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                     yield VoidPomodoroStrategy(seq,
                                                now,
                                                user,
-                                               [p],
+                                               [p, 'Voided for a good reason' if random.random() < 0.5 else ''],
                                                settings)
                 else:   # Complete it -- just increment the timer, let it "finish"
                     now += datetime.timedelta(seconds=1800)

@@ -18,7 +18,7 @@ import logging
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
-    QSpacerItem
+    QSpacerItem, QInputDialog, QLineEdit
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
@@ -314,13 +314,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
-                if QMessageBox().warning(self.parent(),
-                                         "Confirmation",
-                                         f"Are you sure you want to void current pomodoro?",
-                                         QMessageBox.StandardButton.Ok,
-                                         QMessageBox.StandardButton.Cancel
-                                         ) == QMessageBox.StandardButton.Ok:
-                    self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
+                dlg = QInputDialog(self.parent())
+                dlg.setInputMode(QInputDialog.TextInput)
+                dlg.setWindowTitle('Confirmation')
+                dlg.setLabelText('Are you sure you want to void current pomodoro?')
+                dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
+                if dlg.exec_():
+                    self._source_holder.get_source().execute(VoidPomodoroStrategy,
+                                                             [workitem.get_uid(), dlg.textValue()])
 
     def _finish_tracking(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

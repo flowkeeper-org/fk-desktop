@@ -18,7 +18,9 @@ from __future__ import annotations
 import datetime
 import logging
 
-from fk.core.abstract_data_item import AbstractDataItem
+from fk.core.abstract_data_container import AbstractDataContainer
+from fk.core.abstract_data_item import AbstractDataItem, generate_uid
+from fk.core.interruption import Interruption
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ POMODORO_TYPE_TRACKER = 'tracker'
 POMODORO_TYPE_COUNTER = 'counter'
 
 
-class Pomodoro(AbstractDataItem['Workitem']):
+class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     _is_planned: bool
     _state: str
     _type: str
@@ -38,8 +40,9 @@ class Pomodoro(AbstractDataItem['Workitem']):
     _date_rest_started: datetime.datetime | None
     _date_completed: datetime.datetime | None
 
-    # State is one of the following: new, work, rest, finished, canceled (AKA void)
+    # State is one of the following: new, work, rest, finished
     def __init__(self,
+                 number: int,
                  is_planned: bool,
                  state: str,
                  work_duration: float,
@@ -48,7 +51,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
                  uid: str,
                  workitem: 'Workitem',
                  create_date: datetime.datetime):
-        super().__init__(uid=uid, parent=workitem, create_date=create_date)
+        super().__init__(name=f'Pomodoro {number}', uid=uid, parent=workitem, create_date=create_date)
         self._is_planned = is_planned
         self._state = state
         self._type = type_
@@ -66,8 +69,6 @@ class Pomodoro(AbstractDataItem['Workitem']):
             char = '[#]' if self._is_planned else '(#)'
         elif self.is_finished():
             char = '[v]' if self._is_planned else '(v)'
-        elif self.is_canceled():
-            char = '[x]' if self._is_planned else '(x)'
         else:
             raise Exception(f'Invalid pomodoro state: {self._state}')
         return char
@@ -96,13 +97,13 @@ class Pomodoro(AbstractDataItem['Workitem']):
         else:
             raise Exception(f'Trying to update rest duration of a pomodoro in state {self._state}')
 
-    def seal(self, target_state: str, when: datetime.datetime) -> None:
+    def seal(self, when: datetime.datetime) -> None:
         if self._type == POMODORO_TYPE_NORMAL:
-            if (target_state == 'finished' and self.is_resting()) or target_state == 'canceled':
-                self._state = target_state
+            if self.is_resting():
+                self._state = 'finished'
                 self._date_completed = when
                 self._last_modified_date = when
-            elif target_state == 'finished' and self.is_working():
+            elif self.is_working():
                 # This is a rare corner case, which we may encounter in the field. The client went down while
                 # the pomodoro was in work, and came back up when it was in rest. The timer then transitioned
                 # it to Finished state correctly. This results in a missing "StartRest" historical record.
@@ -111,20 +112,30 @@ class Pomodoro(AbstractDataItem['Workitem']):
                 if when > self.planned_end_of_rest() - datetime.timedelta(seconds=5):
                     logger.debug(f"Warning - skipped rest for a pomodoro on {self.get_parent().get_name()}, but still "
                                  "authorized its completion (transition happened when the client was offline)")
-                    self._state = target_state
+                    self._state = 'finished'
                     self._date_completed = when
                     self._last_modified_date = when
             else:
-                raise Exception(f'Cannot seal normal pomodoro from {self._state} to {target_state}')
+                raise Exception(f'Cannot seal normal pomodoro from {self._state}')
         elif self._type == POMODORO_TYPE_TRACKER:
-            if (target_state == 'finished' or target_state == 'canceled') and self.is_working():
-                self._state = target_state
+            if self.is_working():
+                self._state = 'finished'
                 self._date_completed = when
                 self._last_modified_date = when
             else:
-                raise Exception(f'Cannot seal tracker pomodoro from {self._state} to {target_state}')
+                raise Exception(f'Cannot seal tracker pomodoro from {self._state}')
         elif self._type == POMODORO_TYPE_COUNTER:
             raise Exception(f'Cannot seal counter pomodoro')
+
+    def void(self, when: datetime.datetime) -> None:
+        if self._type == POMODORO_TYPE_NORMAL:
+            if self.is_resting() or self.is_working():
+                self._state = 'new'
+                self._last_modified_date = when
+            else:
+                raise Exception(f'Cannot void normal pomodoro from {self._state}')
+        else:
+            raise Exception(f'Cannot void pomodoro of type {self._type}')
 
     def start_work(self, when: datetime.datetime) -> None:
         if self._type != POMODORO_TYPE_COUNTER:
@@ -163,11 +174,8 @@ class Pomodoro(AbstractDataItem['Workitem']):
     def is_finished(self) -> bool:
         return self._state == 'finished'
 
-    def is_canceled(self) -> bool:
-        return self._state == 'canceled'
-
     def get_elapsed_duration(self, when: datetime.datetime = None) -> float:
-        if self._date_work_started is not None and not self.is_canceled():
+        if self._date_work_started is not None:
             if self.is_working():
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
             elif self.is_finished():
@@ -272,3 +280,7 @@ class Pomodoro(AbstractDataItem['Workitem']):
                f'{indent}  Work started: {self._date_work_started}\n' \
                f'{indent}  Rest started: {self._date_rest_started}\n' \
                f'{indent}  Completed: {self._date_completed}'
+
+    def add_interruption(self, reason: str | None, when: datetime.datetime) -> None:
+        uid = generate_uid()
+        self[uid] = Interruption(reason, uid, self, when)

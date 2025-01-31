@@ -72,6 +72,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                      type_: str,
                      when: datetime.datetime) -> None:
         is_planned = not self.is_running()
+        existing = len(self)
         for i in range(num_pomodoros):
             # At the planning stage we create Pomodoros with the default work and rest
             # durations, because that's the best info we have. However, when we start
@@ -79,6 +80,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
             # Also, note that here we don't emit AddPomodoro events.
             uid = generate_uid()
             self[uid] = Pomodoro(
+                existing + i + 1,
                 is_planned,
                 'new',
                 default_work_duration,

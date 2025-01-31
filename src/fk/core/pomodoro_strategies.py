@@ -216,7 +216,6 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
 
 def _complete_pomodoro(user: User,
                        workitem_uid: str,
-                       target_state: str,
                        emit: Callable[[str, dict[str, any], any], None],
                        carry: any,
                        when: datetime.datetime,
@@ -245,10 +244,9 @@ def _complete_pomodoro(user: User,
             params = {
                 'workitem': workitem,
                 'pomodoro': pomodoro,
-                'target_state': target_state,
             }
             emit(events.BeforePomodoroComplete, params, carry)
-            pomodoro.seal(target_state, when)
+            pomodoro.seal(when)
             pomodoro.item_updated(when)
             emit(events.AfterPomodoroComplete, params, carry)
             return
@@ -256,10 +254,46 @@ def _complete_pomodoro(user: User,
     raise Exception(f'No running pomodoros in "{workitem_uid}"')
 
 
-# VoidPomodoro("123-456-789")
+def _interrupt_pomodoro(user: User,
+                        workitem_uid: str,
+                        reason: str | None,
+                        emit: Callable[[str, dict[str, any], any], None],
+                        carry: any,
+                        when: datetime.datetime) -> None:
+    workitem: Workitem | None = None
+    for backlog in user.values():
+        if workitem_uid in backlog:
+            workitem = backlog[workitem_uid]
+            break
+
+    if workitem is None:
+        raise Exception(f'Workitem "{workitem_uid}" not found')
+
+    if not workitem.is_running():
+        raise Exception(f'Workitem "{workitem_uid}" is not running')
+
+    for pomodoro in workitem.values():
+        if pomodoro.is_running():
+            params = {
+                'workitem': workitem,
+                'pomodoro': pomodoro,
+                'reason': reason,
+            }
+            emit(events.BeforePomodoroVoided, params, carry)
+            pomodoro.add_interruption(reason, when)
+            pomodoro.void(when)
+            pomodoro.item_updated(when)
+            emit(events.AfterPomodoroVoided, params, carry)
+            return
+
+    raise Exception(f'No running pomodoros in "{workitem_uid}"')
+
+
+# VoidPomodoro("123-456-789", ["reason"])
 @strategy
 class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
+    _reason: str | None
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
@@ -273,12 +307,16 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
+        if len(params) > 1:
+            self._reason = params[1]
+        else:
+            self._reason = None
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, 'canceled', emit, self._carry, self._when)
+        _interrupt_pomodoro(user, self._workitem_uid, self._reason, emit, self._carry, self._when)
         return None, None
 
 
@@ -300,7 +338,7 @@ class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._carry, self._when)
+        _complete_pomodoro(user, self._workitem_uid, emit, self._carry, self._when)
         return None, None
 
 
@@ -323,7 +361,7 @@ class FinishTrackingStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, 'finished', emit, self._carry, self._when, True)
+        _complete_pomodoro(user, self._workitem_uid, emit, self._carry, self._when, True)
         return None, None
 
 

@@ -351,7 +351,7 @@ class StatsWindow(QObject):
 
         for p in self._source.pomodoros():
             finished = p.is_finished()
-            canceled = p.is_canceled()
+            canceled = len(p) > 0
             if finished or canceled:
                 when = p.get_last_modified_date().astimezone()
             else:

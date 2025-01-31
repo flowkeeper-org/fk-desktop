@@ -286,10 +286,8 @@ class TestWorkitems(TestCase):
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
             elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
                 self.assertIn('workitem', kwargs)
-                self.assertIn('target_state', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-                self.assertEqual(kwargs['target_state'], 'canceled')
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
@@ -305,8 +303,8 @@ class TestWorkitems(TestCase):
         self.assertEqual(fired[0], 'BeforeMessageProcessed')
         self.assertEqual(fired[1], 'BeforeWorkitemDelete')
         self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroComplete')
-        self.assertEqual(fired[4], 'AfterPomodoroComplete')
+        self.assertEqual(fired[3], 'BeforePomodoroVoided')
+        self.assertEqual(fired[4], 'AfterPomodoroVoided')
         self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
         self.assertEqual(fired[6], 'AfterWorkitemDelete')
         self.assertEqual(fired[7], 'AfterMessageProcessed')
@@ -322,10 +320,8 @@ class TestWorkitems(TestCase):
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
             elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
                 self.assertIn('workitem', kwargs)
-                self.assertIn('target_state', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-                self.assertEqual(kwargs['target_state'], 'canceled')
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
@@ -340,8 +336,8 @@ class TestWorkitems(TestCase):
         self.assertEqual(fired[0], 'BeforeMessageProcessed')
         self.assertEqual(fired[1], 'BeforeWorkitemComplete')
         self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroComplete')
-        self.assertEqual(fired[4], 'AfterPomodoroComplete')
+        self.assertEqual(fired[3], 'BeforePomodoroVoided')
+        self.assertEqual(fired[4], 'AfterPomodoroVoided')
         self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
         self.assertEqual(fired[6], 'AfterWorkitemComplete')
         self.assertEqual(fired[7], 'AfterMessageProcessed')

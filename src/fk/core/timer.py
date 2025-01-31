@@ -81,6 +81,7 @@ class PomodoroTimer(AbstractEventEmitter):
         source.on(events.AfterPomodoroWorkStart, self._handle_pomodoro_work_start)
         source.on(events.AfterPomodoroRestStart, self._handle_pomodoro_rest_start)
         source.on(events.AfterPomodoroComplete, self._handle_pomodoro_complete)
+        source.on(events.AfterPomodoroVoided, self._handle_pomodoro_complete)
 
     def _refresh(self, event: str | None = None, when: datetime.datetime | None = None, **kwargs) -> None:
         logger.debug('PomodoroTimer: Refreshing')
@@ -174,8 +175,7 @@ class PomodoroTimer(AbstractEventEmitter):
         target_workitem: Workitem = params['target_workitem']
         target_state: str = params['target_state']
         logger.debug(f'PomodoroTimer: Handling transition from {self._state} to {target_state}')
-        if target_pomodoro.is_canceled() or target_pomodoro.is_finished():
-            # We've already sealed this pomodoro, nothing else to do
+        if target_pomodoro.is_finished():
             logger.debug(f"We've already sealed this pomodoro, nothing else to do")
             return
         if target_state == 'rest':
@@ -196,6 +196,8 @@ class PomodoroTimer(AbstractEventEmitter):
                 persist=False,
                 when=when)
             logger.debug(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
+        elif target_state == 'new':
+            logger.debug(f"PomodoroTimer: Pomodoro is voided, nothing else to do")
         else:
             raise Exception(f"Unexpected scheduled transition state: {target_state}")
         logger.debug(f'PomodoroTimer: Done - Handling transition to {target_state}')
@@ -248,9 +250,8 @@ class PomodoroTimer(AbstractEventEmitter):
                                   event: str,
                                   pomodoro: Pomodoro,
                                   workitem: Workitem,
-                                  target_state: str,
                                   **kwargs) -> None:
-        logger.debug(f'PomodoroTimer: Handling pomodoro complete')
+        logger.debug(f'PomodoroTimer: Handling pomodoro complete or void')
         if pomodoro != self._pomodoro:
             logger.warning("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")
         if workitem != self._workitem:
@@ -276,7 +277,7 @@ class PomodoroTimer(AbstractEventEmitter):
         self._transition_timer.cancel()
         self._tick_timer.cancel()
         logger.debug('PomodoroTimer: Canceled transition timer')
-        logger.debug(f'PomodoroTimer: Done - Handling pomodoro complete')
+        logger.debug(f'PomodoroTimer: Done - Handling pomodoro complete or void')
 
     def get_running_workitem(self) -> Workitem:
         return self._workitem

@@ -35,11 +35,11 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._theme = theme
         self._svg_renderer = {
-            '[x]': self._get_renderer('[x]'),
+            "'": self._get_renderer('[x]'),
             '[ ]': self._get_renderer("[ ]"),
             '[v]': self._get_renderer("[v]"),
             '[#]': self._get_renderer("[#]"),
-            '(x)': self._get_renderer("(x)"),
+            "'": self._get_renderer("(x)"),
             '( )': self._get_renderer("( )"),
             '(v)': self._get_renderer("(v)"),
             '(#)': self._get_renderer("(#)"),
@@ -68,16 +68,26 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
                     height - 4)
                 painter.drawText(rect, elapsed)
             else:
-                for i, p in enumerate(index.data().split(',')):
-                    if p != '':
-                        width = height if p != '[x]' and p != '(x)' else height / 4
+                for p in workitem.values():
+                    width = height
+                    rect = QtCore.QRect(
+                        left,
+                        option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
+                        width,
+                        height)
+
+                    self._svg_renderer[str(p)].render(painter, rect)
+                    left += width
+
+                    for _ in range(len(p)):
+                        width = height / 4
                         rect = QtCore.QRect(
                             left,
                             option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
                             width,
                             height)
 
-                        self._svg_renderer[p].render(painter, rect)
+                        self._svg_renderer["'"].render(painter, rect)
                         left += width
 
             painter.restore()

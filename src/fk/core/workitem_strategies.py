@@ -111,7 +111,8 @@ def seal_running_pomodoro(strategy_: AbstractStrategy,
                 strategy_.execute_another(emit,
                                           data,
                                           VoidPomodoroStrategy,
-                                          [workitem.get_uid()])
+                                          [workitem.get_uid(), 'Voided automatically because you completed the '
+                                                               'workitem while the timer was running.'])
             return
 
 

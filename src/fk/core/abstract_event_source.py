@@ -92,6 +92,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterPomodoroRestStart,
             events.BeforePomodoroComplete,
             events.AfterPomodoroComplete,
+            events.BeforePomodoroVoided,
+            events.AfterPomodoroVoided,
             events.TagCreated,
             events.TagDeleted,
             events.TagContentChanged,

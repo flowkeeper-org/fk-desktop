@@ -111,8 +111,8 @@ class WorkitemPomodoro(QtGui.QStandardItem):
             # Calculate its size, given that voided pomodoros are just narrow ticks
             sz = 0
             for p in self._workitem.values():
-                width = self._row_height / 4 if p.is_canceled() else self._row_height
-                sz += width
+                sz += self._row_height
+                sz += len(p) * self._row_height / 4     # Voided pomodoro ticks
 
         self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
 

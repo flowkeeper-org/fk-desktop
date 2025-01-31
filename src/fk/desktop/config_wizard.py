@@ -229,7 +229,8 @@ class PageConfigIcons(QWizardPage):
                             '1',
                             None,
                             datetime.datetime.now())
-        pomodoro = Pomodoro(True,
+        pomodoro = Pomodoro(1,
+                            True,
                             'new',
                             25 * 60 * 1000,
                             5 * 60 * 1000,

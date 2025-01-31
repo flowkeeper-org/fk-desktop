@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
+from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.workitem import Workitem
@@ -451,11 +452,16 @@ class ScreenshotE2eTest(AbstractE2eTest):
             for p in range(num_pomos):
                 uid = generate_uid()
                 state_selector = random()
+                num_interruptions = 0
                 if state_selector < 0.1 + (365 - day) / 1200:
-                    state = 'canceled'
+                    state = 'new'
+                    num_interruptions = random() * 3
                 elif state_selector < 0.5 + day / 900:
                     state = 'finished'
                 else:
                     state = 'new'
-                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
+                workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
+                for _ in range(num_interruptions):
+                    int_uid = generate_uid()
+                    workitem[uid][int_uid] = Interruption(None, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

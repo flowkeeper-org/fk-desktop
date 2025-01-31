@@ -44,7 +44,7 @@ pomodoro_timer._state = 'work'
 def tick():
     global value
     global pomodoro_timer
-    tray.tick(Pomodoro(False, pomodoro_timer._state, 5000, 5000, POMODORO_TYPE_NORMAL, "123", wi, None),
+    tray.tick(Pomodoro(1, False, pomodoro_timer._state, 5000, 5000, POMODORO_TYPE_NORMAL, "123", wi, None),
               'State',
               value,
               10,

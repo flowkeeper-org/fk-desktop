@@ -94,7 +94,7 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         if len(self) > 0:
             children = f'\n'.join(child.dump(indent + '  ', mask_uid) for child in self.values())
         else:
-            children = f'{indent} - <None>'
+            children = f'{indent}  - <Empty>'
         return f'{super().dump(indent, mask_uid)}\n' \
                f'{indent}  Name: {self._name}\n' \
                f'{indent}  Children:\n' \

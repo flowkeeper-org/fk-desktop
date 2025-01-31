@@ -95,7 +95,7 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                               [workitem.get_uid(), '1', pomodoro.get_type()],
                                               source.get_settings())
                     seq += 1
-                    if pomodoro.is_canceled() or pomodoro.is_finished():
+                    if pomodoro.is_finished():
                         yield StartWorkStrategy(seq,
                                                 pomodoro.get_work_start_date(),
                                                 user.get_identity(),
@@ -104,7 +104,8 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                                  str(pomodoro.get_rest_duration())],
                                                 source.get_settings())
                         seq += 1
-                    if pomodoro.is_canceled():
+                    if len(pomodoro) > 0:
+                        # TODO: Iterate over interruptions and void each of them. Void with the reason.
                         yield VoidPomodoroStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
                                                    [workitem.get_uid()],
                                                    source.get_settings())
@@ -207,7 +208,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                 for i, p_new in enumerate(workitem.values()):
                     p_old = pomodoros_old[i]
                     if p_old.is_startable():
-                        if p_new.is_canceled() or p_new.is_finished():
+                        if p_new.is_finished():
                             yield StartWorkStrategy(seq,
                                                     p_new.get_work_start_date(),
                                                     user.get_identity(),
@@ -216,7 +217,8 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                      str(p_new.get_rest_duration())],
                                                     source.get_settings())
                             seq += 1
-                            if p_new.is_canceled():
+                            if len(p_new) > 0:
+                                # TODO: Iterate over interruptions and void each of them. Void with the reason.
                                 # UC-2: Smart import would result in the max(existing, imported) number of completed and voided pomodoros for each workitem
                                 yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
                                                            [workitem.get_uid()],

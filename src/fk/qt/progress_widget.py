@@ -51,7 +51,7 @@ class ProgressWidget(QWidget):
             for wi in workitems:
                 for p in wi.values():
                     total += 1
-                    if p.is_finished() or p.is_canceled():
+                    if p.is_finished():
                         done += 1
 
         self.setVisible(total > 0)

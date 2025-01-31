@@ -273,9 +273,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Fonts': [
                 ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
                 ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _show_for_system_font),
+                ('Application.font_main_size', 'int', 'Main font size', '12', [3, 48], _show_for_system_font),
                 ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_header_size', 'int', 'Title font size', '26', [3, 72], _show_for_system_font),
+                ('Application.font_header_size', 'int', 'Title font size', '30', [3, 72], _show_for_system_font),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
