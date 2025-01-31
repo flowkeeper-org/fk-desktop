@@ -1,8 +1,13 @@
 ### v0.10.0 (XX February 2025)
+
+This version brings Flowkeeper even closer to the original Pomodoro Technique definition from Francesco Cirillo's book.
+Pomodoro interruptions are now handled as the book prescribes, and we introduced support for long breaks. One major
+deviation from the Technique we introduced in this version is the ability to track unfocused time. Finally, there are
+some minor quality-of-life improvements, bugfixes and better support for Linux.
+
 - Ability to track unfocused time, try to start a work item with no pomodoros (#94).
 - Ability to drag work items between backlogs (#60).
 - Voided pomodoros are displayed as ticks to better match the Book (#92).
-- Basic import from GitHub Issues, try Ctrl+I (#00).
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Standard XDG directories are used on Linux (#65).
 - You can now find Flowkeeper on Flathub (#63).
