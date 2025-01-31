@@ -58,30 +58,31 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
         if index.data(501) == 'pomodoro':  # We can also get a drop placeholder here, which we don't want to paint
             painter.save()
+            space: QtCore.QRectF = option.rect
 
             # Qt 6.8 forced delegates to paint their backgrounds themselves
             if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
-                painter.fillRect(option.rect, self._selection_brush)
+                painter.fillRect(space, self._selection_brush)
 
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
-            left = option.rect.left()
+            left = space.left()
 
             workitem = index.data(500)
             if workitem.is_tracker():
                 elapsed: str = index.data()
-                rect = QtCore.QRect(
+                rect = QtCore.QRectF(
                     left + 4,
-                    option.rect.top() + 4,
-                    option.rect.width() - 4,
+                    space.top() + 4,
+                    space.width() - 4,
                     height - 4)
                 painter.drawText(rect, elapsed)
             else:
                 for p in workitem.values():
                     width = height
-                    rect = QtCore.QRect(
+                    rect = QtCore.QRectF(
                         left,
-                        option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
+                        space.top(),  # space.center().y() - (size / 2) + 1,
                         width,
                         height)
 
@@ -97,9 +98,9 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
 
                     for _ in range(len(p)):
                         width = height / 4
-                        rect = QtCore.QRect(
+                        rect = QtCore.QRectF(
                             left,
-                            option.rect.top(),  # option.rect.center().y() - (size / 2) + 1,
+                            space.top(),  # space.center().y() - (size / 2) + 1,
                             width,
                             height)
 
