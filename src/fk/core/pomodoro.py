@@ -284,3 +284,6 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def add_interruption(self, reason: str | None, when: datetime.datetime) -> None:
         uid = generate_uid()
         self[uid] = Interruption(reason, uid, self, when)
+
+    def is_planned(self) -> bool:
+        return self._is_planned

@@ -1,17 +1,18 @@
 ### v0.10.0 (XX February 2025)
-- Standard XDG directories are used on Linux (#65).
-- Voided pomodoros are displayed as ticks to better match the textbook (#92).
+- Ability to track unfocused time, try to start a work item with no pomodoros (#94).
+- Ability to drag work items between backlogs (#60).
+- Voided pomodoros are displayed as ticks to better match the Book (#92).
 - Basic import from GitHub Issues, try Ctrl+I (#00).
 - Flowkeeper window now hides automatically on auto-start (#102).
-- Flowkeeper now supports Flatpak (#63).
+- Standard XDG directories are used on Linux (#65).
+- You can now find Flowkeeper on Flathub (#63).
+- We now build Flowkeeper for ARM (arm64 / aarch64).
 - [Technical] Added support for Qt 6.8.1.
 - [Bugfix] Window icon on Wayland (#110).
 
 TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
  content to the new default location. Mention it in the Config wizard.
-TODO: A bug with going back in the import wizard
-TODO: GitHub import needs pagination
-TODO: Test GitHub import on a large public project
+TODO: A bug with going back in the import wizard. GitHub import needs pagination. Test GitHub import on a large public project.
 
 ### v0.9.1 (15 January 2025)
 

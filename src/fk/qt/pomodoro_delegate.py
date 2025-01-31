@@ -19,6 +19,16 @@ from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
 from PySide6.QtCore import QSize, QPoint, QRect
 from PySide6.QtGui import Qt, QBrush, QColor
 
+POMODORO_VOIDED = "voided"
+
+POMODORO_NEW_PLANNED = "new-planned"
+POMODORO_FINISHED_PLANNED = "finished-planned"
+POMODORO_RUNNING_PLANNED = "running-planned"
+
+POMODORO_NEW_UNPLANNED = "new-unplanned"
+POMODORO_FINISHED_UNPLANNED = "finished-unplanned"
+POMODORO_RUNNING_UNPLANNED = "running-unplanned"
+
 
 class PomodoroDelegate(QtWidgets.QItemDelegate):
     _svg_renderer: dict[str, QtSvg.QSvgRenderer]
@@ -35,14 +45,13 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
         QtWidgets.QItemDelegate.__init__(self, parent)
         self._theme = theme
         self._svg_renderer = {
-            "'": self._get_renderer('[x]'),
-            '[ ]': self._get_renderer("[ ]"),
-            '[v]': self._get_renderer("[v]"),
-            '[#]': self._get_renderer("[#]"),
-            "'": self._get_renderer("(x)"),
-            '( )': self._get_renderer("( )"),
-            '(v)': self._get_renderer("(v)"),
-            '(#)': self._get_renderer("(#)"),
+            POMODORO_VOIDED: self._get_renderer(POMODORO_VOIDED),
+            POMODORO_NEW_PLANNED: self._get_renderer(POMODORO_NEW_PLANNED),
+            POMODORO_FINISHED_PLANNED: self._get_renderer(POMODORO_FINISHED_PLANNED),
+            POMODORO_RUNNING_PLANNED: self._get_renderer(POMODORO_RUNNING_PLANNED),
+            POMODORO_NEW_UNPLANNED: self._get_renderer(POMODORO_NEW_UNPLANNED),
+            POMODORO_FINISHED_UNPLANNED: self._get_renderer(POMODORO_FINISHED_UNPLANNED),
+            POMODORO_RUNNING_UNPLANNED: self._get_renderer(POMODORO_RUNNING_UNPLANNED),
         }
         self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
 
@@ -76,7 +85,14 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
                         width,
                         height)
 
-                    self._svg_renderer[str(p)].render(painter, rect)
+                    if p.is_running():
+                        renderer = POMODORO_RUNNING_PLANNED if p.is_planned() else POMODORO_RUNNING_UNPLANNED
+                    elif p.is_finished():
+                        renderer = POMODORO_FINISHED_PLANNED if p.is_planned() else POMODORO_FINISHED_UNPLANNED
+                    else:
+                        renderer = POMODORO_NEW_PLANNED if p.is_planned() else POMODORO_NEW_UNPLANNED
+
+                    self._svg_renderer[renderer].render(painter, rect)
                     left += width
 
                     for _ in range(len(p)):
@@ -87,7 +103,7 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
                             width,
                             height)
 
-                        self._svg_renderer["'"].render(painter, rect)
+                        self._svg_renderer[POMODORO_VOIDED].render(painter, rect)
                         left += width
 
             painter.restore()
