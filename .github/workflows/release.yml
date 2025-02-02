@@ -71,6 +71,11 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
@@ -78,6 +83,7 @@ jobs:
             dist/Flowkeeper
             dist/flowkeeper.deb
             dist/flowkeeper.tar.gz
+            dist/*.AppImage
 
   package-linux-legacy:
     runs-on: ubuntu-20.04
@@ -152,6 +158,11 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
       - name: Rename files to avoid conflicts
         run: |
           mv dist/Flowkeeper dist/Flowkeeper-arm64
@@ -164,6 +175,7 @@ jobs:
             dist/Flowkeeper-arm64
             dist/flowkeeper-arm64.deb
             dist/flowkeeper-arm64.tar.gz
+            dist/*.AppImage
 
   package-windows:
     runs-on: windows-latest
