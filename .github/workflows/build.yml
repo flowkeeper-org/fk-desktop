@@ -30,7 +30,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
@@ -53,12 +53,23 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
       - name: Archive DEB installer
         uses: actions/upload-artifact@v3
         with:
           name: dist-linux-deb
           path: |
             dist/flowkeeper.deb
+      - name: Archive AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-appimage
+          path: |
+            dist/*.AppImage
 
   build-linux-arm:
     runs-on: ubuntu-22.04-arm
@@ -76,7 +87,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
@@ -99,12 +110,23 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
       - name: Archive DEB installer
         uses: actions/upload-artifact@v3
         with:
           name: dist-linux-arm64-deb
           path: |
             dist/flowkeeper.deb
+      - name: Archive AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-linux-arm64-appimage
+          path: |
+            dist/*.AppImage
 
   build-linux-legacy:
     runs-on: ubuntu-20.04
@@ -122,7 +144,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           ./generate-resources.sh
@@ -164,7 +186,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
       - name: Generate resources
         run: |
           cd res
@@ -200,7 +222,7 @@ jobs:
           name: dist-windows-setup
           path: |
             dist\setup.exe
-        
+
   build-macOS-arm:
     runs-on: macOS-latest
     if:  ${{ inputs.OS == 'macOS' || inputs.OS == 'all' }}
@@ -217,7 +239,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
           brew install create-dmg
       - name: Generate resources
         run: |
@@ -295,7 +317,7 @@ jobs:
           source venv/bin/activate
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          pip install -r requirements-build.txt
           brew install create-dmg
       - name: Generate resources
         run: |

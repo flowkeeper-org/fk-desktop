@@ -39,9 +39,10 @@ mkdir deb
 echo "2. Prepared temp folder"
 
 # 3. Copy application files
-mkdir -p deb/usr/local/lib/flowkeeper
-cp -r flowkeeper/* deb/usr/local/lib/flowkeeper/
-cp ../res/flowkeeper.png deb/usr/local/lib/flowkeeper/
+mkdir -p deb/usr/lib/flowkeeper
+mkdir -p deb/usr/share/icons/hicolor/512x512/flowkeeper
+cp -r flowkeeper/* deb/usr/lib/flowkeeper/
+cp ../res/flowkeeper.png deb/usr/share/icons/hicolor/512x512/flowkeeper/
 echo "3. Copied application files"
 
 # 4. Create a desktop shortcut
@@ -57,12 +58,12 @@ export FK_AUTOSTART_ARGS="--autostart"
 < ../installer/flowkeeper.desktop envsubst > deb/etc/xdg/autostart/flowkeeper.desktop
 echo "5. Added it to autostart"
 
-# 6. Create a relative symlink in /usr/local/bin
-mkdir -p deb/usr/local/bin
-cd deb/usr/local/bin
+# 6. Create a relative symlink in /usr/bin
+mkdir -p deb/usr/bin
+cd deb/usr/bin
 ln -s ../lib/flowkeeper/Flowkeeper ./flowkeeper
-cd ../../../..
-echo "6. Create a relative symlink in /usr/local/bin"
+cd ../../..
+echo "6. Create a relative symlink in /usr/bin"
 
 # 7. Create metadata
 mkdir deb/DEBIAN
