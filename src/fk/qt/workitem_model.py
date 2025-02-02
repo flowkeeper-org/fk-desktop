@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from PySide6 import QtGui, QtWidgets
@@ -25,6 +26,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
+from fk.core.pomodoro import POMODORO_TYPE_TRACKER
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
@@ -83,6 +85,10 @@ class WorkitemTitle(QtGui.QStandardItem):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
 
+def hhmm(when: datetime.datetime) -> str:
+    return when.strftime('%H:%M')
+
+
 class WorkitemPomodoro(QtGui.QStandardItem):
     _workitem: Workitem
     _row_height: int
@@ -97,6 +103,29 @@ class WorkitemPomodoro(QtGui.QStandardItem):
                  Qt.ItemFlag.ItemIsEnabled)
         self.setFlags(flags)
         self.update_display()
+
+    def _format_tooltip(self) -> str:
+        res = list()
+        for p in self._workitem.values():
+            if p.get_type() == POMODORO_TYPE_TRACKER:
+                elapsed = round((p.get_last_modified_date() - p.get_work_start_date()).total_seconds())
+                res.append(f'Tracked {datetime.timedelta(seconds=elapsed)} '
+                           f'({hhmm(p.get_work_start_date())} - '
+                           f'{hhmm(p.get_last_modified_date())})')
+            else:
+                if p.is_working():
+                    state = f'Working since {hhmm(p.get_work_start_date())}'
+                elif p.is_resting():
+                    state = f'Resting since {hhmm(p.get_rest_start_date())}'
+                elif p.is_finished():
+                    state = f'Completed {hhmm(p.get_work_start_date())} - {hhmm(p.get_last_modified_date())}'
+                else:
+                    state = f'Created at {hhmm(p.get_create_date())}'
+                res.append(f'{p.get_name()} ({"planned" if p.is_planned() else "unplanned"}) - {state}')
+            for i in p.values():
+                reason = f' ({i.get_reason()})' if i.get_reason() else ''
+                res.append(f' - Interrupted at {hhmm(i.get_create_date())}{reason}')
+        return '\n'.join(res)
 
     def update_display(self):
         self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
@@ -115,6 +144,7 @@ class WorkitemPomodoro(QtGui.QStandardItem):
                 sz += len(p) * self._row_height / 4     # Voided pomodoro ticks
 
         self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
+        self.setData(self._format_tooltip(), Qt.ItemDataRole.ToolTipRole)
 
 
 class WorkitemModel(AbstractDropModel):
