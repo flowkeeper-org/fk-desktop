@@ -69,7 +69,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
         return f'{indent}- Class: {self.__class__.__name__}\n' \
                f'{indent}  UID: {"<MASKED>" if mask_uid else self._uid}\n' \
                f'{indent}  Owner: {owner_name}\n' \
-               f'{indent}  Parent UID: {parent_uid}\n' \
+               f'{indent}  Parent UID: {"<MASKED>" if mask_uid else parent_uid}\n' \
                f'{indent}  Create date: {self._create_date}\n' \
                f'{indent}  Last modified: {self._last_modified_date}'
 

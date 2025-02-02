@@ -49,4 +49,4 @@ class Interruption(AbstractDataItem['Pomodoro']):
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, True)}\n' \
-               f'{indent}  Reason: {self._reason}'
+               f'{indent}  Reason: {self._reason if self._reason else "<None>"}'
