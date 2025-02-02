@@ -39,13 +39,13 @@ jobs:
           pyinstaller installer/portable-build.spec
           pyinstaller installer/normal-build.spec
       - name: Archive portable build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-standalone
           path: |
             dist/Flowkeeper
       - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-one-folder
           path: |
@@ -59,13 +59,13 @@ jobs:
           sudo chmod +x /usr/local/bin/appimagetool
           ./package-appimage.sh
       - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-deb
           path: |
             dist/flowkeeper.deb
       - name: Archive AppImage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-appimage
           path: |
@@ -96,13 +96,13 @@ jobs:
           pyinstaller installer/portable-build.spec
           pyinstaller installer/normal-build.spec
       - name: Archive portable build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-arm64-standalone
           path: |
             dist/Flowkeeper
       - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-arm64-one-folder
           path: |
@@ -116,13 +116,13 @@ jobs:
           sudo chmod +x /usr/local/bin/appimagetool
           ./package-appimage.sh
       - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-arm64-deb
           path: |
             dist/flowkeeper.deb
       - name: Archive AppImage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-arm64-appimage
           path: |
@@ -153,13 +153,13 @@ jobs:
           pyinstaller installer/portable-build.spec
           pyinstaller installer/normal-build.spec
       - name: Archive portable build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-legacy-standalone
           path: |
             dist/Flowkeeper
       - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-legacy-one-folder
           path: |
@@ -168,7 +168,7 @@ jobs:
         run: |
           ./package-deb.sh
       - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-linux-legacy-deb
           path: |
@@ -197,7 +197,7 @@ jobs:
           pyinstaller installer\portable-build.spec
           pyinstaller installer\normal-build.spec
       - name: Archive portable build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-windows-standalone
           path: |
@@ -217,7 +217,7 @@ jobs:
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
           move installer\Output\mysetup.exe dist\setup.exe
       - name: Archive installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-windows-setup
           path: |
@@ -295,7 +295,7 @@ jobs:
           # Send the DMG for notarization
           xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
       - name: Archive DMG installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-macOS-dmg
           path: |
@@ -373,7 +373,7 @@ jobs:
           # Send the DMG for notarization
           xcrun notarytool submit "Flowkeeper-x86.dmg" --keychain-profile "notary-key" --wait
       - name: Archive DMG installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-macOS-dmg-x86
           path: |
