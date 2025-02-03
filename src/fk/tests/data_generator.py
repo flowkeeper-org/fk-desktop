@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
-import random
 import sys
 from typing import Iterable
 
@@ -29,7 +28,7 @@ from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
-from fk.tests.test_utils import one_of, shuffle, randint, rand_normal
+from fk.tests.test_utils import one_of, shuffle, randint, rand_normal, random
 
 PROJECTS = ['#Alpha', '#Beta', '#Gamma', '#Delta', '#Omega']
 
@@ -118,7 +117,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                     yield VoidPomodoroStrategy(seq,
                                                now,
                                                user,
-                                               [p, 'Voided for a good reason' if random.random() < 0.5 else ''],
+                                               [p, 'Voided for a good reason' if random() < 0.5 else ''],
                                                settings)
                 else:
                     end = now + datetime.timedelta(seconds=1800)
@@ -130,8 +129,8 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                                       now,
                                                       user,
                                                       [p,
-                                                       'An interruption' if random.random() < 0.5 else '',
-                                                       str(after / 2) if random.random() < 0.5 else ''],
+                                                       'An interruption' if random() < 0.5 else '',
+                                                       str(after / 2) if random() < 0.5 else ''],
                                                       settings)
                     # Complete it -- just increment the timer, let it "finish"
                     now = end
