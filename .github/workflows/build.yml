@@ -53,23 +53,12 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
-      - name: Create AppImage
-        run: |
-          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
-          sudo chmod +x /usr/local/bin/appimagetool
-          ./package-appimage.sh
       - name: Archive DEB installer
         uses: actions/upload-artifact@v4
         with:
           name: dist-linux-deb
           path: |
             dist/flowkeeper.deb
-      - name: Archive AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-linux-appimage
-          path: |
-            dist/*.AppImage
 
   build-linux-arm:
     runs-on: ubuntu-22.04-arm
