@@ -276,6 +276,8 @@ def _interrupt_pomodoro(user: User,
 
     for pomodoro in workitem.values():
         if pomodoro.is_running():
+            if pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                raise Exception(f'Cannot void a tracker pomodoro in "{workitem_uid}". Use FinishTracking instead.')
             params = {
                 'workitem': workitem,
                 'pomodoro': pomodoro,

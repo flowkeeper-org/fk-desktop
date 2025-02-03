@@ -26,7 +26,7 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
-from fk.core.pomodoro import POMODORO_TYPE_TRACKER
+from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
@@ -104,27 +104,35 @@ class WorkitemPomodoro(QtGui.QStandardItem):
         self.setFlags(flags)
         self.update_display()
 
+    def _list_interruptions(self, pomodoro: Pomodoro, res: list[str]) -> None:
+        for i in pomodoro.values():
+            reason = f' ({i.get_reason()})' if i.get_reason() else ''
+            action = 'Voided' if i.is_void() else 'Interrupted'
+            res.append(f' - {action} at {hhmm(i.get_create_date())}{reason}')
+
     def _format_tooltip(self) -> str:
         res = list()
+
         for p in self._workitem.values():
             if p.get_type() == POMODORO_TYPE_TRACKER:
+                # The fact that we detect it as a tracker means that we started it
                 elapsed = round((p.get_last_modified_date() - p.get_work_start_date()).total_seconds())
                 res.append(f'Tracked {datetime.timedelta(seconds=elapsed)} '
-                           f'({hhmm(p.get_work_start_date())} - '
-                           f'{hhmm(p.get_last_modified_date())})')
+                           f'from {hhmm(p.get_work_start_date())} to {hhmm(p.get_last_modified_date())}')
+                self._list_interruptions(p, res)
             else:
+                res.append(f'{p.get_name()} - {"planned" if p.is_planned() else "unplanned"}, {p.get_state()}:')
+                res.append(f' - Created at {hhmm(p.get_create_date())}')
                 if p.is_working():
-                    state = f'Working since {hhmm(p.get_work_start_date())}'
-                elif p.is_resting():
-                    state = f'Resting since {hhmm(p.get_rest_start_date())}'
-                elif p.is_finished():
-                    state = f'Completed {hhmm(p.get_work_start_date())} - {hhmm(p.get_last_modified_date())}'
-                else:
-                    state = f'Created at {hhmm(p.get_create_date())}'
-                res.append(f'{p.get_name()} ({"planned" if p.is_planned() else "unplanned"}) - {state}')
-            for i in p.values():
-                reason = f' ({i.get_reason()})' if i.get_reason() else ''
-                res.append(f' - Interrupted at {hhmm(i.get_create_date())}{reason}')
+                    res.append(f' - Working since {hhmm(p.get_work_start_date())}')
+                if p.is_resting() or p.is_finished():
+                    res.append(f' - Started work at {hhmm(p.get_work_start_date())}')
+                if p.is_resting():
+                    res.append(f' - Resting since {hhmm(p.get_rest_start_date())}')
+                self._list_interruptions(p, res)
+                if p.is_finished():
+                    res.append(f' - Completed at {hhmm(p.get_last_modified_date())}')
+
         return '\n'.join(res)
 
     def update_display(self):
