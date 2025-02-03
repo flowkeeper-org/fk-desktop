@@ -30,7 +30,8 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, \
+    AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag
 from fk.core.tenant import ADMIN_USER
@@ -104,12 +105,19 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                                  str(pomodoro.get_rest_duration())],
                                                 source.get_settings())
                         seq += 1
-                    if len(pomodoro) > 0:
-                        # TODO: Iterate over interruptions and void each of them. Void with the reason.
-                        yield VoidPomodoroStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid()],
-                                                   source.get_settings())
+                    for interruption in pomodoro.values():
+                        if interruption.is_void():
+                            yield VoidPomodoroStrategy(seq, interruption.get_create_date(), user.get_identity(),
+                                                       [workitem.get_uid()],
+                                                       source.get_settings())
+                        else:
+                            yield AddInterruptionStrategy(seq, interruption.get_create_date(), user.get_identity(),
+                                                          [workitem.get_uid(),
+                                                           interruption.get_reason() if interruption.get_reason() is not None else '',
+                                                           str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
+                                                          source.get_settings())
                         seq += 1
+
                 if workitem.is_sealed():
                     yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
                                                    [workitem.get_uid(), 'finished'],
@@ -217,12 +225,24 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                      str(p_new.get_rest_duration())],
                                                     source.get_settings())
                             seq += 1
-                            if len(p_new) > 0:
-                                # TODO: Iterate over interruptions and void each of them. Void with the reason.
-                                # UC-2: Smart import would result in the max(existing, imported) number of completed and voided pomodoros for each workitem
-                                yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
-                                                           [workitem.get_uid()],
+
+                    # Import interruptions similarly to pomodoros
+                    for interruption in p_new.values():
+                        # We use interruption date as its primary key
+                        date = interruption.get_create_date()
+                        if date not in [ii.get_create_date() for ii in p_old.values()]:
+                            if interruption.is_void():
+                                yield VoidPomodoroStrategy(seq, interruption.get_create_date(), user.get_identity(),
+                                                           [workitem.get_uid(), interruption.get_reason()],
                                                            source.get_settings())
+                                seq += 1
+                                break   # Here we rely on the fact that interruptions come in chronological order
+                            else:
+                                yield AddInterruptionStrategy(seq, date, user.get_identity(),
+                                                              [workitem.get_uid(),
+                                                               interruption.get_reason() if interruption.get_reason() is not None else '',
+                                                               str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
+                                                              source.get_settings())
                                 seq += 1
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):

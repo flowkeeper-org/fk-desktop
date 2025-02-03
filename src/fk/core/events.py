@@ -60,6 +60,8 @@ BeforePomodoroComplete = "BeforePomodoroComplete"
 AfterPomodoroComplete = "AfterPomodoroComplete"
 BeforePomodoroVoided = "BeforePomodoroVoided"
 AfterPomodoroVoided = "AfterPomodoroVoided"
+BeforePomodoroInterrupted = "BeforePomodoroInterrupted"
+AfterPomodoroInterrupted = "AfterPomodoroInterrupted"
 
 TagCreated = "TagCreated"
 TagDeleted = "TagDeleted"

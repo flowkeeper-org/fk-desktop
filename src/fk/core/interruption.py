@@ -25,15 +25,20 @@ logger = logging.getLogger(__name__)
 
 class Interruption(AbstractDataItem['Pomodoro']):
     _reason: str | None
+    _duration: datetime.timedelta | None
+    _void: bool
 
-    # State is one of the following: new, work, rest, finished, canceled (AKA void)
     def __init__(self,
                  reason: str | None,
+                 duration: datetime.timedelta | None,
+                 void: bool,
                  uid: str,
                  pomodoro: 'Pomodoro',
                  create_date: datetime.datetime):
         super().__init__(uid=uid, parent=pomodoro, create_date=create_date)
         self._reason = reason
+        self._duration = duration
+        self._void = void
 
     def __str__(self):
         if self._reason:
@@ -41,12 +46,20 @@ class Interruption(AbstractDataItem['Pomodoro']):
         else:
             return f"'"
 
-    def get_reason(self) -> str:
+    def get_reason(self) -> str | None:
         return self._reason
+
+    def get_duration(self) -> datetime.timedelta | None:
+        return self._duration
+
+    def is_void(self) -> bool:
+        return self._void
 
     def get_parent(self) -> 'Pomodoro':
         return self._parent
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, True)}\n' \
-               f'{indent}  Reason: {self._reason if self._reason else "<None>"}'
+               f'{indent}  Reason: {self._reason if self._reason else "<None>"}\n' \
+               f'{indent}  Void: {self._void}\n' \
+               f'{indent}  Duration: {self._duration if self._duration else "<None>"}'

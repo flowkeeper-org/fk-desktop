@@ -281,9 +281,9 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
                f'{indent}  Rest started: {self._date_rest_started}\n' \
                f'{indent}  Completed: {self._date_completed}'
 
-    def add_interruption(self, reason: str | None, when: datetime.datetime) -> None:
+    def add_interruption(self, reason: str | None, duration: datetime.timedelta | None, void: bool, when: datetime.datetime) -> None:
         uid = generate_uid()
-        self[uid] = Interruption(reason, uid, self, when)
+        self[uid] = Interruption(reason, duration, void, uid, self, when)
 
     def is_planned(self) -> bool:
         return self._is_planned

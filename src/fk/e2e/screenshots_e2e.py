@@ -463,5 +463,5 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
                 for _ in range(num_interruptions):
                     int_uid = generate_uid()
-                    workitem[uid][int_uid] = Interruption(None, int_uid, workitem[uid], now)
+                    workitem[uid][int_uid] = Interruption(None, None, False, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

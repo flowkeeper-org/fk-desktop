@@ -257,6 +257,8 @@ def _complete_pomodoro(user: User,
 def _interrupt_pomodoro(user: User,
                         workitem_uid: str,
                         reason: str | None,
+                        duration: datetime.timedelta | None,
+                        void: bool,
                         emit: Callable[[str, dict[str, any], any], None],
                         carry: any,
                         when: datetime.datetime) -> None:
@@ -278,12 +280,21 @@ def _interrupt_pomodoro(user: User,
                 'workitem': workitem,
                 'pomodoro': pomodoro,
                 'reason': reason,
+                'duration': duration,
             }
-            emit(events.BeforePomodoroVoided, params, carry)
-            pomodoro.add_interruption(reason, when)
-            pomodoro.void(when)
+            emit(events.BeforePomodoroInterrupted, params, carry)
+            pomodoro.add_interruption(reason, duration, void, when)
             pomodoro.item_updated(when)
-            emit(events.AfterPomodoroVoided, params, carry)
+            emit(events.AfterPomodoroInterrupted, params, carry)
+            if void:
+                params = {
+                    'workitem': workitem,
+                    'pomodoro': pomodoro,
+                    'reason': reason,
+                }
+                emit(events.BeforePomodoroVoided, params, carry)
+                pomodoro.void(when)
+                emit(events.AfterPomodoroVoided, params, carry)
             return
 
     raise Exception(f'No running pomodoros in "{workitem_uid}"')
@@ -316,7 +327,7 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
         user: User = data[self._user_identity]
-        _interrupt_pomodoro(user, self._workitem_uid, self._reason, emit, self._carry, self._when)
+        _interrupt_pomodoro(user, self._workitem_uid, self._reason, None, True, emit, self._carry, self._when)
         return None, None
 
 
@@ -425,3 +436,38 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
         workitem.item_updated(self._when)
         emit(events.AfterPomodoroRemove, params, self._carry)
         return None, None
+
+
+# AddInterruption("123-456-789", "reason", ["123.45"])
+@strategy
+class AddInterruptionStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+    _reason: str | None
+    _duration: datetime.timedelta | None
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
+        self._reason = params[1]
+        if len(params) > 2 and params[2]:
+            self._duration = datetime.timedelta(seconds=float(params[2]))
+        else:
+            self._duration = None
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> (str, any):
+        user: User = data[self._user_identity]
+        _interrupt_pomodoro(user, self._workitem_uid, self._reason, self._duration, False, emit, self._carry, self._when)
+        return None, None
+
+
