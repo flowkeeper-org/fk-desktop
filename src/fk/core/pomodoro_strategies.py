@@ -337,6 +337,9 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
 class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
 
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -359,6 +362,9 @@ class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
 @strategy
 class FinishTrackingStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
 
     def __init__(self,
                  seq: int,

@@ -330,6 +330,7 @@ def import_(source: AbstractEventSource[TRoot],
                        progress_callback,
                        lambda total: _merge_sources(source,  # Step 2 is done there
                                                     new_source,
+                                                    ignore_errors,
                                                     completion_callback))
     else:
         import_classic(source,
@@ -425,6 +426,7 @@ def import_github_issues(source: AbstractEventSource[TRoot],
 
 def _merge_sources(existing_source,
                    new_source,
+                   ignore_errors,
                    completion_callback: Callable[[int], None]) -> None:
     # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
     count = 0
@@ -432,7 +434,13 @@ def _merge_sources(existing_source,
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
         existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
-        existing_source.execute_prepared_strategy(strategy, False, True)
+        try:
+            existing_source.execute_prepared_strategy(strategy, False, True)
+        except Exception as e:
+            if ignore_errors:
+                logger.warning(f'Error while importing data, ignoring: {e}')
+            else:
+                raise e
         count += 1
     existing_source.auto_seal()
     existing_source.unmute()
