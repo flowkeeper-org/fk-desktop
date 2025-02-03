@@ -164,7 +164,7 @@ jobs:
             dist/flowkeeper.deb
       - name: Create AppImage
         run: |
-          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
           sudo chmod +x /usr/local/bin/appimagetool
           ./package-appimage.sh
       - name: Archive AppImage
