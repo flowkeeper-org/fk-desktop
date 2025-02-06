@@ -223,13 +223,13 @@ jobs:
           path: |
             dist\setup.exe
       - name: VirusTotal install
+        # winget install VirusTotal.vt-cli --accept-source-agreements --accept-package-agreements
         run: |
-          winget install VirusTotal.vt-cli --accept-source-agreements --accept-package-agreements
+          choco install vt-cli
       - name: VirusTotal scan
         env:
           # GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} -- if we want to run it as a standalone nightly pipeline, which downloads EXEs from releases
           VTCLI_APIKEY: ${{ secrets.VTCLI_APIKEY }}
-          # choco install vt-cli  -- doesn't need Windows Server 2025
         run: |
           vt scan file dist\setup.exe
           vt scan file dist\Flowkeeper.exe
