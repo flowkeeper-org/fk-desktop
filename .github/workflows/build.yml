@@ -175,7 +175,7 @@ jobs:
             dist/*.AppImage
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2025
     if:  ${{ inputs.OS == 'windows' || inputs.OS == 'all' }}
     steps:
       - name: Checkout repository
@@ -222,6 +222,16 @@ jobs:
           name: dist-windows-setup
           path: |
             dist\setup.exe
+      - name: VirusTotal scan
+        env:
+          # GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VTCLI_APIKEY: ${{ secrets.VTCLI_APIKEY }}
+          # choco install vt-cli  -- doesn't need Windows Server 2025
+        run: |
+          winget install VirusTotal.vt-cli
+          vt scan file dist\setup.exe
+          vt scan file dist\Flowkeeper.exe
+          vt scan file dist\flowkeeper\Flowkeeper.exe
 
   build-macOS-arm:
     runs-on: macOS-latest
