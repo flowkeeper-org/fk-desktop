@@ -260,6 +260,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             super(AbstractTableView, self).dragMoveEvent(event)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
+        print('ENTER (custom)', event, self.objectName())
         # By default it only allows its own data. Here we say we accept workitems, too.
         if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
             event.acceptProposedAction()

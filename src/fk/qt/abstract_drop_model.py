@@ -110,14 +110,15 @@ class AbstractDropModel(QStandardItemModel):
         i = self._find_drop_placeholder()
         if i is not None:
             self.removeRow(i)
-        # Restore the original row we removed when we started dragging
-        self.insertRow(self._dragging_row,
-                       self.item_by_id(self._dragging_uid))
-        print(f'Restored original {self._dragging_uid}')
-        inserted = self._dragging_row
-        self._dragging_row = None
-        self._dragging_uid = None
-        return inserted
+            # Restore the original row we removed when we started dragging
+            print('Restoring', self._dragging_row, i)
+            self.insertRow(self._dragging_row,
+                           self.item_by_id(self._dragging_uid))
+            print(f'Restored original {self._dragging_uid}')
+            inserted = self._dragging_row
+            self._dragging_row = None
+            self._dragging_uid = None
+            return inserted
 
     def _insert_placeholder(self, row: int, height: int):
         items = [DropPlaceholderItem(height) for _ in range(0, self.columnCount())]
@@ -127,7 +128,7 @@ class AbstractDropModel(QStandardItemModel):
         print(f'Original height: {height}')
         self._dragging_row = index.row()
         self._dragging_uid = index.data(500).get_uid()
-        print(f'Saved original {self._dragging_uid}')
+        print(f'Saved original {self._dragging_uid} at {self._dragging_row}')
         self.removeRow(index.row())
         self._insert_placeholder(index.row(), height)
         print(f'Created drop placeholder at {index}')

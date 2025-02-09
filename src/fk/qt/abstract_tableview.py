@@ -26,6 +26,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
+from fk.qt.abstract_drop_model import AbstractDropModel
 from fk.qt.actions import Actions
 
 logger = logging.getLogger(__name__)
@@ -208,17 +209,19 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.update_actions(None)
 
     def dragLeaveEvent(self, event: QDragLeaveEvent):
-        print('LEAVE')
+        print('LEAVE', event, self.objectName())
         super().dragLeaveEvent(event)
-        original = self.model().remove_drop_placeholder()
-        self.selectRow(original)
+        model: AbstractDropModel = self.model()
+        original = model.remove_drop_placeholder()
+        if original is not None:
+            self.selectRow(original)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         # TODO: We don't know if it was an outside enter, or we started dragging
+        print('ENTER', event, self.objectName())
         super().dragEnterEvent(event)
         index: QModelIndex = self.indexAt(event.pos())
         if index.isValid():
-            print(f'ENTER: {event}')
             self.deselect()
             self.model().create_drop_placeholder(index, self.rowHeight(index.row()))
 
