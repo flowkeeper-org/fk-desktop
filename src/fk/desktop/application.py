@@ -59,7 +59,7 @@ from fk.qt.about_window import AboutWindow
 from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
 from fk.qt.heartbeat import Heartbeat
-from fk.qt.oauth import authenticate, AuthenticationRecord
+from fk.qt.oauth import authenticate, AuthenticationRecord, open_url
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
@@ -635,6 +635,15 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
         actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
+
+        def contact(url: str) -> Callable:
+            return lambda _: open_url(url)
+        actions.add('application.contactGithub', "GitHub", '', None, contact('https://github.com/flowkeeper-org/fk-desktop/issues'))
+        actions.add('application.contactDiscord', "Discord", '', None, contact('https://discord.gg/MCbxbmjv'))
+        actions.add('application.contactReddit', "Reddit", '', None, contact('https://www.reddit.com/r/Flowkeeper'))
+        actions.add('application.contactLinkedIn', "LinkedIn", '', None, contact('https://www.linkedin.com/company/flowkeeper-org'))
+        actions.add('application.contactTelegram', "Telegram", '', None, contact('https://t.me/flowkeeper_org'))
+        actions.add('application.contactEmail', "Email", '', None, contact('mailto:contact@flowkeeper.org'))
 
     def quit_local(self):
         Application.quit()

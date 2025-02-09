@@ -315,6 +315,16 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.stats'])
         menu_file.addAction(actions['application.workSummary'])
         menu_file.addSeparator()
+
+        menu_contact = QtWidgets.QMenu("Contact us", window)
+        menu_contact.addAction(actions['application.contactGithub'])
+        menu_contact.addAction(actions['application.contactDiscord'])
+        menu_contact.addAction(actions['application.contactLinkedIn'])
+        menu_contact.addAction(actions['application.contactReddit'])
+        menu_contact.addAction(actions['application.contactTelegram'])
+        menu_contact.addAction(actions['application.contactEmail'])
+        menu_file.addMenu(menu_contact)
+
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])

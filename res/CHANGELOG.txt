@@ -14,6 +14,7 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - You can now find Flowkeeper on Flathub (#63).
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - We now build an AppImage binary for Flowkeeper.
+- "Contact us" submenu to facilitate feedback collection (#111).
 - [Technical] Added support for Qt 6.8.1.
 - [Bugfix] Window icon on Wayland (#110).
 
@@ -22,7 +23,6 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - TODO: You can now find Flowkeeper on AppStore for macOS (#99)
 - TODO: Font selection is back, with Noto Sans preselected (#113)
 - TODO: Statistics window (F9) now tracks time instead of number of pomodoros (#122)
-- TODO: You can now submit your feedback and request improvements directly from the app main menu (#111)
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
 - TODO: [Bugfix] Unhandled IsADirectoryError (#108)
@@ -32,6 +32,7 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - TODO: [Technical] Sign installed Windows binaries (#115)
 - TODO: [Technical] Sign installed Windows binaries (#115)
 - TODO: [Technical] Improved documentation for running on Debian and openSUSE (#80, #87)
+- TODO: Fix drag-and-drop
 
 TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
  content to the new default location. Mention it in the Config wizard. Tests: 1). Install 0.9.1 on Windows, create a
