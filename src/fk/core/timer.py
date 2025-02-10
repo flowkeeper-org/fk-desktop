@@ -24,7 +24,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
+from fk.core.timer_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)

@@ -22,7 +22,8 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
@@ -142,7 +143,6 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         super().upstream_selected(backlog_or_tag)
         is_backlog = type(backlog_or_tag) is Backlog
         self._actions['workitems_table.newItem'].setEnabled(is_backlog)
-        self.setDragEnabled(is_backlog)
         self._resize()
 
     def update_actions(self, selected: Workitem) -> None:
@@ -218,13 +218,13 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                 "1",
                 POMODORO_TYPE_TRACKER
             ])
-            self._source.execute(StartWorkStrategy, [
+            self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
                 '0',
                 '0',
             ])
         else:
-            self._source.execute(StartWorkStrategy, [
+            self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
                 settings.get('Pomodoro.default_work_duration'),
                 settings.get('Pomodoro.default_rest_duration'),

@@ -282,7 +282,10 @@ if __name__ == "__main__":
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
-        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
+        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"),
+                                       QtTimer("Pomodoro Transition"),
+                                       app.get_settings(),
+                                       app.get_source_holder())
         pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
         pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
 

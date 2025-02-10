@@ -19,7 +19,7 @@ from typing import Iterable, Callable, Type
 
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL
-from fk.core.pomodoro_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
+from fk.core.timer_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)

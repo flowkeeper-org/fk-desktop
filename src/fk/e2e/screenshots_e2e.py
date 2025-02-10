@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPush
 from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
-from fk.core.pomodoro_strategies import StartWorkStrategy
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
@@ -310,7 +310,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         for w in source.workitems():
             if w.get_name() == 'Slides for #Flowkeeper demo':
                 workitem_id = w.get_uid()
-        source.execute_prepared_strategy(StartWorkStrategy(
+        source.execute_prepared_strategy(StartTimerStrategy(
             1,
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=670),
             'user@local.host',

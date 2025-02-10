@@ -26,7 +26,7 @@ from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy, FinishTrackingStrategy
+from fk.core.timer_strategies import VoidPomodoroStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
@@ -324,14 +324,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                                                              [workitem.get_uid(), dlg.textValue()])
 
     def _finish_tracking(self) -> None:
-        for backlog in self._source_holder.get_source().backlogs():
-            workitem, _ = backlog.get_running_workitem()
-            if workitem is not None:
-                self._source_holder.get_source().execute(FinishTrackingStrategy, [workitem.get_uid()])
+        # We don't check if there's a running workitem, as the action is only enabled while the timer is ticking
+        self._source_holder.get_source().execute(StopTimerStrategy, [])
 
     def _next_pomodoro(self) -> None:
         settings = self._source_holder.get_settings()
-        self._source_holder.get_source().execute(StartWorkStrategy, [
+        self._source_holder.get_source().execute(StartTimerStrategy, [
             self._continue_workitem.get_uid(),
             settings.get('Pomodoro.default_work_duration'),
             settings.get('Pomodoro.default_rest_duration'),

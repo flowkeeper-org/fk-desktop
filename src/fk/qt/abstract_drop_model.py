@@ -32,9 +32,7 @@ class DropPlaceholderItem(QStandardItem):
         if height > 0:
             self.setData(QSize(1, height), Qt.ItemDataRole.SizeHintRole)
         self.setData('drop', 501)
-        flags = (Qt.ItemFlag.ItemIsSelectable |
-                 Qt.ItemFlag.ItemIsEnabled |
-                 Qt.ItemFlag.ItemIsDropEnabled)
+        flags = Qt.ItemFlag.ItemIsDropEnabled
         self.setFlags(flags)
 
 
@@ -61,12 +59,12 @@ class AbstractDropModel(QStandardItemModel):
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
         print('AbstractDropModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
         if where.data(501) == 'drop' and data.hasFormat(self.get_type()):
+            self.remove_drop_placeholder()
             item_id = data.data(self.get_type()).toStdString()
             self.reorder(where.row(), item_id)
-            self.remove_drop_placeholder()
-            self.insertRow(where.row(), self.item_by_id(item_id))
+            #self.insertRow(where.row(), self.item_by_id(item_id))
             print('Reordered')
-            return False
+            return True
         else:
             print('Dropped somewhere else')
             self.remove_drop_placeholder()
@@ -93,6 +91,7 @@ class AbstractDropModel(QStandardItemModel):
         return [self.get_type()]
 
     def mimeData(self, indexes):
+        print('mimeData', indexes)
         if len(indexes) != 1:
             raise Exception(f'Unexpected number of rows to move: {len(indexes)}')
         data = QMimeData()

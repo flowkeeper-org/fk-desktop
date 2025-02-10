@@ -128,7 +128,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             self._is_upstream_item_selected = False
         else:
             self._is_upstream_item_selected = True
-        self.model().load(upstream)  # Should handle None correctly
+        model: AbstractDropModel = self.model()
+        model.load(upstream)  # Should handle None correctly
 
     def get_current(self) -> TDownstream | None:
         index = self.currentIndex()
@@ -210,25 +211,30 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def dragLeaveEvent(self, event: QDragLeaveEvent):
         print('LEAVE', event, self.objectName())
-        super().dragLeaveEvent(event)
+        event.accept()
+        # super().dragLeaveEvent(event)
         model: AbstractDropModel = self.model()
         original = model.remove_drop_placeholder()
         if original is not None:
             self.selectRow(original)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
-        # TODO: We don't know if it was an outside enter, or we started dragging
+        # TODO: We don't know if it was an outside enter, or we started dragging.
+        #  Check if event has some hidden payload with data?
         print('ENTER', event, self.objectName())
-        super().dragEnterEvent(event)
+        event.accept()
+        # super(QAbstractItemView, self).dragEnterEvent(event)
         index: QModelIndex = self.indexAt(event.pos())
         if index.isValid():
             self.deselect()
-            self.model().create_drop_placeholder(index, self.rowHeight(index.row()))
+            model: AbstractDropModel = self.model()
+            model.create_drop_placeholder(index, self.rowHeight(index.row()))
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         index: QModelIndex = self.indexAt(event.pos())
-        self.model().move_drop_placeholder(index)
-        event.ignore()
+        model: AbstractDropModel = self.model()
+        model.move_drop_placeholder(index)
+        event.accept()
         # if index.data(501) == 'title':
         #     # Hovering over a "real" item. Insert a "drop placeholder" here instead.
         #     self.model().move_drop_placeholder(index)

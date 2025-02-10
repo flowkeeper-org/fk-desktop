@@ -31,8 +31,8 @@ from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
-    RemovePomodoroStrategy, FinishTrackingStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.timer_strategies import StartWorkStrategy, FinishTrackingStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
@@ -369,9 +369,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
                     t is StartWorkStrategy or \
+                    t is StartTimerStrategy or \
+                    t is StopTimerStrategy or \
                     t is AddPomodoroStrategy or \
-                    t is VoidPomodoroStrategy or \
-                    t is FinishTrackingStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
                 uid = cast.get_workitem_uid()

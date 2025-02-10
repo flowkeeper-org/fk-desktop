@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import StartWorkStrategy
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
@@ -109,7 +109,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
             settings = self._source_holder.get_settings()
-            self._source_holder.get_source().execute(StartWorkStrategy, [
+            self._source_holder.get_source().execute(StartTimerStrategy, [
                 self._continue_workitem.get_uid(),
                 settings.get('Pomodoro.default_work_duration'),
                 settings.get('Pomodoro.default_rest_duration'),
