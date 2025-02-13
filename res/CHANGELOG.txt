@@ -11,6 +11,7 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Hovering over pomodoros displays a detailed log of your work (#93).
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Standard data and log directories are used on Linux, macOS and Windows (#65).
+- Import from CSV, try Ctrl+I (#125).
 - You can now find Flowkeeper on Flathub (#63).
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - We now build an AppImage binary for Flowkeeper.

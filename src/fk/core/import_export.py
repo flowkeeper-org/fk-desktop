@@ -424,6 +424,68 @@ def import_github_issues(source: AbstractEventSource[TRoot],
     return log
 
 
+def import_simple(source: AbstractEventSource[TRoot],
+                  tasks: dict[str, list[object]]) -> str:
+    log = ''
+    user: User = source.get_data().get_current_user()
+
+    for name in tasks.keys():
+        found: Backlog = None
+        for b in user.values():
+            if b.get_name() == name:
+                found = b
+                log = f'Found existing backlog "{name}"\n'
+                break
+
+        if found is None:
+            b_uid = generate_uid()
+            source.execute(CreateBacklogStrategy, [b_uid, name])
+            found = user[b_uid]
+            log = f'Created backlog "{name}"\n'
+
+        created = 0
+        skipped = 0
+        completed = 0
+        for task in tasks[name]:
+            title = task[0]
+            state = task[1]
+
+            # Check if such workitem already exists
+            existing: Workitem = None
+            for wi in found.values():
+                if wi.get_name() == title:
+                    existing = wi
+                    break
+
+            if existing is None:
+                w_uid = generate_uid()
+                source.execute(CreateWorkitemStrategy, [w_uid, found.get_uid(), title])
+                existing = found[w_uid]
+                created += 1
+            else:
+                w_uid = existing.get_uid()
+                skipped += 1
+
+            if state == 'completed' and not existing.is_sealed():
+                source.execute(CompleteWorkitemStrategy, [w_uid, 'finished'])
+                completed += 1
+
+        if created == 0:
+            log += ' - Did not create any new work items\n'
+        else:
+            log += f' - Created {created} work items\n'
+
+        if skipped > 0:
+            log += f' - Skipped {skipped} existing work items\n'
+
+        if completed > 0:
+            log += f' - Marked {completed} work items as completed\n'
+
+        log += '\n'
+
+    return log
+
+
 def _merge_sources(existing_source,
                    new_source,
                    ignore_errors,
