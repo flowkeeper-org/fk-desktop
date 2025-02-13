@@ -19,7 +19,7 @@ import datetime
 import logging
 
 from fk.core.abstract_data_container import AbstractDataContainer
-from fk.core.abstract_data_item import AbstractDataItem, generate_uid
+from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
 
 logger = logging.getLogger(__name__)
