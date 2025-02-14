@@ -84,7 +84,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
         # UC-2: Update timestamps propagate to parents. The latest timestamp is kept, they can't decrease.
         if date is None:
             date = datetime.datetime.now(datetime.timezone.utc)
-        # Some actions may happen retroactively, e.g. a Pomodoro might be auto-sealed "in the past"
+        # Some actions may happen retroactively
         if self._last_modified_date is None or self._last_modified_date < date:
             self._last_modified_date = date
         if self._parent is not None:

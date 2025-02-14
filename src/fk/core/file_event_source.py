@@ -92,8 +92,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._last_seq = seq
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug(f" - {strategy}")
-                        # TODO: This is SLOW
-                        self.auto_seal(strategy.get_when())
                         # UC-1: For any event source, whenever it executes a strategy with seq_num != last_seq + 1, and "ignore sequence" settings is disables, it fails
                         self.execute_prepared_strategy(strategy)
                 except Exception as ex:
@@ -101,8 +99,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
-        # UC-2: File event source auto-seals running pomodoros at the end of any file read, including file watch case
-        self.auto_seal()
 
     def _get_filename(self) -> str:
         return self.get_config_parameter("FileEventSource.filename")
@@ -120,7 +116,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def _process_from_existing(self, fail_early: bool) -> None:
         # UC-2: File event source can be created from the existing pre-parsed strategies.
         #  It behaves just like normal "read file", but without the deserialization checks.
-        #  It checks sequences, auto-seals and triggers SourceMessagesRequested events.
+        #  It checks sequences and triggers SourceMessagesRequested events.
         #  All events are muted during processing.
         self._emit(events.SourceMessagesRequested, dict())
         self.mute()
@@ -140,14 +136,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if (fail_early or not self._ignore_invalid_sequences) and seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
-                self.auto_seal(strategy.get_when())
                 self.execute_prepared_strategy(strategy)
             except Exception as ex:
                 if self._ignore_errors and not fail_early:
                     logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
                 else:
                     raise ex
-        self.auto_seal()
         self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self}, None)
 
@@ -189,18 +183,13 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             self._sequence_error(self._last_seq, seq)
                     # UC-3: Strategies may start with any sequence number
                     self._last_seq = seq
-                    self.auto_seal(strategy.get_when())
                     self.execute_prepared_strategy(strategy)
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
-        logger.debug('FileEventSource: Processed file content, will auto-seal now')
-
-        # UC-1: Any event source auto-seals pomodoros at the end of the parsing round, including incremental parsing
-        self.auto_seal()
-        logger.debug('FileEventSource: Sealed, will unmute events now')
+        logger.debug('FileEventSource: Processed file content, will unmute events now')
 
         # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:

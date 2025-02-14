@@ -54,7 +54,6 @@ class TestFileEventSource(TestCase):
     # - Creation from existing strategies (no file read)
     # - Events - SourceMessagesRequested, SourceMessagesProcessed, ...
     # - Events in case of errors
-    # - Auto-seal at the end of every read
     # - Sequence errors, configurable
     # - Skipping strategies out of order
     # - Mute / don't mute

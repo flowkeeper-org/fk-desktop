@@ -19,10 +19,10 @@ from typing import Callable
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER, POMODORO_TYPE_COUNTER
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
-from fk.core.user import User
+from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
 
 
@@ -54,25 +54,12 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        workitem: Workitem | None = None
-        running: Workitem | None = None
-        user: User = data[self._user_identity]
-        for backlog in user.values():
-            if self._workitem_uid in backlog:
-                workitem = backlog[self._workitem_uid]
-                running, _ = backlog.get_running_workitem()
-                break
+        timer: TimerData = self.get_user(data).get_timer()
+        if timer.is_ticking():
+            raise Exception(f'Cannot start timer for workitem {self._workitem_uid}, '
+                            f'because it is already running for "{timer.get_running_workitem()}"')
 
-        if workitem is None:
-            raise Exception(f'Workitem "{self._workitem_uid}" not found')
-
-        if workitem.is_sealed():
-            raise Exception(f'Cannot start pomodoro on a sealed workitem "{self._workitem_uid}"')
-
-        if running is not None:
-            # This is an unusual case -- instead of throwing an Exception, we tell the
-            # calling Source that it should attempt auto-seal and retry.
-            return 'auto-seal', running
+        workitem: Workitem = self.get_workitem(data, self._workitem_uid, True, True)
 
         for pomodoro in workitem.values():
             if pomodoro.is_startable():
@@ -115,41 +102,34 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        workitem: Workitem | None = None
-        user: User = data[self._user_identity]
-        for b in user.values():
-            for w in b.values():
-                if w.has_running_pomodoro():
-                    workitem = w
-                    break
+        timer: TimerData = self.get_user(data).get_timer()
+        if timer.is_idling():
+            raise Exception('Cannot stop the timer, because it is not running')
 
-        if workitem is None:
-            # TODO: Use the real Timer object
-            raise Exception(f'Cannot stop the timer -- no running workitems')
+        pomodoro = timer.get_running_pomodoro()
 
-        pomodoro = workitem.get_running_pomodoro()
+        if pomodoro.get_type() not in [POMODORO_TYPE_TRACKER, POMODORO_TYPE_NORMAL]:
+            raise Exception(f'Cannot stop the timer for a running pomodoro of type {pomodoro.get_type()}')
 
-        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
-            # Stopping a normal running pomodoro means voiding it
+        if pomodoro.get_type() == POMODORO_TYPE_NORMAL and (pomodoro.get_rest_duration() or pomodoro.is_working()):
+            # Stopping a normal running pomodoro with predefined rest duration means voiding it
             params = {
-                'workitem': workitem,
                 'pomodoro': pomodoro,
                 'reason': 'Voided automatically because you completed the workitem while the timer was running.',
             }
             emit(events.BeforePomodoroVoided, params, self._carry)
             pomodoro.void(self._when)
             emit(events.AfterPomodoroVoided, params, self._carry)
-        elif pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+        else:
+            # We either stop a pomodoro with unlimited rest period, during rest; or a tracker -- it's a
+            # normal completion then
             params = {
-                'workitem': workitem,
                 'pomodoro': pomodoro,
             }
             emit(events.BeforePomodoroComplete, params, self._carry)
             pomodoro.seal(self._when)
             pomodoro.item_updated(self._when)
             emit(events.AfterPomodoroComplete, params, self._carry)
-        else:
-            raise Exception(f'Cannot stop the timer for a running pomodoro of type {pomodoro.get_type()}')
 
         return None, None
 
@@ -167,11 +147,53 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> (str, any):
-        # TODO: Check the timer state and decide what to do. Execute the corresponding strategy as a result
-        #  and emit timer events. The Timer and its UI, both of which subscribe to those events, will decide
-        #  what to do next. For example, the Timer might schedule rest after work has been finished.
+        timer: TimerData = self.get_user(data).get_timer()
+        if timer.is_idling():
+            raise Exception('The timer rings, but it was not running')
+
+        pomodoro: Pomodoro = timer.get_running_pomodoro()
+        if timer.is_working():
+            params = {
+                'pomodoro': pomodoro,
+                'rest_duration': pomodoro.get_rest_duration(),
+            }
+            emit(events.BeforePomodoroRestStart, params, self._carry)
+
+            timer.rest(pomodoro.get_rest_duration())
+            timer.item_updated(self._when)
+            emit(events.TimerWorkComplete, {
+                'timer': timer,
+                'rest_duration': pomodoro.get_rest_duration(),
+                'pomodoro': pomodoro,
+            }, self._carry)
+
+            pomodoro.start_rest(self._when)
+            pomodoro.item_updated(self._when)
+            emit(events.AfterPomodoroRestStart, params, self._carry)
+        elif timer.is_resting():
+            params = {
+                'timer': timer,
+                'pomodoro': pomodoro,
+            }
+            emit(events.BeforePomodoroComplete, params, self._carry)
+
+            timer.idle()
+            timer.item_updated(self._when)
+            emit(events.TimerRestComplete, {
+                'timer': timer,
+                'pomodoro': pomodoro,
+            }, self._carry)
+
+            pomodoro.seal(self._when)
+            pomodoro.item_updated(self._when)
+            emit(events.AfterPomodoroComplete, params, self._carry)
+
         return None, None
 
+
+######################################################
+################## DEPRECATED STUFF ##################
+######################################################
 
 # StartWork("123-456-789", "1500", ["300"])
 # DEPRECATED
@@ -209,98 +231,6 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         return None, None
 
 
-# Not available externally, not registered as a strategy
-# The main difference with StartWork is that we don't start a workitem here and fail if it's not started yet.
-class StartRestInternalStrategy(AbstractStrategy[Tenant]):
-    _workitem_uid: str
-
-    def get_workitem_uid(self) -> str:
-        return self._workitem_uid
-
-    def __init__(self,
-                 seq: int,
-                 when: datetime.datetime,
-                 user_identity: str,
-                 params: list[str],
-                 settings: AbstractSettings,
-                 carry: any = None):
-        super().__init__(seq, when, user_identity, params, settings, carry)
-        self._workitem_uid = params[0]
-
-    def execute(self,
-                emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
-        workitem: Workitem | None = None
-        user: User = data[self._user_identity]
-        for backlog in user.values():
-            if self._workitem_uid in backlog:
-                workitem = backlog[self._workitem_uid]
-                break
-
-        if workitem is None:
-            raise Exception(f'Workitem "{self._workitem_uid}" not found')
-
-        if not workitem.has_running_pomodoro():
-            raise Exception(f'Cannot start rest on a workitem "{self._workitem_uid}" which is not running')
-
-        # Note that unlike StartWorkStrategy we don't care about auto-sealing here, since this
-        # should've been done for the StartWork earlier.
-        for pomodoro in workitem.values():
-            if pomodoro.is_working():
-                params = {
-                    'pomodoro': pomodoro,
-                    'workitem': workitem,
-                    'rest_duration': pomodoro.get_rest_duration(),
-                }
-                emit(events.BeforePomodoroRestStart, params, self._carry)
-                pomodoro.start_rest(self._when)
-                pomodoro.item_updated(self._when)
-                emit(events.AfterPomodoroRestStart, params, self._carry)
-                return None, None
-
-        raise Exception(f'No in-work pomodoro in "{self._workitem_uid}"')
-
-
-def _complete_pomodoro(user: User,
-                       workitem_uid: str,
-                       emit: Callable[[str, dict[str, any], any], None],
-                       carry: any,
-                       when: datetime.datetime,
-                       tracker_only: bool = False) -> None:
-    workitem: Workitem | None = None
-    for backlog in user.values():
-        if workitem_uid in backlog:
-            workitem = backlog[workitem_uid]
-            break
-
-    if workitem is None:
-        raise Exception(f'Workitem "{workitem_uid}" not found')
-
-    if not workitem.has_running_pomodoro():
-        raise Exception(f'Workitem "{workitem_uid}" is not running')
-
-    if tracker_only:
-        for pomodoro in workitem.values():
-            if pomodoro.get_type() != POMODORO_TYPE_TRACKER:
-                raise Exception(f'Trying to finish tracking time on a workitem "{workitem_uid}" which has non-tracker pomodoros of type {pomodoro.get_type()}')
-
-    for pomodoro in workitem.values():
-        # TODO: Check that if we are finishing work successfully, then the time since the rest started
-        #  corresponds well to what was planned, +/- 10 seconds
-        if pomodoro.is_running():
-            params = {
-                'workitem': workitem,
-                'pomodoro': pomodoro,
-            }
-            emit(events.BeforePomodoroComplete, params, carry)
-            pomodoro.seal(when)
-            pomodoro.item_updated(when)
-            emit(events.AfterPomodoroComplete, params, carry)
-            return
-
-    raise Exception(f'No running pomodoros in "{workitem_uid}"')
-
-
 # VoidPomodoro("123-456-789")
 # DEPRECATED
 @strategy
@@ -321,31 +251,6 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                              data,
                              StopTimerStrategy,
                              [])
-        return None, None
-
-
-# Not available externally, not registered as a strategy
-class FinishPomodoroInternalStrategy(AbstractStrategy[Tenant]):
-    _workitem_uid: str
-
-    def get_workitem_uid(self) -> str:
-        return self._workitem_uid
-
-    def __init__(self,
-                 seq: int,
-                 when: datetime.datetime,
-                 user_identity: str,
-                 params: list[str],
-                 settings: AbstractSettings,
-                 carry: any = None):
-        super().__init__(seq, when, user_identity, params, settings, carry)
-        self._workitem_uid = params[0]
-
-    def execute(self,
-                emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
-        user: User = data[self._user_identity]
-        _complete_pomodoro(user, self._workitem_uid, emit, self._carry, self._when)
         return None, None
 
 

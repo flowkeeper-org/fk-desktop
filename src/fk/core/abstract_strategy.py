@@ -22,6 +22,9 @@ from typing import Callable, Type, Generic, TypeVar
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.tenant import Tenant
+from fk.core.user import User
+from fk.core.workitem import Workitem
 
 TRoot = TypeVar('TRoot', bound=AbstractDataItem)
 
@@ -93,3 +96,41 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         res = strategy.execute(emit, data)
         emit(events.AfterMessageProcessed, params, self._carry)
         return res
+
+    # Convenience methods
+
+    def get_user(self, data: Tenant, fail_if_not_found: bool = True) -> User | None:
+        if self._user_identity in data:
+            return data.get_user(self._user_identity)
+
+        if fail_if_not_found:
+            raise Exception(f'User "{self._user_identity}" not found')
+        else:
+            return None
+
+    def get_backlog(self, data: Tenant, uid: str, fail_if_not_found: bool = True) -> Workitem | None:
+        user = self.get_user(data)
+        if uid in user:
+            return user[uid]
+
+        if fail_if_not_found:
+            raise Exception(f'Workitem "{uid}" not found')
+        else:
+            return None
+
+    def get_workitem(self,
+                     data: Tenant,
+                     uid: str,
+                     fail_if_not_found: bool = True,
+                     fail_if_sealed: bool = False) -> Workitem | None:
+        for backlog in self.get_user(data):
+            if uid in backlog:
+                workitem: Workitem = backlog[uid]
+                if fail_if_sealed and workitem.is_sealed():
+                    raise Exception(f'Workitem "{uid}" is sealed')
+                return workitem
+
+        if fail_if_not_found:
+            raise Exception(f'Workitem "{uid}" not found')
+        else:
+            return None

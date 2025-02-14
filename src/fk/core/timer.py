@@ -24,7 +24,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
-from fk.core.timer_strategies import StartRestInternalStrategy, FinishPomodoroInternalStrategy
+from fk.core.timer_strategies import TimerRingInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
@@ -178,24 +178,16 @@ class PomodoroTimer(AbstractEventEmitter):
         if target_pomodoro.is_finished():
             logger.debug(f"We've already sealed this pomodoro, nothing else to do")
             return
-        if target_state == 'rest':
+        if target_state == 'rest' or target_state == 'finished':
             # Getting fresh rest duration in case it changed since the pomodoro was created.
             # Note that we get the fresh work duration as soon as the work starts (see get_work_duration()).
-            logger.debug(f"Will execute StartRestInternalStrategy('{target_workitem.get_name()}')")
+            logger.debug(f"Will execute TimerRingInternalStrategy()")
             self._source_holder.get_source().execute(
-                StartRestInternalStrategy,
-                [target_workitem.get_uid()],
+                TimerRingInternalStrategy,
+                [],
                 persist=False,
                 when=when)
-            logger.debug(f"PomodoroTimer: Executed StartRestInternalStrategy")
-        elif target_state == 'finished':
-            logger.debug(f"PomodoroTimer: Will execute FinishPomodoroInternalStrategy('{target_workitem.get_name()}', 'finished')")
-            self._source_holder.get_source().execute(
-                FinishPomodoroInternalStrategy,
-                [target_workitem.get_uid()],
-                persist=False,
-                when=when)
-            logger.debug(f"PomodoroTimer: Executed FinishPomodoroInternalStrategy")
+            logger.debug(f"PomodoroTimer: Executed TimerRingInternalStrategy")
         elif target_state == 'new':
             logger.debug(f"PomodoroTimer: Pomodoro is voided, nothing else to do")
         else:
@@ -225,12 +217,12 @@ class PomodoroTimer(AbstractEventEmitter):
     def _handle_pomodoro_rest_start(self,
                                     event: str,
                                     pomodoro: Pomodoro,
-                                    workitem: Workitem,
                                     rest_duration: float,
                                     **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling rest start')
         if pomodoro != self._pomodoro:
             logger.warning("PomodoroTimer: Warning - Timer detected start of an unexpected pomodoro")
+        workitem: Workitem = pomodoro.get_parent()
         if workitem != self._workitem:
             logger.warning(f"PomodoroTimer: Warning - Timer detected start of an unexpected workitem ({workitem} != {self._workitem})")
         self._pomodoro = pomodoro
@@ -249,11 +241,11 @@ class PomodoroTimer(AbstractEventEmitter):
     def _handle_pomodoro_complete(self,
                                   event: str,
                                   pomodoro: Pomodoro,
-                                  workitem: Workitem,
                                   **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling pomodoro complete or void')
         if pomodoro != self._pomodoro:
             logger.warning("PomodoroTimer: Warning - Timer detected completion of an unexpected pomodoro")
+        workitem = pomodoro.get_parent()
         if workitem != self._workitem:
             logger.warning(f"PomodoroTimer: Warning - Timer detected completion of an unexpected workitem ({workitem} != {self._workitem})")
         last_pomodoro = self._pomodoro

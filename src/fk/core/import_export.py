@@ -435,7 +435,6 @@ def _merge_sources(existing_source,
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
-        existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
         try:
             existing_source.execute_prepared_strategy(strategy, False, True)
         except Exception as e:
@@ -444,7 +443,6 @@ def _merge_sources(existing_source,
             else:
                 raise e
         count += 1
-    existing_source.auto_seal()
     existing_source.unmute()
     completion_callback(count)
 
@@ -502,7 +500,6 @@ def import_classic(source: AbstractEventSource[TRoot],
                     # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
-                source.auto_seal(strategy.get_when())
                 source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)

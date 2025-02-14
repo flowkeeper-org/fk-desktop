@@ -24,7 +24,7 @@ from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
 from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, RemovePomodoroStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
@@ -62,7 +62,6 @@ class TestPomodoros(TestCase):
         
     def _standard_backlog(self) -> (User, Backlog): 
         self.source.execute(CreateBacklogStrategy, ['b1', 'First backlog'])
-        self.source.auto_seal()
         user = self.data['user@local.host']
         backlog = user['b1']
         return user, backlog
@@ -70,7 +69,6 @@ class TestPomodoros(TestCase):
     def _standard_workitem(self) -> (User, Backlog, Workitem):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
-        self.source.auto_seal()
         workitem = backlog['w11']
         return user, backlog, workitem
 
@@ -85,7 +83,6 @@ class TestPomodoros(TestCase):
     #   - Non-standard durations overwrite original values
     # - Start rest
     #   - Call explicitly
-    #   - Called by autoseal
     #   - Called by Timer
     #   - Sealed workitem, non-existing workitem
     # - Add pomodoro, remove

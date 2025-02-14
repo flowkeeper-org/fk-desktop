@@ -21,13 +21,13 @@ from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.tags import Tags
-from fk.core.ttimer import Timer
+from fk.core.timer_data import TimerData
 
 
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _tags: Tags
-    _timer: Timer
+    _timer: TimerData
 
     def __init__(self,
                  data: 'Tenant',
@@ -38,7 +38,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
         self._tags = Tags(self)
-        self._timer = Timer(self, create_date)
+        self._timer = TimerData(self, create_date)
 
     def __str__(self):
         return f'User "{self.get_name()} <{self.get_uid()}>"'
@@ -72,7 +72,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
-    def get_timer(self) -> Timer:
+    def get_timer(self) -> TimerData:
         return self._timer
 
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:

@@ -26,7 +26,6 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 from fk.core.tag import Tag
@@ -147,13 +146,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
         res = strategy.execute(self._emit, self.get_data())
         self._emit(events.AfterMessageProcessed, params)
-        if res is not None and res[0] == 'auto-seal':
-            # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
-            # UC-3: Certain strategies may request the "auto-seal" BEFORE they execute
-            self.auto_seal()
-            res = strategy.execute(self._emit, self.get_data())
-            if res is not None and res[0] == 'auto-seal':
-                raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
         if persist:
             self._append([strategy])
@@ -179,15 +171,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._settings,
             carry)
         self.execute_prepared_strategy(s, auto, persist)
-
-    def auto_seal(self, when: datetime.datetime | None = None) -> None:
-        auto_seal(self.workitems(),
-                  lambda strategy_class, params, persist, exec_when: self.execute(strategy_class,
-                                                                                  params,
-                                                                                  persist=persist,
-                                                                                  when=exec_when,
-                                                                                  auto=True),
-                  when)
 
     def users(self) -> Iterable[User]:
         for user in self.get_data().values():

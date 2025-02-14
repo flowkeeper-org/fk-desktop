@@ -23,7 +23,7 @@ from fk.core.workitem import Workitem
 logger = logging.getLogger(__name__)
 
 
-class Timer(AbstractDataItem['User']):
+class TimerData(AbstractDataItem['User']):
     # State is one of the following: work, rest, idle
     _state: str | None
     _pomodoro: Pomodoro | None
@@ -78,6 +78,9 @@ class Timer(AbstractDataItem['User']):
 
     def is_idling(self) -> bool:
         return self._state == 'idle'
+
+    def is_ticking(self) -> bool:
+        return self._state != 'idle'
 
     def is_initializing(self) -> bool:
         return self._state is None
