@@ -88,11 +88,9 @@ AfterTenantCreate = "AfterTenantCreate"
 WentOnline = "WentOnline"
 WentOffline = "WentOffline"
 
-TimerTick = "TimerTick"
 TimerWorkStart = "TimerWorkStart"
 TimerWorkComplete = "TimerWorkComplete"
 TimerRestComplete = "TimerRestComplete"
-TimerInitialized = "TimerInitialized"
 
 
 class EmittedEvent:

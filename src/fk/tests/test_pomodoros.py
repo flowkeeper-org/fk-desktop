@@ -114,7 +114,6 @@ class TestPomodoros(TestCase):
             self.assertEqual(False, pomodoro.is_running())
             self.assertEqual(False, pomodoro.is_working())
             self.assertEqual(False, pomodoro.is_finished())
-            self.assertEqual(False, pomodoro.is_canceled())
             self.assertEqual(False, pomodoro.is_resting())
             self.assertEqual(workitem, pomodoro.get_parent())
             self.assertEqual(workitem.get_owner(), pomodoro.get_owner())

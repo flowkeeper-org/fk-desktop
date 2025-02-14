@@ -286,7 +286,7 @@ if __name__ == "__main__":
                                        QtTimer("Pomodoro Transition"),
                                        app.get_settings(),
                                        app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
+        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, pomodoro, event: update_mode())
         pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
 
         loader = QtUiTools.QUiLoader(app)

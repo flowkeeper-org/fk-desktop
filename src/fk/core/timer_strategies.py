@@ -74,12 +74,20 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                     workitem.start(self._when)
                     emit(events.AfterWorkitemStart, params, self._carry)
                 emit(events.BeforePomodoroWorkStart, params, self._carry)
+
                 if self._work_duration != 0:
                     pomodoro.update_work_duration(self._work_duration)
                 if self._rest_duration != 0:
                     pomodoro.update_rest_duration(self._rest_duration)
+
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
+
+                timer.work(pomodoro, pomodoro.get_work_duration())
+                emit(events.TimerWorkStart, {
+                    'timer': timer,
+                }, self._carry)
+
                 emit(events.AfterPomodoroWorkStart, params, self._carry)
                 return None, None
 
@@ -119,6 +127,15 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
             }
             emit(events.BeforePomodoroVoided, params, self._carry)
             pomodoro.void(self._when)
+            pomodoro.item_updated()
+
+            timer.idle()
+            timer.item_updated()
+            emit(events.TimerRestComplete, {
+                'timer': timer,
+                'pomodoro': pomodoro,
+            }, self._carry)
+
             emit(events.AfterPomodoroVoided, params, self._carry)
         else:
             # We either stop a pomodoro with unlimited rest period, during rest; or a tracker -- it's a
@@ -129,6 +146,14 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
             emit(events.BeforePomodoroComplete, params, self._carry)
             pomodoro.seal(self._when)
             pomodoro.item_updated(self._when)
+
+            timer.idle()
+            timer.item_updated()
+            emit(events.TimerRestComplete, {
+                'timer': timer,
+                'pomodoro': pomodoro,
+            }, self._carry)
+
             emit(events.AfterPomodoroComplete, params, self._carry)
 
         return None, None
@@ -159,6 +184,9 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
             }
             emit(events.BeforePomodoroRestStart, params, self._carry)
 
+            pomodoro.start_rest(self._when)
+            pomodoro.item_updated(self._when)
+
             timer.rest(pomodoro.get_rest_duration())
             timer.item_updated(self._when)
             emit(events.TimerWorkComplete, {
@@ -167,8 +195,6 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
                 'pomodoro': pomodoro,
             }, self._carry)
 
-            pomodoro.start_rest(self._when)
-            pomodoro.item_updated(self._when)
             emit(events.AfterPomodoroRestStart, params, self._carry)
         elif timer.is_resting():
             params = {
@@ -177,6 +203,9 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
             }
             emit(events.BeforePomodoroComplete, params, self._carry)
 
+            pomodoro.seal(self._when)
+            pomodoro.item_updated(self._when)
+
             timer.idle()
             timer.item_updated(self._when)
             emit(events.TimerRestComplete, {
@@ -184,8 +213,6 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
                 'pomodoro': pomodoro,
             }, self._carry)
 
-            pomodoro.seal(self._when)
-            pomodoro.item_updated(self._when)
             emit(events.AfterPomodoroComplete, params, self._carry)
 
         return None, None

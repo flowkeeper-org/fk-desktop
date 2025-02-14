@@ -34,7 +34,7 @@ class TimerData(AbstractDataItem['User']):
                  user: 'User',
                  create_date: datetime.datetime):
         super().__init__(uid=generate_uid(), parent=user, create_date=create_date)
-        self._state = None
+        self._state = 'idle'
         self._pomodoro = None
         self._planned_duration = 0
         self._remaining_duration = 0

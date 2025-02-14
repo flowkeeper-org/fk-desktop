@@ -123,7 +123,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                      uid: str,
                      fail_if_not_found: bool = True,
                      fail_if_sealed: bool = False) -> Workitem | None:
-        for backlog in self.get_user(data):
+        for backlog in self.get_user(data).values():
             if uid in backlog:
                 workitem: Workitem = backlog[uid]
                 if fail_if_sealed and workitem.is_sealed():

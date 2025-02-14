@@ -111,9 +111,9 @@ class AbstractTimerDisplay:
         self._continue_workitem = self._timer.get_running_workitem()
         self._set_mode('resting')
 
-    def _on_rest_complete(self, workitem: Workitem, **kwargs) -> None:
+    def _on_rest_complete(self, pomodoro: Pomodoro, **kwargs) -> None:
         # UC-1: Timer display goes into "ready for next pomodoro" state when rest completes, and the workitem has startable pomodoros
-        if self._continue_workitem is not None and workitem.is_startable():
+        if self._continue_workitem is not None and pomodoro.get_parent().is_startable():
             self._set_mode('ready')
         else:
             self._continue_workitem = None
