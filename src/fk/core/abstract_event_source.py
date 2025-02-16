@@ -29,13 +29,15 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 from fk.core.tag import Tag
-from fk.core.tenant import ADMIN_USER
+from fk.core.tenant import ADMIN_USER, Tenant
+from fk.core.timer_data import TimerData
+from fk.core.timer_strategies import TimerRingInternalStrategy
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
-TRoot = TypeVar('TRoot')
+TRoot = TypeVar('TRoot', bound=Tenant)
 
 
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
@@ -143,11 +145,38 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events: bool = True) -> None:
         pass
 
-    def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
+    def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
+        timer: TimerData = strategy.get_user(self.get_data()).get_timer()
+        print(f'Auto-seal, timer: {timer}')
+        if timer.is_ticking():
+            expected_timer_ring = timer.get_next_state_change()
+            if expected_timer_ring is not None:
+                print(f'Expected to ring, comparing to {strategy.get_when()}')
+                if strategy.get_when() >= expected_timer_ring:
+                    # Timer rings, maybe even twice
+                    print(f'Ringing the timer for strategy {strategy}')
+                    strategy.execute_another(self._emit,
+                                             self.get_data(),
+                                             TimerRingInternalStrategy,
+                                             [])
+                    if timer.is_ticking():
+                        if second_time:
+                            logger.error(f'The timer is still ticking after stopping it twice. Strategy: {strategy}')
+                            raise Exception("The timer refuses to ring. "
+                                            "This should never happen, please report it as a bug.")
+                        self._auto_seal(strategy, True)
+
+    def execute_prepared_strategy(self,
+                                  strategy: AbstractStrategy[TRoot],
+                                  auto: bool = False,
+                                  persist: bool = False) -> None:
+        if strategy.requires_sealing():
+            self._auto_seal(strategy)
+
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
         # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
-        res = strategy.execute(self._emit, self.get_data())
+        strategy.execute(self._emit, self.get_data())
         self._emit(events.AfterMessageProcessed, params)
         self._estimated_count += 1
         if persist:

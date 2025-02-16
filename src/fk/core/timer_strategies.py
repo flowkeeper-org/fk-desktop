@@ -36,6 +36,9 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -53,7 +56,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_ticking():
             raise Exception(f'Cannot start timer for workitem {self._workitem_uid}, '
@@ -83,13 +86,13 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
 
-                timer.work(pomodoro, pomodoro.get_work_duration())
+                timer.work(pomodoro, pomodoro.get_work_duration(), self._when)
                 emit(events.TimerWorkStart, {
                     'timer': timer,
                 }, self._carry)
 
                 emit(events.AfterPomodoroWorkStart, params, self._carry)
-                return None, None
+                return
 
         raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
 
@@ -107,9 +110,12 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_idling():
             raise Exception('Cannot stop the timer, because it is not running')
@@ -127,10 +133,10 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
             }
             emit(events.BeforePomodoroVoided, params, self._carry)
             pomodoro.void(self._when)
-            pomodoro.item_updated()
+            pomodoro.item_updated(self._when)
 
-            timer.idle()
-            timer.item_updated()
+            timer.idle(self._when)
+            timer.item_updated(self._when)
             emit(events.TimerRestComplete, {
                 'timer': timer,
                 'pomodoro': pomodoro,
@@ -147,16 +153,14 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
             pomodoro.seal(self._when)
             pomodoro.item_updated(self._when)
 
-            timer.idle()
-            timer.item_updated()
+            timer.idle(self._when)
+            timer.item_updated(self._when)
             emit(events.TimerRestComplete, {
                 'timer': timer,
                 'pomodoro': pomodoro,
             }, self._carry)
 
             emit(events.AfterPomodoroComplete, params, self._carry)
-
-        return None, None
 
 
 class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
@@ -171,7 +175,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_idling():
             raise Exception('The timer rings, but it was not running')
@@ -187,7 +191,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
             pomodoro.start_rest(self._when)
             pomodoro.item_updated(self._when)
 
-            timer.rest(pomodoro.get_rest_duration())
+            timer.rest(pomodoro.get_rest_duration(), self._when)
             timer.item_updated(self._when)
             emit(events.TimerWorkComplete, {
                 'timer': timer,
@@ -206,7 +210,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
             pomodoro.seal(self._when)
             pomodoro.item_updated(self._when)
 
-            timer.idle()
+            timer.idle(self._when)
             timer.item_updated(self._when)
             emit(events.TimerRestComplete, {
                 'timer': timer,
@@ -214,8 +218,6 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
             }, self._carry)
 
             emit(events.AfterPomodoroComplete, params, self._carry)
-
-        return None, None
 
 
 ######################################################
@@ -232,6 +234,9 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
+
+    def requires_sealing(self) -> bool:
+        return True
 
     def __init__(self,
                  seq: int,
@@ -250,12 +255,11 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         self.execute_another(emit,
                              data,
                              StartTimerStrategy,
                              [self._workitem_uid, self._work_duration, self._rest_duration])
-        return None, None
 
 
 # VoidPomodoro("123-456-789")
@@ -271,14 +275,16 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         self.execute_another(emit,
                              data,
                              StopTimerStrategy,
                              [])
-        return None, None
 
 
 # FinishTracking("123-456-789")
@@ -294,11 +300,13 @@ class FinishTrackingStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         self.execute_another(emit,
                              data,
                              StopTimerStrategy,
                              [])
-        return None, None

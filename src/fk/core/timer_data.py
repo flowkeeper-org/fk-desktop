@@ -29,6 +29,8 @@ class TimerData(AbstractDataItem['User']):
     _pomodoro: Pomodoro | None
     _planned_duration: float
     _remaining_duration: float
+    _last_state_change: datetime.datetime | None
+    _next_state_change: datetime.datetime | None
 
     def __init__(self,
                  user: 'User',
@@ -38,11 +40,8 @@ class TimerData(AbstractDataItem['User']):
         self._pomodoro = None
         self._planned_duration = 0
         self._remaining_duration = 0
-
-    def start_pomodoro(self, pomodoro: Pomodoro) -> None:
-        self._state = 'working'
-        self._pomodoro = pomodoro
-        # TODO: Emit
+        self._last_state_change = None
+        self._next_state_change = None
 
     def get_running_pomodoro(self) -> Pomodoro | None:
         return self._pomodoro
@@ -53,22 +52,34 @@ class TimerData(AbstractDataItem['User']):
     def get_state(self) -> str:
         return self._state
 
-    def idle(self) -> None:
+    def idle(self, when: datetime.datetime | None = None) -> None:
         self._state = 'idle'
         self._pomodoro = None
         self._planned_duration = 0
         self._remaining_duration = 0
+        self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+        self._next_state_change = None
 
-    def work(self, pomodoro: Pomodoro, work_duration: float) -> None:
+    def work(self, pomodoro: Pomodoro, work_duration: float, when: datetime.datetime | None = None) -> None:
         self._state = 'work'
         self._pomodoro = pomodoro
         self._planned_duration = work_duration
         self._remaining_duration = work_duration
+        self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+        if work_duration:   # It might be 0 for tracker workitems
+            self._next_state_change = self._last_state_change + datetime.timedelta(seconds=work_duration)
+        else:
+            self._next_state_change = None
 
-    def rest(self, rest_duration: float) -> None:
+    def rest(self, rest_duration: float, when: datetime.datetime | None = None) -> None:
         self._state = 'rest'
         self._planned_duration = rest_duration
         self._remaining_duration = rest_duration
+        self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+        if rest_duration:   # It might be 0 for long / unlimited breaks
+            self._next_state_change = self._last_state_change + datetime.timedelta(seconds=rest_duration)
+        else:
+            self._next_state_change = None
 
     def is_working(self) -> bool:
         return self._state == 'work'
@@ -94,6 +105,9 @@ class TimerData(AbstractDataItem['User']):
     def get_elapsed_duration(self) -> float:
         return self._pomodoro.get_elapsed_duration()
 
+    def get_next_state_change(self) -> datetime.datetime | None:
+        return self._next_state_change
+
     def format_remaining_duration(self) -> str:
         remaining_duration = self.get_remaining_duration()     # This is always >= 0
         remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
@@ -108,3 +122,12 @@ class TimerData(AbstractDataItem['User']):
     def get_completion(self) -> float:
         planned = self.get_planned_duration()
         return self.get_remaining_duration() / planned if planned > 0 else 0
+
+    def __str__(self) -> str:
+        s = 'no pomodoro'
+        if self._pomodoro is not None:
+            s = 'workitem' + str(self._pomodoro.get_parent())
+        return f'Timer for user {self.get_parent().get_identity()}, {s}. ' \
+               f'State "{self._state}", ' \
+               f'started at {self._last_state_change}, ' \
+               f'next ring at {self._next_state_change}'

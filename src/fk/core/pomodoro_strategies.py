@@ -52,7 +52,7 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot add {self._num_pomodoros} pomodoro')
 
@@ -86,7 +86,6 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
             self._when)
         workitem.item_updated(self._when)
         emit(events.AfterPomodoroAdd, params, self._carry)
-        return None, None
 
 
 # RemovePomodoro("123-456-789", "1")
@@ -97,6 +96,9 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
+
+    def requires_sealing(self) -> bool:
+        return True
 
     def __init__(self,
                  seq: int,
@@ -111,7 +113,7 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if self._num_pomodoros < 1:
             raise Exception(f'Cannot remove {self._num_pomodoros} pomodoro')
 
@@ -148,7 +150,6 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
             workitem.remove_pomodoro(p)
         workitem.item_updated(self._when)
         emit(events.AfterPomodoroRemove, params, self._carry)
-        return None, None
 
 
 # AddInterruption("123-456-789", "reason", ["123.45"])
@@ -157,6 +158,9 @@ class AddInterruptionStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _reason: str | None
     _duration: datetime.timedelta | None
+
+    def requires_sealing(self) -> bool:
+        return True
 
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
@@ -178,7 +182,7 @@ class AddInterruptionStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
 
         # TODO: Make it timer strategy. Pass timer object into those strategies.
@@ -207,6 +211,6 @@ class AddInterruptionStrategy(AbstractStrategy[Tenant]):
                 pomodoro.add_interruption(self._reason, self._duration, False, self._when)
                 pomodoro.item_updated(self._when)
                 emit(events.AfterPomodoroInterrupted, params, self._carry)
-                return None, None
+                return
 
         raise Exception(f'No running pomodoros in "{self._workitem_uid}"')

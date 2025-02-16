@@ -72,20 +72,26 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         # UC-3: All strategies should be e2e-encrypted by default
         return True
 
+    def requires_sealing(self) -> bool:
+        # UC-3: Strategies don't require auto-sealing by default
+        return False
+
     @abstractmethod
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: TRoot) -> (str, any):
+                data: TRoot) -> None:
         pass
 
     def get_params(self):
         return self._params
 
+    # This is for "auto-executed" strategies only. Those won't be persisted. It doesn't support auto-sealing, but
+    # that's OK since it is always called in the context of another strategy, which was auto-sealed.
     def execute_another(self,
                         emit: Callable[[str, dict[str, any], any], None],
                         data: TRoot,
                         cls: Type[AbstractStrategy[TRoot]],
-                        params: list[str]) -> (str, any):
+                        params: list[str]) -> None:
         strategy = cls(self._seq,
                        self._when,
                        self._user_identity,
@@ -93,9 +99,8 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                        self._settings)
         params = {'strategy': strategy, 'auto': True}
         emit(events.BeforeMessageProcessed, params, self._carry)
-        res = strategy.execute(emit, data)
+        strategy.execute(emit, data)
         emit(events.AfterMessageProcessed, params, self._carry)
-        return res
 
     # Convenience methods
 
