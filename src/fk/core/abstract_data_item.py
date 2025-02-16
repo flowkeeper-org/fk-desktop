@@ -91,9 +91,6 @@ class AbstractDataItem(ABC, Generic[TParent]):
         # Some actions may happen retroactively, although it is unusual, so let's display a warning
         if self._last_modified_date is None or self._last_modified_date < date:
             self._last_modified_date = date
-        else:
-            logger.warning(f'Trying to update an item {self.__class__.__name__} {self.__str__()} retroactively')
-            self._last_modified_date = date  # It should still work
         if self._parent is not None:
             self._parent.item_updated(date)
 

@@ -148,6 +148,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
         timer: TimerData = strategy.get_user(self.get_data()).get_timer()
         print(f'Auto-seal, timer: {timer}')
+        if second_time:
+            print(f'(second time)')
         if timer.is_ticking():
             expected_timer_ring = timer.get_next_state_change()
             if expected_timer_ring is not None:
@@ -158,7 +160,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                     strategy.execute_another(self._emit,
                                              self.get_data(),
                                              TimerRingInternalStrategy,
-                                             [])
+                                             [],
+                                             expected_timer_ring)
                     if timer.is_ticking():
                         if second_time:
                             logger.error(f'The timer is still ticking after stopping it twice. Strategy: {strategy}')

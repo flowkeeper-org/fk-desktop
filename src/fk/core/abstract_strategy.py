@@ -91,9 +91,10 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                         emit: Callable[[str, dict[str, any], any], None],
                         data: TRoot,
                         cls: Type[AbstractStrategy[TRoot]],
-                        params: list[str]) -> None:
+                        params: list[str],
+                        when_override: datetime.datetime | None = None) -> None:
         strategy = cls(self._seq,
-                       self._when,
+                       self._when if when_override is None else when_override,
                        self._user_identity,
                        params,
                        self._settings)
