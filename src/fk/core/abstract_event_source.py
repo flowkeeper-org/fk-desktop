@@ -147,16 +147,17 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
         timer: TimerData = strategy.get_user(self.get_data()).get_timer()
-        print(f'Auto-seal, timer: {timer}')
+        # print(f'Auto-seal, timer: {timer}')
         if second_time:
-            print(f'(second time)')
+            # print(f'(second time)')
+            pass
         if timer.is_ticking():
             expected_timer_ring = timer.get_next_state_change()
             if expected_timer_ring is not None:
-                print(f'Expected to ring, comparing to {strategy.get_when()}')
+                # print(f'Expected to ring, comparing to {strategy.get_when()}')
                 if strategy.get_when() >= expected_timer_ring:
                     # Timer rings, maybe even twice
-                    print(f'Ringing the timer for strategy {strategy}')
+                    # print(f'Ringing the timer for strategy {strategy}')
                     strategy.execute_another(self._emit,
                                              self.get_data(),
                                              TimerRingInternalStrategy,

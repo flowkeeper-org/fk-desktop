@@ -91,6 +91,7 @@ class TestImportExport(TestCase):
         self.assertEqual(len(user_rand), 21)
 
         dump = user_rand.dump()
+        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
@@ -215,9 +216,7 @@ class TestImportExport(TestCase):
                         i += 1
 
             # 2. Import them
-            self._execute_import(False, True, half=1)
-            #self._execute_import(False, True, half=2)
-            #self._compare_imported_and_original_dumps()
+            self._compare_imported_and_original_dumps()
         except Exception as e:
             raise e
         finally:
@@ -226,7 +225,7 @@ class TestImportExport(TestCase):
 
     def test_export_simple_ok(self):
         total_start, total_end = self._execute_export(False, TEMP_FILENAME)
-        self.assertEqual(total_start, 830)
+        self.assertEqual(total_start, 875)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=TEMP_FILENAME)

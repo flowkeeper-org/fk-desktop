@@ -267,14 +267,13 @@ def _export_compressed(source: AbstractEventSource[TRoot],
 def export(source: AbstractEventSource[TRoot],
            filename: str,
            new_root: TRoot,
-           new_timer: PomodoroTimer,
            encrypt: bool,
            compress: bool,
            start_callback: Callable[[int], None],
            progress_callback: Callable[[int, int], None],
            completion_callback: Callable[[int], None]) -> None:
     export_serializer = create_export_serializer(source, encrypt)
-    another = source.clone(new_root, new_timer)
+    another = source.clone(new_root)
     every = max(int(source._estimated_count / 100), 1)
     export_file = open(filename, 'w', encoding='UTF-8')
 
