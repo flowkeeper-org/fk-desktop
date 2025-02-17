@@ -12,9 +12,9 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Standard data and log directories are used on Linux, macOS and Windows (#65).
 - Import from CSV, try Ctrl+I (#125).
-- You can now find Flowkeeper on Flathub (#63).
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - We now build an AppImage binary for Flowkeeper.
+- You can now find Flowkeeper on Flathub (#63) and openSUSE Build Service.
 - "Contact us" submenu to facilitate feedback collection (#111).
 - [Technical] Added support for Qt 6.8.1.
 - [Bugfix] Window icon on Wayland (#110).
