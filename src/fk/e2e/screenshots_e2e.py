@@ -270,6 +270,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._void_pomodoro()
         await self._complete_workitem()
 
+        await self.longer_pause()
         await self._find_workitem('Order coffee capsules')
         await self._complete_workitem()
 
@@ -461,7 +462,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 else:
                     state = 'new'
                 workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
-                for _ in range(num_interruptions):
+                for _ in range(round(num_interruptions)):
                     int_uid = generate_uid()
                     workitem[uid][int_uid] = Interruption(None, None, False, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

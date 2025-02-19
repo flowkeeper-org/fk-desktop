@@ -14,7 +14,8 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Import from CSV, try Ctrl+I (#125).
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - We now build an AppImage binary for Flowkeeper.
-- You can now find Flowkeeper on Flathub (#63) and openSUSE Build Service.
+- You can now find Flowkeeper on Flathub (#63).
+- openSUSE Build Service is now used as a package repo for Debian, Ubuntu, Fedora and openSUSE (#127).
 - "Contact us" submenu to facilitate feedback collection (#111).
 - [Technical] Added support for Qt 6.8.1.
 - [Bugfix] Window icon on Wayland (#110).
