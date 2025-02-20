@@ -11,7 +11,7 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Hovering over pomodoros displays a detailed log of your work (#93).
 - Flowkeeper window now hides automatically on auto-start (#102).
 - Standard data and log directories are used on Linux, macOS and Windows (#65).
-- Import from CSV, try Ctrl+I (#125).
+- Import from CSV and GitHub, try Ctrl+I (#125).
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - We now build an AppImage binary for Flowkeeper.
 - You can now find Flowkeeper on Flathub (#63).
@@ -40,7 +40,6 @@ TODO: Check if the data filename is default and exists. If we upgrade from <0.10
  content to the new default location. Mention it in the Config wizard. Tests: 1). Install 0.9.1 on Windows, create a
  backlog. Upgrade to 0.10.0. 2). Use portable 0.9.1 on Linux, create a backlog. Use 0.10.0 from Flatpak. Use 0.10.0
  portable.
-TODO: A bug with going back in the import wizard. GitHub import needs pagination. Test GitHub import on a large public project.
 
 ### v0.9.1 (15 January 2025)
 

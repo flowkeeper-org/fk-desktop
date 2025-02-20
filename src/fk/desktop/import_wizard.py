@@ -17,6 +17,7 @@ import csv
 import json
 import logging
 import os
+import re
 from collections.abc import Callable
 
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
@@ -369,18 +370,25 @@ class PageImportProgress(QWizardPage):
             callback()
         self.completeChanged.emit()
 
-    def _send_request(self, url, callback: Callable[[object], None], headers: dict[str, str] | None = None):
+    def _send_request(self,
+                      url: str,
+                      headers: dict[str, str],
+                      callback: Callable[[object], None],
+                      send_another: Callable[[QNetworkReply], tuple[str, dict] | None]):
         mgr = QNetworkAccessManager(self)
         req = QNetworkRequest(url)
-        if headers is not None:
-            for k in headers.keys():
-                req.setRawHeader(bytes(k, 'iso8859-1'), bytes(headers[k], 'iso8859-1'))
+        for k in headers.keys():
+            req.setRawHeader(bytes(k, 'iso8859-1'), bytes(headers[k], 'iso8859-1'))
 
         def _success() -> None:
             if reply.error() == QNetworkReply.NetworkError.NoError:
                 s = reply.readAll().toStdString()
                 try:
-                    callback(json.loads(s))
+                    data = json.loads(s)
+                    callback(data)
+                    another = send_another(reply)
+                    if another is not None:
+                        self._send_request(another[0], another[1], callback, send_another)
                 except Exception as err:
                     msg = f'Cannot import REST API response: {err}'
                     logger.warning(msg, exc_info=err)
@@ -396,82 +404,103 @@ class PageImportProgress(QWizardPage):
         reply: QNetworkReply = mgr.get(req)
         reply.finished.connect(_success)
 
-    def start(self):
+    def _import_from_file(self):
         settings = self._get_settings()
-        import_type = settings['import_type']
-        if import_type == 'file':
-            # noinspection PyUnresolvedReferences
-            import_(self._source_holder.get_source(),
-                    settings['location'],
-                    settings['ignore_errors'],
-                    settings['type_smart'],
-                    lambda total: self.progress.setMaximum(total),
-                    lambda value, total: self.progress.setValue(value),
-                    lambda total: self.finish(self.finish_for_file))
-        elif import_type == 'csv':
-            skip_header = settings['skip_header']
-            delimiter = settings['delimiter']
-            if '(,)' in delimiter:
-                delimiter = ','
-            elif '(;)' in delimiter:
-                delimiter = ';'
-            elif '(\\t)' in delimiter:
-                delimiter = '\t'
-            filename = settings['location']
-            self.log.append(f'Importing from {filename} using "{delimiter}" as delimiter.')
+        import_(self._source_holder.get_source(),
+                settings['location'],
+                settings['ignore_errors'],
+                settings['type_smart'],
+                lambda total: self.progress.setMaximum(total),
+                lambda value, total: self.progress.setValue(value),
+                lambda total: self.finish(self.finish_for_file))
 
-            data: dict[str, list[str]] = dict()
-            with open(filename, newline='') as csvfile:
-                reader = csv.reader(csvfile, delimiter=delimiter, quotechar='"')
-                n = 0
-                for row in reader:
-                    n += 1
-                    if skip_header and n == 1:
-                        continue
-                    if len(row) != 3:
-                        self.log.append(f'Fatal error: Unable to read row {n} -- it must have exactly three columns, but we parsed {len(row)} instead.')
-                        self.finish()
-                        return
-                    if row[2] not in ['new', 'completed']:
-                        self.log.append(f'Fatal error: Unable to read row {n} -- task state must be either "new" or "completed", but was "{row[2]}".')
-                        self.finish()
-                        return
-                    backlog = row[0]
-                    if backlog not in data:
-                        data[backlog] = list()
-                    data[backlog].append([row[1], row[2]])
+    def _import_from_csv(self):
+        settings = self._get_settings()
+        skip_header = settings['skip_header']
+        delimiter = settings['delimiter']
+        if '(,)' in delimiter:
+            delimiter = ','
+        elif '(;)' in delimiter:
+            delimiter = ';'
+        elif '(\\t)' in delimiter:
+            delimiter = '\t'
+        filename = settings['location']
+        self.log.append(f'Importing from {filename} using "{delimiter}" as delimiter.')
 
-            log = import_simple(self._source_holder.get_source(),
-                                data)
-            self.log.append(log)
-            self.finish()
-        elif import_type == 'github':
-            repo = settings['repo']
-            url = f'https://api.github.com/repos/{repo}/issues'
-            token = settings['token']
-            logger.debug(f'Will import from GitHub at {repo}')
-
-            def process_response(data: list[object] | None):
-                if data is None:
-                    self.label.setText('ERROR: Cannot get the list of issues from GitHub')
-                else:
-                    # TODO: Implement pagination here
-                    # TODO: Try to import as much as we can
-                    log = import_github_issues(self._source_holder.get_source(),
-                                               repo,
-                                               data,
-                                               settings['tag_creator'],
-                                               settings['tag_assignee'],
-                                               settings['tag_labels'],
-                                               settings['tag_milestone'],
-                                               settings['tag_state'])
-                    self.log.append(log)
+        data: dict[str, list[str]] = dict()
+        with open(filename, newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=delimiter, quotechar='"')
+            n = 0
+            for row in reader:
+                n += 1
+                if skip_header and n == 1:
+                    continue
+                if len(row) != 3:
+                    self.log.append(
+                        f'Fatal error: Unable to read row {n} -- it must have exactly three columns, but we parsed {len(row)} instead.')
                     self.finish()
-            headers = {'Accept': 'application/vnd.github+json',
-                       'X-GitHub-Api-Version': '2022-11-28'}
-            if token != '':
-                headers['Authorization'] = f'Bearer {token}'
-            self._send_request(url, process_response, headers)
+                    return
+                if row[2] not in ['new', 'completed']:
+                    self.log.append(
+                        f'Fatal error: Unable to read row {n} -- task state must be either "new" or "completed", but was "{row[2]}".')
+                    self.finish()
+                    return
+                backlog = row[0]
+                if backlog not in data:
+                    data[backlog] = list()
+                data[backlog].append([row[1], row[2]])
+
+        log = import_simple(self._source_holder.get_source(),
+                            data)
+        self.log.append(log)
+        self.finish()
+
+    def _import_from_github(self):
+        settings = self._get_settings()
+        repo = settings['repo']
+        url = f'https://api.github.com/repos/{repo}/issues?per_page=100'
+        token = settings['token']
+        logger.debug(f'Will import from GitHub at {repo}')
+
+        def process_response(data: list[object] | None):
+            if data is None:
+                self.label.setText('ERROR: Cannot get the list of issues from GitHub')
+            else:
+                log = import_github_issues(self._source_holder.get_source(),
+                                           repo,
+                                           data,
+                                           settings['tag_creator'],
+                                           settings['tag_assignee'],
+                                           settings['tag_labels'],
+                                           settings['tag_milestone'],
+                                           settings['tag_state'])
+                self.log.append(log)
+                self.finish()
+
+        headers = {'Accept': 'application/vnd.github+json',
+                   'X-GitHub-Api-Version': '2022-11-28'}
+        if token != '':
+            headers['Authorization'] = f'Bearer {token}'
+
+        def send_another(reply: QNetworkReply) -> tuple[str, dict] | None:
+            links = reply.rawHeader('link').toStdString()
+            match = re.match(r'<(.+?)>; rel="next"', links)
+            if match:
+                next_link = match.group(1)
+                return next_link, headers
+            return None
+
+        # noinspection PyTypeChecker
+        self._send_request(url, headers, process_response, send_another)
+
+    def start(self):
+        import_type = self._get_settings()['import_type']
+        if import_type == 'file':
+            self._import_from_file()
+        elif import_type == 'csv':
+            self._import_from_csv()
+        elif import_type == 'github':
+            self._import_from_github()
 
 
 class ImportWizard(QWizard):
