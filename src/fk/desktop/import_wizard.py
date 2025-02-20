@@ -132,6 +132,9 @@ class PageImportSettings(QWizardPage):
     def __init__(self, get_type: Callable[[], str]):
         super().__init__()
         self.get_type = get_type
+        self._reset()
+
+    def _reset(self):
         self.import_location = None
         self.import_repo = None
         self.import_token = None
@@ -145,6 +148,11 @@ class PageImportSettings(QWizardPage):
         self.tag_labels = None
         self.tag_milestone = None
         self.tag_state = None
+        for child in self.children():
+            child.deleteLater()
+
+    def cleanupPage(self):
+        self._reset()
 
     def initializePage(self):
         layout_v = QVBoxLayout(self)
