@@ -2,24 +2,33 @@
 
 This version brings Flowkeeper even closer to the original Pomodoro Technique definition from Francesco Cirillo's book.
 Pomodoro interruptions are now handled as the book prescribes, and we introduced support for long breaks. One major
-deviation from the Technique we introduced in this version is the ability to track unfocused time. Finally, there are
+deviation from the Technique we implemented in this version is the ability to track unfocused time. As usual there are
 some minor quality-of-life improvements, bugfixes and better support for Linux.
 
-- Ability to track unfocused time, try to start a work item with no pomodoros (#94, #98).
+- Ability to track unfocused time -- try to start a work item with no pomodoros (#94, #98).
 - Ability to drag work items between backlogs (#60).
+- Ability to record interruptions (#75).
 - Voided pomodoros are displayed as ticks, and completed ones are displayed as crosses to better match the Book (#41, #92).
 - Hovering over pomodoros displays a detailed log of your work (#93).
-- Flowkeeper window now hides automatically on auto-start (#102).
-- Standard data and log directories are used on Linux, macOS and Windows (#65).
-- You can now find Flowkeeper on Flathub (#63).
-- We now build Flowkeeper for ARM (arm64 / aarch64).
-- We now build an AppImage binary for Flowkeeper.
+- Import from CSV and GitHub, try Ctrl+I (#125).
 - "Contact us" submenu to facilitate feedback collection (#111).
-- [Technical] Added support for Qt 6.8.1.
-- [Bugfix] Window icon on Wayland (#110).
+- Flowkeeper window now hides automatically on auto-start (#102).
 
-- TODO: Long breaks are now supported (#53)
-- TODO: You can now record interruptions (#75)
+Technical improvements:
+
+- Standard data and log directories are used on Linux, macOS and Windows (#65).
+- New ways to run Flowkeeper:
+ - Install it from Flathub (#63).
+ - Install from a package repo on Debian, Ubuntu, Fedora or openSUSE (#127).
+ - Download a portable AppImage, see flowkeeper.org > Downloads.
+- We now build Flowkeeper for ARM (arm64 / aarch64).
+- Added support for Qt 6.8.x.
+
+Bug fixes:
+
+- Window icon on Wayland (#110).
+
+- TODO: Long breaks are now supported (#53) -- see rc-0.10.0-timer branch
 - TODO: You can now find Flowkeeper on AppStore for macOS (#99)
 - TODO: Font selection is back, with Noto Sans preselected (#113)
 - TODO: Statistics window (F9) now tracks time instead of number of pomodoros (#122)
@@ -27,18 +36,16 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
 - TODO: [Bugfix] Unhandled IsADirectoryError (#108)
 - TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
-- TODO: [Technical] Build Windows binaries using ???, which has better tolerance to Defender (#114)
-- TODO: [Technical] Check Windows binaries via VirusTotal every night (#109)
-- TODO: [Technical] Sign installed Windows binaries (#115)
-- TODO: [Technical] Sign installed Windows binaries (#115)
+- TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
+- TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
+- TODO: [Technical] The content of Windows installer is now signed, too (#115)
 - TODO: [Technical] Improved documentation for running on Debian and openSUSE (#80, #87)
-- TODO: Fix drag-and-drop
 
+TODO: Fix drag-and-drop
 TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
  content to the new default location. Mention it in the Config wizard. Tests: 1). Install 0.9.1 on Windows, create a
  backlog. Upgrade to 0.10.0. 2). Use portable 0.9.1 on Linux, create a backlog. Use 0.10.0 from Flatpak. Use 0.10.0
  portable.
-TODO: A bug with going back in the import wizard. GitHub import needs pagination. Test GitHub import on a large public project.
 
 ### v0.9.1 (15 January 2025)
 

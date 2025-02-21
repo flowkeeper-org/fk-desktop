@@ -13,17 +13,19 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import csv
 import json
 import logging
 import os
+import re
 from collections.abc import Callable
 
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QCheckBox, QLineEdit, \
-    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton, QTextEdit
+    QHBoxLayout, QPushButton, QProgressBar, QWidget, QRadioButton, QTextEdit, QComboBox
 
 from fk.core.event_source_holder import EventSourceHolder
-from fk.core.import_export import import_, import_github_issues
+from fk.core.import_export import import_, import_github_issues, import_simple
 from fk.desktop.settings import SettingsDialog
 from fk.core.sandbox import get_sandbox_type
 
@@ -32,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 class PageImportIntro(QWizardPage):
     from_file: QRadioButton
+    from_csv: QRadioButton
     from_github: QRadioButton
     from_gitlab: QRadioButton
     from_jira: QRadioButton
@@ -51,6 +54,9 @@ class PageImportIntro(QWizardPage):
 
         self.from_file = QRadioButton('Import from Flowkeeper data file or backup', self)
         layout.addWidget(self.from_file)
+
+        self.from_csv = QRadioButton('Import from CSV', self)
+        layout.addWidget(self.from_csv)
 
         self.from_github = QRadioButton('Import from GitHub', self)
         layout.addWidget(self.from_github)
@@ -91,6 +97,8 @@ class PageImportIntro(QWizardPage):
             return 'file'
         elif self.from_github.isChecked():
             return 'github'
+        elif self.from_csv.isChecked():
+            return 'csv'
         else:
             return 'other'
 
@@ -101,6 +109,8 @@ class PageImportSettings(QWizardPage):
     import_location: QLineEdit | None
     import_repo: QLineEdit | None
     import_token: QLineEdit | None
+    import_delimiter: QComboBox | None
+    import_skip_header: QCheckBox | None
     import_ignore_errors: QCheckBox | None
     import_type_smart: QRadioButton | None
     import_type_replay: QRadioButton | None
@@ -113,7 +123,7 @@ class PageImportSettings(QWizardPage):
 
     def isComplete(self):
         import_type = self.get_type()
-        if import_type == 'file':
+        if import_type in ['file', 'csv']:
             return len(self.import_location.text().strip()) > 0
         elif import_type == 'github':
             return len(self.import_repo.text().strip()) > 0
@@ -123,9 +133,14 @@ class PageImportSettings(QWizardPage):
     def __init__(self, get_type: Callable[[], str]):
         super().__init__()
         self.get_type = get_type
+        self._reset()
+
+    def _reset(self):
         self.import_location = None
         self.import_repo = None
         self.import_token = None
+        self.import_delimiter = None
+        self.import_skip_header = None
         self.import_ignore_errors = None
         self.import_type_smart = None
         self.import_type_replay = None
@@ -134,6 +149,11 @@ class PageImportSettings(QWizardPage):
         self.tag_labels = None
         self.tag_milestone = None
         self.tag_state = None
+        for child in self.children():
+            child.deleteLater()
+
+    def cleanupPage(self):
+        self._reset()
 
     def initializePage(self):
         layout_v = QVBoxLayout(self)
@@ -142,6 +162,8 @@ class PageImportSettings(QWizardPage):
         import_type = self.get_type()
         if import_type == 'file':
             self._init_for_file(layout_v)
+        elif import_type == 'csv':
+            self._init_for_csv(layout_v)
         elif import_type == 'github':
             self._init_for_github(layout_v)
         else:
@@ -181,6 +203,38 @@ class PageImportSettings(QWizardPage):
 
         self.import_type_replay = QRadioButton("Replay imported history - can result in duplicates or deletions", self)
         layout_v.addWidget(self.import_type_replay)
+
+    def _init_for_csv(self, layout_v):
+        label = QLabel('Select CSV file. Note that the data should have exactly three columns -- '
+                       'backlog name, task name, and state ("new" or "completed").', self)
+        label.setWordWrap(True)
+        layout_v.addWidget(label)
+
+        layout_h = QHBoxLayout()
+        layout_v.addLayout(layout_h)
+
+        self.import_location = QLineEdit(self)
+        self.import_location.setPlaceholderText('Import filename')
+        self.import_location.textChanged.connect(self.completeChanged)
+        layout_h.addWidget(self.import_location)
+
+        if get_sandbox_type() is not None:
+            # Force the user to use the XDG portal-aware file chooser
+            self.import_location.setDisabled(True)
+
+        import_location_browse = QPushButton("Browse...", self)
+        import_location_browse.clicked.connect(lambda: SettingsDialog.do_browse(self.import_location))
+        layout_h.addWidget(import_location_browse)
+
+        self.import_skip_header = QCheckBox('Skip header (first row)', self)
+        self.import_skip_header.setChecked(False)
+        layout_v.addWidget(self.import_skip_header)
+
+        self.import_delimiter = QComboBox(self)
+        self.import_delimiter.addItems(['Columns are separated by comma (,)',
+                                        'Columns are separated by semicolon (;)',
+                                        'Columns are separated by tab (\\t)'])
+        layout_v.addWidget(self.import_delimiter)
 
     def _init_for_github(self, layout_v):
         label = QLabel("Enter a GitHub owner/repository pair", self)
@@ -234,6 +288,10 @@ class PageImportSettings(QWizardPage):
             res['repo'] = self.import_repo.text()
         if self.import_token is not None:
             res['token'] = self.import_token.text()
+        if self.import_delimiter is not None:
+            res['delimiter'] = self.import_delimiter.currentText()
+        if self.import_skip_header is not None:
+            res['skip_header'] = self.import_skip_header.isChecked()
         if self.import_ignore_errors is not None:
             res['ignore_errors'] = self.import_ignore_errors.isChecked()
         if self.import_type_smart is not None:
@@ -312,18 +370,25 @@ class PageImportProgress(QWizardPage):
             callback()
         self.completeChanged.emit()
 
-    def _send_request(self, url, callback: Callable[[object], None], headers: dict[str, str] | None = None):
+    def _send_request(self,
+                      url: str,
+                      headers: dict[str, str],
+                      callback: Callable[[object], None],
+                      send_another: Callable[[QNetworkReply], tuple[str, dict] | None]):
         mgr = QNetworkAccessManager(self)
         req = QNetworkRequest(url)
-        if headers is not None:
-            for k in headers.keys():
-                req.setRawHeader(bytes(k, 'iso8859-1'), bytes(headers[k], 'iso8859-1'))
+        for k in headers.keys():
+            req.setRawHeader(bytes(k, 'iso8859-1'), bytes(headers[k], 'iso8859-1'))
 
         def _success() -> None:
             if reply.error() == QNetworkReply.NetworkError.NoError:
                 s = reply.readAll().toStdString()
                 try:
-                    callback(json.loads(s))
+                    data = json.loads(s)
+                    callback(data)
+                    another = send_another(reply)
+                    if another is not None:
+                        self._send_request(another[0], another[1], callback, send_another)
                 except Exception as err:
                     msg = f'Cannot import REST API response: {err}'
                     logger.warning(msg, exc_info=err)
@@ -339,44 +404,103 @@ class PageImportProgress(QWizardPage):
         reply: QNetworkReply = mgr.get(req)
         reply.finished.connect(_success)
 
-    def start(self):
+    def _import_from_file(self):
         settings = self._get_settings()
-        import_type = settings['import_type']
-        if import_type == 'file':
-            # noinspection PyUnresolvedReferences
-            import_(self._source_holder.get_source(),
-                    settings['location'],
-                    settings['ignore_errors'],
-                    settings['type_smart'],
-                    lambda total: self.progress.setMaximum(total),
-                    lambda value, total: self.progress.setValue(value),
-                    lambda total: self.finish(self.finish_for_file))
-        elif import_type == 'github':
-            repo = settings['repo']
-            url = f'https://api.github.com/repos/{repo}/issues'
-            token = settings['token']
-            logger.debug(f'Will import from GitHub at {repo}')
-            def process_response(data: list[object] | None):
-                if data is None:
-                    self.label.setText('ERROR: Cannot get the list of issues from GitHub')
-                else:
-                    # TODO: Implement pagination here
-                    # TODO: Try to import as much as we can
-                    log = import_github_issues(self._source_holder.get_source(),
-                                               repo,
-                                               data,
-                                               settings['tag_creator'],
-                                               settings['tag_assignee'],
-                                               settings['tag_labels'],
-                                               settings['tag_milestone'],
-                                               settings['tag_state'])
-                    self.log.append(log)
+        import_(self._source_holder.get_source(),
+                settings['location'],
+                settings['ignore_errors'],
+                settings['type_smart'],
+                lambda total: self.progress.setMaximum(total),
+                lambda value, total: self.progress.setValue(value),
+                lambda total: self.finish(self.finish_for_file))
+
+    def _import_from_csv(self):
+        settings = self._get_settings()
+        skip_header = settings['skip_header']
+        delimiter = settings['delimiter']
+        if '(,)' in delimiter:
+            delimiter = ','
+        elif '(;)' in delimiter:
+            delimiter = ';'
+        elif '(\\t)' in delimiter:
+            delimiter = '\t'
+        filename = settings['location']
+        self.log.append(f'Importing from {filename} using "{delimiter}" as delimiter.')
+
+        data: dict[str, list[str]] = dict()
+        with open(filename, newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=delimiter, quotechar='"')
+            n = 0
+            for row in reader:
+                n += 1
+                if skip_header and n == 1:
+                    continue
+                if len(row) != 3:
+                    self.log.append(
+                        f'Fatal error: Unable to read row {n} -- it must have exactly three columns, but we parsed {len(row)} instead.')
                     self.finish()
-            headers = {'Accept': 'application/vnd.github+json',
-                       'X-GitHub-Api-Version': '2022-11-28'}
-            if token != '':
-                headers['Authorization'] = f'Bearer {token}'
-            self._send_request(url, process_response, headers)
+                    return
+                if row[2] not in ['new', 'completed']:
+                    self.log.append(
+                        f'Fatal error: Unable to read row {n} -- task state must be either "new" or "completed", but was "{row[2]}".')
+                    self.finish()
+                    return
+                backlog = row[0]
+                if backlog not in data:
+                    data[backlog] = list()
+                data[backlog].append([row[1], row[2]])
+
+        log = import_simple(self._source_holder.get_source(),
+                            data)
+        self.log.append(log)
+        self.finish()
+
+    def _import_from_github(self):
+        settings = self._get_settings()
+        repo = settings['repo']
+        url = f'https://api.github.com/repos/{repo}/issues?per_page=100'
+        token = settings['token']
+        logger.debug(f'Will import from GitHub at {repo}')
+
+        def process_response(data: list[object] | None):
+            if data is None:
+                self.label.setText('ERROR: Cannot get the list of issues from GitHub')
+            else:
+                log = import_github_issues(self._source_holder.get_source(),
+                                           repo,
+                                           data,
+                                           settings['tag_creator'],
+                                           settings['tag_assignee'],
+                                           settings['tag_labels'],
+                                           settings['tag_milestone'],
+                                           settings['tag_state'])
+                self.log.append(log)
+                self.finish()
+
+        headers = {'Accept': 'application/vnd.github+json',
+                   'X-GitHub-Api-Version': '2022-11-28'}
+        if token != '':
+            headers['Authorization'] = f'Bearer {token}'
+
+        def send_another(reply: QNetworkReply) -> tuple[str, dict] | None:
+            links = reply.rawHeader('link').toStdString()
+            match = re.match(r'<(.+?)>; rel="next"', links)
+            if match:
+                next_link = match.group(1)
+                return next_link, headers
+            return None
+
+        # noinspection PyTypeChecker
+        self._send_request(url, headers, process_response, send_another)
+
+    def start(self):
+        import_type = self._get_settings()['import_type']
+        if import_type == 'file':
+            self._import_from_file()
+        elif import_type == 'csv':
+            self._import_from_csv()
+        elif import_type == 'github':
+            self._import_from_github()
 
 
 class ImportWizard(QWizard):
