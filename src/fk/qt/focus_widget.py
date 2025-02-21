@@ -26,7 +26,8 @@ from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy, FinishTrackingStrategy
+from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy, FinishTrackingStrategy, \
+    AddInterruptionStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
@@ -176,6 +177,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._added.append(w)
             layout.addWidget(w)
 
+            w = self._create_button("focus.interruption")
+            self._added.append(w)
+            layout.addWidget(w)
+
             w = self._create_button("focus.nextPomodoro")
             self._added.append(w)
             layout.addWidget(w)
@@ -228,6 +233,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
+        actions.add('focus.interruption', "Interruption", 'Ctrl+T', "tool-interruption", FocusWidget._interruption)
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
@@ -252,6 +258,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._actions['focus.completeItem'].setDisabled(True)
             self._actions['focus.voidPomodoro'].setVisible(False)
             self._actions['focus.voidPomodoro'].setDisabled(True)
+            self._actions['focus.interruption'].setVisible(False)
+            self._actions['focus.interruption'].setDisabled(True)
             self._actions['focus.finishTracking'].setVisible(False)
             self._actions['focus.finishTracking'].setDisabled(True)
         self._timer_widget.reset()
@@ -315,12 +323,26 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
                 dlg = QInputDialog(self.parent())
-                dlg.setInputMode(QInputDialog.TextInput)
+                dlg.setInputMode(QInputDialog.InputMode.TextInput)
                 dlg.setWindowTitle('Confirmation')
                 dlg.setLabelText('Are you sure you want to void current pomodoro?')
                 dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
                 if dlg.exec_():
                     self._source_holder.get_source().execute(VoidPomodoroStrategy,
+                                                             [workitem.get_uid(), dlg.textValue()])
+
+    def _interruption(self) -> None:
+        for backlog in self._source_holder.get_source().backlogs():
+            workitem, _ = backlog.get_running_workitem()
+            if workitem is not None:
+                dlg = QInputDialog(self.parent())
+                dlg.setInputMode(QInputDialog.InputMode.TextInput)
+                dlg.setWindowTitle('Interruption')
+                dlg.setLabelText("It won't pause or void your current pomodoro, only\n"
+                                 "record this incident for your future reference:")
+                dlg.findChild(QLineEdit).setPlaceholderText('What happened (optional)')
+                if dlg.exec_():
+                    self._source_holder.get_source().execute(AddInterruptionStrategy,
                                                              [workitem.get_uid(), dlg.textValue()])
 
     def _finish_tracking(self) -> None:
@@ -358,11 +380,15 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
                     self._actions['focus.voidPomodoro'].setVisible(False)
                     self._actions['focus.voidPomodoro'].setDisabled(True)
+                    self._actions['focus.interruption'].setVisible(False)
+                    self._actions['focus.interruption'].setDisabled(True)
                     self._actions['focus.finishTracking'].setVisible(True)
                     self._actions['focus.finishTracking'].setDisabled(False)
                 else:
                     self._actions['focus.voidPomodoro'].setVisible(True)
                     self._actions['focus.voidPomodoro'].setDisabled(False)
+                    self._actions['focus.interruption'].setVisible(True)
+                    self._actions['focus.interruption'].setDisabled(False)
                     self._actions['focus.finishTracking'].setVisible(False)
                     self._actions['focus.finishTracking'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setDisabled(True)
@@ -390,6 +416,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
                 context_menu.addAction(self._actions['focus.finishTracking'])
             else:
+                context_menu.addAction(self._actions['focus.interruption'])
                 context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
