@@ -26,8 +26,7 @@ from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy, FinishTrackingStrategy, \
-    AddInterruptionStrategy
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.timer_strategies import VoidPomodoroStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.workitem import Workitem
