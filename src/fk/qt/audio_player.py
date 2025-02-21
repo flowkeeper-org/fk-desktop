@@ -22,29 +22,25 @@ from PySide6.QtWidgets import QWidget
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
-from fk.core.timer import PomodoroTimer
+from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged, TimerWorkStart
 
 logger = logging.getLogger(__name__)
 
 
 class AudioPlayer(QObject):
-    _timer: PomodoroTimer
     _audio_output: QAudioOutput | None
     _audio_player: QMediaPlayer | None
     _settings: AbstractSettings
+    _source: AbstractEventSource | None
 
     def __init__(self,
                  parent: QWidget,
                  source_holder: EventSourceHolder,
-                 settings: AbstractSettings,
-                 timer: PomodoroTimer):
+                 settings: AbstractSettings):
         super().__init__(parent)
-        self._timer = timer
+        self._source = None
         self._settings = settings
         self._reset()
-        timer.on("Timer*Complete", self._play_audio)
-        timer.on(PomodoroTimer.TimerWorkStart, self._start_ticking)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -52,6 +48,9 @@ class AudioPlayer(QObject):
         if self._audio_player is not None and self._audio_player.isPlaying():
             self._audio_player.stop()
         source.on(SourceMessagesProcessed, lambda **kwargs: self._start_what_is_needed())
+        source.on("Timer*Complete", self._play_audio)
+        source.on(TimerWorkStart, self._start_ticking)
+        self._source = source
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         needs_reset = False
@@ -149,7 +148,10 @@ class AudioPlayer(QObject):
                     self._audio_player.play()     # This will substitute the bell sound
 
     def _start_what_is_needed(self) -> None:
-        if self._timer.is_working():
-            self._start_ticking()
-        elif self._timer.is_resting():
-            self._start_rest_sound()
+        if self._source is not None:
+            timer = self._source.get_data().get_current_user().get_timer()
+            if timer.is_working():
+                self._start_ticking()
+            elif timer.is_resting():
+                self._start_rest_sound()
+

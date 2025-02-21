@@ -26,8 +26,8 @@ from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
-from fk.core.timer_strategies import VoidPomodoroStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_strategies import VoidPomodoroStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
@@ -123,14 +123,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         text_layout.addStretch()
 
         self.set_flavor(flavor)
-
-        if self._timer is not None:
-            if self._timer.is_working():
-                self._set_mode('working')
-            elif self._timer.is_resting():
-                self._set_mode('resting')
-            elif self._timer.is_idling():
-                self._set_mode('idle')
 
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -336,7 +328,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         ])
 
     def _complete_item(self) -> None:
-        item = self._timer.get_running_workitem()
+        item = self.timer.get_running_workitem()
         complete_item(item, self, self._source_holder.get_source())
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
@@ -350,10 +342,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         elif new_mode == 'working' or new_mode == 'resting':
-            running_item = self._timer.get_running_workitem()
+            running_item = self.timer.get_running_workitem()
             self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
-                if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+                if self.timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
                     self._actions['focus.voidPomodoro'].setVisible(False)
                     self._actions['focus.voidPomodoro'].setDisabled(True)
                     self._actions['focus.finishTracking'].setVisible(True)
@@ -384,8 +376,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
         context_menu.addAction(self._actions['focus.nextPomodoro'])
-        if self._timer.is_working() or self._timer.is_resting():
-            if self._timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+        timer = self.timer
+        if timer.is_working() or timer.is_resting():
+            if timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
                 context_menu.addAction(self._actions['focus.finishTracking'])
             else:
                 context_menu.addAction(self._actions['focus.voidPomodoro'])

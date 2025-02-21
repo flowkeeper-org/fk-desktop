@@ -119,10 +119,6 @@ class TimerData(AbstractDataItem['User']):
         td = datetime.timedelta(seconds=elapsed_duration)
         return f'{td}'
 
-    def get_completion(self) -> float:
-        planned = self.get_planned_duration()
-        return self.get_remaining_duration() / planned if planned > 0 else 0
-
     def __str__(self) -> str:
         s = 'no pomodoro'
         if self._pomodoro is not None:

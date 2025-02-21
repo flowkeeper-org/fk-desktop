@@ -22,8 +22,8 @@ from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
-from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
@@ -69,14 +69,6 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self._initialize_menu()
         self.reset()
 
-        if self._timer is not None:
-            if self._timer.is_working():
-                self._set_mode('working')
-            elif self._timer.is_resting():
-                self._set_mode('resting')
-            elif self._timer.is_idling():
-                self._set_mode('idle')
-
     def _initialize_menu(self):
         menu = QMenu()
         if 'focus.voidPomodoro' in self._actions:
@@ -107,7 +99,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
-        if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
+        if self._continue_workitem is not None and self._continue_workitem.is_startable() and self.timer.is_idling():
             settings = self._source_holder.get_settings()
             self._source_holder.get_source().execute(StartTimerStrategy, [
                 self._continue_workitem.get_uid(),

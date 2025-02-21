@@ -31,7 +31,6 @@ from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
-from fk.core.timer import PomodoroTimer
 from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag

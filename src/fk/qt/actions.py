@@ -52,7 +52,7 @@ class Actions:
             name: str,
             text: str,
             shortcut: str | None,
-            icon: str | None,
+            icon: str | None | tuple[str, str],
             member: Callable,
             is_toggle: bool = False,
             is_checked: bool = False) -> QAction:
