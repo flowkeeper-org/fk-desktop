@@ -21,11 +21,13 @@ from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.tags import Tags
+from fk.core.timer_data import TimerData
 
 
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _tags: Tags
+    _timer: TimerData
 
     def __init__(self,
                  data: 'Tenant',
@@ -36,6 +38,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
         self._tags = Tags(self)
+        self._timer = TimerData(self, create_date)
 
     def __str__(self):
         return f'User "{self.get_name()} <{self.get_uid()}>"'
@@ -58,9 +61,9 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_state(self, when: datetime.datetime) -> (str, int):
         p = self.get_running_pomodoro()
         if p is not None and p.get_type() == POMODORO_TYPE_NORMAL and p.is_working():
-            return f"Focus", p.remaining_minutes_in_current_state(when)
+            return f"Focus", p.remaining_minutes_in_current_state_str(when)
         elif p is not None and p.get_type() == POMODORO_TYPE_NORMAL and p.is_resting():
-            return "Rest", p.remaining_minutes_in_current_state(when)
+            return "Rest", p.remaining_minutes_in_current_state_str(when)
         elif p is not None and p.get_type() == POMODORO_TYPE_TRACKER:
             return "Tracking", 0
         else:
@@ -69,6 +72,10 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
+    def get_timer(self) -> TimerData:
+        return self._timer
+
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         return f'{super().dump(indent, mask_uid)}\n' \
                f'{indent}  System user: {self._is_system_user}'
+        # TODO: Dump tags and timer

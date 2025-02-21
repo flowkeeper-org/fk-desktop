@@ -22,6 +22,9 @@ from typing import Callable, Type, Generic, TypeVar
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.tenant import Tenant
+from fk.core.user import User
+from fk.core.workitem import Workitem
 
 TRoot = TypeVar('TRoot', bound=AbstractDataItem)
 
@@ -69,27 +72,71 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         # UC-3: All strategies should be e2e-encrypted by default
         return True
 
+    def requires_sealing(self) -> bool:
+        # UC-3: Strategies don't require auto-sealing by default
+        return False
+
     @abstractmethod
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: TRoot) -> (str, any):
+                data: TRoot) -> None:
         pass
 
     def get_params(self):
         return self._params
 
+    # This is for "auto-executed" strategies only. Those won't be persisted. It doesn't support auto-sealing, but
+    # that's OK since it is always called in the context of another strategy, which was auto-sealed.
     def execute_another(self,
                         emit: Callable[[str, dict[str, any], any], None],
                         data: TRoot,
                         cls: Type[AbstractStrategy[TRoot]],
-                        params: list[str]) -> (str, any):
+                        params: list[str],
+                        when_override: datetime.datetime | None = None) -> None:
         strategy = cls(self._seq,
-                       self._when,
+                       self._when if when_override is None else when_override,
                        self._user_identity,
                        params,
                        self._settings)
         params = {'strategy': strategy, 'auto': True}
         emit(events.BeforeMessageProcessed, params, self._carry)
-        res = strategy.execute(emit, data)
+        strategy.execute(emit, data)
         emit(events.AfterMessageProcessed, params, self._carry)
-        return res
+
+    # Convenience methods
+
+    def get_user(self, data: Tenant, fail_if_not_found: bool = True) -> User | None:
+        if self._user_identity in data:
+            return data.get_user(self._user_identity)
+
+        if fail_if_not_found:
+            raise Exception(f'User "{self._user_identity}" not found')
+        else:
+            return None
+
+    def get_backlog(self, data: Tenant, uid: str, fail_if_not_found: bool = True) -> Workitem | None:
+        user = self.get_user(data)
+        if uid in user:
+            return user[uid]
+
+        if fail_if_not_found:
+            raise Exception(f'Workitem "{uid}" not found')
+        else:
+            return None
+
+    def get_workitem(self,
+                     data: Tenant,
+                     uid: str,
+                     fail_if_not_found: bool = True,
+                     fail_if_sealed: bool = False) -> Workitem | None:
+        for backlog in self.get_user(data).values():
+            if uid in backlog:
+                workitem: Workitem = backlog[uid]
+                if fail_if_sealed and workitem.is_sealed():
+                    raise Exception(f'Workitem "{uid}" is sealed')
+                return workitem
+
+        if fail_if_not_found:
+            raise Exception(f'Workitem "{uid}" not found')
+        else:
+            return None

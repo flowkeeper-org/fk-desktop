@@ -23,7 +23,7 @@ from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
-from fk.core.import_export import import_
+from fk.core.import_export import import_, export
 from fk.core.mock_settings import MockSettings
 from fk.core.tenant import Tenant
 from fk.core.user import User
@@ -31,6 +31,7 @@ from fk.core.user import User
 TEMP_DIR = 'src/fk/tests/fixtures/'
 TEMP_FILE = 'flowkeeper-data-TEMP.txt'
 TEMP_FILENAME = f'{TEMP_DIR}{TEMP_FILE}'
+EXPORTED_FILENAME = f'{TEMP_DIR}{TEMP_FILE}-exported'
 RAND_FILENAME = 'src/fk/tests/fixtures/random.txt'
 RAND_DUMP_FILENAME = 'src/fk/tests/fixtures/random-dump.txt'
 
@@ -39,7 +40,7 @@ def _skip_first(dump: str, skip_rows: int) -> str:
     return '\n'.join(dump.split('\n')[skip_rows:])
 
 
-class TestImport(TestCase):
+class TestImportExport(TestCase):
     settings_temp: AbstractSettings
     cryptograph_temp: AbstractCryptograph
     source_temp: FileEventSource
@@ -94,7 +95,7 @@ class TestImport(TestCase):
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
-    def _execute_import(self, ignore_errors: bool, merge: bool, repair: bool = True, half: int = 0) -> (int, int):
+    def _execute_import(self, ignore_errors: bool, merge: bool, repair: bool = True, filename: str = None) -> (int, int):
         total_start = 0
 
         def set_total_start(total):
@@ -114,12 +115,39 @@ class TestImport(TestCase):
             pass
 
         import_(self.source_temp,
-                RAND_FILENAME if half == 0 else f'{RAND_FILENAME}-{half}',
+                RAND_FILENAME if filename is None else filename,
                 ignore_errors,
                 merge,
                 set_total_start,
                 nothing,
                 finish)
+
+        return total_start, total_end
+
+    def _execute_export(self, compress: bool, filename: str) -> (int, int):
+        total_start = 0
+
+        def set_total_start(total):
+            nonlocal total_start
+            total_start = total
+
+        total_end = 0
+
+        def finish(total):
+            nonlocal total_end
+            total_end = total
+
+        def nothing(*args):
+            pass
+
+        export(self.source_rand,
+               filename,
+               Tenant(self.settings_rand),
+               False,
+               compress,
+               set_total_start,
+               nothing,
+               finish)
 
         return total_start, total_end
 
@@ -170,7 +198,7 @@ class TestImport(TestCase):
         self._execute_import(False, True)
         self._compare_imported_and_original_dumps()
 
-    def test_import_smart_in_halves_correct_order(self):
+    def test_import_classic_in_halves_correct_order(self):
         fn1 = f'{RAND_FILENAME}-1'
         fn2 = f'{RAND_FILENAME}-2'
         try:
@@ -188,11 +216,23 @@ class TestImport(TestCase):
                         i += 1
 
             # 2. Import them
-            self._execute_import(False, True, half=1)
-            #self._execute_import(False, True, half=2)
-            #self._compare_imported_and_original_dumps()
+            self._execute_import(False, False, False, fn1)
+            self._execute_import(False, False, False, fn2)
+            self._compare_imported_and_original_dumps()
         except Exception as e:
             raise e
         finally:
             os.unlink(fn1)
             os.unlink(fn2)
+
+    def test_export_simple_ok(self):
+        total_start, total_end = self._execute_export(False, EXPORTED_FILENAME)
+        self.assertEqual(total_start, 875)
+        self.assertEqual(total_end, total_start)
+
+        self._execute_import(False, False, filename=EXPORTED_FILENAME)
+
+        # We skip the first 7 lines, as the existing user is kept
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
+        self.assertEqual(dump_imported, dump_original)

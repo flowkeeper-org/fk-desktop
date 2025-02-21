@@ -30,8 +30,8 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy, \
-    AddInterruptionStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag
 from fk.core.tenant import ADMIN_USER
@@ -97,19 +97,19 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                               source.get_settings())
                     seq += 1
                     if pomodoro.is_finished():
-                        yield StartWorkStrategy(seq,
-                                                pomodoro.get_work_start_date(),
-                                                user.get_identity(),
-                                                [workitem.get_uid(),
-                                                 str(pomodoro.get_work_duration()),
-                                                 str(pomodoro.get_rest_duration())],
-                                                source.get_settings())
+                        yield StartTimerStrategy(seq,
+                                                 pomodoro.get_work_start_date(),
+                                                 user.get_identity(),
+                                                 [workitem.get_uid(),
+                                                  str(pomodoro.get_work_duration()),
+                                                  str(pomodoro.get_rest_duration())],
+                                                 source.get_settings())
                         seq += 1
                     for interruption in pomodoro.values():
                         if interruption.is_void():
-                            yield VoidPomodoroStrategy(seq, interruption.get_create_date(), user.get_identity(),
-                                                       [workitem.get_uid()],
-                                                       source.get_settings())
+                            yield StopTimerStrategy(seq, interruption.get_create_date(), user.get_identity(),
+                                                    [],
+                                                    source.get_settings())
                         else:
                             yield AddInterruptionStrategy(seq, interruption.get_create_date(), user.get_identity(),
                                                           [workitem.get_uid(),
@@ -217,13 +217,13 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                     p_old = pomodoros_old[i]
                     if p_old.is_startable():
                         if p_new.is_finished():
-                            yield StartWorkStrategy(seq,
-                                                    p_new.get_work_start_date(),
-                                                    user.get_identity(),
-                                                    [workitem.get_uid(),
-                                                     str(p_new.get_work_duration()),
-                                                     str(p_new.get_rest_duration())],
-                                                    source.get_settings())
+                            yield StartTimerStrategy(seq,
+                                                     p_new.get_work_start_date(),
+                                                     user.get_identity(),
+                                                     [workitem.get_uid(),
+                                                      str(p_new.get_work_duration()),
+                                                      str(p_new.get_rest_duration())],
+                                                     source.get_settings())
                             seq += 1
 
                     # Import interruptions similarly to pomodoros
@@ -232,9 +232,9 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                         date = interruption.get_create_date()
                         if date not in [ii.get_create_date() for ii in p_old.values()]:
                             if interruption.is_void():
-                                yield VoidPomodoroStrategy(seq, interruption.get_create_date(), user.get_identity(),
-                                                           [workitem.get_uid(), interruption.get_reason()],
-                                                           source.get_settings())
+                                yield StopTimerStrategy(seq, interruption.get_create_date(), user.get_identity(),
+                                                        [],
+                                                        source.get_settings())
                                 seq += 1
                                 break   # Here we rely on the fact that interruptions come in chronological order
                             else:
@@ -495,7 +495,6 @@ def _merge_sources(existing_source,
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
     for strategy in merge_strategies(existing_source, new_source.get_data()):
-        existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
         try:
             existing_source.execute_prepared_strategy(strategy, False, True)
         except Exception as e:
@@ -504,7 +503,6 @@ def _merge_sources(existing_source,
             else:
                 raise e
         count += 1
-    existing_source.auto_seal()
     existing_source.unmute()
     completion_callback(count)
 
@@ -562,7 +560,6 @@ def import_classic(source: AbstractEventSource[TRoot],
                     # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
-                source.auto_seal(strategy.get_when())
                 source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)

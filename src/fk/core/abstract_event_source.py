@@ -26,17 +26,18 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
 from fk.core.pomodoro import Pomodoro
 from fk.core.tag import Tag
-from fk.core.tenant import ADMIN_USER
+from fk.core.tenant import ADMIN_USER, Tenant
+from fk.core.timer_data import TimerData
+from fk.core.timer_strategies import TimerRingInternalStrategy
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
-TRoot = TypeVar('TRoot')
+TRoot = TypeVar('TRoot', bound=Tenant)
 
 
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
@@ -104,6 +105,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
             events.PongReceived,
+            events.TimerWorkStart,
+            events.TimerRestComplete,
+            events.TimerWorkComplete,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help us do master/slave for strategies.
         self._serializer = serializer
@@ -141,19 +145,43 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events: bool = True) -> None:
         pass
 
-    def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
+    def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
+        timer: TimerData = strategy.get_user(self.get_data()).get_timer()
+        # print(f'Auto-seal, timer: {timer}')
+        if second_time:
+            # print(f'(second time)')
+            pass
+        if timer.is_ticking():
+            expected_timer_ring = timer.get_next_state_change()
+            if expected_timer_ring is not None:
+                # print(f'Expected to ring, comparing to {strategy.get_when()}')
+                if strategy.get_when() >= expected_timer_ring:
+                    # Timer rings, maybe even twice
+                    # print(f'Ringing the timer for strategy {strategy}')
+                    strategy.execute_another(self._emit,
+                                             self.get_data(),
+                                             TimerRingInternalStrategy,
+                                             [],
+                                             expected_timer_ring)
+                    if timer.is_ticking():
+                        if second_time:
+                            logger.error(f'The timer is still ticking after stopping it twice. Strategy: {strategy}')
+                            raise Exception("The timer refuses to ring. "
+                                            "This should never happen, please report it as a bug.")
+                        self._auto_seal(strategy, True)
+
+    def execute_prepared_strategy(self,
+                                  strategy: AbstractStrategy[TRoot],
+                                  auto: bool = False,
+                                  persist: bool = False) -> None:
+        if strategy.requires_sealing():
+            self._auto_seal(strategy)
+
         params = {'strategy': strategy, 'auto': auto}
         self._emit(events.BeforeMessageProcessed, params)
         # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
-        res = strategy.execute(self._emit, self.get_data())
+        strategy.execute(self._emit, self.get_data())
         self._emit(events.AfterMessageProcessed, params)
-        if res is not None and res[0] == 'auto-seal':
-            # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
-            # UC-3: Certain strategies may request the "auto-seal" BEFORE they execute
-            self.auto_seal()
-            res = strategy.execute(self._emit, self.get_data())
-            if res is not None and res[0] == 'auto-seal':
-                raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
         self._estimated_count += 1
         if persist:
             self._append([strategy])
@@ -179,15 +207,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._settings,
             carry)
         self.execute_prepared_strategy(s, auto, persist)
-
-    def auto_seal(self, when: datetime.datetime | None = None) -> None:
-        auto_seal(self.workitems(),
-                  lambda strategy_class, params, persist, exec_when: self.execute(strategy_class,
-                                                                                  params,
-                                                                                  persist=persist,
-                                                                                  when=exec_when,
-                                                                                  auto=True),
-                  when)
 
     def users(self) -> Iterable[User]:
         for user in self.get_data().values():

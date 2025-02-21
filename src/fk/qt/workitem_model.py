@@ -355,6 +355,7 @@ class WorkitemModel(AbstractDropModel):
                     if visible_index >= to_index:
                         break
         logger.debug(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
+        print(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
-                                                 carry='ui')
+                                                 carry='uia')

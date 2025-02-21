@@ -19,7 +19,7 @@ import datetime
 import logging
 
 from fk.core.abstract_data_container import AbstractDataContainer
-from fk.core.abstract_data_item import AbstractDataItem, generate_uid
+from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
 
 logger = logging.getLogger(__name__)
@@ -207,7 +207,8 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
         return self._type
 
     def total_remaining_time(self, when: datetime.datetime) -> float:
-        # Total remaining time in seconds. Can be negative, if it has expired. Can be None, if it hasn't started yet.
+        # Total remaining time in seconds, which only makes sense for active pomodoros.
+        # Can be negative, if it has expired. Can be 0, if it hasn't started yet.
         remaining_in_current = self.remaining_time_in_current_state(when)
         if self.is_working():
             return remaining_in_current + self._rest_duration
@@ -230,8 +231,11 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
         else:
             raise Exception(f"Pomodoros of type {self._type} don't have remaining time")
 
-    def remaining_minutes_in_current_state(self, when: datetime.datetime) -> str:
-        m = self.remaining_time_in_current_state(when) / 60
+    def remaining_minutes_in_current_state_str(self, when: datetime.datetime) -> str:
+        seconds = self.remaining_time_in_current_state(when)
+        if seconds == 0:
+            return 'N/A'
+        m = seconds / 60
         if m < 1:
             return "Less than a minute"
         else:
@@ -252,11 +256,15 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
 
     def planned_end_of_work(self) -> datetime.datetime:
         if self._type == POMODORO_TYPE_NORMAL:
+            if self._date_work_started is None:
+                return None
             return self._date_work_started + datetime.timedelta(seconds=self._work_duration)
         else:
             raise Exception(f"Pomodoros of type {self._type} don't have planned time")
 
     def planned_end_of_rest(self) -> datetime.datetime:
+        if self._date_work_started is None:
+            return None
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
 
     def total_planned_time(self) -> float:

@@ -116,7 +116,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Received {len(lines)} messages')
         i = 0
-        to_unmute = False   # It's important to unmute / emit AFTER auto_seal
+        to_unmute = False
         to_emit = False
         for line in lines:
             if logger.isEnabledFor(logging.DEBUG):
@@ -137,7 +137,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
-                    self.auto_seal(s.get_when())
                     self.execute_prepared_strategy(s)
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
@@ -147,7 +146,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                 else:
                     raise ex
-        self.auto_seal()
         if to_unmute:
             self.unmute()
         if to_emit:

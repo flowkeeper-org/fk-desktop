@@ -14,9 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 import uuid
 from abc import ABC
 from typing import Iterable, TypeVar, Generic
+
+
+logger = logging.getLogger(__name__)
 
 
 def generate_uid() -> str:
@@ -84,7 +88,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
         # UC-2: Update timestamps propagate to parents. The latest timestamp is kept, they can't decrease.
         if date is None:
             date = datetime.datetime.now(datetime.timezone.utc)
-        # Some actions may happen retroactively, e.g. a Pomodoro might be auto-sealed "in the past"
+        # Some actions may happen retroactively, although it is unusual, so let's display a warning
         if self._last_modified_date is None or self._last_modified_date < date:
             self._last_modified_date = date
         if self._parent is not None:

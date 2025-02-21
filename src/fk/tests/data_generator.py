@@ -22,8 +22,8 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
-    AddInterruptionStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
@@ -105,20 +105,27 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                 # Start it and...
                 seq += 1
                 now += datetime.timedelta(seconds=rand_normal(1, 120))
-                yield StartWorkStrategy(seq,
-                                        now,
-                                        user,
-                                        [p, '1500', '300'],
-                                        settings)
+                yield StartTimerStrategy(seq,
+                                         now,
+                                         user,
+                                         [p, '1500', '300'],
+                                         settings)
 
                 if choice < 3:  # Void it
                     seq += 1
                     now += datetime.timedelta(seconds=rand_normal(1, 1800))
-                    yield VoidPomodoroStrategy(seq,
-                                               now,
-                                               user,
-                                               [p, 'Voided for a good reason' if random() < 0.5 else ''],
-                                               settings)
+                    if random() < 0.5:
+                        yield AddInterruptionStrategy(seq,
+                                                      now,
+                                                      user,
+                                                      [p, 'Voided for a good reason', ''],
+                                                      settings)
+                        seq += 1
+                    yield StopTimerStrategy(seq,
+                                            now,
+                                            user,
+                                            [],
+                                            settings)
                 else:
                     end = now + datetime.timedelta(seconds=1800)
                     if choice < 5:  # Add an interruption

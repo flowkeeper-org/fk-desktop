@@ -24,8 +24,9 @@ from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
+from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed, TimerRestComplete, TimerWorkStart
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
 from fk.desktop.config_wizard import ConfigWizard
@@ -97,7 +98,7 @@ def to_focus_mode(**kwargs) -> None:
     focus_window.show()
 
 
-def from_focus_mode(**kwargs) -> None:
+def from_focus_mode(**_) -> None:
     logger.debug('Switching from focus mode')
     focus_window.hide()
     focus_widget.setParent(root_layout_widget)
@@ -113,9 +114,9 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def update_mode(**kwargs) -> None:
+def update_mode(timer_ticking: bool) -> None:
     mode = get_timer_ui_mode()
-    if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
+    if timer_ticking:
         if mode == 'focus':
             actions['window.focusMode'].setChecked(True)  # This will trigger to_focus_mode() automatically
         elif mode == 'minimize':
@@ -264,27 +265,29 @@ if __name__ == "__main__":
     # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
     # will pass through to Qt data models via Qt-like connect / emit mechanism.
     try:
-        settings = None
         app = Application(sys.argv)
         settings = app.get_settings()
 
         logger.debug(f'UI thread: {threading.get_ident()}')
         settings.on(events.AfterSettingsChanged, on_setting_changed)
 
-        def _on_workitem_complete(workitem: Workitem, **_):
-            if pomodoro_timer is not None and pomodoro_timer.get_running_workitem() == workitem:
-                update_mode()
+        def _on_workitem_complete(workitem: Workitem, timer: TimerData):
+            if timer.get_running_workitem() == workitem:
+                update_mode(False)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
-            source.on(SourceMessagesProcessed, update_mode, last=True)
-            source.on(AfterWorkitemComplete, _on_workitem_complete, last=True)
+            source.on(SourceMessagesProcessed, lambda **_: update_mode(source.get_data().get_current_user().get_timer().is_ticking()), last=True)
+            source.on(AfterWorkitemComplete, lambda workitem, **_: _on_workitem_complete(workitem, source.get_data().get_current_user().get_timer()), last=True)
+            source.on(TimerRestComplete, lambda **_: update_mode(False))
+            source.on(TimerWorkStart, lambda **_: update_mode(True))
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
-        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
-        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
+        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"),
+                                       QtTimer("Pomodoro Transition"),
+                                       app.get_settings(),
+                                       app.get_source_holder())
 
         loader = QtUiTools.QUiLoader(app)
 
@@ -305,7 +308,7 @@ if __name__ == "__main__":
         MainWindow.define_actions(actions)
         actions.all_actions_defined()
 
-        audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
+        audio = AudioPlayer(window, app.get_source_holder(), settings)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
@@ -355,7 +358,6 @@ if __name__ == "__main__":
         workitems_widget: WorkitemWidget = WorkitemWidget(window,
                                                           app,
                                                           app.get_source_holder(),
-                                                          pomodoro_timer,
                                                           actions)
         right_layout.addWidget(workitems_widget)
 

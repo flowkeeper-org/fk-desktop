@@ -22,7 +22,6 @@ from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
 from fk.core.tag import Tag
-from fk.core.timer import PomodoroTimer
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
 from fk.qt.configurable_toolbar import ConfigurableToolBar
@@ -39,7 +38,6 @@ class WorkitemWidget(QWidget):
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
-                 pomodoro_timer: PomodoroTimer,
                  actions: Actions):
         super().__init__(parent)
         self.setObjectName('workitems_widget')
@@ -65,7 +63,6 @@ class WorkitemWidget(QWidget):
         self._workitems_table = WorkitemTableView(self,
                                                   application,
                                                   source_holder,
-                                                  pomodoro_timer,
                                                   actions)
         layout.addWidget(self._workitems_table)
 
