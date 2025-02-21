@@ -28,7 +28,7 @@ from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.timer import PomodoroTimer
-from fk.core.timer_strategies import VoidPomodoroStrategy, StopTimerStrategy, StartTimerStrategy
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
@@ -320,8 +320,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 dlg.setLabelText('Are you sure you want to void current pomodoro?')
                 dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
                 if dlg.exec_():
-                    self._source_holder.get_source().execute(VoidPomodoroStrategy,
-                                                             [workitem.get_uid(), dlg.textValue()])
+                    reason = f': {dlg.textValue()}' if dlg.textValue() else ''
+                    self._source_holder.get_source().execute(AddInterruptionStrategy,
+                                                             [workitem.get_uid(), f'Pomodoro voided{reason}'])
+                    self._source_holder.get_source().execute(StopTimerStrategy,
+                                                             [])
 
     def _interruption(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():

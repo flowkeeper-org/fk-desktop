@@ -200,7 +200,10 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemReorder, self._workitem_reordered)
         source.on(AfterWorkitemComplete, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
-        source.on('AfterPomodoro*', self._workitem_changed)
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._workitem_changed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':

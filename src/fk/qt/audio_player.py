@@ -23,6 +23,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged, TimerWorkStart
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +114,10 @@ class AudioPlayer(QObject):
                     self._audio_player.setLoops(1)
                     self._audio_player.play()
 
-            # Rest music
+            # Rest music, for normal pomodoro only
             if event == 'TimerWorkComplete':
-                self._start_rest_sound()
+                if kwargs['pomodoro'].get_type() == POMODORO_TYPE_NORMAL:
+                    self._start_rest_sound()
 
     def _start_ticking(self, event: str = None, **kwargs) -> None:
         if self._audio_player is not None:

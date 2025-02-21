@@ -83,8 +83,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # This is done to update the "New backlog from incomplete" action, which depends on the child workitems
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._update_actions_if_needed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
 
         heartbeat = self._application.get_heartbeat()
         heartbeat.on(events.WentOffline, self._lock_ui)

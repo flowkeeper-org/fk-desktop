@@ -157,7 +157,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 # print(f'Expected to ring, comparing to {strategy.get_when()}')
                 if strategy.get_when() >= expected_timer_ring:
                     # Timer rings, maybe even twice
-                    # print(f'Ringing the timer for strategy {strategy}')
                     strategy.execute_another(self._emit,
                                              self.get_data(),
                                              TimerRingInternalStrategy,

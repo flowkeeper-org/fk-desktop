@@ -127,3 +127,11 @@ class TimerData(AbstractDataItem['User']):
                f'State "{self._state}", ' \
                f'started at {self._last_state_change}, ' \
                f'next ring at {self._next_state_change}'
+
+    def update_remaining_duration(self):
+        if self._next_state_change is not None:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if now < self._next_state_change:
+                self._remaining_duration = (self._next_state_change - now).total_seconds()
+            else:
+                self._remaining_duration = 0

@@ -83,7 +83,7 @@ class AbstractTimerDisplay:
     def _on_timer_initialized(self, **kwargs) -> None:
         timer = self.timer
         if timer.is_resting():
-            self._on_work_complete(timer)
+            self._on_work_complete(timer.get_running_pomodoro())
         elif timer.is_working():
             self._on_work_start(timer)
         else:
@@ -93,6 +93,7 @@ class AbstractTimerDisplay:
     def _on_tick(self, **kwargs) -> None:
         timer = self.timer
         pomodoro = timer.get_running_pomodoro()
+        timer.update_remaining_duration()
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
             state = 'Focus' if timer.is_working() else 'Rest'
             state_text = f"{state}: {timer.format_remaining_duration()} left"
@@ -114,9 +115,9 @@ class AbstractTimerDisplay:
         self._continue_workitem = timer.get_running_workitem()
         self._set_mode('working')
 
-    def _on_work_complete(self, timer: TimerData, **kwargs) -> None:
+    def _on_work_complete(self, pomodoro: Pomodoro, **kwargs) -> None:
         # UC-3: Timer display goes into "resting" state when work period completes
-        self._continue_workitem = timer.get_running_workitem()
+        self._continue_workitem = pomodoro.get_parent()
         self._set_mode('resting')
 
     def _on_rest_complete(self, pomodoro: Pomodoro, **kwargs) -> None:

@@ -98,7 +98,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
 
 
 # StopTimer("")
-# This strategy assumes an explicit stop by the end user. Timer stops are implied and do not produce this strategy.
+# This strategy assumes an explicit stop by the end user. Timer rings do not produce this strategy.
 @strategy
 class StopTimerStrategy(AbstractStrategy[Tenant]):
     def __init__(self,
@@ -109,9 +109,6 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
-
-    def requires_sealing(self) -> bool:
-        return True
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -182,24 +179,29 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
 
         pomodoro: Pomodoro = timer.get_running_pomodoro()
         if timer.is_working():
-            params = {
-                'pomodoro': pomodoro,
-                'rest_duration': pomodoro.get_rest_duration(),
-            }
-            emit(events.BeforePomodoroRestStart, params, self._carry)
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                params = {
+                    'pomodoro': pomodoro,
+                    'rest_duration': pomodoro.get_rest_duration(),
+                }
+                emit(events.BeforePomodoroRestStart, params, self._carry)
+                pomodoro.start_rest(self._when)
+                pomodoro.item_updated(self._when)
+                timer.rest(pomodoro.get_rest_duration(), self._when)
+                timer.item_updated(self._when)
+            else:
+                raise Exception('The timer should not ring for a tracker pomodoro')
 
-            pomodoro.start_rest(self._when)
-            pomodoro.item_updated(self._when)
-
-            timer.rest(pomodoro.get_rest_duration(), self._when)
-            timer.item_updated(self._when)
             emit(events.TimerWorkComplete, {
                 'timer': timer,
-                'rest_duration': pomodoro.get_rest_duration(),
                 'pomodoro': pomodoro,
             }, self._carry)
 
-            emit(events.AfterPomodoroRestStart, params, self._carry)
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                emit(events.AfterPomodoroRestStart, params, self._carry)
+            else:
+                emit(events.AfterPomodoroComplete, params, self._carry)
+
         elif timer.is_resting():
             params = {
                 'timer': timer,

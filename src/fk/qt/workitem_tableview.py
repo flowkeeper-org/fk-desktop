@@ -96,8 +96,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._update_actions_if_needed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
         source.on('Timer(Work|Rest)(Start|Complete)', lambda **_: self.update_actions(self.get_current()))
         self.selectionModel().clear()
         self.upstream_selected(None)
