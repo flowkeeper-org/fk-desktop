@@ -50,7 +50,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_width': '820',
             'Application.theme': 'mixed',
             'Application.tray_icon_flavor': 'thin-dark',
-            'Application.last_version': '0.9.0',
+            'Application.last_version': self.get_application()._current_version,
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
             'Application.show_click_here_hint': 'False',
