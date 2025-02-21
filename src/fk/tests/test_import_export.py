@@ -31,6 +31,7 @@ from fk.core.user import User
 TEMP_DIR = 'src/fk/tests/fixtures/'
 TEMP_FILE = 'flowkeeper-data-TEMP.txt'
 TEMP_FILENAME = f'{TEMP_DIR}{TEMP_FILE}'
+EXPORTED_FILENAME = f'{TEMP_DIR}{TEMP_FILE}-exported'
 RAND_FILENAME = 'src/fk/tests/fixtures/random.txt'
 RAND_DUMP_FILENAME = 'src/fk/tests/fixtures/random-dump.txt'
 
@@ -91,7 +92,6 @@ class TestImportExport(TestCase):
         self.assertEqual(len(user_rand), 21)
 
         dump = user_rand.dump()
-        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
@@ -216,6 +216,8 @@ class TestImportExport(TestCase):
                         i += 1
 
             # 2. Import them
+            self._execute_import(False, False, False, fn1)
+            self._execute_import(False, False, False, fn2)
             self._compare_imported_and_original_dumps()
         except Exception as e:
             raise e
@@ -224,11 +226,11 @@ class TestImportExport(TestCase):
             os.unlink(fn2)
 
     def test_export_simple_ok(self):
-        total_start, total_end = self._execute_export(False, TEMP_FILENAME)
+        total_start, total_end = self._execute_export(False, EXPORTED_FILENAME)
         self.assertEqual(total_start, 875)
         self.assertEqual(total_end, total_start)
 
-        self._execute_import(False, False, filename=TEMP_FILENAME)
+        self._execute_import(False, False, filename=EXPORTED_FILENAME)
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
