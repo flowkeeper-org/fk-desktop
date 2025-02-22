@@ -33,7 +33,7 @@ from fk.core.tenant import ADMIN_USER, Tenant
 from fk.core.timer_data import TimerData
 from fk.core.timer_strategies import TimerRingInternalStrategy
 from fk.core.user import User
-from fk.core.user_strategies import CreateUserStrategy
+from fk.core.user_strategies import CreateUserStrategy, AutoSealInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
@@ -145,16 +145,27 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events: bool = True) -> None:
         pass
 
+    def _auto_seal_at_the_end(self, last_executed: AbstractStrategy) -> None:
+        if last_executed is not None:
+            sealant = AutoSealInternalStrategy(last_executed.get_sequence(),
+                                               datetime.datetime.now(datetime.timezone.utc),
+                                               last_executed.get_user_identity(),
+                                               [],
+                                               self.get_settings(),
+                                               None)
+            self.execute_prepared_strategy(sealant)
+
     def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
         timer: TimerData = strategy.get_user(self.get_data()).get_timer()
-        # print(f'Auto-seal, timer: {timer}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Auto-sealing, timer: {timer}, second time: {second_time}')
         if second_time:
-            # print(f'(second time)')
             pass
         if timer.is_ticking():
             expected_timer_ring = timer.get_next_state_change()
             if expected_timer_ring is not None:
-                # print(f'Expected to ring, comparing to {strategy.get_when()}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'Expected to ring at {expected_timer_ring}, comparing to {strategy.get_when()}')
                 if strategy.get_when() >= expected_timer_ring:
                     # Timer rings, maybe even twice
                     strategy.execute_another(self._emit,
@@ -162,6 +173,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                              TimerRingInternalStrategy,
                                              [],
                                              expected_timer_ring)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f'Rang the timer, resulting state: {timer}')
                     if timer.is_ticking():
                         if second_time:
                             logger.error(f'The timer is still ticking after stopping it twice. Strategy: {strategy}')

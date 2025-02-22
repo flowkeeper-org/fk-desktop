@@ -32,9 +32,9 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
-from fk.core.timer_strategies import StartWorkStrategy, FinishTrackingStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
+from fk.core.timer_strategies import StartWorkStrategy, StopTimerStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy
@@ -121,6 +121,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self._emit(events.SourceMessagesRequested, dict())
         self.mute()
         is_first = True
+        last_executed = None
         seq = 1
         for strategy in self._existing_strategies:
             try:
@@ -137,13 +138,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
+                last_executed = strategy
             except Exception as ex:
                 if self._ignore_errors and not fail_early:
                     logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
                 else:
                     raise ex
+        self._auto_seal_at_the_end(last_executed)
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self}, None)
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _process_from_file(self, mute_events=True) -> None:
         # This method is called when we read the history
@@ -163,6 +166,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist
 
         is_first = True
+        last_executed = None
         seq = 1
         logger.info(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
@@ -184,12 +188,16 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     # UC-3: Strategies may start with any sequence number
                     self._last_seq = seq
                     self.execute_prepared_strategy(strategy)
+                    last_executed = strategy
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
         logger.debug('FileEventSource: Processed file content, will unmute events now')
+
+        # UC-1: The last strategy is auto-sealed after execution to ensure that the timer rings offline, if needed
+        self._auto_seal_at_the_end(last_executed)
 
         # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:

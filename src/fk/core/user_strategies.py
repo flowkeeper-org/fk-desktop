@@ -158,3 +158,22 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
         user._name = self._new_user_name
         user.item_updated(self._when)
         emit(events.AfterUserRename, params, self._carry)
+
+
+class AutoSealInternalStrategy(AbstractStrategy[Tenant]):
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+
+    def requires_sealing(self) -> bool:
+        return True
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        pass

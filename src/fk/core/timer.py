@@ -63,8 +63,8 @@ class PomodoroTimer(AbstractEventEmitter):
         source.on(events.AfterPomodoroVoided, self._handle_pomodoro_complete)
 
     def _refresh(self, event: str | None = None, when: datetime.datetime | None = None, **kwargs) -> None:
-        logger.debug('PomodoroTimer: Refreshing')
         timer = self.timer
+        logger.debug(f'PomodoroTimer: Refreshing. Timer: {timer}')
         pomodoro: Pomodoro | None = timer.get_running_pomodoro()
 
         if pomodoro is None:
