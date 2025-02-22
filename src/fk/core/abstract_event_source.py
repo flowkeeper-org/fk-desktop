@@ -153,7 +153,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                                                [],
                                                self.get_settings(),
                                                None)
-            self.execute_prepared_strategy(sealant)
+            self.execute_prepared_strategy(sealant, True, False)
 
     def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
         timer: TimerData = strategy.get_user(self.get_data()).get_timer()

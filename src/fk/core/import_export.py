@@ -30,6 +30,7 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
 from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
@@ -97,12 +98,14 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                               source.get_settings())
                     seq += 1
                     if pomodoro.is_finished():
+                        params = [workitem.get_uid(),
+                                  str(pomodoro.get_work_duration())]
+                        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                            params.append(str(pomodoro.get_rest_duration()))
                         yield StartTimerStrategy(seq,
                                                  pomodoro.get_work_start_date(),
                                                  user.get_identity(),
-                                                 [workitem.get_uid(),
-                                                  str(pomodoro.get_work_duration()),
-                                                  str(pomodoro.get_rest_duration())],
+                                                 params,
                                                  source.get_settings())
                         seq += 1
                     for interruption in pomodoro.values():

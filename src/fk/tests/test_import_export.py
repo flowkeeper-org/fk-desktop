@@ -227,7 +227,7 @@ class TestImportExport(TestCase):
 
     def test_export_simple_ok(self):
         total_start, total_end = self._execute_export(False, EXPORTED_FILENAME)
-        self.assertEqual(total_start, 875)
+        self.assertEqual(total_start, 876)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
