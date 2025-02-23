@@ -48,8 +48,11 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
-        self._work_duration = float(params[1])
-        if len(params) == 3:
+        if len(params) >= 2:
+            self._work_duration = float(params[1])
+        else:
+            self._work_duration = 0.0
+        if len(params) >= 3:
             self._rest_duration = float(params[2])
         else:
             self._rest_duration = 0.0
@@ -227,7 +230,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
 ######################################################
 
 # StartWork("123-456-789", "1500", ["300"])
-# DEPRECATED
+# DEPRECATED, use StartTimerStrategy instead
 @strategy
 class StartWorkStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
@@ -265,7 +268,7 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 
 
 # VoidPomodoro("123-456-789")
-# DEPRECATED
+# DEPRECATED, use StopTimerStrategy instead
 @strategy
 class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     def __init__(self,
@@ -290,7 +293,7 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
 
 
 # FinishTracking("123-456-789")
-# DEPRECATED
+# DEPRECATED, use StopTimerStrategy instead
 @strategy
 class FinishTrackingStrategy(AbstractStrategy[Tenant]):
     def __init__(self,

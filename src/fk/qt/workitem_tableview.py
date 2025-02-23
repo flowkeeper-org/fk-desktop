@@ -218,8 +218,6 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             ])
             self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
-                '0',
-                '0',
             ])
         else:
             self._source.execute(StartTimerStrategy, [

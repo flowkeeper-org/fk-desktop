@@ -160,16 +160,10 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
         return self._state == 'new'
 
     def is_working(self) -> bool:
-        if self._type != POMODORO_TYPE_COUNTER:
-            return self._state == 'work'
-        else:
-            raise Exception(f"Pomodoros of type counter don't have work")
+        return self._state == 'work'
 
     def is_resting(self) -> bool:
-        if self._type == POMODORO_TYPE_NORMAL:
-            return self._state == 'rest'
-        else:
-            raise Exception(f"Pomodoros of type {self._type} don't have rest")
+        return self._state == 'rest'
 
     def is_finished(self) -> bool:
         return self._state == 'finished'
@@ -206,15 +200,6 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def get_type(self):
         return self._type
 
-    def total_remaining_time(self, when: datetime.datetime) -> float:
-        # Total remaining time in seconds, which only makes sense for active pomodoros.
-        # Can be negative, if it has expired. Can be 0, if it hasn't started yet.
-        remaining_in_current = self.remaining_time_in_current_state(when)
-        if self.is_working():
-            return remaining_in_current + self._rest_duration
-        else:
-            return remaining_in_current
-
     def remaining_time_in_current_state(self, when: datetime.datetime) -> float:
         if self._type == POMODORO_TYPE_NORMAL:
             # Remaining time in the current state in seconds.
@@ -241,19 +226,6 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
         else:
             return f"{round(m)} minutes"
 
-    def planned_time_in_current_state(self) -> float:
-        if self._type == POMODORO_TYPE_NORMAL:
-            # Planned time in the current state in seconds. Will be 0 if this pomodoro is
-            # sealed or hasn't started yet.
-            if self.is_resting():
-                return self._rest_duration
-            elif self.is_working():
-                return self._work_duration
-            else:
-                return 0
-        else:
-            raise Exception(f"Pomodoros of type {self._type} don't have planned time")
-
     def planned_end_of_work(self) -> datetime.datetime:
         if self._type == POMODORO_TYPE_NORMAL:
             if self._date_work_started is None:
@@ -266,14 +238,6 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
         if self._date_work_started is None:
             return None
         return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
-
-    def total_planned_time(self) -> float:
-        # Total planned time in seconds. Can be None, if this pomodoro is sealed or hasn't started yet.
-        planned_in_current = self.planned_time_in_current_state()
-        if self.is_working():
-            return planned_in_current + self._rest_duration
-        else:
-            return planned_in_current
 
     def get_parent(self) -> 'Workitem':
         return self._parent
@@ -295,3 +259,6 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
 
     def is_planned(self) -> bool:
         return self._is_planned
+
+    def get_timer(self) -> 'TimerData':
+        return self.get_parent().get_parent().get_parent().get_timer()

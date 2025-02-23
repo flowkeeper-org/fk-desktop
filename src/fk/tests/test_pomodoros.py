@@ -23,13 +23,16 @@ from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tenant import Tenant
+from fk.core.timer_data import TimerData
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.user import User
+from fk.core.user_strategies import AutoSealInternalStrategy
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
-    CompleteWorkitemStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, CompleteWorkitemStrategy
+from fk.tests.test_utils import epyc
 
 
 class TestPomodoros(TestCase):
@@ -72,6 +75,11 @@ class TestPomodoros(TestCase):
         workitem = backlog['w11']
         return user, backlog, workitem
 
+    def _standard_pomodoro(self, n: int, type: str = POMODORO_TYPE_NORMAL) -> (User, Backlog, Workitem, Pomodoro):
+        user, backlog, workitem = self._standard_workitem()
+        self.source.execute(AddPomodoroStrategy, ['w11', str(n), type])
+        return user, backlog, workitem, workitem.values()
+
     # Tests:
     # - Sealing pomodoros
     # - Planned time in current state, for different states
@@ -85,15 +93,17 @@ class TestPomodoros(TestCase):
     #   - Call explicitly
     #   - Called by Timer
     #   - Sealed workitem, non-existing workitem
-    # - Add pomodoro, remove
-    #   - Sealed workitem, non-existing workitem
-    #   - Invalid number of pomodoros
-    #   - Check number of pomodoros added / removed
-    #   - Check that add / remove acts as a stack
+    # + Add pomodoro, remove
+    #   + Successful case
+    #   + Sealed workitem, non-existing workitem
+    #   + Invalid number of pomodoros
+    #   + Check number of pomodoros added / removed
+    #   + Check that add / remove acts as a stack
     # - Finish work, void current
     #   - Sealed workitem, non-existing workitem
     #   - Workitem is not running
     #   - Only affects the running pomodoro
+    # - Interruptions (TODO)
     # - Last modified dates on any Pomodoro changes propagate to the root
     # - Iterate through all pomodoros from event source level
     # - Events
@@ -124,10 +134,8 @@ class TestPomodoros(TestCase):
             self.assertIsNone(pomodoro.get_rest_start_date())
             self.assertIsNone(pomodoro.get_work_start_date())
             self.assertEqual('new', pomodoro.get_state())
-            self.assertEqual(0, pomodoro.total_remaining_time(now))
             self.assertIsNone(pomodoro.planned_end_of_rest())
             self.assertIsNone(pomodoro.planned_end_of_work())
-            self.assertEqual(0, pomodoro.planned_time_in_current_state())
             self.assertEqual(0, pomodoro.remaining_time_in_current_state(now))
             self.assertEqual('N/A', pomodoro.remaining_minutes_in_current_state_str(now))
             self.assertIsNotNone(pomodoro.get_uid())
@@ -207,3 +215,158 @@ class TestPomodoros(TestCase):
         pomodoros = list(workitem.values())
         self.assertEqual(1, len(pomodoros))
         self.assertEqual(pomodoros[0], p1)
+
+    def _assert_pomodoro_and_timer(self, pomodoro: Pomodoro, state: str, when: datetime.datetime, elapsed):
+        self.assertIn(state, ['idle', 'work', 'rest', 'finished'])
+        timer: TimerData = pomodoro.get_timer()
+        if state == 'idle':
+            self.assertTrue(pomodoro.is_startable())
+            self.assertFalse(pomodoro.is_running())
+            self.assertFalse(pomodoro.is_resting())
+            self.assertFalse(pomodoro.is_working())
+            self.assertFalse(pomodoro.is_finished())
+            self.assertIsNone(pomodoro.get_work_start_date())
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                self.assertIsNone(pomodoro.get_rest_start_date())
+                self.assertIsNone(pomodoro.planned_end_of_rest())
+                self.assertEqual(pomodoro.remaining_time_in_current_state(when), 0)
+                self.assertIsNone(pomodoro.planned_end_of_work())
+            self.assertTrue(timer.is_idling())
+            self.assertFalse(timer.is_ticking())
+            self.assertFalse(timer.is_working())
+            self.assertFalse(timer.is_resting())
+        elif state == 'work':
+            self.assertFalse(pomodoro.is_startable())
+            self.assertTrue(pomodoro.is_running())
+            self.assertFalse(pomodoro.is_resting())
+            self.assertTrue(pomodoro.is_working())
+            self.assertFalse(pomodoro.is_finished())
+            self.assertIsNotNone(pomodoro.get_work_start_date())
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                self.assertIsNone(pomodoro.get_rest_start_date())
+                self.assertEqual(pomodoro.planned_end_of_work(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1500))
+                self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1800))
+                self.assertEqual(pomodoro.remaining_time_in_current_state(when), 1500 - elapsed)
+            self.assertFalse(timer.is_idling())
+            self.assertTrue(timer.is_ticking())
+            self.assertTrue(timer.is_working())
+            self.assertFalse(timer.is_resting())
+        elif state == 'rest':
+            self.assertFalse(pomodoro.is_startable())
+            self.assertTrue(pomodoro.is_running())
+            self.assertTrue(pomodoro.is_resting())
+            self.assertFalse(pomodoro.is_working())
+            self.assertFalse(pomodoro.is_finished())
+            self.assertIsNotNone(pomodoro.get_work_start_date())
+            self.assertEqual(pomodoro.get_type(), POMODORO_TYPE_NORMAL)
+            self.assertIsNotNone(pomodoro.get_rest_start_date())
+            self.assertEqual(pomodoro.planned_end_of_work(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1500))
+            self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1800))
+            self.assertEqual(pomodoro.remaining_time_in_current_state(when), 1800 - elapsed)
+            self.assertFalse(timer.is_idling())
+            self.assertTrue(timer.is_ticking())
+            self.assertFalse(timer.is_working())
+            self.assertTrue(timer.is_resting())
+        elif state == 'finished':
+            self.assertFalse(pomodoro.is_startable())
+            self.assertFalse(pomodoro.is_running())
+            self.assertFalse(pomodoro.is_resting())
+            self.assertFalse(pomodoro.is_working())
+            self.assertTrue(pomodoro.is_finished())
+            self.assertIsNotNone(pomodoro.get_work_start_date())
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                self.assertIsNotNone(pomodoro.get_rest_start_date())
+                self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_last_modified_date())
+                self.assertEqual(pomodoro.planned_end_of_work(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1500))
+                self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1800))
+                self.assertEqual(pomodoro.remaining_time_in_current_state(when), 0)
+            self.assertTrue(timer.is_idling())
+            self.assertFalse(timer.is_ticking())
+            self.assertFalse(timer.is_working())
+            self.assertFalse(timer.is_resting())
+
+    def test_start_work_normal_ok(self):
+        _, _, workitem, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0)
+
+    def test_start_work_tracker_ok(self):
+        _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
+        when = epyc()
+        self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
+        self.source.execute(StartTimerStrategy, ['w11'], True, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0)
+        # TODO: self.assertRaises for rest related stuff
+
+    def test_auto_seal_shortly_from_work(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1550)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550)
+
+    def test_auto_seal_shortly_from_rest(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1550)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        when += datetime.timedelta(seconds=300)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'finished', when, 1850)
+
+    def test_auto_seal_long_after_from_work(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1850)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'finished', when, 1850)
+
+    def test_auto_seal_too_early(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1000)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1000)
+
+    def test_auto_seal_twice(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1550)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550)
+        when += datetime.timedelta(seconds=50)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1600)
+
+    def test_auto_seal_unneeded(self):
+        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        when += datetime.timedelta(seconds=1550)
+        self.source.execute(RenameWorkitemStrategy, ['w11', 'New name'], True, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550)
+
+    def test_auto_seal_strategies(self):
+        # For all strategies check if the pomodoro was auto-sealed
+        pass
+
+    def test_auto_seal_tracker(self):
+        # No auto-seal for trackers. All other tests use normal pomodoros.
+        _, _, _, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11'], True, when)
+        when += datetime.timedelta(seconds=1550)
+        self.source.execute(AutoSealInternalStrategy, [], False, when)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550)
+
+    def test_auto_seal_long_break(self):
+        # No auto-seal for long breaks. All other tests have short breaks.
+        pass
+

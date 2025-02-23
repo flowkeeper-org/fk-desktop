@@ -98,9 +98,6 @@ class TimerData(AbstractDataItem['User']):
     def is_ticking(self) -> bool:
         return self._state != 'idle'
 
-    def is_initializing(self) -> bool:
-        return self._state is None
-
     def get_planned_duration(self) -> int:
         return self._planned_duration
 

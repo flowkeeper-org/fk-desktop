@@ -77,3 +77,4 @@ class TestFileEventSource(TestCase):
     # - - Compare dumps of random.txt
     # - - No changes if there are no savings
     # - Method calls like disconnect, send_ping, etc.
+    # - Auto-seals last strategy

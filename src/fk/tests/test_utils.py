@@ -77,6 +77,10 @@ def test_data() -> Tenant:
     return tenant
 
 
+def epyc() -> datetime.datetime:
+    return datetime.datetime(2025, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+
+
 ##########################################################################################
 # Random stuff
 ##########################################################################################
