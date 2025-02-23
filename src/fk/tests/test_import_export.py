@@ -19,12 +19,14 @@ from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.backlog import Backlog
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
-from fk.core.import_export import import_, export
+from fk.core.import_export import import_, export, import_github_issues
 from fk.core.mock_settings import MockSettings
+from fk.core.tags import Tags
 from fk.core.tenant import Tenant
 from fk.core.user import User
 
@@ -236,3 +238,74 @@ class TestImportExport(TestCase):
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
         dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
         self.assertEqual(dump_imported, dump_original)
+
+    def test_export_compressed_ok(self):
+        total_start, total_end = self._execute_export(True, EXPORTED_FILENAME)
+        self.assertEqual(total_start, 876)
+        self.assertEqual(total_end, total_start)
+
+        self._execute_import(False, False, filename=EXPORTED_FILENAME)
+
+        # We skip the first 7 lines, as the existing user is kept
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
+        self.assertEqual(dump_imported, dump_original)
+
+    def test_import_github_ok(self):
+        issues = [{
+            'number': 101,
+            'title': 'Title 101',
+            'user': {
+                'login': 'user101',
+            },
+            'assignee': {
+                'login': 'assignee101',
+            },
+            'labels': [
+                {'name': 'label101'},
+            ],
+            'milestone': {
+                'title': 'milestone101',
+            },
+            'state': 'new',
+        }, {
+            'number': 102,
+            'title': 'Title 102',
+            'user': {
+                'login': 'user101',
+            },
+            'assignee': {
+                'login': 'assignee101',
+            },
+            'labels': [
+                {'name': 'label101'},
+            ],
+            'milestone': {
+                'title': 'milestone101',
+            },
+            'state': 'new',
+        }]
+        import_github_issues(self.source_temp,
+                             'github',
+                             issues,
+                             True,
+                             True,
+                             True,
+                             True,
+                             True)
+        user: User = self.data_temp.get_current_user()
+
+        tags: Tags = user.get_tags()
+        self.assertIn('user101', tags)
+        self.assertIn('assignee101', tags)
+        self.assertIn('label101', tags)
+        self.assertIn('milestone101', tags)
+        self.assertIn('new', tags)
+
+        backlog: Backlog = user.values()[0]
+        self.assertEqual(backlog.get_name(), 'github')
+
+        names = [w.get_name() for w in backlog.values()]
+        self.assertEqual(len(names), 2)
+        for n in names:
+            self.assertTrue(n.startswith('101 - Title 101') or n.startswith('102 - Title 102'))
