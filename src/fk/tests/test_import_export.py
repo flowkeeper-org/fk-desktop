@@ -24,11 +24,12 @@ from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
-from fk.core.import_export import import_, export, import_github_issues
+from fk.core.import_export import import_, export, import_github_issues, import_simple
 from fk.core.mock_settings import MockSettings
 from fk.core.tags import Tags
 from fk.core.tenant import Tenant
 from fk.core.user import User
+from fk.core.workitem import Workitem
 
 TEMP_DIR = 'src/fk/tests/fixtures/'
 TEMP_FILE = 'flowkeeper-data-TEMP.txt'
@@ -309,3 +310,32 @@ class TestImportExport(TestCase):
         self.assertEqual(len(names), 2)
         for n in names:
             self.assertTrue(n.startswith('101 - Title 101') or n.startswith('102 - Title 102'))
+
+    def test_import_simple_ok(self):
+        tasks = {
+            'b1': [['Title 101', 'new'],
+                   ['Title 102', 'completed']],
+            'b2': [['Title 201', 'new']],
+        }
+        import_simple(self.source_temp, tasks)
+        user: User = self.data_temp.get_current_user()
+
+        self.assertEqual(len(user), 2)
+        for backlog in user.values():
+            self.assertTrue(backlog.get_name() == 'b1' or backlog.get_name() == 'b2')
+            wi_names = [w.get_name() for w in backlog.values()]
+            if backlog.get_name() == 'b1':
+                self.assertEqual(len(wi_names), 2)
+                self.assertIn('Title 101', wi_names)
+                self.assertIn('Title 102', wi_names)
+                for workitem in backlog.values():
+                    if workitem.get_name() == 'Title 101':
+                        self.assertFalse(workitem.is_sealed())
+                    else:
+                        self.assertTrue(workitem.is_sealed())
+            else:
+                self.assertEqual(len(wi_names), 1)
+                self.assertIn('Title 201', wi_names)
+                workitem: Workitem = backlog.values()[0]
+                self.assertFalse(workitem.is_sealed())
+
