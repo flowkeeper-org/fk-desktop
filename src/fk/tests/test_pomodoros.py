@@ -81,10 +81,11 @@ class TestPomodoros(TestCase):
         return user, backlog, workitem, workitem.values()
 
     # Tests:
-    # - Sealing pomodoros
-    # - Planned time in current state, for different states
-    # - Remaining --//--
-    # - Total planned time, end of work, end of rest
+    # + Sealing pomodoros
+    # - pomodoro.seal()
+    # + Planned time in current state, for different states
+    # + Remaining --//--
+    # + Total planned time, end of work, end of rest
     # - Start work
     #   - Sealed workitem, non-existing workitem
     #   - Another pomodoro is running
@@ -107,6 +108,8 @@ class TestPomodoros(TestCase):
     # - Last modified dates on any Pomodoro changes propagate to the root
     # - Iterate through all pomodoros from event source level
     # - Events
+    # - Update remaining duration
+    # - To string
 
     def test_add_pomodoro(self):
         user, backlog, workitem = self._standard_workitem()
@@ -216,9 +219,17 @@ class TestPomodoros(TestCase):
         self.assertEqual(1, len(pomodoros))
         self.assertEqual(pomodoros[0], p1)
 
-    def _assert_pomodoro_and_timer(self, pomodoro: Pomodoro, state: str, when: datetime.datetime, elapsed):
+    def _assert_pomodoro_and_timer(self,
+                                   pomodoro: Pomodoro,
+                                   state: str,
+                                   when: datetime.datetime,
+                                   elapsed: int,
+                                   elapsed_str: str = '',
+                                   remaining_str: str = '',
+                                   remaining_in_state_str: str = ''):
         self.assertIn(state, ['idle', 'work', 'rest', 'finished'])
         timer: TimerData = pomodoro.get_timer()
+        timer.update_remaining_duration(when)
         if state == 'idle':
             self.assertTrue(pomodoro.is_startable())
             self.assertFalse(pomodoro.is_running())
@@ -231,10 +242,15 @@ class TestPomodoros(TestCase):
                 self.assertIsNone(pomodoro.planned_end_of_rest())
                 self.assertEqual(pomodoro.remaining_time_in_current_state(when), 0)
                 self.assertIsNone(pomodoro.planned_end_of_work())
+                self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), "N/A")
             self.assertTrue(timer.is_idling())
             self.assertFalse(timer.is_ticking())
             self.assertFalse(timer.is_working())
             self.assertFalse(timer.is_resting())
+            self.assertEqual(timer.get_planned_duration(), 0)
+            self.assertEqual(timer.get_remaining_duration(), 0)
+            self.assertEqual(timer.format_elapsed_duration(when), "N/A")
+            self.assertEqual(timer.format_remaining_duration(), "00:00")
         elif state == 'work':
             self.assertFalse(pomodoro.is_startable())
             self.assertTrue(pomodoro.is_running())
@@ -247,6 +263,11 @@ class TestPomodoros(TestCase):
                 self.assertEqual(pomodoro.planned_end_of_work(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1500))
                 self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1800))
                 self.assertEqual(pomodoro.remaining_time_in_current_state(when), 1500 - elapsed)
+                self.assertEqual(timer.get_planned_duration(), 1500)
+                self.assertEqual(timer.get_remaining_duration(), 1500 - elapsed)
+                self.assertEqual(timer.format_remaining_duration(), remaining_str)
+                self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), remaining_in_state_str)
+            self.assertEqual(timer.format_elapsed_duration(when), elapsed_str)
             self.assertFalse(timer.is_idling())
             self.assertTrue(timer.is_ticking())
             self.assertTrue(timer.is_working())
@@ -267,6 +288,11 @@ class TestPomodoros(TestCase):
             self.assertTrue(timer.is_ticking())
             self.assertFalse(timer.is_working())
             self.assertTrue(timer.is_resting())
+            self.assertEqual(timer.get_planned_duration(), 300)
+            self.assertEqual(timer.get_remaining_duration(), 1800 - elapsed)
+            self.assertEqual(timer.format_elapsed_duration(when), elapsed_str)
+            self.assertEqual(timer.format_remaining_duration(), remaining_str)
+            self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), remaining_in_state_str)
         elif state == 'finished':
             self.assertFalse(pomodoro.is_startable())
             self.assertFalse(pomodoro.is_running())
@@ -280,25 +306,49 @@ class TestPomodoros(TestCase):
                 self.assertEqual(pomodoro.planned_end_of_work(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1500))
                 self.assertEqual(pomodoro.planned_end_of_rest(), pomodoro.get_work_start_date() + datetime.timedelta(seconds=1800))
                 self.assertEqual(pomodoro.remaining_time_in_current_state(when), 0)
+                self.assertEqual(timer.format_remaining_duration(), "00:00")
+                self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), "N/A")
             self.assertTrue(timer.is_idling())
             self.assertFalse(timer.is_ticking())
             self.assertFalse(timer.is_working())
             self.assertFalse(timer.is_resting())
+            self.assertEqual(timer.get_planned_duration(), 0)
+            self.assertEqual(timer.get_remaining_duration(), 0)
+            self.assertEqual(timer.format_elapsed_duration(when), "N/A")
+
+    def test_planned_unplanned_pomodoro(self):
+        _, _, workitem, [pomodoro] = self._standard_pomodoro(1)
+        when = epyc()
+        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        self.source.execute(AddPomodoroStrategy, ['w11', '1', POMODORO_TYPE_NORMAL], True, when)
+        [p1, p2] = workitem.values()
+        self.assertTrue(p1.is_planned())
+        self.assertFalse(p2.is_planned())
 
     def test_start_work_normal_ok(self):
         _, _, workitem, [pomodoro] = self._standard_pomodoro(1)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00", "25:00", "25 minutes")
 
     def test_start_work_tracker_ok(self):
         _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
         self.source.execute(StartTimerStrategy, ['w11'], True, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0)
-        # TODO: self.assertRaises for rest related stuff
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00")
+
+    def test_start_work_tracker_raises(self):
+        _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
+        self.assertRaises(Exception, lambda: pomodoro.get_rest_start_date())
+        self.assertRaises(Exception, lambda: pomodoro.get_rest_duration())
+        self.assertRaises(Exception, lambda: pomodoro.planned_end_of_rest())
+        self.assertRaises(Exception, lambda: pomodoro.planned_end_of_work())
+        self.assertRaises(Exception, lambda: pomodoro.get_rest_duration())
+        self.assertRaises(Exception, lambda: pomodoro.update_rest_duration(1))
+        self.assertRaises(Exception, lambda: pomodoro.remaining_time_in_current_state(epyc()))
+        self.assertRaises(Exception, lambda: pomodoro.remaining_minutes_in_current_state_str(epyc()))
 
     def test_auto_seal_shortly_from_work(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
@@ -306,7 +356,7 @@ class TestPomodoros(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550, "0:25:50", "04:10", "4 minutes")
 
     def test_auto_seal_shortly_from_rest(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
@@ -330,9 +380,9 @@ class TestPomodoros(TestCase):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
         when = epyc()
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
-        when += datetime.timedelta(seconds=1000)
+        when += datetime.timedelta(seconds=600)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1000)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 600, "0:10:00", "15:00", "15 minutes")
 
     def test_auto_seal_twice(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
@@ -340,10 +390,10 @@ class TestPomodoros(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550)
-        when += datetime.timedelta(seconds=50)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550, "0:25:50", "04:10", "4 minutes")
+        when += datetime.timedelta(seconds=10)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1600)
+        self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1560, "0:26:00", "04:00", "4 minutes")
 
     def test_auto_seal_unneeded(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
@@ -351,7 +401,7 @@ class TestPomodoros(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(RenameWorkitemStrategy, ['w11', 'New name'], True, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1500, "0:25:50", "00:00", "N/A")
 
     def test_auto_seal_strategies(self):
         # For all strategies check if the pomodoro was auto-sealed
@@ -364,7 +414,7 @@ class TestPomodoros(TestCase):
         self.source.execute(StartTimerStrategy, ['w11'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
-        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550)
+        self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550,  "0:25:50")
 
     def test_auto_seal_long_break(self):
         # No auto-seal for long breaks. All other tests have short breaks.

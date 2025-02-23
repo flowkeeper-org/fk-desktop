@@ -104,22 +104,23 @@ class TimerData(AbstractDataItem['User']):
     def get_remaining_duration(self) -> float:
         return self._remaining_duration
 
-    def get_elapsed_duration(self) -> float:
-        return self._pomodoro.get_elapsed_duration()
-
     def get_next_state_change(self) -> datetime.datetime | None:
         return self._next_state_change
 
+    # There's no "when" parameter, because it assumes we call update_remaining_duration first
     def format_remaining_duration(self) -> str:
         remaining_duration = self.get_remaining_duration()     # This is always >= 0
         remaining_minutes = str(int(remaining_duration / 60)).zfill(2)
         remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
         return f'{remaining_minutes}:{remaining_seconds}'
 
-    def format_elapsed_duration(self) -> str:
-        elapsed_duration = int(self.get_elapsed_duration())     # This is always >= 0
-        td = datetime.timedelta(seconds=elapsed_duration)
-        return f'{td}'
+    def format_elapsed_duration(self, when: datetime.datetime | None = None) -> str:
+        if self._pomodoro is None:
+            return 'N/A'
+        else:
+            elapsed_duration = int(self._pomodoro.get_elapsed_duration(when))
+            td = datetime.timedelta(seconds=elapsed_duration)
+            return f'{td}'
 
     def __str__(self) -> str:
         s = 'no pomodoro'
@@ -130,9 +131,9 @@ class TimerData(AbstractDataItem['User']):
                f'started at {self._last_state_change}, ' \
                f'next ring at {self._next_state_change}'
 
-    def update_remaining_duration(self):
+    def update_remaining_duration(self, when: datetime.datetime | None):
         if self._next_state_change is not None:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = when if when is not None else datetime.datetime.now(datetime.timezone.utc)
             if now < self._next_state_change:
                 self._remaining_duration = (self._next_state_change - now).total_seconds()
             else:

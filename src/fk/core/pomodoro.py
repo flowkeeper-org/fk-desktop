@@ -92,10 +92,13 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             raise Exception(f"Pomodoros of type {self._type} don't support rest")
 
     def update_rest_duration(self, rest_duration: float) -> None:
-        if self.is_startable() or self.is_working():
-            self._rest_duration = rest_duration
+        if self._type == POMODORO_TYPE_NORMAL:
+            if self.is_startable() or self.is_working():
+                self._rest_duration = rest_duration
+            else:
+                raise Exception(f'Trying to update rest duration of a pomodoro in state {self._state}')
         else:
-            raise Exception(f'Trying to update rest duration of a pomodoro in state {self._state}')
+            raise Exception(f"Pomodoros of type {self._type} don't support rest")
 
     def seal(self, when: datetime.datetime) -> None:
         if self._type == POMODORO_TYPE_NORMAL:
@@ -170,11 +173,11 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
 
     def get_elapsed_duration(self, when: datetime.datetime = None) -> float:
         if self._date_work_started is not None:
-            if self.is_working():
+            if self.is_working() or self.is_resting():
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
             elif self.is_finished():
                 now = self._last_modified_date
-            return (now - self._date_work_started).total_seconds()
+            return max((now - self._date_work_started).total_seconds(), 0)
         else:
             return 0
 
@@ -187,7 +190,7 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             elif self.is_startable():
                 return 0
             else:
-                return (self._date_completed - self._date_work_started).total_seconds()
+                return max((self._date_completed - self._date_work_started).total_seconds(), 0)
         elif self._type == POMODORO_TYPE_COUNTER:
             raise Exception(f"Pomodoros of type counter don't have work")
 
@@ -207,10 +210,10 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             # Will be 0 if it hasn't started yet.
             if self.is_working():
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-                return (self.planned_end_of_work() - now).total_seconds()
+                return max((self.planned_end_of_work() - now).total_seconds(), 0)
             elif self.is_resting():
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-                return (self.planned_end_of_rest() - now).total_seconds()
+                return max((self.planned_end_of_rest() - now).total_seconds(), 0)
             else:
                 return 0
         else:
@@ -235,9 +238,12 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             raise Exception(f"Pomodoros of type {self._type} don't have planned time")
 
     def planned_end_of_rest(self) -> datetime.datetime:
-        if self._date_work_started is None:
-            return None
-        return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
+        if self._type == POMODORO_TYPE_NORMAL:
+            if self._date_work_started is None:
+                return None
+            return self.planned_end_of_work() + datetime.timedelta(seconds=self._rest_duration)
+        else:
+            raise Exception(f"Pomodoros of type {self._type} don't support rest")
 
     def get_parent(self) -> 'Workitem':
         return self._parent
