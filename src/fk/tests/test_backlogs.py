@@ -25,6 +25,7 @@ from fk.core.backlog_strategies import RenameBacklogStrategy, DeleteBacklogStrat
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
+from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tenant import Tenant
 from fk.core.user import User
@@ -55,7 +56,7 @@ class TestBacklogs(TestCase):
     def setUp(self) -> None:
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
-        self.cryptograph = FernetCryptograph(self.settings)
+        self.cryptograph = NoCryptograph(self.settings)
         self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
         self.source.start()
         self.data = self.source.get_data()
