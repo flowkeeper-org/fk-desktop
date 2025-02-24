@@ -20,7 +20,8 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy
+from fk.core.backlog_strategies import RenameBacklogStrategy, DeleteBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
@@ -29,6 +30,20 @@ from fk.core.tenant import Tenant
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CreateWorkitemStrategy
+from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
+                                 TEST_USERNAMES, predefined_uid, check_timestamp, test_data)
+
+
+def _create_sample_backlog(existing: Tenant | None = None) -> Tenant:
+    data = test_data() if existing is None else existing
+    s = CreateBacklogStrategy(
+        1,
+        predefined_datetime(0),
+        TEST_USERNAMES[0],
+        [predefined_uid(0), 'Basic Test'],
+        test_settings(0))
+    s.execute(noop_emit, data)
+    return data
 
 
 class TestBacklogs(TestCase):
@@ -212,3 +227,56 @@ class TestBacklogs(TestCase):
         self.assertEqual(fired[1], 'BeforeBacklogRename')
         self.assertEqual(fired[2], 'AfterBacklogRename')
         self.assertEqual(fired[3], 'AfterMessageProcessed')
+
+    def test_create_backlog_strategy_basic(self):
+        data = _create_sample_backlog()
+        self.assertEqual(4, len(data))   # It also includes admin user
+        user = data[TEST_USERNAMES[0]]
+        self.assertEqual(1, len(user))
+        self.assertIn(predefined_uid(0), user)
+        backlog = user[predefined_uid(0)]
+        self.assertEqual('Basic Test', backlog.get_name())
+        self.assertEqual(predefined_uid(0), backlog.get_uid())
+        self.assertEqual(user, backlog.get_parent())
+        self.assertEqual(user, backlog.get_owner())
+        self.assertTrue(check_timestamp(backlog.get_create_date(), 0))
+        self.assertIsNone(backlog.get_running_workitem()[0])
+        self.assertIsNone(backlog.get_running_workitem()[1])
+        self.assertTrue(check_timestamp(backlog.get_last_modified_date(), 0))
+
+    def test_create_backlog_strategy_already_exists(self):
+        data = _create_sample_backlog()
+        with self.assertRaises(Exception):
+            _create_sample_backlog(data)
+
+    def test_create_backlog_strategy_same_name(self):
+        data = _create_sample_backlog()
+        s = CreateBacklogStrategy(
+            2,
+            predefined_datetime(1),
+            TEST_USERNAMES[0],
+            [predefined_uid(1), 'Basic Test'],
+            test_settings(0))
+        s.execute(noop_emit, data)
+        user = data[TEST_USERNAMES[0]]
+        self.assertEqual(user[predefined_uid(0)].get_name(), 'Basic Test')
+        self.assertEqual(user[predefined_uid(1)].get_name(), 'Basic Test')
+        self.assertNotEqual(user[predefined_uid(0)], user[predefined_uid(1)])
+
+    def test_create_backlog_independent_users_same_uid(self):
+        data = _create_sample_backlog()
+        s = CreateBacklogStrategy(
+            2,
+            predefined_datetime(1),
+            TEST_USERNAMES[1],
+            [predefined_uid(0), 'Second Backlog'],
+            test_settings(1))
+        s.execute(noop_emit, data)
+        user1 = data[TEST_USERNAMES[0]]
+        user2 = data[TEST_USERNAMES[1]]
+        user3 = data[TEST_USERNAMES[2]]
+        self.assertEqual(len(user1), 1)
+        self.assertEqual(user1[predefined_uid(0)].get_name(), 'Basic Test')
+        self.assertEqual(len(user2), 1)
+        self.assertEqual(user2[predefined_uid(0)].get_name(), 'Second Backlog')
+        self.assertEqual(len(user3), 0)

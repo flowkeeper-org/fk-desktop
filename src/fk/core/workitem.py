@@ -102,12 +102,6 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                 return True
         return False
 
-    def get_running_pomodoro(self) -> Pomodoro | None:
-        for p in self.values():
-            if p.is_running():
-                return p
-        return None
-
     def is_sealed(self) -> bool:
         return self._state in ('finished', 'canceled')
 

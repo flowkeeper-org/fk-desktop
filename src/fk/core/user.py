@@ -19,7 +19,7 @@ import datetime
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
-from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.tags import Tags
 from fk.core.timer_data import TimerData
 
@@ -49,17 +49,9 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def is_system_user(self) -> bool:
         return self._is_system_user
 
-    def get_running_pomodoro(self) -> Pomodoro | None:
-        for b in self.values():
-            for w in b.values():
-                if w.is_running():
-                    for p in w.values():
-                        if p.is_running():
-                            return p
-
     # Returns (state, total remaining). State can be Focus, Rest and Idle
     def get_state(self, when: datetime.datetime) -> (str, int):
-        p = self.get_running_pomodoro()
+        p = self._timer.get_running_pomodoro()
         if p is not None and p.get_type() == POMODORO_TYPE_NORMAL and p.is_working():
             return f"Focus", p.remaining_minutes_in_current_state_str(when)
         elif p is not None and p.get_type() == POMODORO_TYPE_NORMAL and p.is_resting():

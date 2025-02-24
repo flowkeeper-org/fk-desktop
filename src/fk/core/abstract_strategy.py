@@ -92,10 +92,11 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                         data: TRoot,
                         cls: Type[AbstractStrategy[TRoot]],
                         params: list[str],
-                        when_override: datetime.datetime | None = None) -> None:
+                        when_override: datetime.datetime | None = None,
+                        user_override: str | None = None) -> None:
         strategy = cls(self._seq,
                        self._when if when_override is None else when_override,
-                       self._user_identity,
+                       self._user_identity if user_override is None else user_override,
                        params,
                        self._settings)
         params = {'strategy': strategy, 'auto': True}

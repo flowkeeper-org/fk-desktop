@@ -121,7 +121,6 @@ class TestPomodoros(TestCase):
         self.source.execute(AddPomodoroStrategy, ['w11', '2'], when=then)
         self.assertEqual(3, len(workitem))
         self.assertFalse(workitem.has_running_pomodoro())
-        self.assertIsNone(workitem.get_running_pomodoro())
         incomplete = list[Pomodoro](workitem.get_incomplete_pomodoros())
         self.assertEqual(3, len(incomplete))
         for pomodoro in incomplete:
@@ -328,18 +327,21 @@ class TestPomodoros(TestCase):
         self.assertFalse(p2.is_planned())
 
     def test_start_work_normal_ok(self):
-        _, _, workitem, [pomodoro] = self._standard_pomodoro(1)
+        user, _, workitem, [pomodoro] = self._standard_pomodoro(1)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
+        self.assertEqual(user.get_state(when), ('Idle', 0))
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00", "25:00", "25 minutes")
+        self.assertEqual(user.get_state(when), ('Focus', "25 minutes"))
 
     def test_start_work_tracker_ok(self):
-        _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
+        user, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
         self.source.execute(StartTimerStrategy, ['w11'], True, when)
         self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00")
+        self.assertEqual(user.get_state(when), ('Tracking', 0))
 
     def test_start_work_tracker_raises(self):
         _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
@@ -353,12 +355,13 @@ class TestPomodoros(TestCase):
         self.assertRaises(Exception, lambda: pomodoro.remaining_minutes_in_current_state_str(epyc()))
 
     def test_auto_seal_shortly_from_work(self):
-        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        user, _, _, [pomodoro] = self._standard_pomodoro(1)
         when = epyc()
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
         self._assert_pomodoro_and_timer(pomodoro, 'rest', when, 1550, "0:25:50", "04:10", "4 minutes")
+        self.assertEqual(user.get_state(when), ('Rest', "4 minutes"))
 
     def test_auto_seal_shortly_from_rest(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)
@@ -371,12 +374,13 @@ class TestPomodoros(TestCase):
         self._assert_pomodoro_and_timer(pomodoro, 'finished', when, 1850)
 
     def test_auto_seal_long_after_from_work(self):
-        _, _, _, [pomodoro] = self._standard_pomodoro(1)
+        user, _, _, [pomodoro] = self._standard_pomodoro(1)
         when = epyc()
         self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
         when += datetime.timedelta(seconds=1850)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
         self._assert_pomodoro_and_timer(pomodoro, 'finished', when, 1850)
+        self.assertEqual(user.get_state(when), ('Idle', 0))
 
     def test_auto_seal_too_early(self):
         _, _, _, [pomodoro] = self._standard_pomodoro(1)

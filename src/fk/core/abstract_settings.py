@@ -334,7 +334,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_username(self) -> str:
-        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user.
+        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.
         if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
             return 'user@local.host'
         else:

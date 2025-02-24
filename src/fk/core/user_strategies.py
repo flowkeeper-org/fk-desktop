@@ -108,7 +108,11 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
 
         # Cascade delete all backlogs first
         for backlog in user.values():
-            self.execute_another(emit, data, DeleteBacklogStrategy, [backlog.get_uid()])
+            self.execute_another(emit,
+                                 data,
+                                 DeleteBacklogStrategy,
+                                 [backlog.get_uid()],
+                                 user_override=self._target_user_identity)  # Delete on behalf of target user
         user.item_updated(self._when)
 
         # Now delete the user

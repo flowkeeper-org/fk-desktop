@@ -195,15 +195,6 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                          source.get_settings())
                             seq += 1
 
-                    # # TODO: I'm not sure why we do this. Commenting out for now.
-                    # running = existing_workitem.get_running_pomodoro()
-                    # if running is not None:
-                    #     # TODO: Also check that this pomodoro is to be voided
-                    #     yield VoidPomodoroStrategy(seq, running.get_last_modified_date(), user.get_identity(),
-                    #                                [workitem.get_uid()],
-                    #                                source.get_settings())
-                    #     seq += 1
-
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
                 if num_pomodoros_to_add > 0:
