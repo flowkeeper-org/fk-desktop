@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -40,6 +41,7 @@ class TestWorkitems(TestCase):
     data: dict[str, User]
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
         self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))

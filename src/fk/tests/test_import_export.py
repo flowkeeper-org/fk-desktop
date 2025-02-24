@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import os
 from pathlib import Path
 from unittest import TestCase
@@ -60,6 +61,7 @@ class TestImportExport(TestCase):
         self.data_temp = self.source_temp.get_data()
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings_temp = MockSettings(filename=TEMP_FILENAME)
         self.cryptograph_temp = FernetCryptograph(self.settings_temp)
         self._init_source_temp()

@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from typing import Callable
 
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -44,6 +45,9 @@ class TestEmitter(AbstractEventEmitter):
 
 
 class TestEvents(AbstractTestCase):
+    def setUp(self):
+        logging.getLogger().setLevel(logging.DEBUG)
+
     def test_events_basic(self):
         emitter = TestEmitter()
         self.assert_events(emitter,

@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import os
 from unittest import TestCase
 
@@ -34,6 +35,7 @@ class TestFileEventSource(TestCase):
     data: dict[str, User]
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings(filename=TEMP_FILENAME)
         self.cryptograph = FernetCryptograph(self.settings)
         self.source = FileEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))

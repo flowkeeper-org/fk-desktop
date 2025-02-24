@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from unittest import TestCase
 
 from fk.core.backlog_strategies import CreateBacklogStrategy
@@ -22,6 +23,9 @@ from fk.tests.test_utils import (predefined_datetime, noop_emit, test_settings,
 
 
 class TestBacklogStrategies(TestCase):
+    def setUp(self):
+        logging.getLogger().setLevel(logging.DEBUG)
+
     @staticmethod
     def _create_sample_backlog(existing: Tenant | None = None) -> Tenant:
         data = test_data() if existing is None else existing
