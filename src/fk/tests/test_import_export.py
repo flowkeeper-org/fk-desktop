@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 import os
 from pathlib import Path
@@ -21,16 +22,24 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.import_export import import_, export, import_github_issues, import_simple
+from fk.core.interruption import Interruption
 from fk.core.mock_settings import MockSettings
+from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
 from fk.core.tags import Tags
 from fk.core.tenant import Tenant
+from fk.core.timer_data import TimerData
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CreateWorkitemStrategy
+from fk.tests.test_utils import epyc
 
 TEMP_DIR = 'src/fk/tests/fixtures/'
 TEMP_FILE = 'flowkeeper-data-TEMP.txt'
@@ -341,3 +350,89 @@ class TestImportExport(TestCase):
                 workitem: Workitem = backlog.values()[0]
                 self.assertFalse(workitem.is_sealed())
 
+    def test_backlog_to_json(self):
+        when = epyc()
+
+        # Check user
+        user = self.data_temp['user@local.host']
+        d = user.to_dict()
+        self.assertEqual(len(d), 5)
+        self.assertEqual(d['is_system_user'], False)
+        self.assertEqual(d['name'], 'Local User')
+        self.assertEqual(d['uid'], user.get_uid())
+        self.assertEqual(d['create_date'], user.get_create_date())
+        self.assertEqual(d['last_modified_date'], user.get_last_modified_date())
+
+        # Check backlog
+        self.source_temp.execute(CreateBacklogStrategy,
+                                 ['b1', 'First backlog'], True, when)
+        backlog: Backlog = user['b1']
+        d = backlog.to_dict()
+        self.assertEqual(len(d), 5)
+        self.assertEqual(d['date_work_started'], None)
+        self.assertEqual(d['name'], 'First backlog')
+        self.assertEqual(d['uid'], backlog.get_uid())
+        self.assertEqual(d['create_date'], when)
+        self.assertEqual(d['last_modified_date'], when)
+
+        # Check workitem
+        self.source_temp.execute(CreateWorkitemStrategy,
+                                 ['w1', backlog.get_uid(), 'Item #one'], True, when)
+        workitem: Workitem = backlog['w1']
+        d = workitem.to_dict()
+        self.assertEqual(len(d), 7)
+        self.assertEqual(d['date_work_started'], None)
+        self.assertEqual(d['date_work_ended'], None)
+        self.assertEqual(d['state'], 'new')
+        self.assertEqual(d['name'], 'Item #one')
+        self.assertEqual(d['uid'], workitem.get_uid())
+        self.assertEqual(d['create_date'], when)
+        self.assertEqual(d['last_modified_date'], when)
+
+        # Check pomodoro
+        self.source_temp.execute(AddPomodoroStrategy,
+                                 ['w1', '1', 'normal'], True, when)
+        pomodoro: Pomodoro = workitem.values()[0]
+        d = pomodoro.to_dict()
+        self.assertEqual(len(d), 12)
+        self.assertEqual(d['is_planned'], True)
+        self.assertEqual(d['state'], 'new')
+        self.assertEqual(d['type'], 'normal')
+        self.assertEqual(d['work_duration'], 1500)
+        self.assertEqual(d['rest_duration'], 300)
+        self.assertEqual(d['date_work_started'], None)
+        self.assertEqual(d['date_rest_started'], None)
+        self.assertEqual(d['date_completed'], None)
+        self.assertEqual(d['name'], 'Pomodoro 1')
+        self.assertEqual(d['uid'], pomodoro.get_uid())
+        self.assertEqual(d['create_date'], when)
+        self.assertEqual(d['last_modified_date'], when)
+
+        # Check interruption
+        self.source_temp.execute(StartTimerStrategy,
+                                 ['w1', '1500', '300'], True, when)
+        self.source_temp.execute(AddInterruptionStrategy,
+                                 ['w1', 'good reason', '15'], True, when)
+        interruption: Interruption = pomodoro.values()[0]
+        d = interruption.to_dict()
+        self.assertEqual(len(d), 6)
+        self.assertEqual(d['reason'], 'good reason')
+        self.assertEqual(d['duration'], datetime.timedelta(seconds=15))
+        self.assertEqual(d['void'], False)
+        self.assertEqual(d['uid'], interruption.get_uid())
+        self.assertEqual(d['create_date'], when)
+        self.assertEqual(d['last_modified_date'], when)
+
+        # Check timer
+        timer: TimerData = user.get_timer()
+        d = timer.to_dict()
+        self.assertEqual(len(d), 9)
+        self.assertEqual(d['state'], 'work')
+        self.assertEqual(d['pomodoro'], pomodoro.get_uid())
+        self.assertEqual(d['planned_duration'], 1500)
+        self.assertEqual(d['remaining_duration'], 1500)
+        self.assertEqual(d['last_state_change'], when)
+        self.assertEqual(d['next_state_change'], when + datetime.timedelta(seconds=1500))
+        self.assertEqual(d['uid'], timer.get_uid())
+        self.assertEqual(d['create_date'], user.get_create_date())
+        self.assertEqual(d['last_modified_date'], timer.get_last_modified_date())

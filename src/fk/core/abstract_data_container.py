@@ -60,7 +60,7 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
     def __len__(self):
         return len(self._children_sorted)
 
-    def values(self) -> Iterable[TChild]:
+    def values(self) -> list[TChild]:
         return self._children_sorted
 
     def keys(self) -> Iterable[str]:

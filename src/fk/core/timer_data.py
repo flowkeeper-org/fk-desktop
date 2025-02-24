@@ -59,6 +59,7 @@ class TimerData(AbstractDataItem['User']):
         self._remaining_duration = 0
         self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
         self._next_state_change = None
+        self.item_updated(when)
         logger.debug(f'Timer: Transitioned to idle at {self._last_state_change}')
 
     def work(self, pomodoro: Pomodoro, work_duration: float, when: datetime.datetime | None = None) -> None:
@@ -71,6 +72,7 @@ class TimerData(AbstractDataItem['User']):
             self._next_state_change = self._last_state_change + datetime.timedelta(seconds=work_duration)
         else:
             self._next_state_change = None
+        self.item_updated(when)
         logger.debug(f'Timer: Transitioned to work at {self._last_state_change}. '
                      f'Next state change: {self._next_state_change}')
 
@@ -83,6 +85,7 @@ class TimerData(AbstractDataItem['User']):
             self._next_state_change = self._last_state_change + datetime.timedelta(seconds=rest_duration)
         else:
             self._next_state_change = None
+        self.item_updated(when)
         logger.debug(f'Timer: Transitioned to rest at {self._last_state_change}. '
                      f'Next state change: {self._next_state_change}')
 
@@ -138,6 +141,7 @@ class TimerData(AbstractDataItem['User']):
                 self._remaining_duration = (self._next_state_change - now).total_seconds()
             else:
                 self._remaining_duration = 0
+        self.item_updated(when)
 
     def to_dict(self) -> dict:
         d = super().to_dict()
