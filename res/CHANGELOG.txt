@@ -23,6 +23,7 @@ Technical improvements:
  - Download a portable AppImage, see flowkeeper.org > Downloads.
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - Added support for Qt 6.8.x.
+- Flowkeeper CLI is now available in the sources, but it is not installed yet
 
 Bug fixes:
 

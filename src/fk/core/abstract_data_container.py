@@ -99,3 +99,8 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
                f'{indent}  Name: {self._name}\n' \
                f'{indent}  Children:\n' \
                f'{children}'
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['name'] = self._name
+        return d

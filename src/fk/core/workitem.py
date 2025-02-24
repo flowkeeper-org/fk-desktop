@@ -162,3 +162,10 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
             if p.get_type() == POMODORO_TYPE_TRACKER:
                 return True
         return False
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['date_work_started'] = self._date_work_started
+        d['date_work_ended'] = self._date_work_ended
+        d['state'] = self._state
+        return d

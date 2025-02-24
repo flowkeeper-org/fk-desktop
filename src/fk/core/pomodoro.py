@@ -268,3 +268,15 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
 
     def get_timer(self) -> 'TimerData':
         return self.get_parent().get_parent().get_parent().get_timer()
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['is_planned'] = self._is_planned
+        d['state'] = self._state
+        d['type'] = self._type
+        d['work_duration'] = self._work_duration
+        d['rest_duration'] = self._rest_duration
+        d['date_work_started'] = self._date_work_started
+        d['date_rest_started'] = self._date_rest_started
+        d['date_completed'] = self._date_completed
+        return d

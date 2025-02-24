@@ -64,3 +64,8 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
     def update_start_date(self, when: datetime.datetime) -> None:
         if self._date_work_started is None or self._date_work_started > when:
             self._date_work_started = when
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['date_work_started'] = self._date_work_started
+        return d

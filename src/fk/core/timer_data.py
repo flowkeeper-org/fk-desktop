@@ -138,3 +138,13 @@ class TimerData(AbstractDataItem['User']):
                 self._remaining_duration = (self._next_state_change - now).total_seconds()
             else:
                 self._remaining_duration = 0
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['state'] = self._state
+        d['pomodoro'] = self._pomodoro.get_uid() if self._pomodoro is not None else None
+        d['planned_duration'] = self._planned_duration
+        d['remaining_duration'] = self._remaining_duration
+        d['last_state_change'] = self._last_state_change
+        d['next_state_change'] = self._next_state_change
+        return d

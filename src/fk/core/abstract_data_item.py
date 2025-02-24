@@ -77,6 +77,13 @@ class AbstractDataItem(ABC, Generic[TParent]):
                f'{indent}  Create date: {self._create_date}\n' \
                f'{indent}  Last modified: {self._last_modified_date}'
 
+    def to_dict(self) -> dict:
+        return {
+            'uid': self._uid,
+            'create_date': self._create_date,
+            'last_modified_date': self._last_modified_date,
+        }
+
     def get_create_date(self) -> datetime.datetime:
         return self._create_date
 

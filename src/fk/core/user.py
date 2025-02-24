@@ -79,3 +79,8 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         return f'{super().dump(indent, mask_uid)}\n' \
                f'{indent}  System user: {self._is_system_user}'
         # TODO: Dump tags and timer
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['is_system_user'] = self._is_system_user
+        return d

@@ -63,3 +63,10 @@ class Interruption(AbstractDataItem['Pomodoro']):
                f'{indent}  Reason: {self._reason if self._reason else "<None>"}\n' \
                f'{indent}  Void: {self._void}\n' \
                f'{indent}  Duration: {self._duration if self._duration else "<None>"}'
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['reason'] = self._reason
+        d['duration'] = self._duration
+        d['void'] = self._void
+        return d
