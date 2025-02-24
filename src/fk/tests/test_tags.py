@@ -191,7 +191,7 @@ class TestTags(TestCase):
         found_two = False
         found_three = False
         for tag in self.source.tags():
-            self.assertIn(tag, ['one', 'two', 'three'])
+            self.assertIn(tag.get_uid(), ['one', 'two', 'three'])
             if tag.get_uid() == 'one':
                 found_one = True
             elif tag.get_uid() == 'two':
