@@ -76,14 +76,90 @@ class TestEvents(AbstractTestCase):
         self.assertEqual(fired[0], 'BeforeAction')
         self.assertEqual(fired[1], 'AfterAction')
 
+    def test_cancel_one(self):
+        fired = False
+        def on_event(event, **kwargs):
+            self.assertEqual(event, 'AfterAction')
+            nonlocal fired
+            fired = True
+        emitter = TestEmitter()
+        emitter.on('*', on_event, True)
+        emitter.cancel('BeforeAction')
+        emitter.action('foo')
+        self.assertTrue(fired)
+
+    def test_unsubscribe(self):
+        def on_event(event, **kwargs):
+            self.assertTrue(False)
+        emitter = TestEmitter()
+        emitter.on('BeforeAction', on_event, True)
+        emitter.on('AfterAction', on_event, True)
+        emitter.unsubscribe(on_event)
+        emitter.action('foo')
+
+    def test_unsubscribe_one(self):
+        fired = False
+        def on_event(event, **kwargs):
+            self.assertEqual(event, 'BeforeAction')
+            nonlocal fired
+            fired = True
+        emitter = TestEmitter()
+        emitter.on('BeforeAction', on_event, True)
+        emitter.on('AfterAction', on_event, True)
+        emitter.unsubscribe_one(on_event, 'AfterAction')
+        emitter.action('foo')
+        self.assertTrue(fired)
+
+    def test_firing_order(self):
+        fired1 = False
+        fired2 = False
+        def on_event1(event, **kwargs):
+            nonlocal fired1
+            nonlocal fired2
+            self.assertFalse(fired1)
+            self.assertFalse(fired2)
+            fired1 = True
+        def on_event2(event, **kwargs):
+            nonlocal fired1
+            nonlocal fired2
+            self.assertTrue(fired1)
+            self.assertFalse(fired2)
+            fired2 = True
+
+        emitter = TestEmitter()
+
+        emitter.on('BeforeAction', on_event1, False)
+        emitter.on('BeforeAction', on_event2, True)
+        emitter.action('foo')
+        self.assertTrue(fired1 and fired2)
+        fired1 = False
+        fired2 = False
+        emitter.cancel('BeforeAction')
+
+        emitter.on('BeforeAction', on_event1, False)
+        emitter.on('BeforeAction', on_event2, False)
+        emitter.action('foo')
+        self.assertTrue(fired1 and fired2)
+        fired1 = False
+        fired2 = False
+        emitter.cancel('BeforeAction')
+
+        emitter.on('BeforeAction', on_event2, True)
+        emitter.on('BeforeAction', on_event1, False)
+        emitter.action('foo')
+        self.assertTrue(fired1 and fired2)
+        fired1 = False
+        fired2 = False
+        emitter.cancel('BeforeAction')
+
     # Tests:
-    # - Two priorities ("last" callbacks)
-    # - Subscribe with wildcards
-    # - Subscribe to a single event
+    # + Two priorities ("last" callbacks)
+    # + Subscribe with wildcards
+    # + Subscribe to a single event
     # - Carry parameter
     # - No duplicate subscriptions
-    # - Canceling subscriptions
-    # - Unsubscribing from emitter
+    # + Canceling subscriptions
+    # + Unsubscribing from emitter
     # - Emitting events with parameters
     # - Error when trying to emit something new
     # - Mute / unmute events

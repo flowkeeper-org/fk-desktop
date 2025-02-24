@@ -336,12 +336,13 @@ class TestPomodoros(TestCase):
         self.assertEqual(user.get_state(when), ('Focus', "25 minutes"))
 
     def test_start_work_tracker_ok(self):
-        user, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
+        user, backlog, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
         self.source.execute(StartTimerStrategy, ['w11'], True, when)
         self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00")
         self.assertEqual(user.get_state(when), ('Tracking', 0))
+        self.assertEqual(backlog.get_running_workitem(), (workitem, pomodoro))
 
     def test_start_work_tracker_raises(self):
         _, _, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)

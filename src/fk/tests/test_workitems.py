@@ -170,12 +170,17 @@ class TestWorkitems(TestCase):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         workitem = backlog['w11']
+        incomplete = list(backlog.get_incomplete_workitems())
+        self.assertEqual(len(incomplete), 1)
+        self.assertEqual(incomplete[0], workitem)
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
         self.assertIn('w11', backlog)
         self.assertFalse(workitem.is_startable())
         self.assertTrue(workitem.is_sealed())
         self.assertFalse(workitem.is_running())
         self.assertFalse(workitem.has_running_pomodoro())
+        incomplete = list(backlog.get_incomplete_workitems())
+        self.assertEqual(len(incomplete), 0)
 
     def test_complete_workitem_with_two_pomodoros(self):
         user, backlog = self._standard_backlog()
