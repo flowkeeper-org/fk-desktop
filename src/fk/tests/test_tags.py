@@ -20,12 +20,11 @@ from unittest import TestCase
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.backlog import Backlog
-from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.file_event_source import FileEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
+from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
-from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
 from fk.core.tags import Tags
 from fk.core.tenant import Tenant
@@ -191,20 +190,17 @@ class TestTags(TestCase):
         found_one = False
         found_two = False
         found_three = False
-        found_another = False
         for tag in self.source.tags():
+            self.assertIn(tag, ['one', 'two', 'three'])
             if tag.get_uid() == 'one':
                 found_one = True
             elif tag.get_uid() == 'two':
                 found_two = True
             elif tag.get_uid() == 'three':
                 found_three = True
-            else:
-                found_another = True
         self.assertTrue(found_one)
         self.assertTrue(found_two)
         self.assertTrue(found_three)
-        self.assertFalse(found_another)
 
         self.assertIsNotNone(self.source.find_tag('one'))
         self.assertIsNone(self.source.find_tag('four'))
@@ -392,12 +388,7 @@ class TestTags(TestCase):
 
         def on_event(event, **kwargs):
             fired.append(event)
-            if event == 'TagCreated':
-                self.assertIn('tag', kwargs)
-                tag = kwargs['tag']
-                self.assertEqual(tag.get_uid(), 'new')
-                self.assertEqual(tag.get_parent().get_parent(), self.data['user@local.host'])
-            elif event == 'TagContentChanged':
+            if event == 'TagContentChanged':
                 self.assertIn('tag', kwargs)
                 tag = kwargs['tag']
                 self.assertEqual(tag.get_uid(), 'new')

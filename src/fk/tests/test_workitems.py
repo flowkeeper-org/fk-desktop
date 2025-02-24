@@ -26,8 +26,8 @@ from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
 from fk.core.pomodoro import Pomodoro
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
-from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.tenant import Tenant
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
@@ -273,10 +273,12 @@ class TestWorkitems(TestCase):
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-            elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
+            elif event == 'BeforePomodoroVoided' or event == 'AfterPomodoroVoided':
                 self.assertIn('pomodoro', kwargs)
+                self.assertIn('reason', kwargs)
                 self.assertTrue(type(kwargs['pomodoro']) is Pomodoro)
                 self.assertEqual(kwargs['pomodoro'].get_parent().get_name(), 'First item')
+                self.assertTrue(kwargs['reason'].startswith('Voided automatically'))
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
@@ -306,10 +308,12 @@ class TestWorkitems(TestCase):
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-            elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
+            elif event == 'BeforePomodoroVoided' or event == 'AfterPomodoroVoided':
                 self.assertIn('pomodoro', kwargs)
+                self.assertIn('reason', kwargs)
                 self.assertTrue(type(kwargs['pomodoro']) is Pomodoro)
                 self.assertEqual(kwargs['pomodoro'].get_parent().get_name(), 'First item')
+                self.assertTrue(kwargs['reason'].startswith('Voided automatically'))
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
