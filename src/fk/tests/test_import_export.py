@@ -317,7 +317,7 @@ class TestImportExport(TestCase):
         backlog: Backlog = user.values()[0]
         self.assertEqual(backlog.get_name(), 'github')
 
-        names = [w.get_name() for w in backlog.values()]
+        names = backlog.names()
         self.assertEqual(len(names), 2)
         for n in names:
             self.assertTrue(n.startswith('101 - Title 101') or n.startswith('102 - Title 102'))
@@ -334,7 +334,7 @@ class TestImportExport(TestCase):
         self.assertEqual(len(user), 2)
         for backlog in user.values():
             self.assertTrue(backlog.get_name() == 'b1' or backlog.get_name() == 'b2')
-            wi_names = [w.get_name() for w in backlog.values()]
+            wi_names = backlog.names()
             if backlog.get_name() == 'b1':
                 self.assertEqual(len(wi_names), 2)
                 self.assertIn('Title 101', wi_names)

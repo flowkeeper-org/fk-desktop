@@ -57,6 +57,24 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
         else:
             self._rest_duration = 0.0
 
+
+    def get_workitem(self,
+                     data: Tenant,
+                     uid: str,
+                     fail_if_not_found: bool = True,
+                     fail_if_sealed: bool = False) -> Workitem | None:
+        for backlog in self.get_user(data).values():
+            if uid in backlog:
+                workitem: Workitem = backlog[uid]
+                if fail_if_sealed and workitem.is_sealed():
+                    raise Exception(f'Workitem "{uid}" is sealed')
+                return workitem
+
+        if fail_if_not_found:
+            raise Exception(f'Workitem "{uid}" not found')
+        else:
+            return None
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:

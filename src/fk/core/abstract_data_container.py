@@ -67,7 +67,7 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         for child in self._children_sorted:
             yield child.get_uid()
 
-    def names(self) -> Iterable[str]:
+    def names(self) -> list[str]:
         return [child.get_name() for child in self.values()]
 
     def get_name(self) -> str:

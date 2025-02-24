@@ -31,7 +31,7 @@ from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
-    CompleteWorkitemStrategy
+    CompleteWorkitemStrategy, MoveWorkitemStrategy
 
 
 class TestWorkitems(TestCase):
@@ -377,3 +377,12 @@ class TestWorkitems(TestCase):
         backlog = self._create_workitems_for_reorder_tests()
         self._assert_workitem_order(backlog, 'w11,w12,w13,w14')
 
+    def test_move_workitems_ok(self):
+        self.source.execute(CreateBacklogStrategy, ['b1', 'Backlog 1'])
+        self.source.execute(CreateBacklogStrategy, ['b2', 'Backlog 2'])
+        self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
+        self.source.execute(MoveWorkitemStrategy, ['w11', 'b2'])
+        user: User = self.data.get_current_user()
+        self.assertEqual(len(user['b1']), 0)
+        self.assertEqual(len(user['b2']), 1)
+        self.assertIn('w11', user['b2'])
