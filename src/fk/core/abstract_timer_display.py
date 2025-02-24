@@ -93,7 +93,7 @@ class AbstractTimerDisplay:
     def _on_tick(self, **kwargs) -> None:
         timer = self.timer
         pomodoro = timer.get_running_pomodoro()
-        timer.update_remaining_duration()
+        timer.update_remaining_duration(None)
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
             state = 'Focus' if timer.is_working() else 'Rest'
             state_text = f"{state}: {timer.format_remaining_duration()} left"

@@ -17,7 +17,7 @@ import datetime
 import logging
 
 from fk.core.abstract_data_item import AbstractDataItem, generate_uid
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class TimerData(AbstractDataItem['User']):
         self._planned_duration = work_duration
         self._remaining_duration = work_duration
         self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-        if work_duration:   # It might be 0 for tracker workitems
+        if work_duration and pomodoro.get_type() == POMODORO_TYPE_NORMAL:   # It might be 0 for tracker workitems
             self._next_state_change = self._last_state_change + datetime.timedelta(seconds=work_duration)
         else:
             self._next_state_change = None
@@ -79,7 +79,7 @@ class TimerData(AbstractDataItem['User']):
         self._planned_duration = rest_duration
         self._remaining_duration = rest_duration
         self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-        if rest_duration:   # It might be 0 for long / unlimited breaks
+        if rest_duration and self._pomodoro.get_type() == POMODORO_TYPE_NORMAL:   # It might be 0 for long / unlimited breaks
             self._next_state_change = self._last_state_change + datetime.timedelta(seconds=rest_duration)
         else:
             self._next_state_change = None
