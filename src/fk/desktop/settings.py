@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
+import platform
 import sys
 from typing import Callable
 
@@ -277,6 +278,41 @@ class SettingsDialog(QDialog):
             self._widgets_get_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
             self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
             return [ed6]
+        elif option_type == 'font' and platform.system() == 'Darwin':
+            widget = QWidget(parent)
+            layout = QVBoxLayout(widget)
+            layout.setContentsMargins(0, 6, 0, 0)
+
+            ed7_checkbox = QCheckBox('Use macOS system font', parent)
+            layout.addWidget(ed7_checkbox)
+            ed7_font = QFontComboBox(parent)
+            layout.addWidget(ed7_font)
+
+            ed7_checkbox.stateChanged.connect(ed7_font.setDisabled)
+
+            ed7_checkbox.stateChanged.connect(lambda checked: self._on_value_changed(
+                option_id,
+                '.AppleSystemUIFont' if checked else ed7_font.currentFont().family()
+            ))
+            ed7_font.currentFontChanged.connect(lambda v: self._on_value_changed(
+                option_id,
+                v.family()
+            ))
+
+            def set_value(txt):
+                is_system_font = txt == '.AppleSystemUIFont'
+                if is_system_font:
+                    ed7_font.setCurrentFont('Noto Sans')  # Anything existing
+                else:
+                    ed7_font.setCurrentFont(txt)
+                ed7_checkbox.setChecked(is_system_font)
+            set_value(option_value)
+
+            self._widgets_get_value[option_id] = lambda: \
+                '.AppleSystemUIFont' if ed7_checkbox.isChecked() else ed7_font.currentFont().family()
+            self._widgets_set_value[option_id] = set_value
+
+            return [widget]
         elif option_type == 'font':
             ed7 = QFontComboBox(parent)
             ed7.currentFontChanged.connect(lambda v: self._on_value_changed(
@@ -441,10 +477,10 @@ class SettingsDialog(QDialog):
         for name in self._widgets_get_value:
             values[name] = self._widgets_get_value[name]()
 
-        if self._buttons_mapping[option_id](values, self._value_changed_extrnally):
+        if self._buttons_mapping[option_id](values, self._value_changed_externally):
             self.close()
 
-    def _value_changed_extrnally(self, name: str, value: str):
+    def _value_changed_externally(self, name: str, value: str):
         logger.debug(f'Update the setting display of {name} to {value}')
         self._widgets_set_value[name](value)
 

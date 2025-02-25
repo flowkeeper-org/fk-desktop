@@ -43,10 +43,6 @@ def _never_show(_) -> bool:
     return False
 
 
-def _show_for_system_font(values: dict[str, str]) -> bool:
-    return values['Application.font_embedded'] == 'False'
-
-
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
     return values['Application.eyecandy_type'] == 'gradient'
 
@@ -271,11 +267,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
-                ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
-                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_main_size', 'int', 'Main font size', '12', [3, 48], _show_for_system_font),
-                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_header_size', 'int', 'Title font size', '30', [3, 72], _show_for_system_font),
+                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
+                ('Application.font_main_size', 'int', 'Main font size', '12', [3, 48], _always_show),
+                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _always_show),
+                ('Application.font_header_size', 'int', 'Title font size', '30', [3, 72], _always_show),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
@@ -400,12 +395,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
-        to_set = dict[str, str]()
-        for lst in self._definitions.values():
-            for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-                to_set[option_id] = option_default
+        # It seems to be sufficient just to clear all settings -- then defaults will be
+        # used when we do .get(name)
+        # to_set = dict[str, str]()
+        # for lst in self._definitions.values():
+        #     for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
+        #         to_set[option_id] = option_default
         self.clear()
-        self.set(to_set)
+        # self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
         return _show_when_encryption_is_enabled({
@@ -426,7 +423,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self.get_auto_theme() if raw == 'auto' else raw
 
     def update_default(self, name: str, value: str) -> None:
+        old = self._defaults[name]
         self._defaults[name] = value
+        logger.debug(f'Updated default {name} from {old} to {value}. Got: {self.get(name)}')
 
     @abstractmethod
     def init_audio_outputs(self):

@@ -302,12 +302,8 @@ class Application(QApplication, AbstractEventEmitter):
         var_file.open(QFile.OpenModeFlag.ReadOnly)
         variables = json.loads(var_file.readAll().toStdString())
         var_file.close()
-        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
-            variables['FONT_HEADER_FAMILY'] = self._embedded_font_family
-            variables['FONT_MAIN_FAMILY'] = self._embedded_font_family
-        else:
-            variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
-            variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
+        variables['FONT_HEADER_FAMILY'] = self._settings.get('Application.font_header_family')
+        variables['FONT_MAIN_FAMILY'] = self._settings.get('Application.font_main_family')
         variables['FONT_HEADER_SIZE'] = self._settings.get('Application.font_header_size') + 'pt'
         variables['FONT_MAIN_SIZE'] = self._settings.get('Application.font_main_size') + 'pt'
         variables['FONT_SUBTEXT_SIZE'] = str(float(self._settings.get('Application.font_main_size')) * 0.75) + 'pt'
@@ -350,29 +346,24 @@ class Application(QApplication, AbstractEventEmitter):
             self._embedded_font_family = families[0]
 
     def _initialize_fonts(self) -> (QFont, QFont):
-        # Create corresponding QFont objects
         default_header_size = int(self._settings.get('Application.font_header_size'))
-        default_main_size = int(self._settings.get('Application.font_main_size'))
-        if self._settings.get('Application.font_embedded') == 'True' and self._embedded_font_family is not None:
-            logger.debug(f'Embedded font {self._embedded_font_family}, size {default_main_size} / {default_header_size}')
-            self._font_header = QFont(self._embedded_font_family, default_header_size)
-            self._font_main = QFont(self._embedded_font_family, default_main_size)
-        else:
-            logger.debug(f'Custom font {self._settings.get("Application.font_main_family")}, size {default_main_size} / {default_header_size}')
-            self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
-            self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
-
+        logger.debug(f'Header font: {self._settings.get("Application.font_header_family")}, size {default_header_size}')
+        self._font_header = QFont(self._settings.get('Application.font_header_family'), default_header_size)
         if self._font_header is None:
             self._font_header = QFont()
             new_size = int(self._font_header.pointSize() * 24.0 / 9)
             self._font_header.setPointSize(new_size)
 
+        default_main_size = int(self._settings.get('Application.font_main_size'))
+        logger.debug(f'Main font: {self._settings.get("Application.font_main_family")}, size {default_main_size}')
+        self._font_main = QFont(self._settings.get('Application.font_main_family'), default_main_size)
         if self._font_main is None:
             self._font_main = QFont()
 
         self.setFont(self._font_main)
-        logger.debug(f'Initializing application fonts - main: {self._font_main.family()} / {self._font_main.pointSize()}')
-        logger.debug(f'Initializing application fonts - header: {self._font_header.family()} / {self._font_header.pointSize()}')
+
+        logger.debug(f'Initialized main font: {self._font_main.family()} / {self._font_main.pointSize()}')
+        logger.debug(f'Initialized header font: {self._font_header.family()} / {self._font_header.pointSize()}')
 
         # Notify everyone
         self._emit(AfterFontsChanged, {
@@ -464,7 +455,7 @@ class Application(QApplication, AbstractEventEmitter):
             logger.debug(f'Refreshing theme and fonts twice because of a setting change')
             self.refresh_theme_and_fonts()
             # With Qt 6.7.x on Windows we need to do it twice, otherwise the
-            # fonts apply only the next time we change the setting.
+            # fonts apply only the next time we change the setting. It's a Qt bug.
             self.refresh_theme_and_fonts()
 
         if request_new_source:

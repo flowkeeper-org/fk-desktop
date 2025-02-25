@@ -13,6 +13,7 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Import from CSV and GitHub, try Ctrl+I (#125).
 - "Contact us" submenu to facilitate feedback collection (#111).
 - Flowkeeper window now hides automatically on auto-start (#102).
+- There's a new font selector for macOS, which supports its system font (#113).
 
 Technical improvements:
 
@@ -31,7 +32,6 @@ Bug fixes:
 
 - TODO: Long breaks are now supported (#53) -- see rc-0.10.0-timer branch
 - TODO: You can now find Flowkeeper on AppStore for macOS (#99)
-- TODO: Font selection is back, with Noto Sans preselected (#113)
 - TODO: Statistics window (F9) now tracks time instead of number of pomodoros (#122)
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
