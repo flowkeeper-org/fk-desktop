@@ -26,7 +26,7 @@ from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
 
 
-# StartTimer("123-456-789", "1500", ["300"])
+# StartTimer("123-456-789", ["1500", ["300"]])
 @strategy
 class StartTimerStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
@@ -48,12 +48,15 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
-        self._work_duration = float(params[1])
-        if len(params) >= 3 and params[2] != '':
-            self._rest_duration = float(params[2])
+        if len(params) >= 2:
+            self._work_duration = float(params[1])
+            if len(params) >= 3 and params[2] != '':
+                self._rest_duration = float(params[2])
+            else:
+                self._rest_duration = 0.0  # There will be a long break
         else:
+            self._work_duration = 0.0  # This will be a tracker
             self._rest_duration = 0.0
-
 
     def get_workitem(self,
                      data: Tenant,
@@ -96,8 +99,9 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                     emit(events.AfterWorkitemStart, params, self._carry)
                 emit(events.BeforePomodoroWorkStart, params, self._carry)
 
-                pomodoro.update_work_duration(self._work_duration)
-                pomodoro.update_rest_duration(self._rest_duration)
+                if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                    pomodoro.update_work_duration(self._work_duration)
+                    pomodoro.update_rest_duration(self._rest_duration)
 
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)

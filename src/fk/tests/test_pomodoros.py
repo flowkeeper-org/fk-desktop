@@ -339,7 +339,7 @@ class TestPomodoros(TestCase):
         user, backlog, workitem, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
         when = epyc()
         self._assert_pomodoro_and_timer(pomodoro, 'idle', when, 0)
-        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        self.source.execute(StartTimerStrategy, ['w11'], True, when)
         self._assert_pomodoro_and_timer(pomodoro, 'work', when, 0, "0:00:00")
         self.assertEqual(user.get_state(when), ('Tracking', 0))
         self.assertEqual(backlog.get_running_workitem(), (workitem, pomodoro))
@@ -418,7 +418,7 @@ class TestPomodoros(TestCase):
         # No auto-seal for trackers. All other tests use normal pomodoros.
         _, _, _, [pomodoro] = self._standard_pomodoro(1, POMODORO_TYPE_TRACKER)
         when = epyc()
-        self.source.execute(StartTimerStrategy, ['w11', '1500', '300'], True, when)
+        self.source.execute(StartTimerStrategy, ['w11'], True, when)
         when += datetime.timedelta(seconds=1550)
         self.source.execute(AutoSealInternalStrategy, [], False, when)
         self._assert_pomodoro_and_timer(pomodoro, 'work', when, 1550,  "0:25:50")
