@@ -367,7 +367,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     t is CompleteWorkitemStrategy or \
                     t is StartWorkStrategy or \
                     t is StartTimerStrategy or \
-                    t is StopTimerStrategy or \
                     t is AddPomodoroStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s

@@ -24,6 +24,7 @@ from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
+from fk.core.timer_data import TimerData
 from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
@@ -220,10 +221,11 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                 selected.get_uid(),
             ])
         else:
+            timer: TimerData = self._source.get_data().get_current_user().get_timer()
             self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
                 settings.get('Pomodoro.default_work_duration'),
-                settings.get('Pomodoro.default_rest_duration'),
+                0 if timer.suggest_long_beak() else settings.get('Pomodoro.default_rest_duration'),
             ])
 
     def complete_selected_workitem(self) -> None:

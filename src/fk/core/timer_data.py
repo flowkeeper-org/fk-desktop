@@ -31,6 +31,8 @@ class TimerData(AbstractDataItem['User']):
     _remaining_duration: float
     _last_state_change: datetime.datetime | None
     _next_state_change: datetime.datetime | None
+    _last_date: datetime.date
+    _pomodoro_in_series: int
 
     def __init__(self,
                  user: 'User',
@@ -42,6 +44,8 @@ class TimerData(AbstractDataItem['User']):
         self._remaining_duration = 0
         self._last_state_change = None
         self._next_state_change = None
+        self._last_date = datetime.date.today()
+        self._pomodoro_in_series = 0
 
     def get_running_pomodoro(self) -> Pomodoro | None:
         return self._pomodoro
@@ -76,6 +80,14 @@ class TimerData(AbstractDataItem['User']):
         logger.debug(f'Timer: Transitioned to work at {self._last_state_change}. '
                      f'Next state change: {self._next_state_change}')
 
+    def suggest_long_beak(self) -> bool:
+        today = datetime.date.today()
+        if self._last_date != today:
+            self._last_date = today
+            self._pomodoro_in_series = 0
+            logger.debug('Reset pomodoro series because we started a new day')
+        return self._pomodoro_in_series >= 3  # We've already done three pomodoros without breaks
+
     def rest(self, rest_duration: float, when: datetime.datetime | None = None) -> None:
         self._state = 'rest'
         self._planned_duration = rest_duration
@@ -86,6 +98,9 @@ class TimerData(AbstractDataItem['User']):
         else:
             self._next_state_change = None
         self.item_updated(when)
+        if rest_duration == 0:
+            # We started a long break, can now reset the series
+            self._pomodoro_in_series = 0
         logger.debug(f'Timer: Transitioned to rest at {self._last_state_change}. '
                      f'Next state change: {self._next_state_change}')
 
