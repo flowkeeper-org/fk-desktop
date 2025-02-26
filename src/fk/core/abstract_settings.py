@@ -180,11 +180,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
             ],
-            'Series': [
+            'Series and breaks': [
                 ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [
                     'simple:After [N] completed pomodoros',
                     'smart:After focusing for [X] time within the last [Y] hours',
-                    'done:At the end of each series',
+                    'done:After completing a series of pomodoros',
                     'never:Never (let me decide)',
                 ], _always_show),
                 ('Pomodoro.long_break_each', 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
@@ -193,7 +193,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _always_show),
                 ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'True', [], _always_show),
                 ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next '
-                                                              'planned pomodoro automatically.', [], _always_show),
+                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),

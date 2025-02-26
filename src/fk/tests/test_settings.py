@@ -54,7 +54,7 @@ class TestSettings(TestCase):
 
     def test_categories(self):
         categories = self.settings.get_categories()
-        self.assertEqual(len(categories), 6)
+        self.assertEqual(len(categories), 7)
         self.assertIn('General', categories)
         self.settings.set({
             'Pomodoro.default_work_duration': '10',
