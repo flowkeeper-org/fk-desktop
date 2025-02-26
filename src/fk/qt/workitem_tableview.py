@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
@@ -35,6 +37,8 @@ from fk.qt.focus_widget import complete_item
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 from fk.qt.workitem_text_delegate import WorkitemTextDelegate
+
+logger = logging.getLogger(__name__)
 
 
 class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
@@ -222,10 +226,16 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             ])
         else:
             timer: TimerData = self._source.get_data().get_current_user().get_timer()
+            if timer.suggest_long_beak():
+                logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
+                rest_duration = "0"
+            else:
+                logger.debug('The user starts a workitem. A short break is suggested after it is completed.')
+                rest_duration = settings.get('Pomodoro.default_rest_duration')
             self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
                 settings.get('Pomodoro.default_work_duration'),
-                0 if timer.suggest_long_beak() else settings.get('Pomodoro.default_rest_duration'),
+                rest_duration,
             ])
 
     def complete_selected_workitem(self) -> None:

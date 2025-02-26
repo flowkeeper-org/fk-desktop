@@ -48,10 +48,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
-        if len(params) >= 2 and params[1] != '':
-            self._work_duration = float(params[1])
-        else:
-            self._work_duration = 0.0
+        self._work_duration = float(params[1])
         if len(params) >= 3 and params[2] != '':
             self._rest_duration = float(params[2])
         else:
@@ -99,10 +96,8 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                     emit(events.AfterWorkitemStart, params, self._carry)
                 emit(events.BeforePomodoroWorkStart, params, self._carry)
 
-                if self._work_duration != 0:
-                    pomodoro.update_work_duration(self._work_duration)
-                if self._rest_duration != 0:
-                    pomodoro.update_rest_duration(self._rest_duration)
+                pomodoro.update_work_duration(self._work_duration)
+                pomodoro.update_rest_duration(self._rest_duration)
 
                 pomodoro.start_work(self._when)
                 pomodoro.item_updated(self._when)
@@ -143,7 +138,7 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
         if pomodoro.get_type() not in [POMODORO_TYPE_TRACKER, POMODORO_TYPE_NORMAL]:
             raise Exception(f'Cannot stop the timer for a running pomodoro of type {pomodoro.get_type()}')
 
-        if pomodoro.get_type() == POMODORO_TYPE_NORMAL and (pomodoro.get_rest_duration() or pomodoro.is_working()):
+        if pomodoro.get_type() == POMODORO_TYPE_NORMAL and (pomodoro.get_rest_duration() > 0 or pomodoro.is_working()):
             # Stopping a normal running pomodoro with predefined rest duration means voiding it
             params = {
                 'pomodoro': pomodoro,

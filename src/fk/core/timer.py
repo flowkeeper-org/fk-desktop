@@ -89,7 +89,7 @@ class PomodoroTimer(AbstractEventEmitter):
                         'finished')
                 else:
                     raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
-            elif pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+            elif pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 self._schedule_tick()
 
     def _schedule_tick(self) -> None:
@@ -152,7 +152,10 @@ class PomodoroTimer(AbstractEventEmitter):
                                     rest_duration: float,
                                     **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling rest start')
-        self._schedule_transition(rest_duration * 1000, pomodoro, 'finished')
+        if rest_duration > 0:
+            self._schedule_transition(rest_duration * 1000, pomodoro, 'finished')
+        else:
+            logger.debug(f'PomodoroTimer: Long break - did not schedule automatic transition to finished')
         logger.debug(f'PomodoroTimer: Done - Handling rest start')
 
     def _handle_pomodoro_complete(self,

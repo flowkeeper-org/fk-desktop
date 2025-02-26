@@ -19,7 +19,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemDelete, AfterWorkitemComplete, AfterPomodoroRemove, TimerWorkStart, \
     TimerWorkComplete, TimerRestComplete, SourceMessagesProcessed
-from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.timer import PomodoroTimer
 from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
@@ -94,7 +94,7 @@ class AbstractTimerDisplay:
         timer = self.timer
         pomodoro = timer.get_running_pomodoro()
         timer.update_remaining_duration(None)
-        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+        if pomodoro.get_type() == POMODORO_TYPE_NORMAL and not pomodoro.is_long_break():
             state = 'Focus' if timer.is_working() else 'Rest'
             state_text = f"{state}: {timer.format_remaining_duration()} left"
             self.tick(pomodoro,
@@ -102,10 +102,16 @@ class AbstractTimerDisplay:
                       timer.get_remaining_duration(),
                       timer.get_planned_duration(),
                       self._mode)
-        else:
+        elif pomodoro.get_type() == POMODORO_TYPE_TRACKER:
             self.tick(pomodoro,
                       f'Tracking: {timer.format_elapsed_duration()}',
                       pomodoro.get_elapsed_duration(),
+                      0,
+                      'tracking')
+        elif pomodoro.is_long_break():
+            self.tick(pomodoro,
+                      f'Long break: {timer.format_elapsed_rest_duration()}',
+                      pomodoro.get_elapsed_rest_duration(),
                       0,
                       'tracking')
 

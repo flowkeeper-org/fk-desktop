@@ -168,6 +168,9 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def is_resting(self) -> bool:
         return self._state == 'rest'
 
+    def is_long_break(self) -> bool:
+        return self._type == POMODORO_TYPE_NORMAL and self._state == 'rest' and self._rest_duration == 0
+
     def is_finished(self) -> bool:
         return self._state == 'finished'
 
@@ -178,6 +181,16 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             elif self.is_finished():
                 now = self._last_modified_date
             return max((now - self._date_work_started).total_seconds(), 0)
+        else:
+            return 0
+
+    def get_elapsed_rest_duration(self, when: datetime.datetime = None) -> float:
+        if self._date_rest_started is not None:
+            if self.is_resting():
+                now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
+            elif self.is_finished():
+                now = self._last_modified_date
+            return max((now - self._date_rest_started).total_seconds(), 0)
         else:
             return 0
 

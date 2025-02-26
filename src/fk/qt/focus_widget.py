@@ -370,7 +370,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             running_item = self.timer.get_running_workitem()
             self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
-                if self.timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+                pomodoro: Pomodoro = self.timer.get_running_pomodoro()
+                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                     self._actions['focus.voidPomodoro'].setVisible(False)
                     self._actions['focus.voidPomodoro'].setDisabled(True)
                     self._actions['focus.interruption'].setVisible(False)

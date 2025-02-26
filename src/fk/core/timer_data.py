@@ -80,12 +80,17 @@ class TimerData(AbstractDataItem['User']):
         logger.debug(f'Timer: Transitioned to work at {self._last_state_change}. '
                      f'Next state change: {self._next_state_change}')
 
-    def suggest_long_beak(self) -> bool:
-        today = datetime.date.today()
+    def _refresh_today(self, when: datetime.datetime | None = None):
+        if when is None:
+            when = datetime.datetime.now()
+        today = when.date()
         if self._last_date != today:
             self._last_date = today
             self._pomodoro_in_series = 0
             logger.debug('Reset pomodoro series because we started a new day')
+
+    def suggest_long_beak(self) -> bool:
+        self._refresh_today()
         return self._pomodoro_in_series >= 3  # We've already done three pomodoros without breaks
 
     def rest(self, rest_duration: float, when: datetime.datetime | None = None) -> None:
@@ -93,16 +98,21 @@ class TimerData(AbstractDataItem['User']):
         self._planned_duration = rest_duration
         self._remaining_duration = rest_duration
         self._last_state_change = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-        if rest_duration and self._pomodoro.get_type() == POMODORO_TYPE_NORMAL:   # It might be 0 for long / unlimited breaks
+
+        self._refresh_today(when)  # Reset the series, if needed
+
+        if rest_duration > 0 and self._pomodoro.get_type() == POMODORO_TYPE_NORMAL:   # It might be 0 for long / unlimited breaks
             self._next_state_change = self._last_state_change + datetime.timedelta(seconds=rest_duration)
+            self._pomodoro_in_series += 1  # Increment the number of completed pomodoros in series
         else:
             self._next_state_change = None
+            self._pomodoro_in_series = 0  # We started a long break, can now reset the series
+
         self.item_updated(when)
-        if rest_duration == 0:
-            # We started a long break, can now reset the series
-            self._pomodoro_in_series = 0
+
         logger.debug(f'Timer: Transitioned to rest at {self._last_state_change}. '
-                     f'Next state change: {self._next_state_change}')
+                     f'Next state change: {self._next_state_change}. '
+                     f'Pomodoros in series: {self._pomodoro_in_series}.')
 
     def is_working(self) -> bool:
         return self._state == 'work'
@@ -137,6 +147,14 @@ class TimerData(AbstractDataItem['User']):
             return 'N/A'
         else:
             elapsed_duration = int(self._pomodoro.get_elapsed_duration(when))
+            td = datetime.timedelta(seconds=elapsed_duration)
+            return f'{td}'
+
+    def format_elapsed_rest_duration(self, when: datetime.datetime | None = None) -> str:
+        if self._pomodoro is None:
+            return 'N/A'
+        else:
+            elapsed_duration = int(self._pomodoro.get_elapsed_rest_duration(when))
             td = datetime.timedelta(seconds=elapsed_duration)
             return f'{td}'
 
