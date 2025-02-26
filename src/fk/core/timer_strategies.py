@@ -269,7 +269,7 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
         if len(params) == 3:
             self._rest_duration = float(params[2])
         else:
-            self._rest_duration = 0.0
+            self._rest_duration = settings.get_rest_duration()
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
