@@ -34,7 +34,7 @@ from fk.core.import_export import compressed_strategies
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
-from fk.core.timer_strategies import StartWorkStrategy, StopTimerStrategy, StartTimerStrategy
+from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy
@@ -65,14 +65,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self._last_strategy = None
         if self._is_watch_changes() and filesystem_watcher is not None:
             self._watcher = filesystem_watcher
-            self._watcher.watch(self._get_filename(), lambda f: self._on_file_change(f))
+            self._watcher.watch(self._get_filename(), self._on_file_change)
 
     def get_last_strategy(self) -> AbstractStrategy | None:
         return self._last_strategy
 
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
-        logger.debug(f'Data file content changed: {filename}')
+        logger.info(f'Data file content changed: {filename}')
         # UC-1: File event source: If file watching is enabled, the strategies with the sequence > last_seq are executed
         # UC-3: Any event source fires all events for the incremental processing
         # We open the file as r+ to make sure that another process finished writing and
@@ -451,9 +451,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
         #  then append to both files at the same time.
         # UC-2: For file source, new strategies get appended to the file immediately after execution
-        with open(self._get_filename(), 'a', encoding='UTF-8') as f:
-            for s in strategies:
-                f.write(self._serializer.serialize(s) + '\n')
+        if self._watcher is not None:
+            self._watcher.unwatch(self._get_filename())
+        try:
+            with open(self._get_filename(), 'a', encoding='UTF-8') as f:
+                for s in strategies:
+                    f.write(self._serializer.serialize(s) + '\n')
+        finally:
+            if self._watcher is not None:
+                self._watcher.watch(self._get_filename(), self._on_file_change)
 
     def get_name(self) -> str:
         return "File"
@@ -508,7 +514,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def disconnect(self):
         if self._watcher is not None:
-            self._watcher.unwatch_all()
+            self._watcher.unwatch(self._get_filename())
 
     def send_ping(self) -> str | None:
         raise Exception("FileEventSource does not support send_ping()")

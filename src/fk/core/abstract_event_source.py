@@ -189,16 +189,24 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         if strategy.requires_sealing():
             self._auto_seal(strategy)
 
-        params = {'strategy': strategy, 'auto': auto}
+        params = {
+            'strategy': strategy,
+            'auto': auto,
+            'persist': persist,
+        }
+        # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events.
         self._emit(events.BeforeMessageProcessed, params)
-        # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
-        strategy.execute(self._emit, self.get_data())
-        self._emit(events.AfterMessageProcessed, params)
-        self._estimated_count += 1
-        if persist:
-            self._append([strategy])
-            # UC-2: Strategy sequence is incremented only after it is persisted
-            self._last_seq = strategy.get_sequence()   # Only save it if all went well
+
+        try:
+            strategy.execute(self._emit, self.get_data())
+            self._estimated_count += 1
+            if persist:
+                self._append([strategy])
+                # UC-2: Strategy sequence is incremented only after it is persisted
+                self._last_seq = strategy.get_sequence()   # Only save it if all went well
+        finally:
+            # UC-2: AfterMessageProcessed is triggered after the strategy is persisted, no matter what
+            self._emit(events.AfterMessageProcessed, params)
 
     def execute(self,
                 strategy_class: type[AbstractStrategy[TRoot]],
@@ -295,7 +303,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def connect(self):
         raise Exception('Connect is not supported on this type of event source')
 
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[AbstractEventSource[TRoot]]:
+    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[TRoot]:
         return CreateUserStrategy(1,
                                   datetime.datetime.now(datetime.timezone.utc),
                                   ADMIN_USER,

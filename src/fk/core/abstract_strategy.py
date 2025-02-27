@@ -98,7 +98,11 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                        self._user_identity if user_override is None else user_override,
                        params,
                        self._settings)
-        params = {'strategy': strategy, 'auto': True}
+        params = {
+            'strategy': strategy,
+            'auto': True,
+            'persist': False,
+        }
         emit(events.BeforeMessageProcessed, params, self._carry)
         strategy.execute(emit, data)
         emit(events.AfterMessageProcessed, params, self._carry)

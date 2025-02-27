@@ -104,6 +104,7 @@ class TestUsers(TestCase):
             if event == 'BeforeMessageProcessed' or event == 'AfterMessageProcessed':
                 self.assertIn('strategy', kwargs)
                 self.assertIn('auto', kwargs)
+                self.assertIn('persist', kwargs)
                 self.assertTrue(type(kwargs['strategy']) is CreateUserStrategy)
             elif event == 'BeforeUserCreate':
                 self.assertIn('user_identity', kwargs)

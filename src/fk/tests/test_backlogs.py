@@ -155,6 +155,7 @@ class TestBacklogs(TestCase):
             if event == 'BeforeMessageProcessed' or event == 'AfterMessageProcessed':
                 self.assertIn('strategy', kwargs)
                 self.assertIn('auto', kwargs)
+                self.assertIn('persist', kwargs)
                 self.assertTrue(type(kwargs['strategy']) is CreateBacklogStrategy)
             elif event == 'BeforeBacklogCreate':
                 self.assertIn('backlog_owner', kwargs)

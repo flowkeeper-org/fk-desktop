@@ -48,7 +48,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
-        if len(params) >= 2:
+        if len(params) >= 2 and params[1] != '':
             self._work_duration = float(params[1])
             if len(params) >= 3 and params[2] != '':
                 self._rest_duration = float(params[2])
