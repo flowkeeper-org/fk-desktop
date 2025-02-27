@@ -183,17 +183,17 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Series and breaks': [
                 ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [
                     'simple:After [N] completed pomodoros',
-                    'smart:After focusing for [X] time within the last [Y] hours',
-                    'done:After completing a series of pomodoros',
+                    # 'smart:After focusing for [X] time within the last [Y] hours',
+                    # 'done:After completing a series of pomodoros',
                     'never:Never (let me decide)',
                 ], _always_show),
                 ('Pomodoro.long_break_each', 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
                 ('Pomodoro.long_break_focus', 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
                 ('Pomodoro.long_break_within', 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
-                ('', 'separator', '', '', [], _always_show),
-                ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'True', [], _always_show),
-                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next '
-                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
+                # ('', 'separator', '', '', [], _always_show),
+                # ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'False', [], _always_show),
+                # ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next '
+                #                                               'planned pomodoro in the same work item automatically.', [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),

@@ -89,10 +89,6 @@ class TimerData(AbstractDataItem['User']):
             self._pomodoro_in_series = 0
             logger.debug('Reset pomodoro series because we started a new day')
 
-    def suggest_long_beak(self) -> bool:
-        self._refresh_today()
-        return self._pomodoro_in_series >= 3  # We've already done three pomodoros without breaks
-
     def rest(self, rest_duration: float, when: datetime.datetime | None = None) -> None:
         self._state = 'rest'
         self._planned_duration = rest_duration
@@ -187,4 +183,5 @@ class TimerData(AbstractDataItem['User']):
         return d
 
     def get_pomodoro_in_series(self) -> int:
+        self._refresh_today()
         return self._pomodoro_in_series

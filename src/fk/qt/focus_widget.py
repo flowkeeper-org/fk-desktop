@@ -368,6 +368,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
         elif new_mode in ('working', 'resting', 'long-resting'):
             running_item = self.timer.get_running_workitem()
+            if running_item is None:
+                self.mode_changed(new_mode, 'ready')    # A very rare case where we deleted a running
+                                                                  # workitem and it auto-sealed precisely between
+                                                                  # mode changes. A corner case.
             self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
                 pomodoro: Pomodoro = self.timer.get_running_pomodoro()

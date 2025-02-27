@@ -214,6 +214,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             raise Exception("Trying to start a workitem, while there's none selected")
         settings = self._source.get_settings()
 
+        # TODO: Move this entire piece of logic into StartTimerStrategy
         if len(selected) == 0 or selected.is_tracker():
             # This is going to be a tracker workitem
             self._source.execute(AddPomodoroStrategy, [
@@ -225,13 +226,19 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                 selected.get_uid(),
             ])
         else:
-            timer: TimerData = self._source.get_data().get_current_user().get_timer()
-            if timer.suggest_long_beak():
-                logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
-                rest_duration = "0"
-            else:
+            rest_duration = None
+
+            if settings.get('Pomodoro.long_break_algorithm') == 'simple':
+                timer: TimerData = self._source.get_data().get_current_user().get_timer()
+                pomodoro_in_series = timer.get_pomodoro_in_series()
+                if pomodoro_in_series >= int(settings.get('Pomodoro.long_break_each')) - 1:
+                    logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
+                    rest_duration = "0"
+
+            if rest_duration is None:   # Default to standard duration
                 logger.debug('The user starts a workitem. A short break is suggested after it is completed.')
                 rest_duration = settings.get('Pomodoro.default_rest_duration')
+
             self._source.execute(StartTimerStrategy, [
                 selected.get_uid(),
                 settings.get('Pomodoro.default_work_duration'),
