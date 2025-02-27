@@ -250,7 +250,7 @@ class TestPomodoros(TestCase):
             self.assertFalse(timer.is_resting())
             self.assertEqual(timer.get_planned_duration(), 0)
             self.assertEqual(timer.get_remaining_duration(), 0)
-            self.assertEqual(timer.format_elapsed_duration(when), "N/A")
+            self.assertEqual(timer.format_elapsed_work_duration(when), "N/A")
             self.assertEqual(timer.format_remaining_duration(), "00:00")
         elif state == 'work':
             self.assertFalse(pomodoro.is_startable())
@@ -268,7 +268,7 @@ class TestPomodoros(TestCase):
                 self.assertEqual(timer.get_remaining_duration(), 1500 - elapsed)
                 self.assertEqual(timer.format_remaining_duration(), remaining_str)
                 self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), remaining_in_state_str)
-            self.assertEqual(timer.format_elapsed_duration(when), elapsed_str)
+            self.assertEqual(timer.format_elapsed_work_duration(when), elapsed_str)
             self.assertFalse(timer.is_idling())
             self.assertTrue(timer.is_ticking())
             self.assertTrue(timer.is_working())
@@ -291,7 +291,7 @@ class TestPomodoros(TestCase):
             self.assertTrue(timer.is_resting())
             self.assertEqual(timer.get_planned_duration(), 300)
             self.assertEqual(timer.get_remaining_duration(), 1800 - elapsed)
-            self.assertEqual(timer.format_elapsed_duration(when), elapsed_str)
+            self.assertEqual(timer.format_elapsed_work_duration(when), elapsed_str)
             self.assertEqual(timer.format_remaining_duration(), remaining_str)
             self.assertEqual(pomodoro.remaining_minutes_in_current_state_str(when), remaining_in_state_str)
         elif state == 'finished':
@@ -315,7 +315,7 @@ class TestPomodoros(TestCase):
             self.assertFalse(timer.is_resting())
             self.assertEqual(timer.get_planned_duration(), 0)
             self.assertEqual(timer.get_remaining_duration(), 0)
-            self.assertEqual(timer.format_elapsed_duration(when), "N/A")
+            self.assertEqual(timer.format_elapsed_work_duration(when), "N/A")
 
     def test_planned_unplanned_pomodoro(self):
         _, _, workitem, [pomodoro] = self._standard_pomodoro(1)

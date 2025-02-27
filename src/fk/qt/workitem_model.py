@@ -131,6 +131,15 @@ class WorkitemPomodoro(QtGui.QStandardItem):
                     res.append(f' - Resting since {hhmm(p.get_rest_start_date())}')
                 self._list_interruptions(p, res)
                 if p.is_finished():
+                    work_duration = round(p.get_elapsed_work_duration())
+                    if work_duration > 0:
+                        res.append(f' - Worked for {datetime.timedelta(seconds=work_duration)}s')
+                    rest_duration = round(p.get_elapsed_rest_duration())
+                    if rest_duration > 0:
+                        rest_type = ''
+                        if p.get_rest_duration() == 0:
+                            rest_type = ' (long break)'
+                        res.append(f' - Rested for {datetime.timedelta(seconds=rest_duration)}{rest_type}')
                     res.append(f' - Completed at {hhmm(p.get_last_modified_date())}')
 
         return '\n'.join(res)

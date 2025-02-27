@@ -130,6 +130,9 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:

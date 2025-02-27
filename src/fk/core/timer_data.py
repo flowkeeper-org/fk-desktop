@@ -142,11 +142,11 @@ class TimerData(AbstractDataItem['User']):
         remaining_seconds = str(int(remaining_duration % 60)).zfill(2)
         return f'{remaining_minutes}:{remaining_seconds}'
 
-    def format_elapsed_duration(self, when: datetime.datetime | None = None) -> str:
+    def format_elapsed_work_duration(self, when: datetime.datetime | None = None) -> str:
         if self._pomodoro is None:
             return 'N/A'
         else:
-            elapsed_duration = int(self._pomodoro.get_elapsed_duration(when))
+            elapsed_duration = int(self._pomodoro.get_elapsed_work_duration(when))
             td = datetime.timedelta(seconds=elapsed_duration)
             return f'{td}'
 
@@ -185,3 +185,6 @@ class TimerData(AbstractDataItem['User']):
         d['last_state_change'] = self._last_state_change
         d['next_state_change'] = self._next_state_change
         return d
+
+    def get_pomodoro_in_series(self) -> int:
+        return self._pomodoro_in_series

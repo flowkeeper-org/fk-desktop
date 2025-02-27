@@ -20,10 +20,11 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
-from fk.core.timer_strategies import StopTimerStrategy
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tag import Tag
 from fk.core.tenant import Tenant
+from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
@@ -134,6 +135,7 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         emit(events.BeforeWorkitemDelete, params, self._carry)
 
         if workitem.has_running_pomodoro():
+            # No need to add an interruption like we do in CompleteWorkitemStrategy, because it is deleted anyway
             self.execute_another(emit, data, StopTimerStrategy, [])
 
         workitem.item_updated(self._when)   # Update Backlog
@@ -285,6 +287,8 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
 
         # First void pomodoros if needed
         if workitem.has_running_pomodoro():
+            self.execute_another(emit, data, AddInterruptionStrategy, [self.get_workitem_uid(),
+                                                                       f'The item was marked completed before Pomodoro rang'])
             self.execute_another(emit, data, StopTimerStrategy, [])
 
         # Now complete the workitem itself

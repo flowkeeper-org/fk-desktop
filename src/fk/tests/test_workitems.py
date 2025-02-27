@@ -322,16 +322,20 @@ class TestWorkitems(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1', '1'])
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.assertEqual(len(fired), 9)
+        self.assertEqual(len(fired), 13)
         self.assertEqual(fired[0], 'BeforeMessageProcessed')
         self.assertEqual(fired[1], 'BeforeWorkitemComplete')
         self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroVoided')
-        self.assertEqual(fired[4], 'TimerRestComplete')
-        self.assertEqual(fired[5], 'AfterPomodoroVoided')
-        self.assertEqual(fired[6], 'AfterMessageProcessed')  # auto
-        self.assertEqual(fired[7], 'AfterWorkitemComplete')
-        self.assertEqual(fired[8], 'AfterMessageProcessed')
+        self.assertEqual(fired[3], 'BeforePomodoroInterrupted')
+        self.assertEqual(fired[4], 'AfterPomodoroInterrupted')
+        self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
+        self.assertEqual(fired[6], 'BeforeMessageProcessed')  # auto
+        self.assertEqual(fired[7], 'BeforePomodoroVoided')
+        self.assertEqual(fired[8], 'TimerRestComplete')
+        self.assertEqual(fired[9], 'AfterPomodoroVoided')
+        self.assertEqual(fired[10], 'AfterMessageProcessed')  # auto
+        self.assertEqual(fired[11], 'AfterWorkitemComplete')
+        self.assertEqual(fired[12], 'AfterMessageProcessed')
 
     def test_events_rename_workitem(self):
         fired = list()

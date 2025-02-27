@@ -107,8 +107,8 @@ class AbstractTimerDisplay:
                       self._mode)
         elif pomodoro.get_type() == POMODORO_TYPE_TRACKER:
             self.tick(pomodoro,
-                      f'Tracking: {timer.format_elapsed_duration()}',
-                      pomodoro.get_elapsed_duration(),
+                      f'Tracking: {timer.format_elapsed_work_duration()}',
+                      pomodoro.get_elapsed_work_duration(),
                       0,
                       'tracking')
         elif pomodoro.is_long_break():

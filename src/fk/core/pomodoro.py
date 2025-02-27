@@ -174,12 +174,16 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def is_finished(self) -> bool:
         return self._state == 'finished'
 
-    def get_elapsed_duration(self, when: datetime.datetime = None) -> float:
+    def get_elapsed_work_duration(self, when: datetime.datetime = None) -> float:
         if self._date_work_started is not None:
             if self.is_working() or self.is_resting():
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
-            elif self.is_finished():
+            elif self.is_finished() and self.get_type() == POMODORO_TYPE_TRACKER:
                 now = self._last_modified_date
+            elif self.is_finished() and self.get_type() == POMODORO_TYPE_NORMAL:
+                now = self._date_rest_started
+            else:
+                raise Exception(f'Cannot get elapsed work duration for a {self.get_type()} pomodoro in state {self.get_state()}')
             return max((now - self._date_work_started).total_seconds(), 0)
         else:
             return 0
@@ -190,6 +194,8 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
                 now = datetime.datetime.now(datetime.timezone.utc) if when is None else when
             elif self.is_finished():
                 now = self._last_modified_date
+            else:
+                raise Exception(f'Cannot get elapsed rest duration for a {self.get_type()} pomodoro in state {self.get_state()}')
             return max((now - self._date_rest_started).total_seconds(), 0)
         else:
             return 0
@@ -199,7 +205,7 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             return self._work_duration
         elif self._type == POMODORO_TYPE_TRACKER:
             if self.is_working():
-                return self.get_elapsed_duration(when)
+                return self.get_elapsed_work_duration(when)
             elif self.is_startable():
                 return 0
             else:

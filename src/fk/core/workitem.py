@@ -148,7 +148,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         return textwrap.shorten(self.get_name(), width=30, placeholder='...')
 
     def get_total_elapsed_time(self) -> datetime.timedelta:
-        total = sum([p.get_elapsed_duration() for p in self.values()])
+        total = sum([p.get_elapsed_work_duration() for p in self.values()])
         return datetime.timedelta(seconds=round(total))
 
     def is_tracker(self) -> bool:
