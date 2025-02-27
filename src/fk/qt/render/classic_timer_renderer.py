@@ -88,7 +88,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
         return False
 
     def paint(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
-        if self.get_mode() not in ('working', 'resting', 'tracking'):
+        if self.get_mode() not in ('working', 'resting', 'long-resting', 'tracking'):
             painter.end()
             return
 
@@ -145,7 +145,7 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                 self.draw_sector(painter, team_rect, self._team_value, self._team_max)
             self.clip(painter, team_rect, rect, 1)
 
-        if self.get_mode() == 'tracking':
+        if self.get_mode() == 'tracking' or self.get_mode() == 'long-resting':
             minutes = (self._my_value / 60) % 60.0
             self.draw_sector(painter, my_rect, minutes, 60, True)
         elif self._my_max > 0:

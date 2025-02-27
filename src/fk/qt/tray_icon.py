@@ -127,10 +127,12 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
-            if old_mode == 'working' or old_mode == 'resting':
+            if old_mode == 'working' or old_mode == 'resting' or old_mode == 'long-resting':
                 self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
         elif new_mode == 'resting' and old_mode == 'working':
             self.showMessage("Work is done", "Have some rest", self._default_icon)
+        elif new_mode == 'long-resting' and old_mode == 'working':
+            self.showMessage("A series is done", "Enjoy a long rest", self._default_icon)
         elif new_mode == 'ready':
             if self._continue_workitem is not None:
                 self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')

@@ -366,7 +366,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             if not self._readonly:
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
-        elif new_mode == 'working' or new_mode == 'resting':
+        elif new_mode in ('working', 'resting', 'long-resting'):
             running_item = self.timer.get_running_workitem()
             self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
@@ -408,7 +408,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         context_menu.addAction(self._actions['focus.nextPomodoro'])
         timer = self.timer
         if timer.is_working() or timer.is_resting():
-            if timer.get_running_pomodoro().get_type() == POMODORO_TYPE_TRACKER:
+            pomodoro = timer.get_running_pomodoro()
+            if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 context_menu.addAction(self._actions['focus.finishTracking'])
             else:
                 context_menu.addAction(self._actions['focus.interruption'])

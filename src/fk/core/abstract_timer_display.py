@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class AbstractTimerDisplay:
-    """A timer can be in one of the five modes -- undefined, idle, working, resting and ready AKA
+    """A timer can be in one of the five modes -- undefined, idle, working, resting, long-resting and ready AKA
     "Ready to start another Pomodoro?" mode."""
 
     _source_holder: EventSourceHolder
@@ -58,15 +58,18 @@ class AbstractTimerDisplay:
         old_mode = self._mode
         if old_mode != mode:
             # Check forbidden mode transitions
-            # UC-2: Timer displays (tray and focus) will throw an error if we transition from resting to working, or from idle to ready, or from undefined to ready
+            # UC-2: Timer displays (tray and focus) will throw an error if we transition from resting or long-resting to working, or from idle to ready, or from undefined to ready
             if (old_mode == 'resting' and mode == 'working') or \
+                    (old_mode == 'long-resting' and mode == 'working') or \
+                    (old_mode == 'long-resting' and mode == 'resting') or \
+                    (old_mode == 'resting' and mode == 'long-resting') or \
                     (old_mode == 'idle' and mode == 'ready') or \
                     (old_mode == 'undefined' and mode == 'ready'):
                 raise Exception(f'Encountered impossible timer mode change from {old_mode} to {mode}')
             self._mode = mode
             self.mode_changed(old_mode, mode)
             logger.debug(f'Timer display mode changed from {old_mode} to {mode}')
-            if mode == 'working' or mode == 'resting':
+            if mode == 'working' or mode == 'resting' or mode == 'long-resting':
                 self._on_tick()
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
@@ -113,7 +116,7 @@ class AbstractTimerDisplay:
                       f'Long break: {timer.format_elapsed_rest_duration()}',
                       pomodoro.get_elapsed_rest_duration(),
                       0,
-                      'tracking')
+                      'long-resting')
 
 
     def _on_work_start(self, timer: TimerData, **kwargs) -> None:
@@ -124,7 +127,7 @@ class AbstractTimerDisplay:
     def _on_work_complete(self, pomodoro: Pomodoro, **kwargs) -> None:
         # UC-3: Timer display goes into "resting" state when work period completes
         self._continue_workitem = pomodoro.get_parent()
-        self._set_mode('resting')
+        self._set_mode('long-resting' if pomodoro.is_long_break() else 'resting')
 
     def _on_rest_complete(self, pomodoro: Pomodoro, **kwargs) -> None:
         # UC-1: Timer display goes into "ready for next pomodoro" state when rest completes, and the workitem has startable pomodoros

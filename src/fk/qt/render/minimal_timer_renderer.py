@@ -39,7 +39,7 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                 # Dark background
                 if self.get_mode() == 'working' or self.get_mode() == 'tracking':
                     color = '#e06666'
-                elif self.get_mode() == 'resting':
+                elif self.get_mode() == 'resting' or self.get_mode() == 'long-resting':
                     color = '#6d9eeb'
                 elif self.get_mode() == 'ready':
                     color = '#00e000'
@@ -48,7 +48,7 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
             else:
                 if self.get_mode() == 'working' or self.get_mode() == 'tracking':
                     color = '#cc0000'
-                elif self.get_mode() == 'resting':
+                elif self.get_mode() == 'resting' or self.get_mode() == 'long-resting':
                     color = '#3c78d8'
                 elif self.get_mode() == 'ready':
                     color = '#006400'
@@ -116,7 +116,7 @@ class MinimalTimerRenderer(AbstractTimerRenderer):
                 QPointF(cx + hand_length * aspect, cy),
                 QPointF(cx * 0.8, cy + hand_length * aspect),
             ])
-        elif self._mode == 'tracking':
+        elif self._mode == 'tracking' or self._mode == 'long-resting':
             # Draw a pair of hands
             v = int(self._my_value)
             # 1. Second hand
