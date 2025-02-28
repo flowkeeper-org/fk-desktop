@@ -19,11 +19,11 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
+from fk.core.abstract_event_source import start_workitem
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
 from fk.core.timer import PomodoroTimer
-from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
@@ -100,12 +100,9 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self.timer.is_idling():
-            settings = self._source_holder.get_settings()
-            self._source_holder.get_source().execute(StartTimerStrategy, [
-                self._continue_workitem.get_uid(),
-                settings.get('Pomodoro.default_work_duration'),
-                settings.get('Pomodoro.default_rest_duration'),
-            ])
+            if self._continue_workitem is None:
+                raise Exception('Cannot start next pomodoro on non-existent work item')
+            start_workitem(self._continue_workitem, self._source_holder.get_source())
         else:
             if 'window.showMainWindow' in self._actions:
                 self._actions['window.showMainWindow'].trigger()

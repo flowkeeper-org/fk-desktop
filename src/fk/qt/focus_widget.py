@@ -398,6 +398,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._actions['focus.nextPomodoro'].setDisabled(False)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 
+            # Continue the series automaticallysss
+            work_in_series = self._settings.get('Pomodoro.start_next_automatically') == 'True'
+            after_long_break = self.timer.get_pomodoro_in_series() == 0
+            last_voided = self._last_pomodoro is not None and self._last_pomodoro.is_startable()
+            if work_in_series and not after_long_break and not last_voided:
+                logger.debug('Continuing the series automatically')
+                self._actions['focus.nextPomodoro'].trigger()
+
     def _apply_size_policy(self):
         sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sp.setVerticalStretch(0)

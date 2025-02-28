@@ -34,6 +34,7 @@ class AbstractTimerDisplay:
     _source_holder: EventSourceHolder
     _timer: PomodoroTimer
     _continue_workitem: Workitem | None
+    _last_pomodoro: Pomodoro | None
     _mode: str
 
     @property
@@ -46,6 +47,7 @@ class AbstractTimerDisplay:
         self._source_holder = source_holder
         self._timer = timer
         self._continue_workitem = None
+        self._last_pomodoro = None
         self._mode = 'undefined'
 
         if timer is not None:
@@ -74,6 +76,7 @@ class AbstractTimerDisplay:
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         self._continue_workitem = None
+        self._last_pomodoro = None
         self._set_mode('undefined')
         source.on(SourceMessagesProcessed, self._on_timer_initialized)
         source.on(AfterWorkitemComplete, self._on_workitem_complete_or_delete)
@@ -122,11 +125,13 @@ class AbstractTimerDisplay:
     def _on_work_start(self, timer: TimerData, **kwargs) -> None:
         # UC-3: Timer display goes into "working" state when work period starts
         self._continue_workitem = timer.get_running_workitem()
+        self._last_pomodoro = timer.get_running_pomodoro()
         self._set_mode('working')
 
     def _on_work_complete(self, pomodoro: Pomodoro, **kwargs) -> None:
         # UC-3: Timer display goes into "resting" state when work period completes
         self._continue_workitem = pomodoro.get_parent()
+        self._last_pomodoro = pomodoro
         self._set_mode('long-resting' if pomodoro.is_long_break() else 'resting')
 
     def _on_rest_complete(self, pomodoro: Pomodoro, **kwargs) -> None:

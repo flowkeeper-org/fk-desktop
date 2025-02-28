@@ -169,6 +169,6 @@ class PomodoroTimer(AbstractEventEmitter):
         # ticking and running stuff against zombie objects, which might be dangerous form the data
         # consistency point of view.
         self._transition_timer.cancel()
-        self._tick_timer.cancel()
         logger.debug('PomodoroTimer: Canceled transition timer')
+        self._tick_timer.cancel()
         logger.debug(f'PomodoroTimer: Done - Handling pomodoro complete or void')
