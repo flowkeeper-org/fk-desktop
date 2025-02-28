@@ -27,11 +27,12 @@ from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
 from fk.core.tenant import ADMIN_USER, Tenant
 from fk.core.timer_data import TimerData
-from fk.core.timer_strategies import TimerRingInternalStrategy
+from fk.core.timer_strategies import TimerRingInternalStrategy, StartTimerStrategy
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, AutoSealInternalStrategy
 from fk.core.workitem import Workitem
@@ -312,3 +313,41 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def get_last_sequence(self):
         return self._last_seq
+
+
+# ********************* Misc. Utils *********************
+
+
+def start_workitem(workitem: Workitem, source: AbstractEventSource) -> None:
+    settings = source.get_settings()
+
+    # TODO: Move this entire piece of logic into StartTimerStrategy
+    if len(workitem) == 0 or workitem.is_tracker():
+        # This is going to be a tracker workitem
+        source.execute(AddPomodoroStrategy, [
+            workitem.get_uid(),
+            "1",
+            POMODORO_TYPE_TRACKER
+        ])
+        source.execute(StartTimerStrategy, [
+            workitem.get_uid(),
+        ])
+    else:
+        rest_duration = None
+
+        if settings.get('Pomodoro.long_break_algorithm') == 'simple':
+            timer: TimerData = source.get_data().get_current_user().get_timer()
+            pomodoro_in_series = timer.get_pomodoro_in_series()
+            if pomodoro_in_series >= int(settings.get('Pomodoro.long_break_each')) - 1:
+                logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
+                rest_duration = "0"
+
+        if rest_duration is None:  # Default to standard duration
+            logger.debug('The user starts a workitem. A short break is suggested after it is completed.')
+            rest_duration = settings.get('Pomodoro.default_rest_duration')
+
+        source.execute(StartTimerStrategy, [
+            workitem.get_uid(),
+            settings.get('Pomodoro.default_work_duration'),
+            rest_duration,
+        ])

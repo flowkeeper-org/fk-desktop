@@ -19,15 +19,13 @@ from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
-from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
-from fk.core.timer_data import TimerData
-from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
 from fk.desktop.application import Application
@@ -212,38 +210,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to start a workitem, while there's none selected")
-        settings = self._source.get_settings()
-
-        # TODO: Move this entire piece of logic into StartTimerStrategy
-        if len(selected) == 0 or selected.is_tracker():
-            # This is going to be a tracker workitem
-            self._source.execute(AddPomodoroStrategy, [
-                selected.get_uid(),
-                "1",
-                POMODORO_TYPE_TRACKER
-            ])
-            self._source.execute(StartTimerStrategy, [
-                selected.get_uid(),
-            ])
-        else:
-            rest_duration = None
-
-            if settings.get('Pomodoro.long_break_algorithm') == 'simple':
-                timer: TimerData = self._source.get_data().get_current_user().get_timer()
-                pomodoro_in_series = timer.get_pomodoro_in_series()
-                if pomodoro_in_series >= int(settings.get('Pomodoro.long_break_each')) - 1:
-                    logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
-                    rest_duration = "0"
-
-            if rest_duration is None:   # Default to standard duration
-                logger.debug('The user starts a workitem. A short break is suggested after it is completed.')
-                rest_duration = settings.get('Pomodoro.default_rest_duration')
-
-            self._source.execute(StartTimerStrategy, [
-                selected.get_uid(),
-                settings.get('Pomodoro.default_work_duration'),
-                rest_duration,
-            ])
+        start_workitem(selected, self._source)
 
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()

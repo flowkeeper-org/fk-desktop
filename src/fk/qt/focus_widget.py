@@ -20,7 +20,7 @@ from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent,
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
     QSpacerItem, QInputDialog, QLineEdit
 
-from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
@@ -28,7 +28,7 @@ from fk.core.events import AfterSettingsChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.timer import PomodoroTimer
-from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
+from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
@@ -345,12 +345,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._source_holder.get_source().execute(StopTimerStrategy, [])
 
     def _next_pomodoro(self) -> None:
-        settings = self._source_holder.get_settings()
-        self._source_holder.get_source().execute(StartTimerStrategy, [
-            self._continue_workitem.get_uid(),
-            settings.get('Pomodoro.default_work_duration'),
-            settings.get('Pomodoro.default_rest_duration'),
-        ])
+        if self._continue_workitem is None:
+            raise Exception('Cannot start next pomodoro on non-existent work item')
+        start_workitem(self._continue_workitem, self._source_holder.get_source())
 
     def _complete_item(self) -> None:
         item = self.timer.get_running_workitem()
