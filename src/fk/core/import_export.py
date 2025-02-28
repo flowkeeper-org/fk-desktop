@@ -18,8 +18,6 @@ import logging
 from os import path
 from typing import Iterable, Callable, TypeVar
 
-from more_itertools import tail
-
 from fk.core import events
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
@@ -32,10 +30,10 @@ from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
-from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag
 from fk.core.tenant import ADMIN_USER
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem import Workitem
@@ -198,7 +196,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
                 if num_pomodoros_to_add > 0:
-                    for p_old in tail(num_pomodoros_to_add, workitem.values()):
+                    for p_old in list(workitem.values())[-num_pomodoros_to_add:]:
                         # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
                         yield AddPomodoroStrategy(seq, p_old.get_create_date(), user.get_identity(),
                                                   [workitem.get_uid(), '1', p_old.get_type()],
