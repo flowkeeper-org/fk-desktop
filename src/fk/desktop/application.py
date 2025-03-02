@@ -48,6 +48,7 @@ from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.integration_executor import IntegrationExecutor
 from fk.core.no_cryptograph import NoCryptograph
+from fk.core.sandbox import get_sandbox_type
 from fk.core.tenant import Tenant
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
@@ -192,6 +193,7 @@ class Application(QApplication, AbstractEventEmitter):
                 f'- Qt: {QtCore.__version__} ({self.platformName()})\n'
                 f'- Python: {sys.version}\n'
                 f'- Platform: {platform.system()} {platform.release()} {platform.version()}\n'
+                f'- Sandbox: {get_sandbox_type()}\n'
                 f'- Kernel: {platform.platform()}\n')
 
     def _initialize_logger(self):
@@ -224,14 +226,20 @@ class Application(QApplication, AbstractEventEmitter):
         stdio_handler.setLevel(logging.DEBUG if debug else logging.WARNING)
         root.handlers.append(stdio_handler)
 
-        logger.debug(f'Versions: \n'
-                     f'{self._get_versions()}')
+        logger.debug(f'Versions: \n{self._get_versions()}')
 
     def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
-        last_version = Version(self._settings.get('Application.last_version'))
-        if self._current_version != last_version:
-            logger.info(f'We execute for the first time after upgrade from {last_version} to {self._current_version}')
-            self.upgraded.emit(self._current_version)
+        from_version = Version(self._settings.get('Application.last_version'))
+        if self._current_version != from_version:
+            logger.info(f'We execute for the first time after upgrade from {from_version} to {self._current_version}')
+            if from_version.major == 0 and from_version.minor < 10:
+                logger.debug(f'Upgrading from 0.9.1 or older, checking data filename')
+                if not self._settings.is_set('FileEventSource.filename'):
+                    old_filename = Path.home() / 'flowkeeper-data.txt'
+                    if old_filename.exists():
+                        logger.debug(f'Default filename is used and the file exists -- will keep using it')
+                        self._settings.set({'FileEventSource.filename': str(old_filename.absolute())})
+            self.upgraded.emit(from_version)
             self._settings.set({'Application.last_version': str(self._current_version)})
 
     def initialize_source(self):

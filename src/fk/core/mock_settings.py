@@ -50,6 +50,9 @@ class MockSettings(AbstractSettings):
         else:
             return self._defaults[name]
 
+    def is_set(self, name: str) -> bool:
+        return name in self._settings
+
     def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()
         for name in values.keys():

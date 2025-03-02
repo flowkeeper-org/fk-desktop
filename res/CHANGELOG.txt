@@ -44,10 +44,6 @@ Bug fixes:
 - TODO: [Technical] Improved documentation for running on Debian and openSUSE (#80, #87)
 
 TODO: Fix drag-and-drop
-TODO: Check if the data filename is default and exists. If we upgrade from <0.10.0, then copy its
- content to the new default location. Mention it in the Config wizard. Tests: 1). Install 0.9.1 on Windows, create a
- backlog. Upgrade to 0.10.0. 2). Use portable 0.9.1 on Linux, create a backlog. Use 0.10.0 from Flatpak. Use 0.10.0
- portable.
 
 ### v0.9.1 (15 January 2025)
 

@@ -158,6 +158,16 @@ class QtSettings(AbstractSettings):
         else:
             return str(self._settings.value(name, self._defaults[name]))
 
+    def is_set(self, name: str) -> bool:
+        if name.endswith('!'):
+            if self._keyring_enabled:
+                j = self.load_secret()
+                return name in j and j[name] is not None
+            else:
+                return False
+        else:
+            return self._settings.contains(name)
+
     def location(self) -> str:
         return self._settings.fileName()
 

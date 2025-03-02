@@ -21,6 +21,7 @@ from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
+from semantic_version import Version
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -214,13 +215,14 @@ class MainWindow:
         global tutorial
         tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
 
-    def show_quick_config(self):
-        if window.isHidden() and focus_window.isHidden():
-            # Even if it was configured to hide, typically thanks to --autostart
-            window.show()
-        wizard = ConfigWizard(app, actions, window)
-        wizard.closed.connect(self.show_tutorial)
-        wizard.show()
+    def on_upgrade(self, from_version: Version):
+        if from_version.major == 0 and from_version.minor < 9:
+            if window.isHidden() and focus_window.isHidden():
+                # Even if it was configured to hide, typically thanks to --autostart
+                window.show()
+            wizard = ConfigWizard(app, actions, window)
+            wizard.closed.connect(self.show_tutorial)
+            wizard.show()
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
@@ -236,7 +238,6 @@ class MainWindow:
         actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
-        actions.add('window.quickConfig', "Quick Config", '', None, MainWindow.show_quick_config)
 
         backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -495,7 +496,7 @@ if __name__ == "__main__":
         window.installEventFilter(theme_change_event_filter)
 
         main_window = MainWindow()
-        app.upgraded.connect(main_window.show_quick_config)
+        app.upgraded.connect(main_window.on_upgrade)
 
         # Bind action domains to widget instances
         actions.bind('application', app)

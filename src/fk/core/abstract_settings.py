@@ -339,6 +339,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     @abstractmethod
+    def is_set(self, name: str) -> bool:
+        pass
+
+    @abstractmethod
     def get(self, name: str) -> str:
         # Note that there's no default value -- we can get it from self._defaults
         pass
