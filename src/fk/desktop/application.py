@@ -235,7 +235,7 @@ class Application(QApplication, AbstractEventEmitter):
             logger.info(f'We execute for the first time after upgrade from {from_version} to {self._current_version}')
             if from_version.major == 0 and 10 > from_version.minor > 0:
                 logger.debug(f'Upgrading from 0.9.1 or older, checking data filename')
-q                if not self._settings.is_set('FileEventSource.filename'):
+                if not self._settings.is_set('FileEventSource.filename'):
                     old_filename = Path.home() / 'flowkeeper-data.txt'
                     if old_filename.exists():
                         logger.debug(f'Default filename is used and the file exists -- will keep using it')
