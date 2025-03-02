@@ -231,16 +231,17 @@ class Application(QApplication, AbstractEventEmitter):
     def _check_upgrade(self, event: str, when: datetime.datetime | None = None):
         from_version = Version(self._settings.get('Application.last_version'))
         if self._current_version != from_version:
+            to_set = {'Application.last_version': str(self._current_version)}
             logger.info(f'We execute for the first time after upgrade from {from_version} to {self._current_version}')
-            if from_version.major == 0 and from_version.minor < 10:
+            if from_version.major == 0 and 10 > from_version.minor > 0:
                 logger.debug(f'Upgrading from 0.9.1 or older, checking data filename')
-                if not self._settings.is_set('FileEventSource.filename'):
+q                if not self._settings.is_set('FileEventSource.filename'):
                     old_filename = Path.home() / 'flowkeeper-data.txt'
                     if old_filename.exists():
                         logger.debug(f'Default filename is used and the file exists -- will keep using it')
-                        self._settings.set({'FileEventSource.filename': str(old_filename.absolute())})
+                        to_set['FileEventSource.filename'] = str(old_filename.absolute())
             self.upgraded.emit(from_version)
-            self._settings.set({'Application.last_version': str(self._current_version)})
+            self._settings.set(to_set)
 
     def initialize_source(self):
         self._source_holder.request_new_source()
