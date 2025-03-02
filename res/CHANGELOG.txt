@@ -27,6 +27,7 @@ Technical improvements:
 - Added support for Qt 6.8.x.
 - Flowkeeper CLI is now available in the sources, but it is not installed yet
 - Ignoring our own modifications when "watch changes" is enabled (#130)
+- Improved documentation (#80, #87)
 
 Bug fixes:
 
@@ -39,7 +40,6 @@ Bug fixes:
 - TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
 - TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
 - TODO: [Technical] The content of Windows installer is now signed, too (#115)
-- TODO: [Technical] Improved documentation for running on Debian and openSUSE (#80, #87)
 
 TODO: Fix drag-and-drop
 

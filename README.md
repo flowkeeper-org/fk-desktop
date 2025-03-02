@@ -18,17 +18,18 @@ Your constructive criticism is welcome!
 
 ## Building
 
-Flowkeeper has a single major dependency -- Qt 6.6, which in turn requires Python 3.8 or later (3.9+ if you
-use Qt 6.7). To create installers and binary packages we build Flowkeeper on Ubuntu 22.04 using Python 3.11 
-and the latest version of Qt (6.7.2 at the time of writing). We also occasionally test it on Ubuntu 20.04 
-against Qt 6.2.4 and Python 3.8.10. Some features might not work as expected with Qt 6.2.x.
-
-OLD ADVICE, which might not be relevant to you anymore: If you want to build it with Ubuntu 20.04 or Debian 11, 
-both of which come with older versions of Python, you would have to 
-[compile Python 3.11](https://fostips.com/install-python-3-10-debian-11/). <-- Try the system Python version 
-first. 
+Flowkeeper has a single major dependency -- Qt 6.7.0, which in turn requires Python 3.9 or later. To create 
+installers and binary packages we build Flowkeeper on Ubuntu 22.04 using Python 3.11 and 6.7.0. We also
+test Flowkeeper with the latest Qt 6.8.x on OpenSUSE Tumbleweed.
 
 ### Building for Linux and macOS
+
+On some lean distributions like a minimal installation of Debian 12, you 
+might need to install `libxcb-cursor0` first, e.g.
+
+```shell
+sudo apt install libxcb-cursor0
+```
 
 Create a virtual environment and install dependencies:
 
@@ -54,6 +55,18 @@ to rerun this command, too:
 From here you can start coding. If you want to build an installer, refer to the CI/CD pipeline in
 `.github/workflows/build.yml`. For example, if you want to build a DEB file, you'd need to execute 
 `pyinstaller installer/normal-build.spec` and then `./package-deb.sh`. 
+
+If you see this error on openSUSE with Qt 6.7.x:
+
+```
+No QtMultimedia backends found. Only QMediaDevices, QAudioDevice, QSoundEffect, QAudioSink, and QAudioSource are available.
+```
+
+then install `libatomic1`:
+
+```shell
+sudo zypper install libatomic1
+```
 
 ### Building for Windows
 
@@ -111,6 +124,7 @@ PYTHONPATH=src python -m fk.desktop.desktop --e2e
 - [UI actions](doc/actions.md)
 - [CI/CD pipeline](doc/pipeline.md)
 - [Building for Alpine Linux](doc/build-alpine.md)
+- [Building for FreeBSD](doc/build-freebsd.md)
 
 ## Copyright
 
