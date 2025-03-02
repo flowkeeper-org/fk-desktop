@@ -32,8 +32,6 @@ Bug fixes:
 
 - Window icon on Wayland (#110).
 
-- TODO: You can now find Flowkeeper on AppStore for macOS (#99)
-- TODO: Statistics window (F9) now tracks time instead of number of pomodoros (#122)
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
 - TODO: [Bugfix] Unhandled IsADirectoryError (#108)

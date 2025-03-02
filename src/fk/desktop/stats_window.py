@@ -24,6 +24,7 @@ from PySide6.QtGui import QAction, QPainter, QColor, QFont
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QToolButton
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 
 
 class StatsWindow(QObject):
@@ -350,8 +351,14 @@ class StatsWindow(QObject):
         list_total = list_finished.copy()
 
         for p in self._source.pomodoros():
+            if p.get_type() != POMODORO_TYPE_NORMAL:
+                continue
+
             finished = p.is_finished()
-            canceled = len(p) > 0
+            canceled = False
+            for interruption in p.values():
+                if interruption.is_void():
+                    canceled = True
             if finished or canceled:
                 when = p.get_last_modified_date().astimezone()
             else:
