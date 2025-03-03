@@ -371,3 +371,10 @@ class WorkitemModel(AbstractDropModel):
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
                                                  carry='uia')
+
+    def repaint_workitem(self, workitem: Workitem):
+        for i in range(self.rowCount()):
+            wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
+            if wi == workitem:
+                item: WorkitemPomodoro = self.item(i, 2)
+                item.update_display()

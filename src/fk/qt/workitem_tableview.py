@@ -261,6 +261,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             pomodoro: Pomodoro = timer.get_running_pomodoro()
             # We only care about repainting workitems in tracking mode
             if pomodoro is not None and pomodoro.get_type() == POMODORO_TYPE_TRACKER:
-                backlog: Backlog = pomodoro.get_parent().get_parent()
+                workitem: Workitem = pomodoro.get_parent()
+                backlog: Backlog = workitem.get_parent()
                 if backlog == self.model().get_backlog_or_tag():
-                    self.repaint()
+                    self.model().repaint_workitem(workitem)
