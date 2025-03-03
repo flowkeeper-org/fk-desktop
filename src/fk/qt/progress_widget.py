@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.tag import Tag
 from fk.core.timer_data import TimerData
 
@@ -57,9 +58,10 @@ class ProgressWidget(QWidget):
             in_series = timer.get_pomodoro_in_series()
             for wi in workitems:
                 for p in wi.values():
-                    total += 1
-                    if p.is_finished():
-                        done += 1
+                    if p.get_type() == POMODORO_TYPE_NORMAL:
+                        total += 1
+                        if p.is_finished():
+                            done += 1
 
         self.setVisible(total > 0)
         self._label.setVisible(total > 0)

@@ -23,9 +23,11 @@ from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
-from fk.core.pomodoro import POMODORO_TYPE_NORMAL
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
+from fk.core.timer import PomodoroTimer
+from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
 from fk.desktop.application import Application
@@ -47,6 +49,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
+                 timer: PomodoroTimer | None,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -63,6 +66,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.update_actions(None)
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+        if timer is not None:
+            timer.on(PomodoroTimer.TimerTick, self._on_tick)
+        else:
+            logger.debug('WorkitemTableView will not update automatically on timer ticks')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.theme' in new_values or 'Application.feature_tags' in new_values:
@@ -248,3 +255,12 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         # Resizing to contents results in visible blinking on Kubuntu 20.04, so cannot be enabled by default.
         self.verticalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents if self._is_tags_enabled() else QHeaderView.ResizeMode.Fixed)
+
+    def _on_tick(self, timer: TimerData, counter: int, event: str) -> None:
+        if counter % 10 == 0:
+            pomodoro: Pomodoro = timer.get_running_pomodoro()
+            # We only care about repainting workitems in tracking mode
+            if pomodoro is not None and pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                backlog: Backlog = pomodoro.get_parent().get_parent()
+                if backlog == self.model().get_backlog_or_tag():
+                    self.repaint()

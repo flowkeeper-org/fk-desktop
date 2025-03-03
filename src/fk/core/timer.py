@@ -33,6 +33,7 @@ class PomodoroTimer(AbstractEventEmitter):
     _tick_timer: AbstractTimer
     _transition_timer: AbstractTimer
     _source_holder: EventSourceHolder
+    _tick_counter: int
 
     @property
     def timer(self) -> TimerData:
@@ -52,6 +53,7 @@ class PomodoroTimer(AbstractEventEmitter):
         self._tick_timer = tick_timer
         self._transition_timer = transition_timer
         self._source_holder = source_holder
+        self._tick_counter = 0
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         logger.debug('PomodoroTimer: Initialized')
 
@@ -93,6 +95,7 @@ class PomodoroTimer(AbstractEventEmitter):
                 self._schedule_tick()
 
     def _schedule_tick(self) -> None:
+        self._tick_counter = 0
         self._tick_timer.schedule(990, self._handle_tick, None)
 
     def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
@@ -100,7 +103,11 @@ class PomodoroTimer(AbstractEventEmitter):
         if timer.is_ticking():
             self._emit(PomodoroTimer.TimerTick, {
                 'timer': timer,
+                'counter': self._tick_counter,
             }, None)
+            self._tick_counter += 1
+        else:
+            logger.warning('Pomodoro timer is ticking while the data suggests that it should not')
 
     def _schedule_transition(self,
                              ms: float,

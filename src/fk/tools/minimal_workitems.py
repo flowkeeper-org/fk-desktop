@@ -30,6 +30,7 @@ WorkitemTableView.define_actions(mc.get_actions())
 workitems_table: WorkitemTableView = WorkitemTableView(mc.get_window(),
                                                        mc.get_app(),
                                                        mc.get_app().get_source_holder(),
+                                                       None,
                                                        mc.get_actions())
 mc.get_actions().bind('workitems_table', workitems_table)
 mc.get_window().setCentralWidget(workitems_table)

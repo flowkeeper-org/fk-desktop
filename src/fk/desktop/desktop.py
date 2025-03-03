@@ -359,6 +359,7 @@ if __name__ == "__main__":
         workitems_widget: WorkitemWidget = WorkitemWidget(window,
                                                           app,
                                                           app.get_source_holder(),
+                                                          pomodoro_timer,
                                                           actions)
         right_layout.addWidget(workitems_widget)
 
