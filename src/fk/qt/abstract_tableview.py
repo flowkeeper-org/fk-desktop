@@ -17,8 +17,8 @@ import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
-from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
-from PySide6.QtGui import QPainter, QStandardItemModel
+from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel, QEvent
+from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
 from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
@@ -26,6 +26,7 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
+from fk.qt.abstract_drop_model import AbstractDropModel
 from fk.qt.actions import Actions
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDropIndicatorShown(False)
+        self.setDropIndicatorShown(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.setDragDropOverwriteMode(False)
 
@@ -127,7 +128,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             self._is_upstream_item_selected = False
         else:
             self._is_upstream_item_selected = True
-        self.model().load(upstream)  # Should handle None correctly
+        model: AbstractDropModel = self.model()
+        model.load(upstream)  # Should handle None correctly
 
     def get_current(self) -> TDownstream | None:
         index = self.currentIndex()
@@ -207,16 +209,37 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
         self.update_actions(None)
 
-    def dragMoveEvent(self, event):
-        super().dragMoveEvent(event)
-        index: QModelIndex = self.indexAt(event.pos())
-        if index.data(501) == 'title':
-            # Hovering over a "real" item. Insert a "drop placeholder" here instead.
-            self.model().create_drop_placeholder(index)
-        else:
-            # Hovering over a "drop placeholder" item -- nothing to do
-            pass
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        print('LEAVE', event, self.objectName())
+        event.accept()
+        # super().dragLeaveEvent(event)
+        model: AbstractDropModel = self.model()
+        original = model.remove_drop_placeholder()
+        if original is not None:
+            self.selectRow(original)
 
-    def dragLeaveEvent(self, event):
-        super().dragLeaveEvent(event)
-        self.model().remove_drop_placeholder()
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        # TODO: We don't know if it was an outside enter, or we started dragging.
+        #  Check if event has some hidden payload with data?
+        print('ENTER', event, self.objectName())
+        event.accept()
+        # super(QAbstractItemView, self).dragEnterEvent(event)
+        index: QModelIndex = self.indexAt(event.pos())
+        if index.isValid():
+            self.deselect()
+            model: AbstractDropModel = self.model()
+            model.create_drop_placeholder(index, self.rowHeight(index.row()))
+
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        index: QModelIndex = self.indexAt(event.pos())
+        model: AbstractDropModel = self.model()
+        model.move_drop_placeholder(index)
+        event.accept()
+        # if index.data(501) == 'title':
+        #     # Hovering over a "real" item. Insert a "drop placeholder" here instead.
+        #     self.model().move_drop_placeholder(index)
+        #     event.ignore()
+        # else:
+        #     # Hovering over a "drop placeholder" item -- nothing to do
+        #     event.acceptProposedAction()
+        #     super(QAbstractItemView, self).dragMoveEvent(event)

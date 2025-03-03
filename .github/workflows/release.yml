@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
-      
+
 permissions:
   contents: write
   checks: write
@@ -109,6 +109,11 @@ jobs:
       - name: Create DEB installer
         run: |
           ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
       - name: Rename files to avoid conflicts
         run: |
           mv dist/Flowkeeper dist/Flowkeeper-legacy
@@ -121,6 +126,56 @@ jobs:
             dist/Flowkeeper-legacy
             dist/flowkeeper-legacy.deb
             dist/flowkeeper-legacy.tar.gz
+            dist/*.AppImage
+
+  package-linux-arm:
+    runs-on: ubuntu-22.04-arm
+    needs: run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Create Virtual Environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-build.txt
+      - name: Generate resources
+        run: |
+          ./generate-resources.sh
+      - name: Package builds
+        run: |
+          pyinstaller installer/portable-build.spec
+          pyinstaller installer/normal-build.spec
+          cd dist
+          tar -czf flowkeeper.tar.gz flowkeeper
+          cd ..
+      - name: Create DEB installer
+        run: |
+          ./package-deb.sh
+      - name: Create AppImage
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          ./package-appimage.sh
+      - name: Rename files to avoid conflicts
+        run: |
+          mv dist/Flowkeeper dist/Flowkeeper-arm64
+          mv dist/flowkeeper.deb dist/flowkeeper-arm64.deb
+          mv dist/flowkeeper.tar.gz dist/flowkeeper-arm64.tar.gz
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/Flowkeeper-arm64
+            dist/flowkeeper-arm64.deb
+            dist/flowkeeper-arm64.tar.gz
+            dist/*.AppImage
 
   package-windows:
     runs-on: windows-latest
@@ -158,11 +213,13 @@ jobs:
           set FK_VERSION=%FIRST_LINE:* =%
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
           move installer\Output\mysetup.exe dist\setup.exe
+          move dist\flowkeeper\Flowkeeper.exe dist\flowkeeper-inner.exe
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             dist/Flowkeeper.exe
+            dist/flowkeeper-inner.exe
             dist/setup.exe
 
   package-macOS-arm:

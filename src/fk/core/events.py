@@ -45,6 +45,8 @@ BeforeWorkitemRename = "BeforeWorkitemRename"
 AfterWorkitemRename = "AfterWorkitemRename"
 BeforeWorkitemReorder = "BeforeWorkitemReorder"
 AfterWorkitemReorder = "AfterWorkitemReorder"
+BeforeWorkitemMove = "BeforeWorkitemMove"
+AfterWorkitemMove = "AfterWorkitemMove"
 
 BeforePomodoroAdd = "BeforePomodoroAdd"
 AfterPomodoroAdd = "AfterPomodoroAdd"
@@ -56,6 +58,10 @@ BeforePomodoroRestStart = "BeforePomodoroRestStart"
 AfterPomodoroRestStart = "AfterPomodoroRestStart"
 BeforePomodoroComplete = "BeforePomodoroComplete"
 AfterPomodoroComplete = "AfterPomodoroComplete"
+BeforePomodoroVoided = "BeforePomodoroVoided"
+AfterPomodoroVoided = "AfterPomodoroVoided"
+BeforePomodoroInterrupted = "BeforePomodoroInterrupted"
+AfterPomodoroInterrupted = "AfterPomodoroInterrupted"
 
 TagCreated = "TagCreated"
 TagDeleted = "TagDeleted"
@@ -81,6 +87,10 @@ AfterTenantCreate = "AfterTenantCreate"
 
 WentOnline = "WentOnline"
 WentOffline = "WentOffline"
+
+TimerWorkStart = "TimerWorkStart"
+TimerWorkComplete = "TimerWorkComplete"
+TimerRestComplete = "TimerRestComplete"
 
 
 class EmittedEvent:

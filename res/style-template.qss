@@ -63,7 +63,7 @@ QMainWindow, #StatsWindow, #FocusBackground {
 }
 
 #users_table, #tags_table {
-    border-top: 1px solid $BORDER_COLOR;
+    border-top: 0px solid $BORDER_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
 
@@ -123,7 +123,7 @@ InfoOverlay #overlay_text, #prev_button {
     background: none;
     color: $TABLE_TEXT_COLOR;
     border-radius: 5px;
-    border: 1px solid $BORDER_COLOR;
+    border: 0px solid $BORDER_COLOR;
     padding: 0px 6px 0px 6px;
 }
 

@@ -233,8 +233,9 @@ class AbstractE2eTest(ABC):
         for w in self._app.allWindows():
             if w.isModal():
                 if ok:
-                    self.keypress(Qt.Key.Key_Tab, False, w)
-                self.keypress(Qt.Key.Key_Enter, False, w)
+                    self.keypress(Qt.Key.Key_Enter, False, w)
+                else:
+                    self.keypress(Qt.Key.Key_Escape, False, w)
 
     def type_text(self, text: str):
         self._app.postEvent(self.get_focused(), QKeyEvent(

@@ -13,16 +13,20 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFontMetrics
+from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
+from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
@@ -81,6 +85,10 @@ class WorkitemTitle(QtGui.QStandardItem):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
 
+def hhmm(when: datetime.datetime) -> str:
+    return when.strftime('%H:%M')
+
+
 class WorkitemPomodoro(QtGui.QStandardItem):
     _workitem: Workitem
     _row_height: int
@@ -96,9 +104,64 @@ class WorkitemPomodoro(QtGui.QStandardItem):
         self.setFlags(flags)
         self.update_display()
 
+    def _list_interruptions(self, pomodoro: Pomodoro, res: list[str]) -> None:
+        for i in pomodoro.values():
+            reason = f' ({i.get_reason()})' if i.get_reason() else ''
+            action = 'Voided' if i.is_void() else 'Interrupted'
+            res.append(f' - {action} at {hhmm(i.get_create_date())}{reason}')
+
+    def _format_tooltip(self) -> str:
+        res = list()
+
+        for p in self._workitem.values():
+            if p.get_type() == POMODORO_TYPE_TRACKER:
+                # The fact that we detect it as a tracker means that we started it
+                elapsed = round((p.get_last_modified_date() - p.get_work_start_date()).total_seconds())
+                res.append(f'Tracked {datetime.timedelta(seconds=elapsed)} '
+                           f'from {hhmm(p.get_work_start_date())} to {hhmm(p.get_last_modified_date())}')
+                self._list_interruptions(p, res)
+            else:
+                res.append(f'{p.get_name()} - {"planned" if p.is_planned() else "unplanned"}, {p.get_state()}:')
+                res.append(f' - Created at {hhmm(p.get_create_date())}')
+                if p.is_working():
+                    res.append(f' - Working since {hhmm(p.get_work_start_date())}')
+                if p.is_resting() or p.is_finished():
+                    res.append(f' - Started work at {hhmm(p.get_work_start_date())}')
+                if p.is_resting():
+                    res.append(f' - Resting since {hhmm(p.get_rest_start_date())}')
+                self._list_interruptions(p, res)
+                if p.is_finished():
+                    work_duration = round(p.get_elapsed_work_duration())
+                    if work_duration > 0:
+                        res.append(f' - Worked for {datetime.timedelta(seconds=work_duration)}s')
+                    rest_duration = round(p.get_elapsed_rest_duration())
+                    if rest_duration > 0:
+                        rest_type = ''
+                        if p.get_rest_duration() == 0:
+                            rest_type = ' (long break)'
+                        res.append(f' - Rested for {datetime.timedelta(seconds=rest_duration)}{rest_type}')
+                    res.append(f' - Completed at {hhmm(p.get_last_modified_date())}')
+
+        return '\n'.join(res)
+
     def update_display(self):
         self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
-        self.setData(QSize(len(self._workitem) * self._row_height, self._row_height), Qt.ItemDataRole.SizeHintRole)
+
+        if self._workitem.is_tracker():
+            elapsed = str(self._workitem.get_total_elapsed_time())
+            if self._workitem.has_running_pomodoro():
+                elapsed += '+'
+            self.setData(elapsed, Qt.ItemDataRole.DisplayRole)
+            sz = QFontMetrics(QApplication.font()).horizontalAdvance(elapsed) + 8
+        else:
+            # Calculate its size, given that voided pomodoros are just narrow ticks
+            sz = 0
+            for p in self._workitem.values():
+                sz += self._row_height
+                sz += len(p) * self._row_height / 4     # Voided pomodoro ticks
+
+        self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
+        self.setData(self._format_tooltip(), Qt.ItemDataRole.ToolTipRole)
 
 
 class WorkitemModel(AbstractDropModel):
@@ -113,7 +176,7 @@ class WorkitemModel(AbstractDropModel):
         super().__init__(1, parent, source_holder)
         self._font_new = QtGui.QFont()
         self._font_running = QtGui.QFont()
-        self._font_running.setWeight(QtGui.QFont.Weight.Bold)
+        # self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog_or_tag = None
@@ -146,7 +209,10 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemReorder, self._workitem_reordered)
         source.on(AfterWorkitemComplete, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
-        source.on('AfterPomodoro*', self._workitem_changed)
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._workitem_changed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
 
     def _handle_rename(self, item: QtGui.QStandardItem) -> None:
         if item.data(501) == 'title':
@@ -301,6 +367,14 @@ class WorkitemModel(AbstractDropModel):
                     if visible_index >= to_index:
                         break
         logger.debug(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
+        print(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
-                                                 carry='ui')
+                                                 carry='uia')
+
+    def repaint_workitem(self, workitem: Workitem):
+        for i in range(self.rowCount()):
+            wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
+            if wi == workitem:
+                item: WorkitemPomodoro = self.item(i, 2)
+                item.update_display()

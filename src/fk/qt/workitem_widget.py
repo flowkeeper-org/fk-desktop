@@ -39,7 +39,7 @@ class WorkitemWidget(QWidget):
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
-                 pomodoro_timer: PomodoroTimer,
+                 timer: PomodoroTimer,
                  actions: Actions):
         super().__init__(parent)
         self.setObjectName('workitems_widget')
@@ -65,7 +65,7 @@ class WorkitemWidget(QWidget):
         self._workitems_table = WorkitemTableView(self,
                                                   application,
                                                   source_holder,
-                                                  pomodoro_timer,
+                                                  timer,
                                                   actions)
         layout.addWidget(self._workitems_table)
 

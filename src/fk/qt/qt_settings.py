@@ -20,6 +20,7 @@ import sys
 
 import keyring
 from PySide6 import QtCore
+from PySide6.QtCore import QStandardPaths
 from PySide6.QtGui import QFont, Qt, QGuiApplication, QGradient
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication
@@ -43,7 +44,9 @@ class QtSettings(AbstractSettings):
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
         self._app_name = app_name
-        super().__init__(invoke_in_main_thread,
+        super().__init__(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation),
+                         QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
+                         invoke_in_main_thread,
                          QGuiApplication.platformName() == 'wayland')
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
@@ -154,6 +157,16 @@ class QtSettings(AbstractSettings):
                 return self._defaults[name]
         else:
             return str(self._settings.value(name, self._defaults[name]))
+
+    def is_set(self, name: str) -> bool:
+        if name.endswith('!'):
+            if self._keyring_enabled:
+                j = self.load_secret()
+                return name in j and j[name] is not None
+            else:
+                return False
+        else:
+            return self._settings.contains(name)
 
     def location(self) -> str:
         return self._settings.fileName()
