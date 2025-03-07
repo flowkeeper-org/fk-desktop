@@ -18,7 +18,7 @@ from __future__ import annotations
 import datetime
 import logging
 
-from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6 import QtGui, QtCore
 from PySide6.QtCore import Qt, QMimeData, QModelIndex
 
 from fk.core import events
@@ -77,7 +77,7 @@ class BacklogModel(AbstractDropModel):
         self._midnight_timer = QtTimer('Midnight check for BacklogModel')
         self._schedule_at_midnight()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
+        self.itemChanged.connect(lambda item: self.handle_rename(item, RenameBacklogStrategy))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
@@ -85,24 +85,6 @@ class BacklogModel(AbstractDropModel):
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
         source.on(events.AfterBacklogReorder, self._backlog_reordered)
-
-    def _handle_rename(self, item: QtGui.QStandardItem) -> None:
-        if item.data(501) == 'title':
-            backlog = item.data(500)
-            old_name = backlog.get_name()
-            new_name = item.text()
-            if old_name != new_name:
-                try:
-                    self._source_holder.get_source().execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
-                except Exception as e:
-                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
-                    item.setText(old_name)
-                    QtWidgets.QMessageBox().warning(
-                        self.parent(),
-                        "Cannot rename",
-                        str(e),
-                        QtWidgets.QMessageBox.StandardButton.Ok
-                    )
 
     def _backlog_added(self, backlog: Backlog, **kwargs) -> None:
         self.insertRow(0, BacklogItem(backlog))
@@ -148,7 +130,7 @@ class BacklogModel(AbstractDropModel):
                     self.insertRow(new_index, row)
                     return
 
-    def load(self, user: User) -> None:
+    def load(self, user: User | None) -> None:
         self.clear()
         if user is not None:
             for backlog in reversed(user.values()):

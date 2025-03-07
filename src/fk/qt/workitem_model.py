@@ -182,7 +182,7 @@ class WorkitemModel(AbstractDropModel):
         self._backlog_or_tag = None
         self._hide_completed = (source_holder.get_settings().get('Application.hide_completed') == 'True')
         self._update_row_height()
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
+        self.itemChanged.connect(lambda item: self.handle_rename(item, RenameWorkitemStrategy))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -213,24 +213,6 @@ class WorkitemModel(AbstractDropModel):
                   lambda **kwargs: self._workitem_changed(
                       kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
                   ))
-
-    def _handle_rename(self, item: QtGui.QStandardItem) -> None:
-        if item.data(501) == 'title':
-            workitem: Workitem = item.data(500)
-            old_name = workitem.get_name()
-            new_name = item.text()
-            if old_name != new_name:
-                try:
-                    self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
-                except Exception as e:
-                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
-                    item.setText(old_name)
-                    QtWidgets.QMessageBox().warning(
-                        self.parent(),
-                        "Cannot rename",
-                        str(e),
-                        QtWidgets.QMessageBox.StandardButton.Ok
-                    )
 
     def _workitem_belongs_here(self, workitem: Workitem) -> bool:
         return (type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag

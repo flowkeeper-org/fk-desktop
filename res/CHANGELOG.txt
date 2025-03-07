@@ -32,6 +32,7 @@ Technical improvements:
 Bug fixes:
 
 - Window icon on Wayland (#110).
+- Line breaks in work items and backlogs.
 
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)

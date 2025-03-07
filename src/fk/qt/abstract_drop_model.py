@@ -15,14 +15,24 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import logging
 from abc import abstractmethod
 
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QMimeData, QModelIndex, QSize
 from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QMessageBox
 
+from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import AbstractDataItem
+from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.event_source_holder import EventSourceHolder
+
+logger = logging.getLogger(__name__)
+
+
+def sanitize(s: str) -> str:
+    return s.replace('\n', ' ').replace('\r', '')
 
 
 class DropPlaceholderItem(QStandardItem):
@@ -81,6 +91,24 @@ class AbstractDropModel(QStandardItemModel):
     @abstractmethod
     def reorder(self, to_index: int, uid: str):
         pass
+
+    def handle_rename(self, item: QStandardItem, strategy_class: type[AbstractStrategy]) -> None:
+        if item.data(501) == 'title':
+            entity: AbstractDataContainer = item.data(500)
+            old_name = entity.get_name()
+            new_name = sanitize(item.text())
+            if old_name != new_name:
+                try:
+                    self._source_holder.get_source().execute(strategy_class, [entity.get_uid(), new_name])
+                except Exception as e:
+                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
+                    item.setText(old_name)
+                    QMessageBox().warning(
+                        None,
+                        "Cannot rename",
+                        str(e),
+                        QMessageBox.StandardButton.Ok
+                    )
 
     def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
         print('AbstractDropModel - canDropMimeData', where.isValid())
