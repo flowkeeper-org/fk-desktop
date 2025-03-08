@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessag
     QSpacerItem, QInputDialog, QLineEdit
 
 from fk.core.abstract_event_source import AbstractEventSource, start_workitem
+from fk.core.abstract_serializer import sanitize_user_input
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
@@ -320,7 +321,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 dlg.setLabelText('Are you sure you want to void current pomodoro?')
                 dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
                 if dlg.exec_():
-                    reason = f': {dlg.textValue()}' if dlg.textValue() else ''
+                    reason = f': {sanitize_user_input(dlg.textValue())}' if dlg.textValue() else ''
                     self._source_holder.get_source().execute(AddInterruptionStrategy,
                                                              [workitem.get_uid(), f'Pomodoro voided{reason}'])
                     self._source_holder.get_source().execute(StopTimerStrategy,
@@ -338,7 +339,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 dlg.findChild(QLineEdit).setPlaceholderText('What happened (optional)')
                 if dlg.exec_():
                     self._source_holder.get_source().execute(AddInterruptionStrategy,
-                                                             [workitem.get_uid(), dlg.textValue()])
+                                                             [workitem.get_uid(), sanitize_user_input(dlg.textValue())])
 
     def _finish_tracking(self) -> None:
         # We don't check if there's a running workitem, as the action is only enabled while the timer is ticking

@@ -25,14 +25,11 @@ from PySide6.QtWidgets import QMessageBox
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.abstract_data_item import AbstractDataItem
+from fk.core.abstract_serializer import sanitize_user_input
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.event_source_holder import EventSourceHolder
 
 logger = logging.getLogger(__name__)
-
-
-def sanitize(s: str) -> str:
-    return s.replace('\n', ' ').replace('\r', '')
 
 
 class DropPlaceholderItem(QStandardItem):
@@ -96,7 +93,7 @@ class AbstractDropModel(QStandardItemModel):
         if item.data(501) == 'title':
             entity: AbstractDataContainer = item.data(500)
             old_name = entity.get_name()
-            new_name = sanitize(item.text())
+            new_name = sanitize_user_input(item.text())
             if old_name != new_name:
                 try:
                     self._source_holder.get_source().execute(strategy_class, [entity.get_uid(), new_name])

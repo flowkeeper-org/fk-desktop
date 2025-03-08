@@ -212,6 +212,10 @@ class Application(QApplication, AbstractEventEmitter):
 
         # 2. Check that the entire logger file path exists
         filename = self._settings.get('Logger.filename')
+        logfile = Path(filename)
+        if logfile.is_dir():    # Fixing #108 - a rare case when the user selects directory as log filename
+            logfile /= 'flowkeeper.log'
+            filename = logfile.absolute()
         prepare_file_for_writing(filename)
 
         # 3. Add FILE handler for whatever the user configured
