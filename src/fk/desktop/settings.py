@@ -20,7 +20,7 @@ import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime, Qt
-from PySide6.QtGui import QFont, QKeySequence, QIcon
+from PySide6.QtGui import QFont, QKeySequence, QIcon, QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
@@ -269,15 +269,32 @@ class SettingsDialog(QDialog):
             return [ed5]
         elif option_type == 'choice':
             ed6 = QComboBox(parent)
-            ed6.addItems([v.split(':')[1] for v in option_options])
-            ed6.setCurrentIndex(self._find_combobox_option(option_options, option_value))
+            data_model6 = QStandardItemModel(ed6)
+            ed6.setModel(data_model6)
+
+            found = 0
+            i = 0
+            for o in option_options:
+                n, v = o.split(':')
+                if n == option_value:
+                    found = i
+                item = QStandardItem(v)
+                item.setData(n, 500)
+                data_model6.appendRow(item)
+                i += 1
+            ed6.setCurrentIndex(found)
+
+            def find_item(name: str) -> int:
+                for i in range(data_model6.rowCount()):
+                    if data_model6.index(i).data(500) == name:
+                        return i
+
             ed6.currentIndexChanged.connect(lambda v: self._on_value_changed(
                 option_id,
-                option_options[ed6.currentIndex()].split(':')[0]
+                data_model6.item(v).data(500)
             ))
-            self._widgets_get_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
-            self._widgets_set_value[option_id] = \
-                lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
+            self._widgets_get_value[option_id] = lambda: ed6.currentData(500)
+            self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(find_item(txt))
             return [ed6]
         elif option_type == 'font' and platform.system() == 'Darwin':
             widget = QWidget(parent)
@@ -457,14 +474,6 @@ class SettingsDialog(QDialog):
             return [ed13]
         else:
             return []
-
-    def _find_combobox_option(self, option_options: list[str], option_value: str):
-        i = 0
-        for v in option_options:
-            if v.split(':')[0] == option_value:
-                break
-            i += 1
-        return i
 
     def _handle_button_click(self, option_id: str):
         if self._buttons_mapping is None or option_id not in self._buttons_mapping:

@@ -1,9 +1,9 @@
-### v0.10.0 (XX February 2025)
+### v0.10.0 (XX March 2025)
 
 This version brings Flowkeeper even closer to the original Pomodoro Technique definition from Francesco Cirillo's book.
 Pomodoro interruptions are now handled as the book prescribes, and we introduced support for long breaks. One major
-deviation from the Technique we implemented in this version is the ability to track unfocused time. As usual there are
-some minor quality-of-life improvements, bugfixes and better support for Linux.
+deviation from the Technique in this version is the ability to track unfocused time. As usual there's a bunch of minor
+quality-of-life improvements, bugfixes and better support for Linux.
 
 - Ability to track unfocused time -- try to start a work item with no pomodoros (#94, #98).
 - Support for long breaks and working in series, see Settings > Series and breaks (#53).
@@ -14,20 +14,20 @@ some minor quality-of-life improvements, bugfixes and better support for Linux.
 - Import from CSV and GitHub, try Ctrl+I (#125).
 - "Contact us" submenu to facilitate feedback collection (#111).
 - Flowkeeper window now hides automatically on auto-start (#102).
-- There's a new font selector for macOS, which supports its system font (#113).
+- There's a new font selector for macOS, which supports Apple system font (#113).
 
 Technical improvements:
 
 - Standard data and log directories are used on Linux, macOS and Windows (#65).
 - New ways to run Flowkeeper:
- - Install it from Flathub (#63).
- - Install from a package repo on Debian, Ubuntu, Fedora or openSUSE (#127).
+ - Install it from Flathub (#63),
+ - Install from a package repo on Debian, Ubuntu, Fedora or openSUSE (#127),
  - Download a portable AppImage, see flowkeeper.org > Downloads.
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - Added support for Qt 6.8.x.
-- Flowkeeper CLI is now available in the sources, but it is not installed yet
-- Ignoring our own modifications when "watch changes" is enabled (#130)
-- Improved documentation (#80, #87)
+- Flowkeeper CLI is now available in the sources, but it is not installed yet.
+- Ignoring our own modifications when "watch changes" is enabled (#130).
+- Improved documentation (#80, #87).
 - Complete drag & drop rewrite to accommodate moving work items between backlogs.
 
 Bug fixes:
@@ -35,16 +35,14 @@ Bug fixes:
 - Selecting directory as log file (#108).
 - Window icon on Wayland (#110).
 - Line breaks in work items and backlogs (#132).
+- Changing audio devices while Flowkeeper is running (#120).
 
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
-- TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
 - TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
 
 - TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
 - TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
 - TODO: [Technical] The content of Windows installer is now signed, too (#115)
-
-TODO: Fix drag-and-drop
 
 ### v0.9.1 (15 January 2025)
 

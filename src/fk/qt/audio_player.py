@@ -67,10 +67,18 @@ class AudioPlayer(QObject):
 
     def _reset(self):
         found: QAudioDevice = None
+        setting: str = self._settings.get('Application.audio_output')
+        default: QAudioDevice = None
         for device in QMediaDevices.audioOutputs():
-            if device.id().toStdString() == self._settings.get('Application.audio_output'):
+            if device.id().toStdString() == setting:
                 found = device
                 break
+            if device.isDefault():
+                default = device
+        if found is None and default is not None:
+            found = default
+            logger.info(f"The previously selected audio device {setting} is not available anymore, "
+                        f"switching to default {default.id().toStdString()}")
         if found is None:
             self._audio_output = None
             self._audio_player = None
