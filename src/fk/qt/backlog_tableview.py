@@ -248,23 +248,3 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Backlog dump",
                                       "Technical information for debug / development purposes",
                                       selected.dump())
-
-    def dragMoveEventa(self, event: QDragMoveEvent):
-        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
-            # Don't create placeholders when we drop a workitem
-            print('Standard',
-                  self.dragDropMode() == AbstractTableView.DragDropMode.InternalMove,
-                  self.showDropIndicator(),
-                  )
-            super(QAbstractItemView, self).dragMoveEvent(event)
-            event.acceptProposedAction()
-        else:
-            super(AbstractTableView, self).dragMoveEvent(event)
-
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        print('ENTER (custom)', event, self.objectName())
-        # By default it only allows its own data. Here we say we accept workitems, too.
-        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
-            event.acceptProposedAction()
-        else:
-            super().dragEnterEvent(event)

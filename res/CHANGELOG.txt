@@ -38,6 +38,7 @@ Bug fixes:
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Unhandled IndexError - Changing audio devices while Flowkeeper is running (#120)
 - TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
+
 - TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
 - TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
 - TODO: [Technical] The content of Windows installer is now signed, too (#115)

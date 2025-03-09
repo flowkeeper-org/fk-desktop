@@ -18,7 +18,7 @@ import logging
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFontMetrics
+from PySide6.QtGui import QFontMetrics, QStandardItem
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_event_source import AbstractEventSource
@@ -35,7 +35,7 @@ from fk.qt.abstract_drop_model import AbstractDropModel
 logger = logging.getLogger(__name__)
 
 
-class WorkitemPlanned(QtGui.QStandardItem):
+class WorkitemPlanned(QStandardItem):
     _workitem: Workitem
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
@@ -57,7 +57,7 @@ class WorkitemPlanned(QtGui.QStandardItem):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
 
-class WorkitemTitle(QtGui.QStandardItem):
+class WorkitemTitle(QStandardItem):
     _workitem: Workitem
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
@@ -89,7 +89,7 @@ def hhmm(when: datetime.datetime) -> str:
     return when.strftime('%H:%M')
 
 
-class WorkitemPomodoro(QtGui.QStandardItem):
+class WorkitemPomodoro(QStandardItem):
     _workitem: Workitem
     _row_height: int
 
@@ -220,7 +220,7 @@ class WorkitemModel(AbstractDropModel):
                 type(self._backlog_or_tag) is Tag and self._backlog_or_tag.get_uid() in workitem.get_tags())
 
     def _add_workitem(self, workitem: Workitem) -> None:
-        self.appendRow(self._item_for_object(workitem))
+        self.appendRow(self.item_for_object(workitem))
 
     def _find_workitem(self, workitem: Workitem) -> int:
         for i in range(self.rowCount()):
@@ -301,10 +301,10 @@ class WorkitemModel(AbstractDropModel):
             for workitem in workitems:
                 if self._hide_completed and workitem.is_sealed():
                     continue
-                self.appendRow(self._item_for_object(workitem))
-        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
-        self.setHorizontalHeaderItem(1, QtGui.QStandardItem(''))
-        self.setHorizontalHeaderItem(2, QtGui.QStandardItem(''))
+                self.appendRow(self.item_for_object(workitem))
+        self.setHorizontalHeaderItem(0, QStandardItem(''))
+        self.setHorizontalHeaderItem(1, QStandardItem(''))
+        self.setHorizontalHeaderItem(2, QStandardItem(''))
 
     def hide_completed(self, hide: bool) -> None:
         self._hide_completed = hide
@@ -316,9 +316,9 @@ class WorkitemModel(AbstractDropModel):
     def get_type(self) -> str:
         return 'application/flowkeeper.workitem.id'
 
-    def item_by_id(self, uid: str) -> list[QtGui.QStandardItem]:
+    def item_by_id(self, uid: str) -> list[QStandardItem]:
         workitem = self._source_holder.get_source().find_workitem(uid)
-        return self._item_for_object(workitem)
+        return self.item_for_object(workitem)
 
     def _get_font(self, workitem: Workitem) -> QtGui.QFont:
         if workitem.is_running():
@@ -327,7 +327,7 @@ class WorkitemModel(AbstractDropModel):
             return self._font_sealed
         return self._font_new
 
-    def _item_for_object(self, workitem: Workitem) -> list[QtGui.QStandardItem]:
+    def item_for_object(self, workitem: Workitem) -> list[QStandardItem]:
         font = self._get_font(workitem)
         return [
             WorkitemPlanned(workitem, font),

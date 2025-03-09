@@ -276,7 +276,8 @@ class SettingsDialog(QDialog):
                 option_options[ed6.currentIndex()].split(':')[0]
             ))
             self._widgets_get_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
-            self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
+            self._widgets_set_value[option_id] = \
+                lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
             return [ed6]
         elif option_type == 'font' and platform.system() == 'Darwin':
             widget = QWidget(parent)
