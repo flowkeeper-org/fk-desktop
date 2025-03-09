@@ -1,10 +1,9 @@
-name: Build binaries
+name: Notify
 
 on:
   workflow_dispatch:
     inputs:
       text:
-        description: 'Notification text'
         required: true
         default: 'Hello, World!'
         type: string
@@ -13,11 +12,11 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:
           method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}ww
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
             text: "${{ inputs.text }}"
