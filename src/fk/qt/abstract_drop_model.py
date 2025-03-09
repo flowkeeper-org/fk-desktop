@@ -98,7 +98,8 @@ class AbstractDropModel(QStandardItemModel):
                 return original_index
 
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        if data.hasFormat(self.get_type()) and where.isValid():
+        if data.hasFormat(self.get_primary_type()) and where.isValid():
+            # Our own item
             from_index = self.dragging.row()
             to_index = where.row()
             self.move_drop_placeholder(None)
@@ -106,22 +107,29 @@ class AbstractDropModel(QStandardItemModel):
                 return False
             else:
                 self.reorder(to_index if to_index < from_index else to_index + 1,
-                             data.data(self.get_type()).toStdString())
+                             data.data(self.get_primary_type()).toStdString())
                 return True
+        elif self.get_secondary_type() is not None and data.hasFormat(self.get_secondary_type()) and where.isValid():
+            # Foreign item
+            return self.adopt_foreign_item(where.data(500),
+                                           data.data(self.get_secondary_type()).toStdString())
         else:
+            # Something unexpected -- reject
             return False
 
     @abstractmethod
-    def get_type(self) -> str:
+    def get_primary_type(self) -> str:
         pass
 
-    @abstractmethod
-    def item_by_id(self, uid: str):
-        pass
+    def get_secondary_type(self) -> str | None:
+        return None
 
     @abstractmethod
     def reorder(self, to_index: int, uid: str):
         pass
+
+    def adopt_foreign_item(self, target: AbstractDataItem, uid: str) -> bool:
+        return False
 
     def handle_rename(self, item: QStandardItem, strategy_class: type[AbstractStrategy]) -> None:
         if item.data(501) == 'title':
@@ -142,21 +150,20 @@ class AbstractDropModel(QStandardItemModel):
                     )
 
     def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        print('AbstractDropModel - canDropMimeData', where.isValid())
         return where.isValid() and where.data(501) == 'drop'
 
     def mimeTypes(self):
-        return [self.get_type()]
+        return [self.get_primary_type()] if self.get_secondary_type() is None \
+            else [self.get_primary_type(), self.get_secondary_type()]
 
     def mimeData(self, indexes):
-        print('mimeData', indexes)
         if len(indexes) != 1:
             raise Exception(f'Unexpected number of rows to move: {len(indexes)}')
         index = indexes[0]
         self.dragging = index
         data = QMimeData()
         item: AbstractDataItem = index.data(500)
-        data.setData(self.get_type(), bytes(item.get_uid(), 'iso8859-1'))
+        data.setData(self.get_primary_type(), bytes(item.get_uid(), 'iso8859-1'))
         return data
 
     @abstractmethod

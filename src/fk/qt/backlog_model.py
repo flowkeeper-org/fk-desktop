@@ -29,6 +29,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy, ReorderBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
+from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import MoveWorkitemStrategy
 from fk.qt.abstract_drop_model import AbstractDropModel
 from fk.qt.qt_timer import QtTimer
@@ -138,11 +139,11 @@ class BacklogModel(AbstractDropModel):
                 self.appendRow(BacklogItem(backlog))
         self.setHorizontalHeaderItem(0, QStandardItem(''))
 
-    def get_type(self) -> str:
+    def get_primary_type(self) -> str:
         return 'application/flowkeeper.backlog.id'
 
-    def item_by_id(self, uid: str) -> BacklogItem:
-        return BacklogItem(self._source_holder.get_source().find_backlog(uid))
+    def get_secondary_type(self) -> str:
+        return 'application/flowkeeper.workitem.id'
 
     def item_for_object(self, backlog: Backlog) -> list[QStandardItem]:
         return [BacklogItem(backlog)]
@@ -152,3 +153,12 @@ class BacklogModel(AbstractDropModel):
                                                  # We display backlogs in reverse order, so need to subtract here
                                                  [uid, str(self.rowCount() - to_index)],
                                                  carry='ui')
+
+    def adopt_foreign_item(self, backlog: Backlog, workitem_uid: str) -> bool:
+        workitem: Workitem = self._source_holder.get_source().find_workitem(workitem_uid)
+        if workitem is None or backlog is None or workitem.get_parent() == backlog:
+            return False
+        logger.debug(f'Moving workitem {workitem.get_name()} to backlog {backlog.get_name()}')
+        self._source_holder.get_source().execute(MoveWorkitemStrategy,
+                                                 [workitem_uid, backlog.get_uid()])
+        return True

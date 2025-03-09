@@ -28,6 +28,7 @@ Technical improvements:
 - Flowkeeper CLI is now available in the sources, but it is not installed yet
 - Ignoring our own modifications when "watch changes" is enabled (#130)
 - Improved documentation (#80, #87)
+- Complete drag & drop rewrite to accommodate moving work items between backlogs.
 
 Bug fixes:
 

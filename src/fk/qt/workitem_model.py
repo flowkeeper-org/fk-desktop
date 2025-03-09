@@ -25,7 +25,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
+    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder, AfterWorkitemMove
 from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
@@ -207,6 +207,7 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._workitem_renamed)
         source.on(AfterWorkitemReorder, self._workitem_reordered)
+        source.on(AfterWorkitemMove, self._workitem_moved)
         source.on(AfterWorkitemComplete, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
         source.on('AfterPomodoro*',
@@ -264,6 +265,14 @@ class WorkitemModel(AbstractDropModel):
                 row = self.takeRow(old_index)
                 self.insertRow(new_index, row)
 
+    def _workitem_moved(self, workitem: Workitem, old_backlog: Backlog, new_backlog: Backlog, **kwargs) -> None:
+        if old_backlog == self._backlog_or_tag or self._backlog_or_tag.get_uid() in workitem.get_tags():
+            # Moved from here
+            self._remove_if_found(workitem)
+        elif self._workitem_belongs_here(workitem):   # We can only drop workitems on backlogs, not tags
+            # Moved in here
+            self._add_workitem(workitem)
+
     def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
             item0: WorkitemPlanned = self.item(i, 0)
@@ -313,12 +322,8 @@ class WorkitemModel(AbstractDropModel):
     def get_backlog_or_tag(self) -> Backlog | Tag | None:
         return self._backlog_or_tag
 
-    def get_type(self) -> str:
+    def get_primary_type(self) -> str:
         return 'application/flowkeeper.workitem.id'
-
-    def item_by_id(self, uid: str) -> list[QStandardItem]:
-        workitem = self._source_holder.get_source().find_workitem(uid)
-        return self.item_for_object(workitem)
 
     def _get_font(self, workitem: Workitem) -> QtGui.QFont:
         if workitem.is_running():
@@ -349,7 +354,6 @@ class WorkitemModel(AbstractDropModel):
                     if visible_index >= to_index:
                         break
         logger.debug(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
-        print(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
                                                  carry='ui')

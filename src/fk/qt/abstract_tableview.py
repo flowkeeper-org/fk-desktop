@@ -18,7 +18,7 @@ from abc import abstractmethod
 from typing import TypeVar, Generic
 
 from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel, QEvent
-from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
+from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent, QColor
 from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
 from fk.core.abstract_data_item import AbstractDataItem
@@ -208,24 +208,24 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.update_actions(None)
 
     def dragLeaveEvent(self, event: QDragLeaveEvent):
-        print('LEAVE', event, self.objectName())
         model: AbstractDropModel = self.model()
         to_select = model.restore_order()
         if to_select is not None:
-            print(f'Selecting {to_select}')
             self.select(model.index(to_select, self._editable_column).data(500))
         event.accept()
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         model: AbstractDropModel = self.model()
         dragging: QModelIndex = model.dragging
-        print(f'dragEnterEvent for {dragging}')
-        model.move_drop_placeholder(dragging)
+        if event.mimeData().hasFormat(model.get_primary_type()):
+            # Dragging primary type
+            model.move_drop_placeholder(dragging)
         event.accept()
 
     def dragMoveEvent(self, event: QDragMoveEvent):
-        self.deselect()
         index: QModelIndex = self.indexAt(event.position().toPoint())
-        model: AbstractDropModel = self.model()
-        model.move_drop_placeholder(index)
+        if event.mimeData().hasFormat(self.model().get_primary_type()):
+            self.deselect()
+            model: AbstractDropModel = self.model()
+            model.move_drop_placeholder(index)
         event.accept()
