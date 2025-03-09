@@ -150,5 +150,5 @@ class BacklogModel(AbstractDropModel):
     def reorder(self, to_index: int, uid: str):
         self._source_holder.get_source().execute(ReorderBacklogStrategy,
                                                  # We display backlogs in reverse order, so need to subtract here
-                                                 [uid, str(self.rowCount() - to_index - 1)],
+                                                 [uid, str(self.rowCount() - to_index)],
                                                  carry='ui')

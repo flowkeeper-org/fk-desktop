@@ -98,9 +98,18 @@ class AbstractDropModel(QStandardItemModel):
                 return original_index
 
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        print('AbstractDropModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
-        self.move_drop_placeholder(None)
-        return True
+        if data.hasFormat(self.get_type()) and where.isValid():
+            from_index = self.dragging.row()
+            to_index = where.row()
+            self.move_drop_placeholder(None)
+            if from_index == to_index:
+                return False
+            else:
+                self.reorder(to_index if to_index < from_index else to_index + 1,
+                             data.data(self.get_type()).toStdString())
+                return True
+        else:
+            return False
 
     @abstractmethod
     def get_type(self) -> str:

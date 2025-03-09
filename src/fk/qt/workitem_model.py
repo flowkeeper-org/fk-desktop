@@ -352,7 +352,7 @@ class WorkitemModel(AbstractDropModel):
         print(f'When reordering {uid} having to add {to_add} items before our target index {to_index}')
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
-                                                 carry='uia')
+                                                 carry='ui')
 
     def repaint_workitem(self, workitem: Workitem):
         for i in range(self.rowCount()):
