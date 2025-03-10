@@ -22,12 +22,13 @@ from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
-from fk.tests.test_utils import one_of, shuffle, randint, rand_normal
+from fk.tests.test_utils import one_of, shuffle, randint, rand_normal, random
 
 PROJECTS = ['#Alpha', '#Beta', '#Gamma', '#Delta', '#Omega']
 
@@ -54,7 +55,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
             continue
 
         now = datetime.datetime(now.year, now.month, now.day,
-                                rand_normal(8, 10), randint(1, 59),
+                                rand_normal(8, 10), randint(0, 59),
                                 tzinfo=datetime.timezone.utc)
 
         if seq == 1:
@@ -104,22 +105,42 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                 # Start it and...
                 seq += 1
                 now += datetime.timedelta(seconds=rand_normal(1, 120))
-                yield StartWorkStrategy(seq,
-                                        now,
-                                        user,
-                                        [p, '1500', '300'],
-                                        settings)
+                yield StartTimerStrategy(seq,
+                                         now,
+                                         user,
+                                         [p, '1500', '300'],
+                                         settings)
 
-                if choice < 5:  # Void it
+                if choice < 3:  # Void it
                     seq += 1
                     now += datetime.timedelta(seconds=rand_normal(1, 1800))
-                    yield VoidPomodoroStrategy(seq,
-                                               now,
-                                               user,
-                                               [p],
-                                               settings)
-                else:   # Complete it -- just increment the timer, let it "finish"
-                    now += datetime.timedelta(seconds=1800)
+                    if random() < 0.5:
+                        yield AddInterruptionStrategy(seq,
+                                                      now,
+                                                      user,
+                                                      [p, 'Voided for a good reason', ''],
+                                                      settings)
+                        seq += 1
+                    yield StopTimerStrategy(seq,
+                                            now,
+                                            user,
+                                            [],
+                                            settings)
+                else:
+                    end = now + datetime.timedelta(seconds=1800)
+                    if choice < 5:  # Add an interruption
+                        seq += 1
+                        after = rand_normal(1, 1800)
+                        now += datetime.timedelta(seconds=after)
+                        yield AddInterruptionStrategy(seq,
+                                                      now,
+                                                      user,
+                                                      [p,
+                                                       'An interruption' if random() < 0.5 else '',
+                                                       str(after / 2) if random() < 0.5 else ''],
+                                                      settings)
+                    # Complete it -- just increment the timer, let it "finish"
+                    now = end
 
                 if choice > 8:
                     seq += 1

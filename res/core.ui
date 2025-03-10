@@ -33,7 +33,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>:/icons/logo.png</normaloff>:/icons/logo.png</iconset>
+    <normaloff>:/flowkeeper.png</normaloff>:/flowkeeper.png</iconset>
   </property>
   <widget class="QWidget" name="rootLayout">
    <layout class="QVBoxLayout" name="rootLayoutInternal">

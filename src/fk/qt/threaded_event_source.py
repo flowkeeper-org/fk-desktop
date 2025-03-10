@@ -111,9 +111,6 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
                                   persist: bool = False) -> None:
         self._wrapped.execute_prepared_strategy(strategy, auto, persist)
 
-    def auto_seal(self, when: datetime.datetime | None = None) -> None:
-        self._wrapped.auto_seal(when)
-
     def users(self) -> Iterable[User]:
         return self._wrapped.users()
 

@@ -60,14 +60,14 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
     def __len__(self):
         return len(self._children_sorted)
 
-    def values(self) -> Iterable[TChild]:
+    def values(self) -> list[TChild]:
         return self._children_sorted
 
     def keys(self) -> Iterable[str]:
         for child in self._children_sorted:
             yield child.get_uid()
 
-    def names(self) -> Iterable[str]:
+    def names(self) -> list[str]:
         return [child.get_name() for child in self.values()]
 
     def get_name(self) -> str:
@@ -87,12 +87,20 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         else:
             return default
 
+    def supports_children(self) -> bool:
+        return True
+
     def dump(self, indent: str = '', mask_uid: bool = False) -> str:
         if len(self) > 0:
             children = f'\n'.join(child.dump(indent + '  ', mask_uid) for child in self.values())
         else:
-            children = f'{indent} - <None>'
+            children = f'{indent}  - <Empty>'
         return f'{super().dump(indent, mask_uid)}\n' \
                f'{indent}  Name: {self._name}\n' \
                f'{indent}  Children:\n' \
                f'{children}'
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['name'] = self._name
+        return d
