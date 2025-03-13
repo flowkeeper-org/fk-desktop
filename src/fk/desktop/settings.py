@@ -26,9 +26,9 @@ from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLa
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
 
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.sandbox import get_sandbox_type
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
-from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -296,12 +296,14 @@ class SettingsDialog(QDialog):
             self._widgets_get_value[option_id] = lambda: ed6.currentData(500)
             self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(find_item(txt))
             return [ed6]
-        elif option_type == 'font' and platform.system() == 'Darwin':
+        elif option_type == 'font' and platform.system() in ('Darwin', 'Linux'):
+            is_mac = platform.system() == 'Darwin'
+            system_font = '.AppleSystemUIFont' if is_mac else 'Sans Serif'
             widget = QWidget(parent)
             layout = QVBoxLayout(widget)
             layout.setContentsMargins(0, 6, 0, 0)
 
-            ed7_checkbox = QCheckBox('Use macOS system font', parent)
+            ed7_checkbox = QCheckBox(f'Use {"macOS" if is_mac else "Qt"} system font', parent)
             layout.addWidget(ed7_checkbox)
             ed7_font = QFontComboBox(parent)
             layout.addWidget(ed7_font)
@@ -310,7 +312,7 @@ class SettingsDialog(QDialog):
 
             ed7_checkbox.stateChanged.connect(lambda checked: self._on_value_changed(
                 option_id,
-                '.AppleSystemUIFont' if checked else ed7_font.currentFont().family()
+                system_font if checked else ed7_font.currentFont().family()
             ))
             ed7_font.currentFontChanged.connect(lambda v: self._on_value_changed(
                 option_id,
@@ -318,7 +320,7 @@ class SettingsDialog(QDialog):
             ))
 
             def set_value(txt):
-                is_system_font = txt == '.AppleSystemUIFont'
+                is_system_font = txt == system_font
                 if is_system_font:
                     ed7_font.setCurrentFont('Noto Sans')  # Anything existing
                 else:
@@ -327,7 +329,7 @@ class SettingsDialog(QDialog):
             set_value(option_value)
 
             self._widgets_get_value[option_id] = lambda: \
-                '.AppleSystemUIFont' if ed7_checkbox.isChecked() else ed7_font.currentFont().family()
+                system_font if ed7_checkbox.isChecked() else ed7_font.currentFont().family()
             self._widgets_set_value[option_id] = set_value
 
             return [widget]
