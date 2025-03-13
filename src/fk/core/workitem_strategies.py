@@ -287,8 +287,13 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
 
         # First void pomodoros if needed
         if workitem.has_running_pomodoro():
-            self.execute_another(emit, data, AddInterruptionStrategy, [self.get_workitem_uid(),
-                                                                       f'The item was marked completed before Pomodoro rang'])
+            if not workitem.get_running_pomodoro().is_long_break() and not workitem.is_tracker():
+                self.execute_another(emit,
+                                     data,
+                                     AddInterruptionStrategy,
+                                     [
+                                         self.get_workitem_uid(),
+                                         f'The item was marked completed before Pomodoro rang'])
             self.execute_another(emit, data, StopTimerStrategy, [])
 
         # Now complete the workitem itself
