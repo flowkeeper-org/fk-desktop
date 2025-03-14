@@ -157,15 +157,17 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
         is_workitem_selected = selected is not None
         is_workitem_editable = is_workitem_selected and not selected.is_sealed()
+        is_tracker = is_workitem_selected and selected.is_tracker()
         self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
         self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
         self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable
                                                               and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
                                                               and self._source.get_data().get_current_user().get_timer().is_idling())
         self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable)
+        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable and not is_tracker)
         self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable
-                                                                   and selected.is_startable())
+                                                                   and selected.is_startable()
+                                                                   and not is_tracker)
 
     # Actions
 

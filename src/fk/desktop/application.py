@@ -637,7 +637,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.export', "Export data...", 'Ctrl+E', None, Application.show_export_wizard)
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
-        actions.add('application.stats', "Statistics", 'F9', None, Application.show_stats)
+        actions.add('application.stats', "Pomodoro health", 'F9', None, Application.show_stats)
         actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
 
         def contact(url: str) -> Callable:
