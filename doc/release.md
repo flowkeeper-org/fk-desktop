@@ -19,5 +19,3 @@
 - Distribute the release announcement on LinkedIn, Reddit, Discord, Telegram, and mailing list.
 - Write about new Flowkeeper features in r/kde, r/opensource, r/Windows10, r/Windows11, r/windows, 
 r/macapps, r/Python, r/QtFramework, r/debian, r/openSUSE, r/linux, r/pomodoro, r/ProductivityApps.
-- Distribute newsletter.
-- 

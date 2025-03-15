@@ -66,5 +66,5 @@ class ProgressWidget(QWidget):
         self.setVisible(total > 0)
         self._label.setVisible(total > 0)
         percent = f' ({round(100 * done / total)}%)' if total > 0 else ''
-        series = f', {in_series} in this series' if in_series > 0 else ''
+        series = f', {in_series} in this set' if in_series > 0 else ''
         self._label.setText(f'Done {done} of {total} pomodoros{percent}{series}')

@@ -54,7 +54,7 @@ class Interruption(AbstractDataItem['Pomodoro']):
 
     def is_void(self) -> bool:
         return (self._void or
-                self._reason == 'Pomodoro voided' or
+                self._reason is not None and self._reason.startswith('Pomodoro voided') or
                 self._reason == 'Voided automatically because you completed the workitem while the timer was running.')
 
     def get_parent(self) -> 'Pomodoro':

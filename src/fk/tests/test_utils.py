@@ -16,6 +16,9 @@
 from __future__ import annotations
 
 import datetime
+import math
+import secrets
+import sys
 from typing import TypeVar
 
 from fk.core.abstract_settings import AbstractSettings
@@ -76,3 +79,35 @@ def test_data() -> Tenant:
 
 def epyc() -> datetime.datetime:
     return datetime.datetime(2025, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+
+
+##########################################################################################
+# Random stuff
+##########################################################################################
+def one_of(seq: list[_T]) -> _T:
+    return secrets.choice(seq)
+
+
+def randint(a: int, b: int) -> int:
+    return a + secrets.randbelow(b + 1)
+
+
+def random() -> float:
+    # This is slow, but works correctly
+    return secrets.randbits(int(8 * math.log(sys.maxsize, 256))) / sys.maxsize
+
+
+# Good enough normally distributed random number
+def rand_normal(a: int, b: int) -> int:
+    return round(sum([randint(a, b) for x in range(5)]) / 5)
+
+
+def shuffle(seq: list[_T]) -> list[_T]:
+    res = list()
+    lst = list(seq)
+    while len(lst) > 0:
+        v = one_of(lst)
+        res.append(v)
+        lst.remove(v)
+    return res
+

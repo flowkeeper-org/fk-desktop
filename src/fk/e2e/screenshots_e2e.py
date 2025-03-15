@@ -38,6 +38,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.show_tutorial': 'False',
             'Application.show_window_title': 'True',
             'Application.check_updates': 'False',
+            'Pomodoro.long_break_algorithm': 'never',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
             'Application.play_alarm_sound': 'False',
@@ -181,7 +182,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.center_window()
         await self.instant_pause()
         settings_tabs: QTabWidget = self.window().findChild(QTabWidget, "settings_tabs")
-        settings_tabs.setCurrentIndex(1)
+        settings_tabs.setCurrentIndex(2)
         await self.instant_pause()
         source_type_dropdown: QComboBox = self.window().findChild(QComboBox, "Source.type")
         source_type_dropdown.setCurrentIndex(0)
@@ -206,7 +207,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         auth_type_dropdown.hidePopup()
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(4)
+        settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
         sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_alarm_sound")
         sound_alarm_check.setChecked(True)
@@ -221,7 +222,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         sound_alarm_check.setChecked(False)
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(5)
+        settings_tabs.setCurrentIndex(6)
         self.window().setFixedWidth(800)
         await self.instant_pause()
         self.center_window()
@@ -464,5 +465,5 @@ class ScreenshotE2eTest(AbstractE2eTest):
                 workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
                 for _ in range(round(num_interruptions)):
                     int_uid = generate_uid()
-                    workitem[uid][int_uid] = Interruption(None, None, False, int_uid, workitem[uid], now)
+                    workitem[uid][int_uid] = Interruption("Pomodoro voided" if random() < 0.5 else None, None, False, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

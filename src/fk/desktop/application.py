@@ -643,7 +643,7 @@ class Application(QApplication, AbstractEventEmitter):
         def contact(url: str) -> Callable:
             return lambda _: open_url(url)
         actions.add('application.contactGithub', "GitHub", '', None, contact('https://github.com/flowkeeper-org/fk-desktop/issues'))
-        actions.add('application.contactDiscord', "Discord", '', None, contact('https://discord.gg/MCbxbmjv'))
+        actions.add('application.contactDiscord', "Discord", '', None, contact('https://discord.gg/SJfrsvgfmf'))
         actions.add('application.contactReddit', "Reddit", '', None, contact('https://www.reddit.com/r/Flowkeeper'))
         actions.add('application.contactLinkedIn', "LinkedIn", '', None, contact('https://www.linkedin.com/company/flowkeeper-org'))
         actions.add('application.contactTelegram', "Telegram", '', None, contact('https://t.me/flowkeeper_org'))

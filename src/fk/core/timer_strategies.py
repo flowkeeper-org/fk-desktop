@@ -20,6 +20,7 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
 from fk.core.timer_data import TimerData
@@ -291,6 +292,8 @@ class StartWorkStrategy(AbstractStrategy[Tenant]):
 # DEPRECATED, use StopTimerStrategy instead
 @strategy
 class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -299,6 +302,7 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
                  settings: AbstractSettings,
                  carry: any = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
 
     def requires_sealing(self) -> bool:
         return True
@@ -306,6 +310,10 @@ class VoidPomodoroStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:
+        self.execute_another(emit,
+                             data,
+                             AddInterruptionStrategy,
+                             [self._workitem_uid, f'Pomodoro voided'])
         self.execute_another(emit,
                              data,
                              StopTimerStrategy,

@@ -25,7 +25,7 @@ Technical improvements:
  - Download a portable AppImage, see flowkeeper.org > Downloads.
 - We now build Flowkeeper for ARM (arm64 / aarch64).
 - Added support for Qt 6.8.x.
-- Flowkeeper CLI is now available in the sources, but it is not installed yet.
+- Flowkeeper CLI is now available in the sources, but it is not installed yet (#46).
 - Ignoring our own modifications when "watch changes" is enabled (#130).
 - Improved documentation (#80, #87).
 - Complete drag & drop rewrite to accommodate moving work items between backlogs.
@@ -39,6 +39,10 @@ Bug fixes:
 
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
+- TODO: Fix "Focus: 00:00"
+- TODO: Fix occasional "Timer is already running"
+- TODO: Fix "index out of range" when changing filename with watch enabled
+- TODO: Nuitka for Windows
 
 - TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
 - TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
