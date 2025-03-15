@@ -26,8 +26,22 @@ source venv/bin/activate
 # Step 1 - Cleanup
 rm -rf build dist Flowkeeper.dmg
 
+# Check if $HOME/Library/Caches/Nuitka/downloads/ccache/v4.2.1/ exists, and download it from
+# https://nuitka.net/ccache/v4.2.1/ccache-4.2.1.zip if needed
+
 # Step 2 - Create and sign an installer
-pyinstaller installer/normal-build.spec -- --sign
+PYTHONPATH=src python3 -m nuitka \
+  --standalone \
+  --enable-plugin=pyside6 \
+  --macos-app-icon=res/flowkeeper.icns \
+  --macos-create-app-bundle \
+  --macos-signed-app-name=org.flowkeeper.desktop \
+  --macos-app-version="0.10.0" \
+  --macos-app-name=Flowkeeper \
+  --macos-sign-identity="Developer ID Application: Constantine Kulak (ELWZ9S676C)" \
+  --product-name=Flowkeeper \
+  --product-version="0.10.0" \
+  src/fk/desktop/Flowkeeper.py
 
 # Step 3 - Create a DMG image
 rm -rf dist/flowkeeper
@@ -41,7 +55,7 @@ create-dmg \
   --hide-extension "Flowkeeper.app" \
   --app-drop-link 600 185 \
   "Flowkeeper.dmg" \
-  "dist/"
+  "Flowkeeper.app"
 
 # Step 4 - Notarize the DMG
 xcrun notarytool submit Flowkeeper.dmg --keychain-profile "notary-key" --wait

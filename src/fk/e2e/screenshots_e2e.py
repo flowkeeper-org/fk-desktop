@@ -6,8 +6,9 @@ from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
-from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import StartWorkStrategy
+from fk.core.interruption import Interruption
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
@@ -37,6 +38,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.show_tutorial': 'False',
             'Application.show_window_title': 'True',
             'Application.check_updates': 'False',
+            'Pomodoro.long_break_algorithm': 'never',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
             'Application.play_alarm_sound': 'False',
@@ -49,7 +51,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_width': '820',
             'Application.theme': 'mixed',
             'Application.tray_icon_flavor': 'thin-dark',
-            'Application.last_version': '0.9.0',
+            'Application.last_version': self.get_application()._current_version,
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
             'Application.show_click_here_hint': 'False',
@@ -180,7 +182,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.center_window()
         await self.instant_pause()
         settings_tabs: QTabWidget = self.window().findChild(QTabWidget, "settings_tabs")
-        settings_tabs.setCurrentIndex(1)
+        settings_tabs.setCurrentIndex(2)
         await self.instant_pause()
         source_type_dropdown: QComboBox = self.window().findChild(QComboBox, "Source.type")
         source_type_dropdown.setCurrentIndex(0)
@@ -205,7 +207,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         auth_type_dropdown.hidePopup()
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(4)
+        settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
         sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_alarm_sound")
         sound_alarm_check.setChecked(True)
@@ -220,7 +222,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         sound_alarm_check.setChecked(False)
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(5)
+        settings_tabs.setCurrentIndex(6)
         self.window().setFixedWidth(800)
         await self.instant_pause()
         self.center_window()
@@ -269,6 +271,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._void_pomodoro()
         await self._complete_workitem()
 
+        await self.longer_pause()
         await self._find_workitem('Order coffee capsules')
         await self._complete_workitem()
 
@@ -309,7 +312,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         for w in source.workitems():
             if w.get_name() == 'Slides for #Flowkeeper demo':
                 workitem_id = w.get_uid()
-        source.execute_prepared_strategy(StartWorkStrategy(
+        source.execute_prepared_strategy(StartTimerStrategy(
             1,
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=670),
             'user@local.host',
@@ -410,7 +413,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.get_application().get_settings().set({
             'Application.theme': 'mixed',
             'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': ':/icons/bg.jpg',
+            'Application.eyecandy_image': ':/img/bg.jpg',
             'Application.font_header_family': 'Quicksand Medium',
             'Application.font_header_size': '32',
             'Application.font_main_family': 'Quicksand',
@@ -451,11 +454,16 @@ class ScreenshotE2eTest(AbstractE2eTest):
             for p in range(num_pomos):
                 uid = generate_uid()
                 state_selector = random()
+                num_interruptions = 0
                 if state_selector < 0.1 + (365 - day) / 1200:
-                    state = 'canceled'
+                    state = 'new'
+                    num_interruptions = random() * 3
                 elif state_selector < 0.5 + day / 900:
                     state = 'finished'
                 else:
                     state = 'new'
-                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, uid, workitem, now)
+                workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
+                for _ in range(round(num_interruptions)):
+                    int_uid = generate_uid()
+                    workitem[uid][int_uid] = Interruption("Pomodoro voided" if random() < 0.5 else None, None, False, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

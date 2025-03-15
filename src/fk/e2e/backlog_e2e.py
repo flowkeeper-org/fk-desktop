@@ -291,10 +291,10 @@ class BacklogE2eTest(AbstractE2eTest):
             'workitems_table.deleteItem',
             'workitems_table.completeItem',
             'workitems_table.addPomodoro',
+            'workitems_table.startItem',
         ])
         self.assert_actions_disabled([
             'workitems_table.removePomodoro',
-            'workitems_table.startItem',
             'focus.voidPomodoro',
         ])
 

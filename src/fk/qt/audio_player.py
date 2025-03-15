@@ -22,29 +22,27 @@ from PySide6.QtWidgets import QWidget
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
-from fk.core.timer import PomodoroTimer
+from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged, TimerWorkStart
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, Pomodoro
+from fk.core.timer_data import TimerData
 
 logger = logging.getLogger(__name__)
 
 
 class AudioPlayer(QObject):
-    _timer: PomodoroTimer
     _audio_output: QAudioOutput | None
     _audio_player: QMediaPlayer | None
     _settings: AbstractSettings
+    _source: AbstractEventSource | None
 
     def __init__(self,
                  parent: QWidget,
                  source_holder: EventSourceHolder,
-                 settings: AbstractSettings,
-                 timer: PomodoroTimer):
+                 settings: AbstractSettings):
         super().__init__(parent)
-        self._timer = timer
+        self._source = None
         self._settings = settings
         self._reset()
-        timer.on("Timer*Complete", self._play_audio)
-        timer.on(PomodoroTimer.TimerWorkStart, self._start_ticking)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -52,6 +50,9 @@ class AudioPlayer(QObject):
         if self._audio_player is not None and self._audio_player.isPlaying():
             self._audio_player.stop()
         source.on(SourceMessagesProcessed, lambda **kwargs: self._start_what_is_needed())
+        source.on("Timer*Complete", self._play_audio)
+        source.on(TimerWorkStart, self._start_ticking)
+        self._source = source
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         needs_reset = False
@@ -67,10 +68,18 @@ class AudioPlayer(QObject):
 
     def _reset(self):
         found: QAudioDevice = None
+        setting: str = self._settings.get('Application.audio_output')
+        default: QAudioDevice = None
         for device in QMediaDevices.audioOutputs():
-            if device.id().toStdString() == self._settings.get('Application.audio_output'):
+            if device.id().toStdString() == setting:
                 found = device
                 break
+            if device.isDefault():
+                default = device
+        if found is None and default is not None:
+            found = default
+            logger.info(f"The previously selected audio device {setting} is not available anymore, "
+                        f"switching to default {default.id().toStdString()}")
         if found is None:
             self._audio_output = None
             self._audio_player = None
@@ -95,14 +104,19 @@ class AudioPlayer(QObject):
             self._audio_output.setVolume(volume)
             logger.debug(f'Volume is set to {int(volume * 100)}%')
 
-    def _play_audio(self, event: str = None, **kwargs) -> None:
+    def _play_audio(self, event: str, pomodoro: Pomodoro, timer: TimerData) -> None:
         if self._audio_player is not None:
+            self._audio_player.stop()  # In case it was ticking or playing rest music
+
             # Alarm bell
             play_alarm_sound = (self._settings.get('Application.play_alarm_sound') == 'True')
             play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
-            if play_alarm_sound and (event == 'TimerRestComplete' or not play_rest_sound):
-                self._audio_player.stop()     # In case it was ticking or playing rest music
-                alarm_file = self._settings.get('Application.alarm_sound_file')
+            if play_alarm_sound and (
+                event == 'TimerRestComplete'
+                or not play_rest_sound
+                or (event == 'TimerWorkComplete'
+                    and pomodoro.get_type() == POMODORO_TYPE_NORMAL
+                    and pomodoro.get_rest_duration() == 0)):    # Long break
                 self._reset()
 
                 # We've already checked it, but our audio device could've mysteriously disappeared
@@ -110,13 +124,16 @@ class AudioPlayer(QObject):
                 #  reported when this happened due to computer waking up from sleep.
                 if self._audio_player is not None:
                     self._set_volume('Application.alarm_sound_volume')
+                    alarm_file = self._settings.get('Application.alarm_sound_file')
                     self._audio_player.setSource(alarm_file)
                     self._audio_player.setLoops(1)
                     self._audio_player.play()
 
-            # Rest music
-            if event == 'TimerWorkComplete':
-                self._start_rest_sound()
+            # Rest music, for normal pomodoro only
+            if (event == 'TimerWorkComplete'
+                    and pomodoro.get_type() == POMODORO_TYPE_NORMAL
+                    and pomodoro.get_rest_duration() > 0):  # Normal break
+                    self._start_rest_sound()
 
     def _start_ticking(self, event: str = None, **kwargs) -> None:
         if self._audio_player is not None:
@@ -149,7 +166,10 @@ class AudioPlayer(QObject):
                     self._audio_player.play()     # This will substitute the bell sound
 
     def _start_what_is_needed(self) -> None:
-        if self._timer.is_working():
-            self._start_ticking()
-        elif self._timer.is_resting():
-            self._start_rest_sound()
+        if self._source is not None:
+            timer = self._source.get_data().get_current_user().get_timer()
+            if timer.is_working():
+                self._start_ticking()
+            elif timer.is_resting() and timer.get_running_pomodoro().get_type() == POMODORO_TYPE_NORMAL:
+                self._start_rest_sound()
+

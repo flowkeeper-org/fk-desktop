@@ -48,7 +48,7 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
         # UC-2: An exception is raised if we try to create a User, Backlog or Workitem with a duplicate UID within its direct parent
         if self._backlog_uid in user:
@@ -65,7 +65,6 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
         emit(events.AfterBacklogCreate, {
             'backlog': backlog
         }, self._carry)
-        return None, None
 
 
 # DeleteBacklog("123-456-789", "")
@@ -86,9 +85,12 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._backlog_uid = params[0]
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
 
         # UC-2: Trying to delete a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
@@ -115,7 +117,6 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
 
         # UC-3: The strategies which do something recursively, wrap inner logic in the Before/After events
         emit(events.AfterBacklogDelete, params, self._carry)
-        return None, None
 
 
 # RenameBacklog("123-456-789", "New name")
@@ -140,7 +141,7 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
         # UC-2: Trying to rename a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
         if self._backlog_uid not in user:
@@ -156,7 +157,6 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
         backlog.set_name(self._backlog_new_name)
         backlog.item_updated(self._when)
         emit(events.AfterBacklogRename, params, self._carry)
-        return None, None
 
 
 # ReorderBacklog("123-456-789", "0")
@@ -181,7 +181,7 @@ class ReorderBacklogStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
         # UC-2: Trying to reorder a User, Backlog or Workitem by ID which doesn't exist in its direct parent, will throw an exception
         if self._backlog_uid not in user:
@@ -196,4 +196,3 @@ class ReorderBacklogStrategy(AbstractStrategy[Tenant]):
         user.move_child(backlog, self._new_index)
         user.item_updated(self._when)
         emit(events.AfterBacklogReorder, params, self._carry)
-        return None, None
