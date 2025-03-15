@@ -262,8 +262,8 @@ jobs:
           script-name: src/fk/desktop/desktop.py
           mode: standalone
           enable-plugins: pyside6
-          env:
-            PYTHONPATH: src
+        env:
+          PYTHONPATH: src
       - name: Dir
         run: dir
       - name: Archive portable build
