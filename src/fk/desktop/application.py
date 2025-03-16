@@ -43,7 +43,7 @@ from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
-from fk.core.events import AfterSettingsChanged
+from fk.core.events import AfterSettingsChanged, BeforeSettingsChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.file_event_source import FileEventSource
 from fk.core.integration_executor import IntegrationExecutor
@@ -73,6 +73,15 @@ logger = logging.getLogger(__name__)
 AfterFontsChanged = "AfterFontsChanged"
 NewReleaseAvailable = "NewReleaseAvailable"
 
+
+def setting_requires_new_source(name: str) -> bool:
+    return name == 'Source.type' or \
+        name.startswith('WebsocketEventSource.') or \
+        name.startswith('FileEventSource.') or \
+        name == 'Source.ignore_errors' or \
+        name == 'Source.ignore_invalid_sequence' or \
+        name == 'Source.encryption_enabled' or \
+        name == 'Source.encryption_key!'
 
 class Application(QApplication, AbstractEventEmitter):
     _settings: AbstractSettings
@@ -160,7 +169,8 @@ class Application(QApplication, AbstractEventEmitter):
                 self._cryptograph = FernetCryptograph(self._settings)
             else:
                 self._cryptograph = NoCryptograph(self._settings)
-        self._settings.on(AfterSettingsChanged, self._on_setting_changed)
+        self._settings.on(BeforeSettingsChanged, self._before_settings_changed)
+        self._settings.on(AfterSettingsChanged, self._after_settings_changed)
 
         # Quit app on close
         quit_on_close = (self._settings.get('Application.quit_on_close') == 'True')
@@ -438,7 +448,15 @@ class Application(QApplication, AbstractEventEmitter):
     def get_row_height(self):
         return self._row_height
 
-    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+    def _before_settings_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        for name in new_values.keys():
+            if setting_requires_new_source(name):
+                # UC-1: Before a new event source is created, the old one unsubscribes all listeners and disconnects
+                logger.debug(f'Close old event source before settings change')
+                self._source_holder.close_current_source()
+                return
+
+    def _after_settings_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         logger.debug(f'Settings changed from {old_values} to {new_values}')
 
         request_ui_refresh = False
@@ -446,13 +464,7 @@ class Application(QApplication, AbstractEventEmitter):
         request_logger_change = False
 
         for name in new_values.keys():
-            if name == 'Source.type' or \
-                    name.startswith('WebsocketEventSource.') or \
-                    name.startswith('FileEventSource.') or \
-                    name == 'Source.ignore_errors' or \
-                    name == 'Source.ignore_invalid_sequence' or \
-                    name == 'Source.encryption_enabled' or \
-                    name == 'Source.encryption_key!':
+            if setting_requires_new_source(name):
                 request_new_source = True
             elif name == 'Application.quit_on_close':
                 self.setQuitOnLastWindowClosed(new_values[name] == 'True')
@@ -473,6 +485,7 @@ class Application(QApplication, AbstractEventEmitter):
 
         if request_new_source:
             logger.debug(f'Requesting new source because of a setting change')
+            # We've already closed the old one in BeforeSettingsChanged handler
             self._source_holder.request_new_source()
 
         if request_logger_change:
@@ -522,6 +535,7 @@ class Application(QApplication, AbstractEventEmitter):
             log = cast.repair()
             if 'No changes were made' in log[-1]:
                 # Reload the source
+                self._source_holder.close_current_source()
                 self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "Repair completed",
@@ -554,6 +568,7 @@ class Application(QApplication, AbstractEventEmitter):
             log = cast.compress()
             if 'No changes were made' in log[-1]:
                 # Reload the source
+                self._source_holder.close_current_source()
                 self._source_holder.request_new_source()
             QInputDialog.getMultiLineText(None,
                                           "The file is compressed",

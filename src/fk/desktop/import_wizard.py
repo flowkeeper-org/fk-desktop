@@ -357,6 +357,7 @@ class PageImportProgress(QWizardPage):
             log = "\n".join(repair_result)
             self.log.setText(f'The result was cleaned up:\n{log}')
 
+        self._source_holder.close_current_source()
         self._source_holder.request_new_source()
 
     def finish(self, callback: Callable[[], None] | None = None):

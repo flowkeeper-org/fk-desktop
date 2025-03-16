@@ -121,22 +121,28 @@ class QtSettings(AbstractSettings):
                 'new_values': values,
             }
             self._emit(events.BeforeSettingsChanged, params)
-            encrypted = dict()
-            for name in old_values.keys():  # This is not a typo, we've just filtered this list
-                # to only contain settings which actually changed.
-                if name.endswith('!'):
-                    # We want to set all secrets at once (see explanation below in get())
-                    encrypted[name] = values[name]
-                else:
-                    self._settings.setValue(name, values[name])
-            if len(encrypted) > 0:
-                if self._keyring_enabled:
-                    existing = self.load_secret()
-                    for e in encrypted:
-                        existing[e] = encrypted[e]
-                    keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
-                else:
-                    logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
+            # We have to set settings via invoke_in_main_thread(), otherwise it won't be queued
+            # correctly in respect to BeforeSettingsChanged and AfterSettingsChanged. Without
+            # invoke_in_main_thread it might happen that the setting will be de-facto set first,
+            # and only then a pair of BeforeSettingsChanged / AfterSettingsChanged emitted.
+            def set_settings():
+                encrypted = dict()
+                for name in old_values.keys():  # This is not a typo, we've just filtered this list
+                    # to only contain settings which actually changed.
+                    if name.endswith('!'):
+                        # We want to set all secrets at once (see explanation below in get())
+                        encrypted[name] = values[name]
+                    else:
+                        self._settings.setValue(name, values[name])
+                if len(encrypted) > 0:
+                    if self._keyring_enabled:
+                        existing = self.load_secret()
+                        for e in encrypted:
+                            existing[e] = encrypted[e]
+                        keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
+                    else:
+                        logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
+            invoke_in_main_thread(set_settings)
             self._emit(events.AfterSettingsChanged, params)
 
     def load_secret(self) -> dict[str, str]:

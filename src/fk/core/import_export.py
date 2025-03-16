@@ -314,14 +314,14 @@ def import_(source: AbstractEventSource[TRoot],
         # 1. Read import file by doing a classic import on an ephemeral source
         settings = MockSettings(username=source.get_settings().get_username(),
                                 source_type='ephemeral')
-        new_source = EventSourceHolder(settings, NoCryptograph(settings)).request_new_source()
-        import_classic(new_source,
+        new_source_holder = EventSourceHolder(settings, NoCryptograph(settings))
+        import_classic(holder.request_new_source(),
                        filename,
                        ignore_errors,
                        start_callback,
                        progress_callback,
                        lambda total: _merge_sources(source,  # Step 2 is done there
-                                                    new_source,
+                                                    new_source_holder,
                                                     ignore_errors,
                                                     completion_callback))
     else:
@@ -479,14 +479,14 @@ def import_simple(source: AbstractEventSource[TRoot],
 
 
 def _merge_sources(existing_source,
-                   new_source,
+                   new_source_holder,
                    ignore_errors,
                    completion_callback: Callable[[int], None]) -> None:
     # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
     count = 0
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
-    for strategy in merge_strategies(existing_source, new_source.get_data()):
+    for strategy in merge_strategies(existing_source, new_source_holder.get_source().get_data()):
         try:
             existing_source.execute_prepared_strategy(strategy, False, True)
         except Exception as e:
@@ -496,6 +496,7 @@ def _merge_sources(existing_source,
                 raise e
         count += 1
     existing_source.unmute()
+    new_source_holder.close_current_source()
     completion_callback(count)
 
 
