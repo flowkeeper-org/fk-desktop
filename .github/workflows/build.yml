@@ -260,16 +260,19 @@ jobs:
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
-          mode: standalone
+          mode: onefile
           enable-plugins: pyside6
         env:
           PYTHONPATH: src
       - name: Dir
-        run: dir
+        run: |
+          dir
+          dir build
+          dir build/desktop.dist
       - name: Archive portable build
         uses: actions/upload-artifact@v4
         with:
-          name: dist-windows-standalone
+          name: dist-windows-nuitka-onefile
           path: |
             build/desktop.dist/desktop.exe
 
