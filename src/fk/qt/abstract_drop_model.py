@@ -98,6 +98,7 @@ class AbstractDropModel(QStandardItemModel):
                 return original_index
 
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
+        logger.debug(f'Dropping {data.formats()} at {row} / {where.row()}')
         if data.hasFormat(self.get_primary_type()) and where.isValid():
             # Our own item
             from_index = self.dragging.row()
@@ -114,7 +115,9 @@ class AbstractDropModel(QStandardItemModel):
             return self.adopt_foreign_item(where.data(500),
                                            data.data(self.get_secondary_type()).toStdString())
         else:
-            # Something unexpected -- reject
+            # Something unexpected -- reject and restore to original state
+            self.restore_order()
+            logger.debug('Dropping something unexpected -- restoring original order, just in case')
             return False
 
     @abstractmethod
