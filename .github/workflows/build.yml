@@ -271,7 +271,7 @@ jobs:
         with:
           name: dist-windows-standalone
           path: |
-            build/desktop.exe
+            build/desktop.dist/desktop.exe
 
   build-macOS-arm:
     runs-on: macOS-latest
