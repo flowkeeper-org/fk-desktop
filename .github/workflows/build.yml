@@ -268,13 +268,15 @@ jobs:
         run: |
           dir
           dir build
+          dir build/desktop.build
           dir build/desktop.dist
+          dir build/desktop.onefile-build
       - name: Archive portable build
         uses: actions/upload-artifact@v4
         with:
           name: dist-windows-nuitka-onefile
           path: |
-            build/desktop.dist/desktop.exe
+            build/desktop.exe
 
   build-macOS-arm:
     runs-on: macOS-latest

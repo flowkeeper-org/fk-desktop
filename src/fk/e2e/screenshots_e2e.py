@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPush
 from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
-from fk.core.timer_strategies import StartTimerStrategy
+from fk.core.timer_strategies import StartTimerStrategy, StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
@@ -51,10 +51,11 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_width': '820',
             'Application.theme': 'mixed',
             'Application.tray_icon_flavor': 'thin-dark',
-            'Application.last_version': self.get_application()._current_version,
+            #'Application.last_version': self.get_application()._current_version,
+            'Application.last_version': '0.0.1',
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
-            'Application.show_click_here_hint': 'False',
+            'Application.show_click_here_hint': 'True',
         }
         if os.name == 'nt':
             custom['Application.font_main_size'] = '10'
@@ -84,6 +85,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
     async def _wait_mid_pomodoro(self) -> None:
         await asyncio.sleep(POMODORO_WORK_DURATION * 0.75)
 
+    async def _wait_long_pomodoro(self) -> None:
+        await asyncio.sleep(15)
+
     async def _complete_workitem(self) -> None:
         self.keypress(Qt.Key.Key_P, True)   # self.execute_action('workitems_table.completeItem')
         await self.instant_pause()
@@ -92,6 +96,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_V, True)   # self.execute_action('focus.voidPomodoro')
         await self.instant_pause()
         self.close_modal()
+        await self.instant_pause()
+
+    async def _stop_tracking(self) -> None:
+        self.keypress(Qt.Key.Key_S, True)
         await self.instant_pause()
 
     async def _add_pomodoro(self) -> None:
@@ -146,9 +154,24 @@ class ScreenshotE2eTest(AbstractE2eTest):
             return False
 
     async def test_01_screenshots(self):
+        await self.instant_pause()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        self.take_screenshot('26-focus-window-types')
+        self.keypress(Qt.Key.Key_Enter)
+        await self.instant_pause()
+        self.take_screenshot('27-tray-icon-types')
+        self.keypress(Qt.Key.Key_Enter)
+        await self.instant_pause()
+
+        self.get_application().get_settings().set({'Application.show_click_here_hint': 'False'})
+        await self.instant_pause()
+
         main_window = self.window()
         self.center_window()
-        await self.instant_pause()
+        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
 
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
@@ -240,7 +263,6 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._new_workitem('Slides for #Flowkeeper demo', 3)
         await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2)
         await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2)
-        await self._new_workitem('Order coffee capsules')
         await self._new_workitem('#Followup: Call Alex in the afternoon')
 
         ####################################
@@ -270,12 +292,18 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._wait_mid_pomodoro()
         await self._void_pomodoro()
         await self._complete_workitem()
-
         await self.longer_pause()
-        await self._find_workitem('Order coffee capsules')
-        await self._complete_workitem()
 
+        # Demo the tracker items -- start another WI in the past
         await self._find_workitem('#Followup: Call Alex in the afternoon')
+        await self._start_pomodoro()
+        await self._wait_long_pomodoro()
+        source = self.get_application().get_source_holder().get_source()
+        source.execute(StopTimerStrategy, [])
+        await self.longer_pause()
+
+        await self._new_workitem('Order coffee capsules')
+        await self._find_workitem('Order coffee capsules')
         await self._complete_workitem()
 
         await self._find_workitem('Slides for #Flowkeeper demo')
@@ -346,7 +374,6 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         await self._find_workitem('Generate new screenshots for #Flowkeeper')
 
-        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 400)))
         await self.instant_pause()
         self.take_screenshot('01-backlog')
@@ -361,7 +388,6 @@ class ScreenshotE2eTest(AbstractE2eTest):
         shortcuts_dropdown.setCurrentIndex(11)  # "New item"
         await self.instant_pause()
 
-        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
         workitems_table._menu.popup(workitems_table.mapToGlobal(QPoint(400, 20)))
         await self.instant_pause()
         self.take_screenshot('06-shortcuts')
@@ -370,15 +396,28 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
-        self.keypress(Qt.Key.Key_I, True)
-        await self.instant_pause()
-        self.center_window()
-        await self.instant_pause()
-        self.keypress(Qt.Key.Key_Enter)
-        await self.instant_pause()
-        self.take_screenshot('11-import')
-        self.keypress(Qt.Key.Key_Escape)
-        await self.instant_pause()
+        # Import -- all, file, CSV, GitHub
+        for i in range(3):
+            self.keypress(Qt.Key.Key_I, True)
+            await self.instant_pause()
+            self.center_window()
+            await self.instant_pause()
+            if i == 0:
+                self.take_screenshot('11-import')
+                await self.instant_pause()
+            for j in range(i):
+                self.keypress(Qt.Key.Key_Down)
+                await self.instant_pause()
+            self.keypress(Qt.Key.Key_Enter)
+            await self.instant_pause()
+            if i == 0:
+                self.take_screenshot('23-import-file')
+            elif i == 1:
+                self.take_screenshot('24-import-CSV')
+            elif i == 2:
+                self.take_screenshot('25-import-GitHub')
+            self.keypress(Qt.Key.Key_Escape)
+            await self.instant_pause()
 
         self.keypress(Qt.Key.Key_E, True)
         await self.instant_pause()

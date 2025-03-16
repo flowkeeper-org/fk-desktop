@@ -180,21 +180,27 @@ class TestImportExport(TestCase):
         self.assertRaises(Exception, self._execute_import, [False, False])
 
     def test_import_classic_twice_ignore_errors(self):
-        self._execute_import(False, False)
-        self._execute_import(True, False)
+        root = logging.getLogger()
+        try:
+            root.setLevel(logging.FATAL)
 
-        # We expect to have all the same backlogs and workitems, but random number of pomodoros in them
-        user_temp = self.data_temp['user@local.host']
-        user_rand = self.data_rand['user@local.host']
-        self.assertEqual(len(user_temp), len(user_rand))
-        for b in user_temp:
-            backlog_temp = user_temp[b]
-            backlog_rand = user_rand[b]
-            self.assertEqual(backlog_temp.get_name(), backlog_rand.get_name())
-            for w in backlog_temp:
-                workitem_temp = backlog_temp[w]
-                workitem_rand = backlog_rand[w]
-                self.assertEqual(workitem_temp.get_name(), workitem_rand.get_name())
+            self._execute_import(False, False)
+            self._execute_import(True, False)
+
+            # We expect to have all the same backlogs and workitems, but random number of pomodoros in them
+            user_temp = self.data_temp['user@local.host']
+            user_rand = self.data_rand['user@local.host']
+            self.assertEqual(len(user_temp), len(user_rand))
+            for b in user_temp:
+                backlog_temp = user_temp[b]
+                backlog_rand = user_rand[b]
+                self.assertEqual(backlog_temp.get_name(), backlog_rand.get_name())
+                for w in backlog_temp:
+                    workitem_temp = backlog_temp[w]
+                    workitem_rand = backlog_rand[w]
+                    self.assertEqual(workitem_temp.get_name(), workitem_rand.get_name())
+        finally:
+            root.setLevel(logging.DEBUG)
 
     def _compare_imported_and_original_dumps(self):
         # We skip the first 7 lines, as the existing user is kept

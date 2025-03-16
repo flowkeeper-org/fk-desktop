@@ -315,7 +315,7 @@ def import_(source: AbstractEventSource[TRoot],
         settings = MockSettings(username=source.get_settings().get_username(),
                                 source_type='ephemeral')
         new_source_holder = EventSourceHolder(settings, NoCryptograph(settings))
-        import_classic(holder.request_new_source(),
+        import_classic(new_source_holder.request_new_source(),
                        filename,
                        ignore_errors,
                        start_callback,

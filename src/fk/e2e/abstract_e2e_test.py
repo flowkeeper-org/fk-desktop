@@ -36,7 +36,7 @@ from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.2  # seconds
-STARTUP_DURATION = 1  # seconds
+STARTUP_DURATION = 3  # seconds
 WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
 SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
@@ -82,6 +82,7 @@ class AbstractE2eTest(ABC):
         return res
 
     async def _run(self):
+        self._timer.stop()
         if not self._initialized:
             self._initialized = True
             # noinspection PyTypeChecker
