@@ -43,13 +43,16 @@ DISPLAY_HEIGHT = 80
 def complete_item(item: Workitem, parent: QWidget, source: AbstractEventSource) -> None:
     if item is None:
         raise Exception("Trying to complete a workitem, while there's none selected")
-    if not item.has_running_pomodoro() or item.is_tracker() or QMessageBox().warning(
+    if (not item.has_running_pomodoro()
+            or item.is_tracker()
+            or item.get_running_pomodoro().is_long_break()
+            or QMessageBox().warning(
             parent,
             "Confirmation",
             f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
             QMessageBox.StandardButton.Ok,
             QMessageBox.StandardButton.Cancel
-    ) == QMessageBox.StandardButton.Ok:
+    ) == QMessageBox.StandardButton.Ok):
         source.execute(CompleteWorkitemStrategy, [item.get_uid(), "finished"])
 
 

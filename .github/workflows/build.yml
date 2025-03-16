@@ -12,6 +12,7 @@ on:
           - linux
           - windows
           - macOS
+          - windows-nuitka
           - all
 jobs:
   build-linux:
@@ -235,6 +236,42 @@ jobs:
           vt scan file dist\Flowkeeper.exe >> vt.b64
           vt scan file dist\flowkeeper\Flowkeeper.exe >> vt.b64
           rem TODO -- run a Python script here to do the rest
+
+  build-windows-nuitka:
+    runs-on: windows-latest
+    if:  ${{ inputs.OS == 'windows-nuitka' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-build.txt
+      - name: Generate resources
+        run: |
+          cd res
+          pyside6-rcc --project -o resources.qrc
+          pyside6-rcc -g python resources.qrc -o "../src/fk/desktop/resources.py"
+      - name: Package builds
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: src/fk/desktop/desktop.py
+          mode: standalone
+          enable-plugins: pyside6
+        env:
+          PYTHONPATH: src
+      - name: Dir
+        run: dir
+      - name: Archive portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-standalone
+          path: |
+            build/desktop.exe
 
   build-macOS-arm:
     runs-on: macOS-latest
