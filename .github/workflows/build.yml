@@ -20,12 +20,21 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          # Fetch the version from CHANGELOG.txt
+          VERSION_REGEX='^### v(.+) \(.*$'
+          VERSION_LINE=$(head --lines=1 res/CHANGELOG.txt)
+          if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
+              export FK_VERSION="${BASH_REMATCH[1]}"
+          else
+              export FK_VERSION="N/A"
+          fi
+          echo "Version = $FK_VERSION"
+
           if [[ "$OSTYPE" == "darwin"* ]]; then
             brew install create-dmg
           elif [[ "$OSTYPE" == "msys" ]]; then
-            # TODO: Install InnoSetup
-            # powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-            # cmd start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+            powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
+            cmd /c start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
           fi
           pip install -r requirements-build.txt
       - name: Install the Apple certificate and provisioning profile
@@ -138,11 +147,8 @@ jobs:
             # Send the DMG for notarization
             xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
           elif [[ "$OSTYPE" == "msys" ]]; then
-            # This is all cmd
-            # set /p FIRST_LINE=< res\CHANGELOG.txt
-            # set FK_VERSION=%FIRST_LINE:* =%
-            # "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
-            # move installer\Output\mysetup.exe setup.exe
+            "$USERPROFILE/AppData/Local/Programs/Inno Setup 6/ISCC.exe" installer/windows-installer.iss
+            mv installer\Output\mysetup.exe setup.exe
           else
             # DEB installer
             ./package-deb.sh
