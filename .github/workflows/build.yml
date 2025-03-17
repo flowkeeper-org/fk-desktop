@@ -263,6 +263,12 @@ jobs:
           script-name: src/fk/desktop/Flowkeeper.py
           mode: onefile
           enable-plugins: pyside6
+          windows-console-mode: disable
+          windows-icon-from-ico: res/flowkeeper.ico
+          product-name: Flowkeeper
+          product-version: "0.10.0"
+          file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
+          copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
         env:
           PYTHONPATH: src
       - name: Dir
@@ -275,7 +281,13 @@ jobs:
       - name: Archive portable build
         uses: actions/upload-artifact@v4
         with:
-          name: dist-windows-nuitka
+          name: dist-windows-nuitka-single
+          path: |
+            build/Flowkeeper.exe
+      - name: Archive portable build ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-nuitka-zip
           path: |
             build/Flowkeeper.dist
       - name: Download innosetup installer
