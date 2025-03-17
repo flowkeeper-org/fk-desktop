@@ -291,13 +291,13 @@ jobs:
           set /p FIRST_LINE=< res\CHANGELOG.txt
           set FK_VERSION=%FIRST_LINE:* =%
           "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer-nuitka.iss
-          move installer\Output\mysetup.exe dist\setup.exe
+          move installer\Output\mysetup.exe setup.exe
       - name: Archive installer
         uses: actions/upload-artifact@v4
         with:
           name: dist-windows-setup
           path: |
-            dist\setup.exe
+            setup.exe
 
   build-macOS-arm:
     runs-on: macOS-latest
