@@ -87,7 +87,7 @@ jobs:
           fi
           rm -rf build
           mkdir build
-          mv dist/flowkeeper/Flowkeeper.* build/
+          mv dist/flowkeeper/Flowkeeper* build
           mv dist/flowkeeper/_internal build/_internal
       - name: Package builds (Nuitka)
         if: ${{ matrix.compiler == 'nuitka' }}
