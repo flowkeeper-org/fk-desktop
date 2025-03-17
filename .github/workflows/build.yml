@@ -250,6 +250,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements-build.txt
+          cp src/fk/desktop/desktop.py src/fk/desktop/Flowkeeper.py
       - name: Generate resources
         run: |
           cd res
@@ -259,7 +260,7 @@ jobs:
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
-          script-name: src/fk/desktop/desktop.py
+          script-name: src/fk/desktop/Flowkeeper.py
           mode: onefile
           enable-plugins: pyside6
         env:
@@ -268,15 +269,35 @@ jobs:
         run: |
           dir
           dir build
-          dir build/desktop.build
-          dir build/desktop.dist
-          dir build/desktop.onefile-build
+          dir build/Flowkeeper.build
+          dir build/Flowkeeper.dist
+          dir build/Flowkeeper.onefile-build
       - name: Archive portable build
         uses: actions/upload-artifact@v4
         with:
-          name: dist-windows-nuitka-onefile
+          name: dist-windows-nuitka
           path: |
-            build/desktop.exe
+            build/Flowkeeper.dist
+      - name: Download innosetup installer
+        run: |
+          Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
+      - name: Install innosetup
+        shell: cmd
+        run: |
+          start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+      - name: Create FK installer
+        shell: cmd
+        run: |
+          set /p FIRST_LINE=< res\CHANGELOG.txt
+          set FK_VERSION=%FIRST_LINE:* =%
+          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer-nuitka.iss
+          move installer\Output\mysetup.exe dist\setup.exe
+      - name: Archive installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-setup
+          path: |
+            dist\setup.exe
 
   build-macOS-arm:
     runs-on: macOS-latest
