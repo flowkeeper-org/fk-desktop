@@ -20,8 +20,6 @@
 
 set -e
 
-source venv/bin/activate
-
 cd res
 qrc="resources.qrc"
 pyside6-rcc --project -o "$qrc"

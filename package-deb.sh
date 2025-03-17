@@ -33,7 +33,7 @@ fi
 echo "1. Version = $FK_VERSION"
 
 # 2. Prepare temp folder
-cd dist
+cd build
 rm -rf deb
 mkdir deb
 echo "2. Prepared temp folder"

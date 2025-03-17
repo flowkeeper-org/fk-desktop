@@ -15,8 +15,7 @@ Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "A
 Name: "autostart"; Description: "Launch Flowkeeper when the system boots"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "..\dist\flowkeeper\Flowkeeper.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\dist\flowkeeper\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\Flowkeeper.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Flowkeeper"; Filename: "{app}\Flowkeeper.exe"
