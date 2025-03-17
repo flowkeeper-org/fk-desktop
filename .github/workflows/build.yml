@@ -33,8 +33,11 @@ jobs:
           if [[ "$OSTYPE" == "darwin"* ]]; then
             brew install create-dmg
           elif [[ "$OSTYPE" == "msys" ]]; then
-            wget https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe --output-file=innosetup.exe
+            echo "Downloading InnoSetup"
+            powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
+            echo "Launching InnoSetup"
             ./innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+            echo "Installed"
           fi
           pip install -r requirements-build.txt
       - name: Install the Apple certificate and provisioning profile
