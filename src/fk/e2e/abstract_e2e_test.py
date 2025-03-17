@@ -29,7 +29,7 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow
+from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow, QAbstractButton, QCheckBox, QRadioButton
 
 from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
@@ -261,6 +261,24 @@ class AbstractE2eTest(ABC):
         else:
             self._main_window = win
         return win
+
+    def click_button(self, text: str = None, name: str = None):
+        buttons: list[QAbstractButton] = self.get_application().activeWindow().findChildren(QAbstractButton)
+        for b in buttons:
+            if text is not None and b.text() == text or name is not None and b.objectName() == name:
+                b.click()
+
+    def check_checkbox(self, checked: bool = True, text: str = None, name: str = None):
+        checkboxes: list[QCheckBox] = self.get_application().activeWindow().findChildren(QCheckBox)
+        for c in checkboxes:
+            if text is not None and c.text() == text or name is not None and c.objectName() == name:
+                c.setChecked(checked)
+
+    def check_radiobutton(self, checked: bool = True, text: str = None, name: str = None):
+        radios: list[QRadioButton] = self.get_application().activeWindow().findChildren(QRadioButton)
+        for r in radios:
+            if text is not None and r.text() == text or name is not None and r.objectName() == name:
+                r.setChecked(checked)
 
     def execute_action(self, name: str) -> None:
         Actions.ALL[name].trigger()

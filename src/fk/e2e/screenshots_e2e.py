@@ -3,7 +3,7 @@ import datetime
 import os
 
 from PySide6.QtCore import Qt, QPoint, QSize
-from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
+from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget, QAbstractButton
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
@@ -159,10 +159,11 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._wait_mid_pomodoro()
         await self._wait_mid_pomodoro()
         self.take_screenshot('26-focus-window-types')
-        self.keypress(Qt.Key.Key_Enter)
+        # self.click_button(name='__qt__passive_wizardbutton1')
+        self.click_button(name='qt_wizard_commit')
         await self.instant_pause()
         self.take_screenshot('27-tray-icon-types')
-        self.keypress(Qt.Key.Key_Enter)
+        self.click_button(name='qt_wizard_finish')
         await self.instant_pause()
 
         self.get_application().get_settings().set({'Application.show_click_here_hint': 'False'})
@@ -404,11 +405,12 @@ class ScreenshotE2eTest(AbstractE2eTest):
             await self.instant_pause()
             if i == 0:
                 self.take_screenshot('11-import')
-                await self.instant_pause()
-            for j in range(i):
-                self.keypress(Qt.Key.Key_Down)
-                await self.instant_pause()
-            self.keypress(Qt.Key.Key_Enter)
+            if i == 1:
+                self.check_radiobutton(text='Import from CSV')
+            elif i == 2:
+                self.check_radiobutton(name='Import from GitHub')
+            await self.instant_pause()
+            self.click_button(name='qt_wizard_commit')
             await self.instant_pause()
             if i == 0:
                 self.take_screenshot('23-import-file')
