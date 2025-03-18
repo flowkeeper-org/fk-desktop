@@ -20,4 +20,4 @@
 
 set -e
 
-"$USERPROFILE/AppData/Local/Programs/Inno Setup 6/ISCC.exe" scripts/windows/windows-installer.iss
+"$HOME/AppData/Local/Programs/Inno Setup 6/ISCC.exe" scripts/windows/windows-installer.iss

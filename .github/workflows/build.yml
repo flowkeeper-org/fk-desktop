@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            pyinstaller scripts/common/pyinstaller/normal.spec -- --sign --distpath=build
+            pyinstaller scripts/common/pyinstaller/normal.spec --distpath=build -- --sign
             echo "Built PyInstaller for macOS"
             ls -al build/
           else

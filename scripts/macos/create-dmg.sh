@@ -20,6 +20,9 @@
 
 set -e
 
+echo "Creating DMG"
+ls -al dist/
+
 create-dmg \
   --volname "Flowkeeper Installer" \
   --volicon "flowkeeper.icns" \

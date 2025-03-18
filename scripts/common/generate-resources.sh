@@ -24,6 +24,8 @@ if [[ "$OSTYPE" == "msys" ]]; then
   alias "pyside6-rcc=$(pwd)/venv/Lib/site-packages/PySide6/rcc"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   scripts/macos/create-icons.sh
+  echo "Generated icns file for macOS"
+  ls -al
 fi
 
 cd res
