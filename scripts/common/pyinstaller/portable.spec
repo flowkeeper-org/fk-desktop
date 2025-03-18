@@ -25,8 +25,8 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['../src/fk/desktop/desktop.py'],
-    pathex=['../src'],
+    ['../../../src/fk/desktop/desktop.py'],
+    pathex=['../../../src'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -57,5 +57,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['../res/flowkeeper.ico'],
+    icon=['../../../res/flowkeeper.ico'],
 )

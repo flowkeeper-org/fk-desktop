@@ -79,7 +79,7 @@ jobs:
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
-          script-name: src/fk/desktop/Flowkeeper.py
+          script-name: src/fk/desktop/desktop.py
           mode: onefile
           enable-plugins: pyside6
           windows-console-mode: disable

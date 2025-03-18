@@ -22,7 +22,7 @@ parser.add_argument("--sign", action="store_true")
 options = parser.parse_args()
 
 a = Analysis(
-    ['../src/fk/desktop/desktop.py'],
+    ['../../../src/fk/desktop/desktop.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -51,7 +51,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=('Developer ID Application: Constantine Kulak (ELWZ9S676C)' if options.sign else None),
     entitlements_file=('installer/entitlements.plist' if options.sign else None),
-    icon=['../res/flowkeeper.ico'],
+    icon=['../../../res/flowkeeper.ico'],
 )
 coll = COLLECT(
     exe,
@@ -65,6 +65,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Flowkeeper.app',
-    icon='../flowkeeper.icns',
+    icon='../../../flowkeeper.icns',
     bundle_identifier='org.flowkeeper.Flowkeeper',
 )
