@@ -50,7 +50,7 @@ exe = EXE(
     argv_emulation=False,
     target_arch=None,
     codesign_identity=('Developer ID Application: Constantine Kulak (ELWZ9S676C)' if options.sign else None),
-    entitlements_file=None,
+    entitlements_file=('/Users/runner/work/fk-desktop/fk-desktop/scripts/common/pyinstaller/entitlements.plist' if options.sign else None),
     icon=['../../../res/flowkeeper.ico'],
 )
 coll = COLLECT(
