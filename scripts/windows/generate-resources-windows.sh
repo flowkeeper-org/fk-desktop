@@ -20,6 +20,10 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
+PATH=$PATH:$(pwd)/venv/Lib/site-packages/PySide6
 
+cd res
+qrc="resources.qrc"
+rcc --project -o "$qrc"
+rcc -g python "$qrc" -o "../src/fk/desktop/resources.py"
+rm "$qrc"

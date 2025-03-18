@@ -12,6 +12,9 @@
       <excludeFolder url="file://$MODULE_DIR$/venv38" />
       <excludeFolder url="file://$MODULE_DIR$/src/fk/tests/fixtures" />
       <excludeFolder url="file://$MODULE_DIR$/venv-3.12" />
+      <excludeFolder url="file://$MODULE_DIR$/desktop.build" />
+      <excludeFolder url="file://$MODULE_DIR$/desktop.dist" />
+      <excludeFolder url="file://$MODULE_DIR$/desktop.onefile-build" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.12 (fk-desktop)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

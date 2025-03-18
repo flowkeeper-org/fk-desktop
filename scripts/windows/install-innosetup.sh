@@ -20,6 +20,8 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+echo "Downloading InnoSetup"
+powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
+echo "Launching InnoSetup"
+./innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+echo "Installed"

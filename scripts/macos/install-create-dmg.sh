@@ -20,6 +20,7 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+if ! command -v create-dmg 2>&1 >/dev/null; then
+  echo "create-dmg is not found, will try to install"
+  brew install create-dmg
+fi

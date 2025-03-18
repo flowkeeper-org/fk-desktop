@@ -20,6 +20,8 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
+# Create the notary key
+xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
 
+# Send the DMG for notarization
+xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait

@@ -20,6 +20,6 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+# AppImage installer
+sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+sudo chmod +x /usr/local/bin/appimagetool

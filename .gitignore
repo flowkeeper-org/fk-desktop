@@ -11,3 +11,6 @@ src/fk/desktop/resources.py
 test-results
 Flowkeeper.dmg
 notary-key.txt
+*.build
+*.dist
+*.onefile-build

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 #
 # Flowkeeper - Pomodoro timer for power users and teams
@@ -18,8 +18,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-set -e
-
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+PYTHONPATH=/usr/lib/flowkeeper:/usr/libexec/flowkeeper python3 -m fk.desktop.desktop $@

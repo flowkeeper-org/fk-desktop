@@ -20,6 +20,15 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+rm -rf "build/flowkeeper"
+create-dmg \
+  --volname "Flowkeeper Installer" \
+  --volicon "res/flowkeeper.icns" \
+  --window-pos 200 120 \
+  --window-size 800 400 \
+  --icon-size 100 \
+  --icon "Flowkeeper.app" 200 190 \
+  --hide-extension "Flowkeeper.app" \
+  --app-drop-link 600 185 \
+  "Flowkeeper.dmg" \
+  "build/"

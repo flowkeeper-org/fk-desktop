@@ -20,6 +20,12 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
+if [[ "$OSTYPE" == "msys" ]]; then
+    ln -s $(pwd)/venv/Lib/site-packages/PySide6/rcc $(pwd)/venv/bin/pyside6-rcc
+fi
 
+cd res
+qrc="resources.qrc"
+pyside6-rcc --project -o "$qrc"
+pyside6-rcc -g python "$qrc" -o "../src/fk/desktop/resources.py"
+rm "$qrc"

@@ -20,6 +20,5 @@
 
 set -e
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+"$USERPROFILE/AppData/Local/Programs/Inno Setup 6/ISCC.exe" build/windows/windows-installer.iss
+mv installer\Output\mysetup.exe setup.exe

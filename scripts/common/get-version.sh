@@ -18,8 +18,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-set -e
-
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
-
+VERSION_REGEX='^### v(.+) \(.*$'
+VERSION_LINE=$(head --lines=1 res/CHANGELOG.txt)
+if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
+    echo "${BASH_REMATCH[1]}"
+else
+    echo "N/A"
+fi

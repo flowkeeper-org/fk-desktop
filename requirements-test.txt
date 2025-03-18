@@ -1,6 +1,0 @@
--r requirements-build.txt
-coverage
-coveralls
-assertpy
-unittest-xml-reporting
-pillow
