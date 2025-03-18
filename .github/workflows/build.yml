@@ -27,36 +27,52 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
         shell: bash
         run: |
-          export FK_VERSION=$(build/common/get-version.sh)
+          export FK_VERSION=$(scripts/common/get-version.sh)
+          echo "FK_VERSION=$FK_VERSION" >> $GITHUB_ENV
+
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            build/macos/install-create-dmg.sh
-            build/macos/install-certificates.sh
+            scripts/macos/install-create-dmg.sh
+            scripts/macos/install-certificates.sh
+            export BINARY_EXTENSION=""
+            echo "BINARY_EXTENSION=" >> $GITHUB_ENV
           elif [[ "$OSTYPE" == "msys" ]]; then
-            build/windows/install-innosetup.sh
+            scripts/windows/install-innosetup.sh
+            export BINARY_EXTENSION=".exe"
+            echo "BINARY_EXTENSION=.exe" >> $GITHUB_ENV
           else:
-            build/linux/appimage/install-appimage.sh
+            scripts/linux/appimage/install-appimage.sh
+            export BINARY_EXTENSION=""
+            echo "BINARY_EXTENSION=" >> $GITHUB_ENV
           fi
-          pip install -r requirements-build.txt
+          pip install -r requirements.txt
+          
+          if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
+            pip install nuitka
+          else:
+            pip install pyinstaller
+          fi
 
       - name: Prepare sources
         shell: bash
         run: |
-          build/common/generate-resources.sh
+          scripts/common/generate-resources.sh
+          rm -rf build dist
+          mkdir -p build dist
 
       - name: Package builds (PyInstaller)
         if: ${{ matrix.compiler == 'pyinstaller' }}
         shell: bash
         run: |
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            pyinstaller installer/normal-build.spec -- --sign
+            pyinstaller scripts/common/pyinstaller/normal.spec -- --sign --distpath=build
+            echo "Built PyInstaller for macOS"
+            ls -al build/
           else
-            pyinstaller installer/portable-build.spec
-            pyinstaller installer/normal-build.spec
+            pyinstaller scripts/common/pyinstaller/portable.spec --distpath=build
+            pyinstaller scripts/common/pyinstaller/normal.spec --distpath=build
+            echo "Built PyInstaller for Linux or Windows"
+            ls -al build/
           fi
-          rm -rf build
-          mkdir -p build/flowkeeper
-          mv dist/flowkeeper/Flowkeeper* build/flowkeeper
-          mv dist/flowkeeper/_internal build/flowkeeper/_internal
 
       - name: Package builds (Nuitka)
         if: ${{ matrix.compiler == 'nuitka' }}
@@ -68,15 +84,17 @@ jobs:
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
-          macos-app-icon: res/flowkeeper.icns
-          macos-signed-app-name: org.flowkeeper.desktop
-          macos-app-version: "0.10.0"
+          macos-app-icon: flowkeeper.icns
+          macos-signed-app-name: org.flowkeeper.Flowkeeper
+          macos-app-version: "${{ env.FK_VERSION }}"
           macos-app-name: Flowkeeper
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
           product-name: Flowkeeper
-          product-version: "0.10.0"
+          product-version: "${{ env.FK_VERSION }}"
           file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
           copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
+          output-dir: 'build'
+          output-file: 'Flowkeeper'
         env:
           PYTHONPATH: src
 
@@ -87,33 +105,61 @@ jobs:
           NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
         shell: bash
         run: |
+          echo "Prepare dist directory"
+          mkdir -p dist/standalone
+          PORTABLE_FILENAME="dist/flowkeeper-${FK_VERSION}-${{ matrix.os }}-${{ matrix.compiler }}-portable${BINARY_EXTENSION}"
+          echo "Will output portable to $PORTABLE_FILENAME"
+          if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
+            mv build/Flowkeeper* $PORTABLE_FILENAME
+            mv build/desktop.dist dist/standalone
+          else:
+            mv build/flowkeeper/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
+            mv build/flowkeeper/_internal dist/standalone/_internal
+          fi
+          echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
+          ls -al dist/standalone
+          
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            build/macos/create-dmg.sh
-            build/macos/notarize-dmg.sh
+            scripts/macos/create-dmg.sh
+            scripts/macos/notarize-dmg.sh
           elif [[ "$OSTYPE" == "msys" ]]; then
-            build/windows/package-installer.sh
+            scripts/windows/package-installer.sh
           else
-            build/linux/debian/package-deb.sh
-            build/linux/appimage/package-appimage.sh
+            scripts/linux/debian/package-deb.sh
+            scripts/linux/appimage/package-appimage.sh
           fi
 
       - name: Archive portable single-file build
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-single
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-portable
           path: |
-            build/Flowkeeper.*
+            dist/Flowkeeper*
 
       - name: Archive portable build ZIP
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.compiler }}-zip
           path: |
-            build/Flowkeeper.dist
+            dist/standalone
 
-      - name: Archive installers
+      - name: Archive Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.compiler }}-installers
           path: |
-            dist
+            dist/setup*.exe
+
+      - name: Archive AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-AppImage
+          path: |
+            dist/*.AppImage
+
+      - name: Archive DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-deb
+          path: |
+            dist/flowkeeper.deb
