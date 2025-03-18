@@ -66,7 +66,6 @@ from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.threaded_event_source import ThreadedEventSource
-from fk.qt.websocket_event_source import WebsocketEventSource
 
 logger = logging.getLogger(__name__)
 
@@ -273,12 +272,13 @@ class Application(QApplication, AbstractEventEmitter):
 
         EventSourceFactory.get_event_source_factory().register_producer('ephemeral', ephemeral_source_producer)
 
-        def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
-            return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
+        # Uncomment it in v1.0.0
+        # def websocket_source_producer(settings: AbstractSettings, cryptograph: AbstractCryptograph, root: Tenant):
+        #     return WebsocketEventSource[Tenant](settings, cryptograph, self, root)
 
-        EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
-        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
-        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
+        # EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        # EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        # EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:

@@ -1,6 +1,0 @@
-Package: flowkeeper
-Version: $FK_VERSION
-Maintainer: Constantine Kulak
-Architecture: amd64
-Description: Flowkeeper is a free Pomodoro Technique desktop timer for power users.
-Depends: python3-pyside6.qtcore(>= 6.7.0), python3-pyside6.qtwidgets(>= 6.7.0), python3-pyside6.qtgui(>= 6.7.0), python3-pyside6.qtnetwork(>= 6.7.0), python3-pyside6.qtnetworkauth(>= 6.7.0), python3-pyside6.qtmultimedia(>= 6.7.0), python3-pyside6.qtsvg(>= 6.7.0), python3-pyside6.qtwebsockets(>= 6.7.0), python3-pyside6.qtuitools(>= 6.7.0), python3-pyside6.qtasyncio(>= 6.7.0), python3-pyside6.qtcharts(>= 6.7.0), python3-semantic-version, python3-cryptography, python3-keyring

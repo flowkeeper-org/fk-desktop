@@ -14,68 +14,35 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        shell: bash
-        run: |
-          # Fetch the version from CHANGELOG.txt
-          VERSION_REGEX='^### v(.+) \(.*$'
-          VERSION_LINE=$(head --lines=1 res/CHANGELOG.txt)
-          if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
-              export FK_VERSION="${BASH_REMATCH[1]}"
-          else
-              export FK_VERSION="N/A"
-          fi
-          echo "Version = $FK_VERSION"
 
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install create-dmg
-          elif [[ "$OSTYPE" == "msys" ]]; then
-            echo "Downloading InnoSetup"
-            powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-            echo "Launching InnoSetup"
-            ./innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
-            echo "Installed"
-          fi
-          pip install -r requirements-build.txt
-      - name: Install the Apple certificate and provisioning profile
-        if: ${{ startsWith(matrix.os, 'macOS') }}
-        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+      - name: Install dependencies
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
           P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-
-          # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # import certificate to keychain
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      - name: Generate resources
         shell: bash
         run: |
-          if [[ "$OSTYPE" == "msys" ]]; then
-            cd res
-            pyside6-rcc --project -o resources.qrc
-            pyside6-rcc -g python resources.qrc -o "../src/fk/desktop/resources.py"
-          else
-            ./generate-resources.sh
+          export FK_VERSION=$(build/common/get-version.sh)
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            build/macos/install-create-dmg.sh
+            build/macos/install-certificates.sh
+          elif [[ "$OSTYPE" == "msys" ]]; then
+            build/windows/install-innosetup.sh
+          else:
+            build/linux/appimage/install-appimage.sh
           fi
-          cp src/fk/desktop/desktop.py src/fk/desktop/Flowkeeper.py
+          pip install -r requirements-build.txt
+
+      - name: Prepare sources
+        shell: bash
+        run: |
+          build/common/generate-resources.sh
+
       - name: Package builds (PyInstaller)
         if: ${{ matrix.compiler == 'pyinstaller' }}
         shell: bash
@@ -87,9 +54,10 @@ jobs:
             pyinstaller installer/normal-build.spec
           fi
           rm -rf build
-          mkdir build
-          mv dist/flowkeeper/Flowkeeper* build
-          mv dist/flowkeeper/_internal build/_internal
+          mkdir -p build/flowkeeper
+          mv dist/flowkeeper/Flowkeeper* build/flowkeeper
+          mv dist/flowkeeper/_internal build/flowkeeper/_internal
+
       - name: Package builds (Nuitka)
         if: ${{ matrix.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
@@ -111,18 +79,7 @@ jobs:
           copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
         env:
           PYTHONPATH: src
-      - name: Archive portable single-file build
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-single
-          path: |
-            build/Flowkeeper.*
-      - name: Archive portable build ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-zip
-          path: |
-            build/Flowkeeper.dist
+
       - name: Create installers
         env:
           NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
@@ -131,37 +88,29 @@ jobs:
         shell: bash
         run: |
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            # Create DMG installer
-            rm -rf "build/flowkeeper"
-            create-dmg \
-              --volname "Flowkeeper Installer" \
-              --volicon "res/flowkeeper.icns" \
-              --window-pos 200 120 \
-              --window-size 800 400 \
-              --icon-size 100 \
-              --icon "Flowkeeper.app" 200 190 \
-              --hide-extension "Flowkeeper.app" \
-              --app-drop-link 600 185 \
-              "Flowkeeper.dmg" \
-              "build/"
-
-            # Create the notary key
-            xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
-
-            # Send the DMG for notarization
-            xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
+            build/macos/create-dmg.sh
+            build/macos/notarize-dmg.sh
           elif [[ "$OSTYPE" == "msys" ]]; then
-            "$USERPROFILE/AppData/Local/Programs/Inno Setup 6/ISCC.exe" installer/windows-installer.iss
-            mv installer\Output\mysetup.exe setup.exe
+            build/windows/package-installer.sh
           else
-            # DEB installer
-            ./package-deb.sh
-          
-            # AppImage installer
-            sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
-            sudo chmod +x /usr/local/bin/appimagetool
-            ./package-appimage.sh
+            build/linux/debian/package-deb.sh
+            build/linux/appimage/package-appimage.sh
           fi
+
+      - name: Archive portable single-file build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-single
+          path: |
+            build/Flowkeeper.*
+
+      - name: Archive portable build ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-zip
+          path: |
+            build/Flowkeeper.dist
+
       - name: Archive installers
         uses: actions/upload-artifact@v4
         with:
