@@ -50,7 +50,7 @@ exe = EXE(
     argv_emulation=False,
     target_arch=None,
     codesign_identity=('Developer ID Application: Constantine Kulak (ELWZ9S676C)' if options.sign else None),
-    entitlements_file=('entitlements.plist' if options.sign else None),
+    entitlements_file=None,
     icon=['../../../res/flowkeeper.ico'],
 )
 coll = COLLECT(
