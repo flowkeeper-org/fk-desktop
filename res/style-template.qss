@@ -1,0 +1,160 @@
+QWidget {
+    font-family: $FONT_MAIN_FAMILY;
+    font-size: $FONT_MAIN_SIZE;
+}
+
+QMainWindow, #StatsWindow, #FocusBackground {
+    background-color: $FOCUS_BG_COLOR;
+    color: $TABLE_TEXT_COLOR;
+}
+
+#headerText, #statsHeaderText {
+    color: $FOCUS_TEXT_COLOR;
+    font-family: $FONT_HEADER_FAMILY;
+    font-size: $FONT_HEADER_SIZE;
+}
+
+#headerSubtext, #statsHeaderSubtext {
+    color: $FOCUS_TEXT_COLOR;
+}
+
+#headerSubSubtext {
+    color: $FOCUS_TEXT_COLOR;
+    font-size: $FONT_SUBTEXT_SIZE;
+}
+
+#statusBar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+}
+
+#footerLabel {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 4px;
+}
+
+#search {
+    padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background: no-repeat left url(:/icons/$ICON_THEME/24x24/tool-search.svg);
+    color: $TABLE_TEXT_COLOR;
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#left_toolbar {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $TOOLBAR_BG_COLOR;
+    border: none;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget {
+    color: $TABLE_TEXT_COLOR;
+    border: none;
+    padding: 10px;
+}
+
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
+}
+
+#users_table, #tags_table {
+    border-top: 0px solid $BORDER_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+#backlogs_table, #users_table, #tags_table, #backlogs_widget {
+    background-color: $SECONDARY_BG_COLOR;
+    border-right: 1px solid $BORDER_COLOR;
+}
+
+#workitems_widget, #statsView, #statsMain {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+#workitems_table {
+    background-color: $PRIMARY_BG_COLOR;
+    padding: 10px 10px 10px 8px;
+}
+
+QToolButton {
+    background: none;
+    border-radius: 5px;
+    color: $TABLE_TEXT_COLOR;
+}
+
+#toolBacklogs:checked {
+    background: none;
+    color: $TABLE_TEXT_COLOR;
+}
+
+QToolButton:checked {
+    background: $TOOLBAR_CHECKED_BG_COLOR;
+    color: $FOCUS_TEXT_COLOR;
+}
+
+QScrollBar {
+    height: 0px;
+    width: 0px;
+}
+
+QSplitter::handle {
+    background-color: $PRIMARY_BG_COLOR;
+}
+
+InfoOverlayContent {
+    background-color: #3366cc;
+}
+
+InfoOverlay #overlay_text, #prev_button {
+    color: #ffffff;
+}
+
+#timer {
+    qproperty-fg_color: $FOCUS_TEXT_COLOR;
+    qproperty-bg_color: $FOCUS_BG_COLOR;
+}
+
+.tag_label {
+    background: none;
+    color: $TABLE_TEXT_COLOR;
+    border-radius: 5px;
+    border: 0px solid $BORDER_COLOR;
+    padding: 0px 6px 0px 6px;
+}
+
+.tag_label:checked {
+    color: $TABLE_TEXT_COLOR;
+    background-color: $SELECTION_BG_COLOR;
+    border: none;
+}
+
+#tags_table {
+    padding: 10px 10px 10px 10px;
+}
+
+#work_summary_results {
+    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
+}
+
+#trayDark {
+    background-color: #17242c;
+    border: 1px solid #555555;
+}
+
+#trayLight {
+    background-color: #d6dff3;
+    border: 1px solid #555555;
+}
+
+#fakeClockDark {
+    color: #ffffff;
+}
+
+#fakeClockLight {
+    color: #000000;
+}

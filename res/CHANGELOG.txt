@@ -1,0 +1,276 @@
+### v0.10.0 (XX March 2025)
+
+This version brings Flowkeeper even closer to the original Pomodoro Technique definition from Francesco Cirillo's book.
+Pomodoro interruptions are now handled as the book prescribes, and we introduced support for long breaks. One major
+deviation from the Technique in this version is the ability to track unfocused time. As usual there's a bunch of minor
+quality-of-life improvements, bugfixes and better support for Linux.
+
+- Ability to track unfocused time -- try to start a work item with no pomodoros (#94, #98).
+- Support for long breaks and working in series, see Settings > Series and breaks (#53).
+- Ability to drag work items between backlogs (#60).
+- Ability to record interruptions (#75).
+- Voided pomodoros are displayed as ticks, and completed ones are displayed as crosses to better match the Book (#41, #92).
+- Import from CSV and GitHub, try Ctrl+I (#125).
+- Hovering over pomodoros displays a detailed log of your work (#93).
+- "Contact us" submenu to facilitate feedback collection (#111).
+- Flowkeeper window now hides automatically on auto-start (#102).
+- There's a new font selector for macOS, which supports Apple system font (#113).
+
+Technical improvements:
+
+- Standard data and log directories are used on Linux, macOS and Windows (#65).
+- New ways to run Flowkeeper:
+ - Install it from Flathub (#63),
+ - Install from a package repo on Debian, Ubuntu, Fedora or openSUSE (#127),
+ - Download a portable AppImage, see flowkeeper.org > Downloads.
+- We now build Flowkeeper for ARM (arm64 / aarch64).
+- Added support for Qt 6.8.x.
+- Flowkeeper CLI is now available in the sources, but it is not installed yet (#46).
+- Ignoring our own modifications when "watch changes" is enabled (#130).
+- Improved documentation (#80, #87).
+- Complete drag & drop rewrite to accommodate moving work items between backlogs.
+
+Bug fixes:
+
+- Selecting directory as log file (#108).
+- Window icon on Wayland (#110).
+- Line breaks in work items and backlogs (#132).
+- Changing audio devices while Flowkeeper is running (#120).
+
+- TODO: [Bugfix] Application icon in DEB / GNOME (#121)
+- TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
+- TODO: Fix "Focus: 00:00"
+- TODO: Fix occasional "Timer is already running"
+- TODO: Fix "index out of range" when changing filename with watch enabled
+- TODO: Nuitka for Windows
+
+- TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
+- TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
+- TODO: [Technical] The content of Windows installer is now signed, too (#115)
+
+### v0.9.1 (15 January 2025)
+
+This is a bugfix release, it has no new features.
+
+- [Bugfix] Main window doesn't restore correctly on Hyprland (#48).
+- [Bugfix] Unhandled SystemError if Flowkeeper is upgraded while a pomodoro is running (#62).
+- [Bugfix] Broken fonts / squares instead of characters on Ubuntu 23.10 (#68).
+- [Bugfix] "Unhandled JSONDecodeError" behind the proxy (#69, #73).
+- [Bugfix] Flowkeeper crashes when you select a directory as a data file (#70).
+- [Bugfix] Error when trying to start another pomodoro while the timer is running (#72, #74).
+- [Bugfix] On Windows, the main window close button is disabled (#77).
+- [Bugfix] Flowkeeper doesn't switch to focus mode after one completed pomodoro (#79).
+- [Bugfix] Unhandled AttributeError when computer wakes up from sleep while playing audio (#81).
+- [Bugfix] There's no sound until you change Audio settings once (#85).
+- [Bugfix] Able to click "next pomodoro" after marking workitem complete (#88).
+- [Technical] Enhanced bug reporting - GitHub issues now include info about versions.
+- [Technical] New command-line flag: --debug, enables debug logs for this session.
+- [Technical] System proxy settings are applied automatically.
+- [Technical] Using embedded Noto Sans font by default, see Settings > Fonts.
+
+### v0.9.0 (30 December 2024)
+- You can now drag backlogs and work items to reorder them. Backlogs are not reordered automatically anymore.
+- Unplanned work items are now highlighted with asterisk (*).
+- You can now choose between two timer widgets -- "Classic" and "Minimalistic".
+- Quick configuration wizard when you open Flowkeeper for the first time.
+- Moved "Hide completed items" to the toolbar (#42).
+- In "minimalistic" mode all focus mode actions are under the "stopwatch" menu.
+- You can now configure Flowkeeper to execute programs on different events, see Settings > Integration (#40).
+- All buttons and icons now have tooltips with shortcuts in them (#43, #52).
+- Journaling-friendly Work Summary (F3) -- more output formats and enhanced usability (#45, #49).
+- New setting: General > Single Flowkeeper instance (#50).
+- Miscellaneous UI improvements, notably new tray icon visualization (#44, #51, #39).
+- You can now enable main menu in Settings > Appearance.
+- [Bugfix] Couldn't open Settings when there's no audio devices (#38).
+
+### v0.8.1 (13 November 2024)
+- [Bugfix] Fixed a bug in tutorial step 8.
+
+### v0.8.0 (4 November 2024)
+- You can now use #tags in work items. You can turn it off in Settings > General.
+- When #tags are enabled, work item text wraps if it doesn't fit on one line. This is the default behavior.
+- Embedded resting music - "Madelene" by Lobo Loco, with kind permission from its author (CC-BY-NC-ND).
+- Selectable audio output in Settings > Audio.
+- [Technical] Flowkeeper displays window title in the focus mode on Wayland automatically.
+- [Technical] StartWork strategy now also carries planned rest duration.
+- [Technical] Smart import now preserves timestamps and history.
+- [Technical] We can now import stuff which happened in the past.
+- [Bugfix] Fixed "user already exists" import error.
+- [Bugfix] Fixed incorrect pomodoro states after import.
+- [Bugfix] Fixed incorrect timestamps in smart import.
+- [Bugfix] Fixed incorrect work / rest durations in smart import.
+
+### v0.7.1 (13 September 2024)
+- [Bugfix] Fixed import/export wizard look & feel on Windows 11 with Qt 6.7.x.
+- [Bugfix] Fixed "No QtMultimedia backends found" issue on macOS.
+
+### v0.7.0 (10 September 2024)
+- Disabled data sync and e2e encryption features.
+- Removed public references to any semi-implemented features.
+- Documented the full manual UAT test suite and executed it.
+- The hole in the timer widget now displays correctly.
+- New "Compress" action in the File source settings (click it for details).
+- New "Detect automatically (Default)" theme.
+- Added "New Backlog From Incomplete" action to speed up planning.
+- New "Work Summary" feature for making human-readable reports like time sheets.
+- Special appearance defaults for Gnome to match its quirks.
+- Minor improvements in Statistics (different bar colors, better theming)
+- [Bugfix] Fixed the 00:00 bug when the user opened the client right when the work ends.
+- [Bugfix] Fixed a rare bug when we tried to read a file which was written at the same time.
+- [Bugfix] Fixed an "Invalid key" bug in Import.
+- [Bugfix] Fixed a bug where workitem actions' visibility was wrong after external changes.
+- [Technical] Removed CompletePomodoro and StartRest strategies.
+- [Technical] Removed "Auto-seal items after" setting.
+- [Technical] Split the README.md into several files.
+
+### v0.6.3 (1 September 2024)
+- Added settings to disable data sync and e2e encryption features
+- [Bugfix] Fixed "Sign in" button on some Linux, e.g. Debian Sid.
+- [Technical] GitHub pipeline now signs and notarizes macOS builds.
+- [Technical] GitHub pipeline now signs Windows binaries automatically.
+- [Technical] A macOS build for x86.
+- [Technical] Simplified the code for events prioritization.
+- [Technical] Listed all testable Use Cases.
+- [Technical] Created a farm of VMs for running e2e tests, tested as-is.
+
+### v0.6.2 (1 August 2024)
+- [Bugfix] OAuth login on Windows (QTBUG-124333).
+
+### v0.6.1 (31 July 2024)
+- Brand new interactive tutorial.
+- The window loses its frame in Focus mode, with double-click and move.
+- The window can be pinned to stay always-on-top.
+- New appearance settings (always on top, window title in focus mode).
+- Users may now ignore "A keyring is not available" error.
+- [Technical] macOS DMG installer is now properly signed and notarized.
+- [Technical] macOS now asks to unlock login keychain only once.
+- [Technical] Screenshots collection via e2e tests.
+- [Technical] Enabled SonarCloud static code analysis + "code smells" GitHub badge.
+
+### v0.6.0 (21 June 2024)
+- Implemented the Statistics feature AKA Pomodoro Health.
+- [Bugfix] Fixed NoKeyringError on Kubuntu 22.04.
+- [Technical] Removed dependency on typing.Self, which required Python 3.11+.
+
+### v0.5.1 (14 June 2024)
+- Simplified Connection settings.
+- Gradient can be now selected in the Settings popup.
+- [Bugfix] Fixed an error with the passwords stored in the OS keychain.
+- [Bugfix] Fixed Settings not detecting the changes correctly.
+- [Technical] Now the user can choose to ignore errors for the Local File data source.
+- [Technical] Buttons like "Sign out" can now change Settings window state.
+- [Technical] Alternative keyrings (keyrings.alt package) are added as a fallback.
+
+### v0.5.0 (9 June 2024)
+- Support for end-to-end encryption using Fernet (mandatory for flowkeeper.org).
+- Encrypted content can be mixed with plaintext.
+- Support for encryption and compression in Import and Export.
+- Import now works in a new "smart merge" mode, which should prevent duplicate pomodoros.
+- You can now sign up to flowkeeper.org from the desktop app.
+- You can now request flowkeeper.org account deletion from Settings.
+- You can now change appearance theme on the fly.
+- New color themes.
+- New fonts can now be applied without application restart.
+- You can now start another pomodoro by clicking the lime "play" icon in the system tray.
+- New Focus-mode button to complete the current item while it's running.
+- [Bugfix] Fixed workitem search.
+- [Bugfix] Fixed "Start another pomodoro?" logic.
+- [Bugfix] Modal dialogs open shrunk on secondary displays on Linux.
+- [Technical] Restructured the resources, icons and colors.
+- [Technical] Sharing timer state with teammates (no support in the UI yet).
+- [Technical] Introduced Serializer and Cryptograph facilities.
+- [Technical] Simplified tray icon and Focus view implementation.
+- [Technical] E2e tests handle exceptions correctly now.
+- [Technical] Introduced a configurable logger.
+- [Technical] New facility for creating timer displays - AbstractTimerDisplay.
+- [Technical] Migrated to the latest Qt 6.7.
+- [Technical] The secrets are now stored in the OS keychain.
+
+### v0.4.1 (25 April 2024)
+- Added configurable toolbars.
+- Improved performance of changing the data source when there are large backlogs.
+- [Bugfix] Fixed the actions state update.
+- [Bugfix] Fixed binary builds for Wayland-enabled Linux. Now 22.04 is the minimal supported Ubuntu version.
+- [Technical] Started working on the e2e test farm triggered from the GitHub pipeline.
+- [Technical] Added an "info overlay" feature, which can be used for walkthroughs. Disabled the Tutorial by default.
+- [Technical] Upgraded to Qt 6.7.0.
+- [Technical] Release pipeline now runs unit tests.
+
+### v0.4.0 (18 April 2024)
+- Changes to data source settings do not require Flowkeeper restart.
+- Some rare and complex bugs are now fixed thanks to improved Event Source handling.
+- [Technical] Rest and work durations are now floating-point numbers.
+- [Technical] Windows dev. environment is now supported and documented.
+- [Technical] First working end-to-end tests providing 61% UI code coverage.
+- [Technical] Unit test coverage for `fk.core` module increased to 68%.
+
+### v0.3.3 (5 April 2024)
+- Added a tutorial / quickstart wizard.
+- If something goes terribly wrong on startup, Flowkeeper asks to reset the settings.
+- Removed deprecated settings and the progress bar, which looked wrong on Windows.
+- All table items now have tooltips.
+- When installed on Windows or macOS, Flowkeeper now launches much faster.
+- CI/CD pipeline now also builds a DEB installer for Debian-based systems.
+- Ubuntu 20.04 is now supported (used to require 22.04+)
+- Minor improvements to the Settings UI.
+- [Technical] Settings are now set in bulk.
+- [Technical] Gradient generator now has a fallback, just in case.
+- [Technical] Wrote new unit tests.
+- [Technical] Implemented Ephemeral event source, useful for the unit tests.
+- [Technical] Started working on end-to-end (e2e) tests.
+- [Technical] CI pipeline now collects unit test coverage.
+- [Bugfix] Fixed gradient generation which was failing on Windows and Mac sometimes.
+- [Bugfix] Timer window now resizes correctly on Windows.
+- [Bugfix] Void Pomodoro button is now displayed correctly.
+
+### v0.3.2 (14 March 2024)
+- Flowkeeper checks for updates against GitHub (configurable).
+- Flowkeeper shuts down automatically when important settings are changed.
+- The filter for completed items is now stored in Settings.
+- [Bugfix] Backlog auto-ordering is corrected.
+- [Bugfix] Completed items now hide immediately if the filter is enabled.
+- [Technical] App version is parsed from the changelog.
+- [Technical] Event sequence errors are ignored by default.
+- [Technical] New troubleshooting mechanism ("backlog dump") via Ctrl+D.
+
+### v0.3.1 (10 March 2024)
+- Flowkeeper.org authentication via Google OAuth.
+- [Known bug] The app crashes after you authenticate with Google. Just restart it.
+- [Technical] Pomodoros expired offline now finish successfully.
+- [Technical] All pomodoros now complete implicitly. CompletePomodoro strategy is deprecated.
+
+### v0.2.1 (22 February 2024)
+- Fixed work item actions visibility
+- Keyboard shortcuts are now configurable in Settings
+
+### v0.2.0 (20 February 2024)
+- Support for gradient timer header background.
+- Better resizing for the header background images.
+- Better error handling with "Submit an Issue" option.
+- Placeholders for empty tables.
+- Asynchronous event sources to support "Loading..." mode.
+- Backlog progress bar is now updated automatically on pomodoro actions.
+- Window configuration is now persisted.
+- Import errors can be now ignored.
+- Server connection state in the window title + icon.
+- Websocket heartbeat to keep connection alive.
+- New settings for sounds volume.
+- [Technical] Updated documentation.
+- [Technical] Major UI code refactoring, should make the app easier to maintain.
+- [Technical] Mini-apps to test UI components independently.
+- [Technical] Moved Actions from .ui file to the code.
+
+### v0.1.3 (25 December 2023)
+- Multiple bugfixes.
+- Configurable fonts and timer header background.
+- Themes: Light, Dark and Mixed.
+
+### v0.1.2, (11 December 2023)
+- Unit tests.
+- Websocket authentication.
+
+### v0.1.1, (6 December 2023)
+- Packaged for Windows, Mac and Linux.
+
+### v0.1.0, (27 November 2023)
+- First public version.
