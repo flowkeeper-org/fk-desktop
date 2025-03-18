@@ -56,6 +56,7 @@ cd ..
 echo "5. Create .DirIcon symlink"
 
 # 6. Build AppImage file
+ls -al AppDir/
 appimagetool AppDir
 echo "6. Built AppImage file: $(ls ./*.AppImage)"
 
