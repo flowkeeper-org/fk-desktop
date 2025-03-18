@@ -23,5 +23,5 @@ set -e
 echo "Downloading InnoSetup"
 powershell Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
 echo "Launching InnoSetup"
-start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
+cmd "/c start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS"
 echo "Installed"
