@@ -21,5 +21,5 @@
 set -e
 
 # AppImage installer
-sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -O /usr/local/bin/appimagetool
+sudo wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(uname -m).AppImage" -O /usr/local/bin/appimagetool
 sudo chmod +x /usr/local/bin/appimagetool

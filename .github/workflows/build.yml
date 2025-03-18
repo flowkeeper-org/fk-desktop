@@ -113,10 +113,11 @@ jobs:
             mv build/Flowkeeper* $PORTABLE_FILENAME
             mv build/desktop.dist dist/standalone
           else
-            mv build/flowkeeper/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
-            mv build/flowkeeper/_internal dist/standalone/_internal
+            mv build/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
+            mv build/flowkeeper dist/standalone
           fi
           echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
+          ls -al dist/
           ls -al dist/standalone
           
           if [[ "$OSTYPE" == "darwin"* ]]; then
