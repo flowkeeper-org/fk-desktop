@@ -39,7 +39,7 @@ jobs:
             scripts/windows/install-innosetup.sh
             export BINARY_EXTENSION=".exe"
             echo "BINARY_EXTENSION=.exe" >> $GITHUB_ENV
-          else:
+          else
             scripts/linux/appimage/install-appimage.sh
             export BINARY_EXTENSION=""
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
@@ -48,7 +48,7 @@ jobs:
           
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             pip install nuitka
-          else:
+          else
             pip install pyinstaller
           fi
 
@@ -112,7 +112,7 @@ jobs:
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             mv build/Flowkeeper* $PORTABLE_FILENAME
             mv build/desktop.dist dist/standalone
-          else:
+          else
             mv build/flowkeeper/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
             mv build/flowkeeper/_internal dist/standalone/_internal
           fi
