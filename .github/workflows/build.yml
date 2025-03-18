@@ -111,7 +111,7 @@ jobs:
           echo "Will output portable to $PORTABLE_FILENAME"
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             mv build/Flowkeeper* $PORTABLE_FILENAME
-            mv build/desktop.dist dist/standalone
+            mv build/desktop.dist/* dist/standalone
           else
             mv build/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
             mv build/flowkeeper dist/standalone
