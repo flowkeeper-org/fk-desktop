@@ -80,8 +80,7 @@ jobs:
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
-          # This might be "standalone" or "app" for macOS
-          mode: onefile
+          mode: ${{ startsWith(matrix.os, 'macOS') && 'standalone' || 'onefile' }}
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
@@ -157,12 +156,12 @@ jobs:
           fi
 
           echo "Zipping the standalone directory"
-          cd standalone
+          cd dist/standalone
           zip -9 -r "$PREFIX-standalone.zip" ./*
-          cd ..
+          cd ../..
           
           echo "Cleaning /dist up"
-          rm -rf standalone
+          rm -rf dist/standalone
 
       - name: Archive the binaries
         uses: actions/upload-artifact@v4
