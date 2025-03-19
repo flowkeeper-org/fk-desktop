@@ -115,8 +115,7 @@ jobs:
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
               ls -al build/
-              ls -al build/Flowkeeper
-              # mv build/Flowkeeper.app dist/standalone
+              ls -al build/desktop.dist/Flowkeeper
               mv build/desktop.dist/Flowkeeper dist/standalone/Flowkeeper.app
             else
               mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
