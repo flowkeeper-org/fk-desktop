@@ -113,8 +113,8 @@ jobs:
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
             mv build/desktop.dist/* dist/standalone
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-              mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper.app
+            if [[ "$OSTYPE" == "linux"* ]]; then
+              mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper
             fi
           else
             if [[ "$OSTYPE" == "darwin"* ]]; then
