@@ -88,6 +88,7 @@ jobs:
           macos-signed-app-name: org.flowkeeper.Flowkeeper
           macos-app-name: Flowkeeper
           macos-app-mode: gui
+          macos-create-app-bundle: true
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
@@ -115,8 +116,8 @@ jobs:
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
               ls -al build/
-              ls -al build/desktop.dist/Flowkeeper
-              mv build/desktop.dist/Flowkeeper dist/standalone/Flowkeeper.app
+              ls -al build/desktop.app/
+              mv build/desktop.app dist/standalone/Flowkeeper.app
             else
               mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
               mv build/desktop.dist/* dist/standalone
