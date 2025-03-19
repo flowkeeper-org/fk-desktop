@@ -113,9 +113,18 @@ jobs:
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
             mv build/desktop.dist/* dist/standalone
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper.app
+            fi
           else
-            mv build/Flowkeeper${BINARY_EXTENSION} $PREFIX-portable${BINARY_EXTENSION}
-            mv build/flowkeeper dist/standalone
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              echo "macOS doesn't support portable binaries"
+              ls -al build/Flowkeeper.app
+              mv build/Flowkeeper.app dist/standalone
+            else
+              mv build/Flowkeeper${BINARY_EXTENSION} $PREFIX-portable${BINARY_EXTENSION}
+              mv build/flowkeeper/* dist/standalone
+            fi
           fi
           echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
           ls -al dist/
