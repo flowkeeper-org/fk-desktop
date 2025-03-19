@@ -23,17 +23,10 @@ set -e
 # In the next version(s) think of installing it in /opt/Flowkeeper instead
 
 # 1. Get the version
-VERSION_REGEX='^### v(.+) \(.*$'
-VERSION_LINE=$(head --lines=1 res/CHANGELOG.txt)
-if [[ $VERSION_LINE =~ $VERSION_REGEX ]]; then
-	export FK_VERSION="${BASH_REMATCH[1]}"
-else
-	export FK_VERSION="N/A"
-fi
 echo "1. Version = $FK_VERSION"
 
 # 2. Prepare temp folder
-dist="dist/deb"
+dist="build/deb"
 rm -rf "$dist"
 mkdir "$dist"
 echo "2. Prepared temp folder"
@@ -46,28 +39,28 @@ mkdir -p "$dist/usr/share/icons/hicolor/512x512/flowkeeper"
 cp res/flowkeeper.png "$dist/usr/share/icons/hicolor/512x512/flowkeeper/"
 
 mkdir -p "$dist/usr/bin"
-cp installer/flowkeeper "$dist/usr/bin/flowkeeper"
+cp scripts/linux/common/flowkeeper "$dist/usr/bin/flowkeeper"
 echo "3. Copied application files"
 
 # 4. Create a desktop shortcut
 mkdir -p "$dist/usr/share/applications"
 export FK_AUTOSTART_ARGS=""
-< installer/flowkeeper.desktop envsubst > "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
+< scripts/linux/common/flowkeeper.desktop envsubst > "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
 echo "4. Created a desktop shortcut:"
 cat "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
 
 # 5. Create another one for autostart (with --autostart argument)
 mkdir -p "$dist/etc/xdg/autostart"
 export FK_AUTOSTART_ARGS="--autostart"
-< installer/flowkeeper.desktop envsubst > "$dist/etc/xdg/autostart/org.flowkeeper.Flowkeeper.desktop"
+< scripts/linux/common/flowkeeper.desktop envsubst > "$dist/etc/xdg/autostart/org.flowkeeper.Flowkeeper.desktop"
 echo "5. Added it to autostart"
 
 # 6. Create metadata
 mkdir "$dist/DEBIAN"
-< installer/debian-control-min envsubst > "$dist/DEBIAN/control"
+< scripts/linux/debian/debian-control-min envsubst > "$dist/DEBIAN/control"
 echo "6. Created metadata"
 cat "$dist/DEBIAN/control"
 
 # 7. Build DEB file
-dpkg-deb --build "$dist" flowkeeper.deb
+dpkg-deb --build "$dist" dist/flowkeeper-min.deb
 echo "7. Built DEB file"

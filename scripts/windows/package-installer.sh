@@ -21,3 +21,4 @@
 set -e
 
 "$HOME/AppData/Local/Programs/Inno Setup 6/ISCC.exe" scripts/windows/windows-installer.iss
+mv dist/mysetup.exe dist/setup.exe

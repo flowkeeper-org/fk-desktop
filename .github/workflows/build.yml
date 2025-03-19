@@ -107,13 +107,14 @@ jobs:
         run: |
           echo "Prepare dist directory"
           mkdir -p dist/standalone
-          PORTABLE_FILENAME="dist/flowkeeper-${FK_VERSION}-${{ matrix.os }}-${{ matrix.compiler }}-portable${BINARY_EXTENSION}"
-          echo "Will output portable to $PORTABLE_FILENAME"
+          PREFIX="dist/flowkeeper-${FK_VERSION}-${{ matrix.os }}-${{ matrix.compiler }}"
+          echo "Will create artifacts with $PREFIX prefix"
+          
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
-            mv build/Flowkeeper* $PORTABLE_FILENAME
+            mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
             mv build/desktop.dist/* dist/standalone
           else
-            mv build/Flowkeeper${BINARY_EXTENSION} $PORTABLE_FILENAME
+            mv build/Flowkeeper${BINARY_EXTENSION} $PREFIX-portable${BINARY_EXTENSION}
             mv build/flowkeeper dist/standalone
           fi
           echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
@@ -121,46 +122,33 @@ jobs:
           ls -al dist/standalone
           
           if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Building macOS DMG installer"
             scripts/macos/create-dmg.sh
             scripts/macos/notarize-dmg.sh
+            mv dist/Flowkeeper.dmg "$PREFIX-installer.dmg"
           elif [[ "$OSTYPE" == "msys" ]]; then
+            echo "Building Windows setup.exe installer"
             scripts/windows/package-installer.sh
+            mv dist/setup.exe "$PREFIX-installer.exe"
           else
+            echo "Building Debian "fat" DEB package"
             scripts/linux/debian/package-deb.sh
-            scripts/linux/appimage/package-appimage.sh
+            mv dist/flowkeeper.deb "$PREFIX-package.deb"
+
+            echo "Building Debian "lean" DEB package"
+            scripts/linux/debian/package-deb-min.sh
+            mv dist/flowkeeper-min.deb "$PREFIX-min-package.deb"
+
+            # Temporarily disable AppImage build
+            # echo "Building AppImage package"
+            # scripts/linux/appimage/package-appimage.sh
+            # mv dist/org.flowkeeper.Flowkeeper.AppImage "$PREFIX-portable.AppImage"
           fi
 
-      - name: Archive portable single-file build
+      - name: Archive the builds
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-portable
+          name: dist-all
           path: |
-            dist/Flowkeeper*
+            dist
 
-      - name: Archive portable build ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-zip
-          path: |
-            dist/standalone
-
-      - name: Archive Windows installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-installers
-          path: |
-            dist/setup*.exe
-
-      - name: Archive AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-AppImage
-          path: |
-            dist/*.AppImage
-
-      - name: Archive DEB package
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-deb
-          path: |
-            dist/flowkeeper.deb
