@@ -80,7 +80,7 @@ jobs:
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
-          mode: ${{ startsWith(matrix.os, 'macOS') && 'standalone' || 'onefile' }}
+          mode: ${{ startsWith(matrix.os, '') && 'standalone' || 'onefile' }}
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
