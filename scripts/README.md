@@ -29,6 +29,20 @@
     - * -- all other files are libraries
   - `Flowkeeper` - A one-file portable binary by Nuitka, to be packaged
 - `dist/` - Resulting Flowkeeper building artifacts, should be in `.gitignore`
+  - `standalone/` - Standalone build package, depending on the OS and compiler, which can be zipped
+  - `flowkeeper-0.10.0-macOS-latest-nuitka-installer.dmg` - DMG built with Nuitka
+  - `flowkeeper-0.10.0-macOS-latest-pyinstaller-installer.dmg` - DMG built with PyInstaller
+  - `flowkeeper-0.10.0-macOS-latest-nuitka-portable` - macOS portable binary
+  - `flowkeeper-0.10.0-windows-latest-nuitka-installer.exe` - Windows installer built with Nuitka
+  - `flowkeeper-0.10.0-windows-latest-nuitka-portable.exe` - Windows portable EXE built with Nuitka
+  - `flowkeeper-0.10.0-windows-latest-pyinstaller-installer.exe` - Windows installer built with PyInstaller
+  - `flowkeeper-0.10.0-windows-latest-pyinstaller-portable.exe` - Windows portable EXE built with PyInstaller
+  - `flowkeeper-0.10.0-ubuntu-latest-nuitka-min-package.deb`
+  - `flowkeeper-0.10.0-ubuntu-latest-nuitka-package.deb`
+  - `flowkeeper-0.10.0-ubuntu-latest-nuitka-portable`
+  - `flowkeeper-0.10.0-ubuntu-latest-pyinstaller-min-package.deb`
+  - `flowkeeper-0.10.0-ubuntu-latest-pyinstaller-package.deb`
+  - `flowkeeper-0.10.0-ubuntu-latest-pyinstaller-portable`
 - `venv/` - Virtual env for building purposes, in `.gitignore`
 - `README.md` - The main README file, not packaged
 - `requirements.txt` - Requirements file for running, building and testing Flowkeeper, not packaged

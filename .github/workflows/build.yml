@@ -80,15 +80,17 @@ jobs:
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
+          # This might be "standalone" or "app" for macOS
           mode: onefile
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
           macos-app-icon: flowkeeper.icns
           macos-signed-app-name: org.flowkeeper.Flowkeeper
-          macos-app-version: "${{ env.FK_VERSION }}"
           macos-app-name: Flowkeeper
+          macos-app-mode: gui
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
           file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
@@ -154,10 +156,17 @@ jobs:
             # mv dist/org.flowkeeper.Flowkeeper.AppImage "$PREFIX-portable.AppImage"
           fi
 
-      - name: Archive the builds
+          echo "Zipping the standalone directory"
+          cd standalone
+          zip -9 -r "$PREFIX-standalone.zip" ./*
+          cd ..
+          
+          echo "Cleaning /dist up"
+          rm -rf standalone
+
+      - name: Archive the binaries
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
           path: |
             dist
-
