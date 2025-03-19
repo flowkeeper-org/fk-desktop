@@ -167,9 +167,9 @@ jobs:
           cd dist/standalone
           if [[ "$OSTYPE" == "msys" ]]; then
             echo "No zip on Windows"
-            powershell Compress-Archive . ../$PREFIX-standalone.zip
+            powershell Compress-Archive . ../../$PREFIX-standalone.zip
           else
-            zip -9 -r "../$PREFIX-standalone.zip" ./*
+            zip -9 -r "../../$PREFIX-standalone.zip" ./*
           fi
           cd ../..
           
