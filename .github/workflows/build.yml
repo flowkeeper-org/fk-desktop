@@ -112,8 +112,16 @@ jobs:
           echo "Will create artifacts with $PREFIX prefix"
           
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
-            mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
-            mv build/desktop.dist/* dist/standalone
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              echo "macOS doesn't support portable binaries"
+              ls -al build/
+              ls -al build/Flowkeeper
+              # mv build/Flowkeeper.app dist/standalone
+              mv build/desktop.dist/Flowkeeper dist/standalone/Flowkeeper.app
+            else
+              mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
+              mv build/desktop.dist/* dist/standalone
+            fi
             if [[ "$OSTYPE" == "linux"* ]]; then
               mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper
             fi
@@ -157,7 +165,12 @@ jobs:
 
           echo "Zipping the standalone directory"
           cd dist/standalone
-          zip -9 -r "$PREFIX-standalone.zip" ./*
+          if [[ "$OSTYPE" == "msys" ]]; then
+            echo "No zip on Windows"
+            powershell Compress-Archive . ../$PREFIX-standalone.zip
+          else
+            zip -9 -r "../$PREFIX-standalone.zip" ./*
+          fi
           cd ../..
           
           echo "Cleaning /dist up"
