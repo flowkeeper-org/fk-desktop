@@ -1,4 +1,4 @@
-name: Manual build
+name: Manual build - one
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ on:
 
 jobs:
   call-build:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@c8531e1695245331d3cb97e251dab22c03c43efc
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
     with:
       os: ${{ inputs.os }}
       compiler: ${{ inputs.compiler }}
