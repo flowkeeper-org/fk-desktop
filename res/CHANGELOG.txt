@@ -29,6 +29,7 @@ Technical improvements:
 - Ignoring our own modifications when "watch changes" is enabled (#130).
 - Improved documentation (#80, #87).
 - Complete drag & drop rewrite to accommodate moving work items between backlogs.
+- Windows binaries are now built using Nuitka, which is more efficient and has better tolerance to Defender (#114).
 
 Bug fixes:
 
@@ -40,11 +41,7 @@ Bug fixes:
 - TODO: [Bugfix] Application icon in DEB / GNOME (#121)
 - TODO: [Bugfix] Entry point not found - OpenSSL preinstalled on Windows (#82)
 - TODO: Fix "Focus: 00:00"
-- TODO: Fix occasional "Timer is already running"
-- TODO: Fix "index out of range" when changing filename with watch enabled
-- TODO: Nuitka for Windows
 
-- TODO: [Technical] Windows binaries are now built using ???, which has better tolerance to Defender (#114)
 - TODO: [Technical] Windows binaries are checked via VirusTotal every night (#109)
 - TODO: [Technical] The content of Windows installer is now signed, too (#115)
 

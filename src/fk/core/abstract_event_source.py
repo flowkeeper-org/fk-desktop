@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from typing import Iterable, Callable, TypeVar, Generic
 
 from fk.core import events
@@ -167,7 +168,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             if expected_timer_ring is not None:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'Expected to ring at {expected_timer_ring}, comparing to {strategy.get_when()}')
-                if strategy.get_when() >= expected_timer_ring:
+                # Adding one-second margin to account for the series mode, where the next pomodoro starts automatically
+                # on timer immediately after the previous one finishes. In this case we depend on the timers accuracy,
+                # which in practice results in ~0.3s errors back and forth. Sometimes this results in the "Can't start
+                # next pomodoro because the timer is still ticking" errors when loading strategies.
+                if strategy.get_when() + timedelta(seconds=1) >= expected_timer_ring:
                     # Timer rings, maybe even twice
                     strategy.execute_another(self._emit,
                                              self.get_data(),
