@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from PySide6.QtCore import QObject
@@ -25,6 +26,7 @@ from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged, TimerWorkStart
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, Pomodoro
 from fk.core.timer_data import TimerData
+from fk.qt.qt_invoker import invoke_in_main_thread
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +135,8 @@ class AudioPlayer(QObject):
             if (event == 'TimerWorkComplete'
                     and pomodoro.get_type() == POMODORO_TYPE_NORMAL
                     and pomodoro.get_rest_duration() > 0):  # Normal break
-                    self._start_rest_sound()
+                # We'll be here if the rest started while Flowkeeper was open
+                self._start_rest_sound()
 
     def _start_ticking(self, event: str = None, **kwargs) -> None:
         if self._audio_player is not None:
@@ -150,7 +153,24 @@ class AudioPlayer(QObject):
                     self._audio_player.setLoops(QMediaPlayer.Loops.Infinite)
                     self._audio_player.play()
 
-    def _start_rest_sound(self) -> None:
+    def _seek_when_ready(self, elapsed_ms: int = 0):
+        def seek(is_seekable):
+            if connection is not None:
+                self._audio_player.seekableChanged.disconnect(connection)
+                logger.debug('Disconnected from seekableChanged')
+            if is_seekable and self._audio_player.duration() > elapsed_ms:
+                logger.debug(f'Will seek to {elapsed_ms}ms')
+                self._audio_player.setPosition(elapsed_ms)
+
+        if elapsed_ms > 0:
+            connection = self._audio_player.seekableChanged.connect(
+                # We have to use invoke_in_main_thread here, because setPosition() doesn't work
+                # immediately after seekableChanged fired. Seems like it requires one more
+                # event loop iteration, at least in Qt 6.8.2 on Linux.
+                lambda is_seekable: invoke_in_main_thread(seek, is_seekable=is_seekable))
+            logger.debug('Connected to seekableChanged')
+
+    def _start_rest_sound(self, elapsed_ms: int = 0) -> None:
         if self._audio_player is not None:
             play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
             if play_rest_sound:
@@ -163,6 +183,7 @@ class AudioPlayer(QObject):
                     self._set_volume('Application.rest_sound_volume')
                     self._audio_player.setSource(rest_file)
                     self._audio_player.setLoops(1)
+                    self._seek_when_ready(elapsed_ms)
                     self._audio_player.play()     # This will substitute the bell sound
 
     def _start_what_is_needed(self) -> None:
@@ -171,5 +192,7 @@ class AudioPlayer(QObject):
             if timer.is_working():
                 self._start_ticking()
             elif timer.is_resting() and timer.get_running_pomodoro().get_type() == POMODORO_TYPE_NORMAL:
-                self._start_rest_sound()
+                # We'll be here if we started Flowkeeper while the timer is resting
+                now = datetime.datetime.now(datetime.timezone.utc)
+                self._start_rest_sound(round(timer.get_running_pomodoro().get_elapsed_rest_duration(now) * 1000))
 

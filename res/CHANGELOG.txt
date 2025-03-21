@@ -15,6 +15,7 @@ quality-of-life improvements, bugfixes and better support for Linux.
 - "Contact us" submenu to facilitate feedback collection (#111).
 - Flowkeeper window now hides automatically on auto-start (#102).
 - There's a new font selector for macOS, which supports Apple system font (#113).
+- The music starts playing from the right position if we restart Flowkeeper while it is resting.
 
 Technical improvements:
 
@@ -30,6 +31,7 @@ Technical improvements:
 - Improved documentation (#80, #87).
 - Complete drag & drop rewrite to accommodate moving work items between backlogs.
 - Windows binaries are now built using Nuitka, which is more efficient and has better tolerance to Defender (#114).
+- Madelene music composition changed format from mp3 to m4a/aac.
 
 Bug fixes:
 
