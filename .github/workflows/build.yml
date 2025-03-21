@@ -131,7 +131,7 @@ jobs:
             fi
           fi
           echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
-          tree dist/
+          find dist/
           
           if [[ "$OSTYPE" == "darwin"* ]]; then
             echo "Building macOS DMG installer"
