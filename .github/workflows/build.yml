@@ -106,6 +106,17 @@ jobs:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
           enable-plugins: pyside6
+          windows-console-mode: disable
+          windows-icon-from-ico: res/flowkeeper.ico
+          macos-app-icon: flowkeeper.icns
+          macos-signed-app-name: org.flowkeeper.Flowkeeper
+          macos-app-name: Flowkeeper
+          macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-app-version: "${{ env.FK_VERSION }}"
+          product-name: Flowkeeper
+          product-version: "${{ env.FK_VERSION }}"
+          file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
+          copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
           output-dir: 'build'
           output-file: 'Flowkeeper'
         env:
