@@ -75,22 +75,24 @@ class PomodoroTimer(AbstractEventEmitter):
             self._tick_timer.cancel()
         elif pomodoro is not None:
             self._transition_timer.cancel()
-            if pomodoro.get_type() == POMODORO_TYPE_NORMAL and timer.get_remaining_duration() > 0:
-                self._schedule_tick()
-                if pomodoro.is_working():
-                    logger.debug(f'PomodoroTimer: Is working')
-                    self._schedule_transition(
-                        timer.get_remaining_duration() * 1000,
-                        pomodoro,
-                        'rest')
-                elif pomodoro.is_resting():
-                    logger.debug(f'PomodoroTimer: Is resting')
-                    self._schedule_transition(
-                        timer.get_remaining_duration() * 1000,
-                        pomodoro,
-                        'finished')
-                else:
-                    raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
+            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+                timer.update_remaining_duration(None)
+                if timer.get_remaining_duration() > 0:
+                    self._schedule_tick()
+                    if pomodoro.is_working():
+                        logger.debug(f'PomodoroTimer: Is working')
+                        self._schedule_transition(
+                            timer.get_remaining_duration() * 1000,
+                            pomodoro,
+                            'rest')
+                    elif pomodoro.is_resting():
+                        logger.debug(f'PomodoroTimer: Is resting')
+                        self._schedule_transition(
+                            timer.get_remaining_duration() * 1000,
+                            pomodoro,
+                            'finished')
+                    else:
+                        raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
             elif pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 self._schedule_tick()
 
