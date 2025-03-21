@@ -61,6 +61,11 @@ jobs:
             pip install pyinstaller
           fi
 
+          if ! command -v patchelf 2>&1 >/dev/null; then
+            sudo add-apt-repository universe
+            sudo apt install patchelf
+          fi
+
       - name: Prepare sources
         shell: bash
         run: |
@@ -84,7 +89,7 @@ jobs:
           fi
 
       - name: Package builds (Nuitka)
-        if: ${{ inputs.compiler == 'nuitka' }}
+        if: ${{ inputs.compiler == 'nuitka' && inputs.os != 'macos-13' }}
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
