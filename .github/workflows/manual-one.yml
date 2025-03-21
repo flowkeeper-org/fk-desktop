@@ -28,7 +28,6 @@ on:
         options:
           - nuitka
           - pyinstaller
-
 jobs:
   call-build:
     uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
