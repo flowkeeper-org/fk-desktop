@@ -31,11 +31,8 @@ on:
 
 jobs:
   call-build:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@c8531e1695245331d3cb97e251dab22c03c43efc
     with:
       os: ${{ inputs.os }}
       compiler: ${{ inputs.compiler }}
-    secrets:
-      MAC_SIGN_CERT: ${{ secrets.MAC_SIGN_CERT }}
-      MAC_SIGN_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
-      MAC_KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+    secrets: inherit
