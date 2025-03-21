@@ -136,7 +136,7 @@ class AudioPlayer(QObject):
                     and pomodoro.get_type() == POMODORO_TYPE_NORMAL
                     and pomodoro.get_rest_duration() > 0):  # Normal break
                 # We'll be here if the rest started while Flowkeeper was open
-                self._start_rest_sound()
+                self._start_rest_sound(pomodoro)
 
     def _start_ticking(self, event: str = None, **kwargs) -> None:
         if self._audio_player is not None:
@@ -170,8 +170,11 @@ class AudioPlayer(QObject):
                 lambda is_seekable: invoke_in_main_thread(seek, is_seekable=is_seekable))
             logger.debug('Connected to seekableChanged')
 
-    def _start_rest_sound(self, elapsed_ms: int = 0) -> None:
+    def _start_rest_sound(self, pomodoro: Pomodoro) -> None:
         if self._audio_player is not None:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            elapsed_ms = round(pomodoro.get_elapsed_rest_duration(now) * 1000)
+
             play_rest_sound = (self._settings.get('Application.play_rest_sound') == 'True')
             if play_rest_sound:
                 self._audio_player.stop()     # In case it was ticking
@@ -193,6 +196,5 @@ class AudioPlayer(QObject):
                 self._start_ticking()
             elif timer.is_resting() and timer.get_running_pomodoro().get_type() == POMODORO_TYPE_NORMAL:
                 # We'll be here if we started Flowkeeper while the timer is resting
-                now = datetime.datetime.now(datetime.timezone.utc)
-                self._start_rest_sound(round(timer.get_running_pomodoro().get_elapsed_rest_duration(now) * 1000))
+                self._start_rest_sound(timer.get_running_pomodoro())
 

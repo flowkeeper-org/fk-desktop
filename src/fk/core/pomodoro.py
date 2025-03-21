@@ -222,7 +222,7 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def get_type(self):
         return self._type
 
-    def remaining_time_in_current_state(self, when: datetime.datetime) -> float:
+    def remaining_time_in_current_state(self, when: datetime.datetime | None) -> float:
         if self._type == POMODORO_TYPE_NORMAL:
             # Remaining time in the current state in seconds.
             # Can be negative, if it has expired.

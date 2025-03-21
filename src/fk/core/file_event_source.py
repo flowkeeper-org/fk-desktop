@@ -79,6 +79,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # released the file handler. By default, OSes won't allow concurrent writes to the
         # file, so if something is still writing into it, then this call will fail.
         with open(filename, 'r+', encoding='UTF-8') as file:
+            last_executed = None
             for line in file:
                 try:
                     strategy = self._serializer.deserialize(line)
@@ -91,14 +92,18 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             self._sequence_error(self._last_seq, seq)
                         self._last_seq = seq
                         if logger.isEnabledFor(logging.DEBUG):
-                            logger.debug(f" - {strategy}")
+                            logger.debug(f"Will execute new strategy: {strategy}")
                         # UC-1: For any event source, whenever it executes a strategy with seq_num != last_seq + 1, and "ignore sequence" settings is disables, it fails
                         self.execute_prepared_strategy(strategy)
+                        last_executed = strategy
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
+                finally:
+                    if last_executed is not None:
+                        self._auto_seal_at_the_end(last_executed)
 
     def _get_filename(self) -> str:
         return self.get_config_parameter("FileEventSource.filename")

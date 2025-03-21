@@ -150,9 +150,11 @@ class PomodoroTimer(AbstractEventEmitter):
                                     pomodoro: Pomodoro,
                                     work_duration: float,
                                     **kwargs) -> None:
+        # We can be here either if our user started work immediately, of if we received an external strategy
         logger.debug(f'Handling work start')
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
-            self._schedule_transition(work_duration * 1000, pomodoro, 'rest')
+            duration = pomodoro.remaining_time_in_current_state(None)
+            self._schedule_transition(duration * 1000, pomodoro, 'rest')
         self._schedule_tick()
         logger.debug(f'PomodoroTimer: Done - Handling work start')
 
@@ -162,7 +164,8 @@ class PomodoroTimer(AbstractEventEmitter):
                                     **kwargs) -> None:
         logger.debug(f'PomodoroTimer: Handling rest start')
         if rest_duration > 0:
-            self._schedule_transition(rest_duration * 1000, pomodoro, 'finished')
+            duration = pomodoro.remaining_time_in_current_state(None)
+            self._schedule_transition(duration * 1000, pomodoro, 'finished')
         else:
             logger.debug(f'PomodoroTimer: Long break - did not schedule automatic transition to finished')
         logger.debug(f'PomodoroTimer: Done - Handling rest start')
