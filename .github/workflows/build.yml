@@ -74,8 +74,8 @@ jobs:
             ls -al build/
           fi
 
-      - name: Package builds (Nuitka)
-        if: ${{ matrix.compiler == 'nuitka' }}
+      - name: Package builds (Nuitka), not macOS
+        if: ${{ matrix.compiler == 'nuitka' && !startsWith(matrix.os, 'macOS') }}
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
@@ -86,9 +86,35 @@ jobs:
           windows-icon-from-ico: res/flowkeeper.ico
           macos-app-icon: flowkeeper.icns
           macos-signed-app-name: org.flowkeeper.Flowkeeper
-          macos-app-version: "${{ env.FK_VERSION }}"
           macos-app-name: Flowkeeper
+          macos-app-mode: gui
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-app-version: "${{ env.FK_VERSION }}"
+          product-name: Flowkeeper
+          product-version: "${{ env.FK_VERSION }}"
+          file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
+          copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
+          output-dir: 'build'
+          output-file: 'Flowkeeper'
+        env:
+          PYTHONPATH: src
+
+      - name: Package builds (Nuitka), macOS
+        if: ${{ matrix.compiler == 'nuitka' && startsWith(matrix.os, 'macOS') }}
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: src/fk/desktop/desktop.py
+          enable-plugins: pyside6
+          windows-console-mode: disable
+          windows-icon-from-ico: res/flowkeeper.ico
+          macos-app-icon: flowkeeper.icns
+          macos-signed-app-name: org.flowkeeper.Flowkeeper
+          macos-app-name: Flowkeeper
+          macos-app-mode: gui
+          macos-create-app-bundle: true
+          macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
           file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
@@ -111,8 +137,15 @@ jobs:
           echo "Will create artifacts with $PREFIX prefix"
           
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
-            mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
-            mv build/desktop.dist/* dist/standalone
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              echo "macOS doesn't support portable binaries"
+              ls -al build/
+              ls -al build/desktop.app/
+              mv build/desktop.app dist/standalone/Flowkeeper.app
+            else
+              mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
+              mv build/desktop.dist/* dist/standalone
+            fi
             if [[ "$OSTYPE" == "linux"* ]]; then
               mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper
             fi
@@ -154,10 +187,22 @@ jobs:
             # mv dist/org.flowkeeper.Flowkeeper.AppImage "$PREFIX-portable.AppImage"
           fi
 
-      - name: Archive the builds
+          echo "Zipping the standalone directory"
+          cd dist/standalone
+          if [[ "$OSTYPE" == "msys" ]]; then
+            echo "No zip on Windows"
+            powershell Compress-Archive . ../../$PREFIX-standalone.zip
+          else
+            zip -9 -r "../../$PREFIX-standalone.zip" ./*
+          fi
+          cd ../..
+          
+          echo "Cleaning /dist up"
+          rm -rf dist/standalone
+
+      - name: Archive the binaries
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
           path: |
             dist
-
