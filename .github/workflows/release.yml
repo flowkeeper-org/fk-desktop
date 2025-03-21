@@ -23,6 +23,7 @@ jobs:
     secrets: inherit
 
   release:
+    needs: call-build
     strategy:
       fail-fast: false
       matrix:
