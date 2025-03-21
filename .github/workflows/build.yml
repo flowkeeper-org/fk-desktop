@@ -103,7 +103,7 @@ jobs:
         if: ${{ matrix.compiler == 'nuitka' && startsWith(matrix.os, 'macOS') }}
         uses: Nuitka/Nuitka-Action@main
         with:
-          nuitka-version: main
+          nuitka-version: develop
           script-name: src/fk/desktop/desktop.py
           enable-plugins: pyside6
           windows-console-mode: disable
