@@ -1,16 +1,25 @@
-name: Build binaries
+name: Build subflow
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+    secrets:
+      MAC_SIGN_CERT:
+        required: true
+      MAC_SIGN_PASSWORD:
+        required: true
+      MAC_KEYCHAIN_PASSWORD:
+        required: true
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        compiler: [nuitka, pyinstaller]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,7 +55,7 @@ jobs:
           fi
           pip install -r requirements.txt
           
-          if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
+          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
             pip install nuitka
           else
             pip install pyinstaller
@@ -60,7 +69,7 @@ jobs:
           mkdir -p build dist
 
       - name: Package builds (PyInstaller)
-        if: ${{ matrix.compiler == 'pyinstaller' }}
+        if: ${{ inputs.compiler == 'pyinstaller' }}
         shell: bash
         run: |
           if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -75,12 +84,12 @@ jobs:
           fi
 
       - name: Package builds (Nuitka)
-        if: ${{ matrix.compiler == 'nuitka' }}
+        if: ${{ inputs.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
-          mode: ${{ startsWith(matrix.os, 'macOS') && 'app' || 'onefile' }}
+          mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
@@ -107,10 +116,10 @@ jobs:
         run: |
           echo "Prepare dist directory"
           mkdir -p dist/standalone
-          PREFIX="dist/flowkeeper-${FK_VERSION}-${{ matrix.os }}-${{ matrix.compiler }}"
+          PREFIX="dist/flowkeeper-${FK_VERSION}-${{ inputs.os }}-${{ inputs.compiler }}"
           echo "Will create artifacts with $PREFIX prefix"
           
-          if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
+          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
               mv build/desktop.app dist/standalone/Flowkeeper.app
@@ -130,7 +139,7 @@ jobs:
               mv build/flowkeeper/* dist/standalone
             fi
           fi
-          echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
+          echo "Moved ${{ inputs.compiler }} binaries to dist/standalone"
           find dist/
           
           if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -173,6 +182,6 @@ jobs:
       - name: Archive the binaries
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
+          name: dist-${{ inputs.os }}-${{ inputs.compiler }}-all
           path: |
             dist
