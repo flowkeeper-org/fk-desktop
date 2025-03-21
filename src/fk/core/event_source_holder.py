@@ -42,6 +42,13 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         self._cryptograph = cryptograph
         self._source = None
 
+    def close_current_source(self) -> None:
+        # Unsubscribe everyone from the orphan source, so that we don't receive double events.
+        # If the new source is requested because settings change, this will happen before the change.
+        if self._source is not None:
+            self._source.cancel('*')
+            self._source.disconnect()
+
     def request_new_source(self) -> AbstractEventSource[TRoot]:
         source_type = self._settings.get('Source.type')
         logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
@@ -53,14 +60,6 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         self._emit(BeforeSourceChanged, {
             'source': self._source
         })
-
-        # Unsubscribe everyone from the orphan source, so that we don't receive double events
-        if self._source is not None:
-            # UC-1: Before a new event source is created, the old one unsubscribes all listeners and disconnects
-            # TODO: This doesn't happen when this EventSourceHolder is disposed or closed. It's an issue with the
-            #  export wizards and similar scenarios. Extract this into some "dispose" service and call it explicitly.
-            self._source.cancel('*')
-            self._source.disconnect()
 
         producer = EventSourceFactory.get_event_source_factory().get_producer(source_type)
         logger.debug(f'EventSourceHolder: About to create new source using producer {producer} with cryptograph {self._cryptograph}')

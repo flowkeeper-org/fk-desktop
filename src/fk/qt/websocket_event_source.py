@@ -116,8 +116,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Received {len(lines)} messages')
         i = 0
-        to_unmute = False   # It's important to unmute / emit AFTER auto_seal
+        to_unmute = False
         to_emit = False
+        last_executed = None
         for line in lines:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f" - {line}")
@@ -133,12 +134,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                 elif type(s) is PongStrategy:
                     # A special case where we want to ignore the sequence
                     self.execute_prepared_strategy(s)
+                    last_executed = s
                 elif s.get_sequence() is not None and s.get_sequence() > self._last_seq:
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
                     self._last_seq = s.get_sequence()
-                    self.auto_seal(s.get_when())
                     self.execute_prepared_strategy(s)
+                    last_executed = s
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
                     QApplication.processEvents()
@@ -147,7 +149,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                     logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                 else:
                     raise ex
-        self.auto_seal()
+
+        self._auto_seal_at_the_end(last_executed)
         if to_unmute:
             self.unmute()
         if to_emit:

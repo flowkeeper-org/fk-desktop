@@ -11,8 +11,9 @@
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
       <excludeFolder url="file://$MODULE_DIR$/venv38" />
       <excludeFolder url="file://$MODULE_DIR$/src/fk/tests/fixtures" />
+      <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (fk-desktop)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.13 virtualenv at ~/projects/fk-desktop/venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

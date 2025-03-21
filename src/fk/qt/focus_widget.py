@@ -18,15 +18,18 @@ import logging
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
-    QSpacerItem
+    QSpacerItem, QInputDialog, QLineEdit
 
+from fk.core.abstract_event_source import AbstractEventSource, start_workitem
+from fk.core.abstract_serializer import sanitize_user_input
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
-from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy, StartWorkStrategy
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
@@ -35,6 +38,22 @@ from fk.qt.timer_widget import TimerWidget
 
 logger = logging.getLogger(__name__)
 DISPLAY_HEIGHT = 80
+
+
+def complete_item(item: Workitem, parent: QWidget, source: AbstractEventSource) -> None:
+    if item is None:
+        raise Exception("Trying to complete a workitem, while there's none selected")
+    if (not item.has_running_pomodoro()
+            or item.is_tracker()
+            or item.get_running_pomodoro().is_long_break()
+            or QMessageBox().warning(
+            parent,
+            "Confirmation",
+            f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
+            QMessageBox.StandardButton.Ok,
+            QMessageBox.StandardButton.Cancel
+    ) == QMessageBox.StandardButton.Ok):
+        source.execute(CompleteWorkitemStrategy, [item.get_uid(), "finished"])
 
 
 class FocusWidget(QWidget, AbstractTimerDisplay):
@@ -110,14 +129,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         self.set_flavor(flavor)
 
-        if self._timer is not None:
-            if self._timer.is_working():
-                self._set_mode('working')
-            elif self._timer.is_resting():
-                self._set_mode('resting')
-            elif self._timer.is_idling():
-                self._set_mode('idle')
-
         self.eye_candy()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
@@ -138,8 +149,19 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
 
         center_button = None
         if flavor == 'classic':
-            center_button = self._create_button("focus.voidPomodoro")
-            self._added.append(center_button)
+            # We add both buttons, but one of them will always be hidden
+            center_button = QWidget(self)
+            center_button.setContentsMargins(0, 0, 0, 0)
+            center_button_layout = QHBoxLayout()
+            center_button_layout.setContentsMargins(0, 0, 0, 0)
+            center_button_layout.setSpacing(0)
+            center_button.setLayout(center_button_layout)
+            void_pomodoro_button = self._create_button("focus.voidPomodoro")
+            center_button_layout.addWidget(void_pomodoro_button)
+            self._added.append(void_pomodoro_button)
+            finish_tracking_button = self._create_button("focus.finishTracking")
+            center_button_layout.addWidget(finish_tracking_button)
+            self._added.append(finish_tracking_button)
 
         self._timer_widget = TimerWidget(self,
                                          'timer',
@@ -148,6 +170,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                                          63)
         if flavor == 'classic':
             w = self._timer_widget
+            self._added.append(w)
+            layout.addWidget(w)
+
+            w = self._create_button("focus.interruption")
             self._added.append(w)
             layout.addWidget(w)
 
@@ -203,6 +229,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('focus.voidPomodoro', "Void Pomodoro", 'Ctrl+V', "tool-void", FocusWidget._void_pomodoro)
+        actions.add('focus.interruption', "Interruption", 'Ctrl+T', "tool-interruption", FocusWidget._interruption)
+        actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
 
@@ -224,7 +252,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._header_subtext.setText(subtext)
         if not self._readonly:
             self._actions['focus.completeItem'].setDisabled(True)
+            self._actions['focus.voidPomodoro'].setVisible(False)
             self._actions['focus.voidPomodoro'].setDisabled(True)
+            self._actions['focus.interruption'].setVisible(False)
+            self._actions['focus.interruption'].setDisabled(True)
+            self._actions['focus.finishTracking'].setVisible(False)
+            self._actions['focus.finishTracking'].setDisabled(True)
         self._timer_widget.reset()
 
     def eye_candy(self):
@@ -285,33 +318,44 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
-                if QMessageBox().warning(self.parent(),
-                                         "Confirmation",
-                                         f"Are you sure you want to void current pomodoro?",
-                                         QMessageBox.StandardButton.Ok,
-                                         QMessageBox.StandardButton.Cancel
-                                         ) == QMessageBox.StandardButton.Ok:
-                    self._source_holder.get_source().execute(VoidPomodoroStrategy, [workitem.get_uid()])
+                dlg = QInputDialog(self.parent())
+                dlg.setInputMode(QInputDialog.InputMode.TextInput)
+                dlg.setWindowTitle('Confirmation')
+                dlg.setLabelText('Are you sure you want to void current pomodoro?')
+                dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
+                if dlg.exec_():
+                    reason = f': {sanitize_user_input(dlg.textValue())}' if dlg.textValue() else ''
+                    self._source_holder.get_source().execute(AddInterruptionStrategy,
+                                                             [workitem.get_uid(), f'Pomodoro voided{reason}'])
+                    self._source_holder.get_source().execute(StopTimerStrategy,
+                                                             [])
+
+    def _interruption(self) -> None:
+        for backlog in self._source_holder.get_source().backlogs():
+            workitem, _ = backlog.get_running_workitem()
+            if workitem is not None:
+                dlg = QInputDialog(self.parent())
+                dlg.setInputMode(QInputDialog.InputMode.TextInput)
+                dlg.setWindowTitle('Interruption')
+                dlg.setLabelText("It won't pause or void your current pomodoro, only\n"
+                                 "record this incident for your future reference:")
+                dlg.findChild(QLineEdit).setPlaceholderText('What happened (optional)')
+                if dlg.exec_():
+                    self._source_holder.get_source().execute(AddInterruptionStrategy,
+                                                             [workitem.get_uid(), sanitize_user_input(dlg.textValue())])
+
+    def _finish_tracking(self) -> None:
+        # We don't check if there's a running workitem, as the action is only enabled while the timer is ticking
+        self._source_holder.get_source().execute(StopTimerStrategy, [])
 
     def _next_pomodoro(self) -> None:
-        settings = self._source_holder.get_settings()
-        self._source_holder.get_source().execute(StartWorkStrategy, [
-            self._continue_workitem.get_uid(),
-            settings.get('Pomodoro.default_work_duration'),
-            settings.get('Pomodoro.default_rest_duration'),
-        ])
+        if self._continue_workitem is None:
+            raise Exception('Cannot start next pomodoro on non-existent work item')
+        start_workitem(self._continue_workitem, self._source_holder.get_source())
 
     def _complete_item(self) -> None:
-        item = self._timer.get_running_workitem()
-        if QMessageBox().warning(
-                self,
-                "Confirmation",
-                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
-                QMessageBox.StandardButton.Ok,
-                QMessageBox.StandardButton.Cancel
-                ) == QMessageBox.StandardButton.Ok:
-            self._source_holder.get_source().execute(CompleteWorkitemStrategy,
-                                 [item.get_uid(), "finished"])
+        item = self.timer.get_running_workitem()
+        complete_item(item, self, self._source_holder.get_source())
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         self._header_text.setText(state_text)
@@ -323,11 +367,31 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             if not self._readonly:
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText('Next Pomodoro')
-        elif new_mode == 'working' or new_mode == 'resting':
-            running_item = self._timer.get_running_workitem()
-            self._header_subtext.setText(running_item.get_display_name())
+        elif new_mode in ('working', 'resting', 'long-resting'):
+            running_item = self.timer.get_running_workitem()
+            if running_item is None:
+                return self.mode_changed(new_mode, 'ready')  # A very rare corner case where we deleted a running
+                # workitem and it auto-sealed precisely between mode changes.
+            if new_mode == 'long-resting':
+                self._header_subtext.setText('It is recommended to take a 20-minute break after each 4 pomodoros')
+            else:
+                self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
-                self._actions['focus.voidPomodoro'].setDisabled(False)
+                pomodoro: Pomodoro = self.timer.get_running_pomodoro()
+                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
+                    self._actions['focus.voidPomodoro'].setVisible(False)
+                    self._actions['focus.voidPomodoro'].setDisabled(True)
+                    self._actions['focus.interruption'].setVisible(False)
+                    self._actions['focus.interruption'].setDisabled(True)
+                    self._actions['focus.finishTracking'].setVisible(True)
+                    self._actions['focus.finishTracking'].setDisabled(False)
+                else:
+                    self._actions['focus.voidPomodoro'].setVisible(True)
+                    self._actions['focus.voidPomodoro'].setDisabled(False)
+                    self._actions['focus.interruption'].setVisible(True)
+                    self._actions['focus.interruption'].setDisabled(False)
+                    self._actions['focus.finishTracking'].setVisible(False)
+                    self._actions['focus.finishTracking'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
                 self._actions['focus.completeItem'].setDisabled(False)
@@ -337,6 +401,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             if not self._readonly:
                 self._actions['focus.nextPomodoro'].setDisabled(False)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
+
+            # Continue the series automaticallysss
+            work_in_series = self._settings.get('Pomodoro.start_next_automatically') == 'True'
+            after_long_break = self.timer.get_pomodoro_in_series() == 0
+            last_voided = self._last_pomodoro is not None and self._last_pomodoro.is_startable()
+            if work_in_series and not after_long_break and not last_voided:
+                logger.debug('Continuing the series automatically')
+                self._actions['focus.nextPomodoro'].trigger()
 
     def _apply_size_policy(self):
         sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -349,7 +421,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
         context_menu.addAction(self._actions['focus.nextPomodoro'])
-        context_menu.addAction(self._actions['focus.voidPomodoro'])
+        timer = self.timer
+        if timer.is_working() or timer.is_resting():
+            pomodoro = timer.get_running_pomodoro()
+            if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
+                context_menu.addAction(self._actions['focus.finishTracking'])
+            else:
+                context_menu.addAction(self._actions['focus.interruption'])
+                context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
         context_menu.addAction(self._actions['window.pinWindow'])

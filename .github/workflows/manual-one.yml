@@ -1,0 +1,38 @@
+name: Manual build - one
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'Operating system'
+        required: true
+        default: 'ubuntu-24.04'
+        type: choice
+        options:
+          - ubuntu-24.04
+          - ubuntu-22.04
+          - ubuntu-20.04
+          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
+          - macos-15
+          - macos-14
+          - macos-13
+          - windows-2025
+          - windows-2022
+          - windows-2019
+      compiler:
+        description: 'Compiler'
+        required: true
+        default: 'nuitka'
+        type: choice
+        options:
+          - nuitka
+          - pyinstaller
+
+jobs:
+  call-build:
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
+    with:
+      os: ${{ inputs.os }}
+      compiler: ${{ inputs.compiler }}
+    secrets: inherit

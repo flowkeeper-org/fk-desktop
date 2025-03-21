@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtWidgets import QPushButton
 
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
@@ -44,7 +44,7 @@ pomodoro_timer._state = 'work'
 def tick():
     global value
     global pomodoro_timer
-    tray.tick(Pomodoro(False, pomodoro_timer._state, 5000, 5000, "123", wi, None),
+    tray.tick(Pomodoro(1, False, pomodoro_timer._state, 5000, 5000, POMODORO_TYPE_NORMAL, "123", wi, None),
               'State',
               value,
               10,

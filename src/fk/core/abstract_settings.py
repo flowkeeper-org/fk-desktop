@@ -22,6 +22,7 @@ from typing import Iterable, Callable
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.events import get_all_events
+from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,12 @@ def _never_show(_) -> bool:
     return False
 
 
-def _show_for_system_font(values: dict[str, str]) -> bool:
-    return values['Application.font_embedded'] == 'False'
+def _show_for_simple_long_breaks(values: dict[str, str]) -> bool:
+    return values['Pomodoro.long_break_algorithm'] == 'simple'
+
+
+def _show_for_smart_long_breaks(values: dict[str, str]) -> bool:
+    return values['Pomodoro.long_break_algorithm'] == 'smart'
 
 
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
@@ -104,11 +109,15 @@ def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
 
 
 def _show_if_madelene(values: dict[str, str]) -> bool:
-    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.mp3'
+    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.m4a'
 
 
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
     return values['Application.play_tick_sound'] == 'True'
+
+
+def _show_for_flatpak(values: dict[str, str]) -> bool:
+    return get_sandbox_type() == 'Flatpak'
 
 
 def _is_tiling_wm() -> bool:
@@ -118,6 +127,10 @@ def _is_tiling_wm() -> bool:
             or 'awesome' in wm)
 
 
+def prepare_file_for_writing(filename):
+    (Path(filename) / '..').resolve().mkdir(parents=True, exist_ok=True)
+
+
 class AbstractSettings(AbstractEventEmitter, ABC):
     # Category -> [(id, type, display, default, options, visibility)]
     _definitions: dict[str, list[tuple[str, str, str, str, list[any], Callable[[dict[str, str]], bool]]]]
@@ -125,6 +138,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _callback_invoker: Callable
 
     def __init__(self,
+                 default_data_dir: str,
+                 default_logs_dir: str,
                  callback_invoker: Callable,
                  is_wayland: bool | None = None):
         AbstractEventEmitter.__init__(self, [
@@ -146,6 +161,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
                 ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
@@ -157,12 +173,27 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "WARNING:Errors and warnings",
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
-                ('Logger.filename', 'file', 'Log filename', str(Path.home() / 'flowkeeper.log'), [], _always_show),
+                ('Logger.filename', 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
                 ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
                 ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
                 ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
+            ],
+            'Series and breaks': [
+                ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [
+                    'simple:After [N] completed pomodoros',
+                    # 'smart:After focusing for [X] time within the last [Y] hours',
+                    # 'done:After completing a series of pomodoros',
+                    'never:Never (let me decide)',
+                ], _always_show),
+                ('Pomodoro.long_break_each', 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
+                ('Pomodoro.long_break_focus', 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                ('Pomodoro.long_break_within', 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                ('', 'separator', '', '', [], _always_show),
+                ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'False', [], _always_show),
+                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next '
+                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
             ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
@@ -176,7 +207,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
                 ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
-                ('FileEventSource.filename', 'file', 'Data file', str(Path.home() / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
+                ('FileEventSource.filename', 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
                 ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
                 ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),
@@ -259,25 +290,24 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
-                ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
-                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _show_for_system_font),
-                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_header_size', 'int', 'Title font size', '26', [3, 72], _show_for_system_font),
+                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
+                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _always_show),
+                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _always_show),
+                ('Application.font_header_size', 'int', 'Title font size', '24', [3, 72], _always_show),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
-                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
+                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
                 ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
                 ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
-                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
+                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
@@ -287,6 +317,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
                                                              'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
+                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
+                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
@@ -304,6 +339,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     @abstractmethod
+    def is_set(self, name: str) -> bool:
+        pass
+
+    @abstractmethod
     def get(self, name: str) -> str:
         # Note that there's no default value -- we can get it from self._defaults
         pass
@@ -317,7 +356,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_username(self) -> str:
-        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user.
+        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.
         if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
             return 'user@local.host'
         else:
@@ -383,12 +422,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
-        to_set = dict[str, str]()
-        for lst in self._definitions.values():
-            for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-                to_set[option_id] = option_default
+        # It seems to be sufficient just to clear all settings -- then defaults will be
+        # used when we do .get(name)
+        # to_set = dict[str, str]()
+        # for lst in self._definitions.values():
+        #     for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
+        #         to_set[option_id] = option_default
         self.clear()
-        self.set(to_set)
+        # self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
         return _show_when_encryption_is_enabled({
@@ -409,7 +450,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self.get_auto_theme() if raw == 'auto' else raw
 
     def update_default(self, name: str, value: str) -> None:
+        old = self._defaults[name]
         self._defaults[name] = value
+        logger.debug(f'Updated default {name} from {old} to {value}. Got: {self.get(name)}')
 
     @abstractmethod
     def init_audio_outputs(self):

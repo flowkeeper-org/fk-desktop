@@ -1,4 +1,4 @@
--r requirements-build.txt
+-r requirements.txt
 coverage
 coveralls
 assertpy

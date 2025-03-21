@@ -105,7 +105,7 @@ class AbstractEventEmitter:
                     logger.debug(f' ! {_callback_display(callback)}(' + str(params) + ')')
                 self._callback_invoker(callback, **params)
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(' > ' + self.__class__.__name__ + '._emit(' + event + ')')
+                logger.debug(' < ' + self.__class__.__name__ + '._emit(' + event + ')')
 
     def _is_muted(self) -> bool:
         return self._muted

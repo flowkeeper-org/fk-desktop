@@ -24,6 +24,10 @@ T = TypeVar('T')
 TRoot = TypeVar('TRoot')
 
 
+def sanitize_user_input(s: str) -> str:
+    return s.replace('\n', ' ').replace('\r', '')
+
+
 class AbstractSerializer(ABC, Generic[T, TRoot]):
     _settings: AbstractSettings
     _cryptograph: AbstractCryptograph

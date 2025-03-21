@@ -46,6 +46,7 @@ jobs:
       - name: Trigger e2e tests (external)
         run: |
           curl --version
+
   remote-pipeline:
     runs-on: ubuntu-22.04
     needs: run-tests
