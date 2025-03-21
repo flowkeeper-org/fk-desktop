@@ -74,37 +74,13 @@ jobs:
             ls -al build/
           fi
 
-      - name: Package builds (Nuitka), not macOS
-        if: ${{ matrix.compiler == 'nuitka' && !startsWith(matrix.os, 'macOS') }}
+      - name: Package builds (Nuitka)
+        if: ${{ matrix.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
           script-name: src/fk/desktop/desktop.py
-          mode: onefile
-          enable-plugins: pyside6
-          windows-console-mode: disable
-          windows-icon-from-ico: res/flowkeeper.ico
-          macos-app-icon: flowkeeper.icns
-          macos-signed-app-name: org.flowkeeper.Flowkeeper
-          macos-app-name: Flowkeeper
-          macos-app-mode: gui
-          macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
-          macos-app-version: "${{ env.FK_VERSION }}"
-          product-name: Flowkeeper
-          product-version: "${{ env.FK_VERSION }}"
-          file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
-          copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
-          output-dir: 'build'
-          output-file: 'Flowkeeper'
-        env:
-          PYTHONPATH: src
-
-      - name: Package builds (Nuitka), macOS
-        if: ${{ matrix.compiler == 'nuitka' && startsWith(matrix.os, 'macOS') }}
-        uses: Nuitka/Nuitka-Action@main
-        with:
-          nuitka-version: main
-          script-name: src/fk/desktop/desktop.py
+          mode: ${{ startsWith(matrix.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
@@ -137,8 +113,6 @@ jobs:
           if [[ "${{ matrix.compiler}}" == "nuitka" ]]; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
-              ls -al build/
-              ls -al build/desktop.app/
               mv build/desktop.app dist/standalone/Flowkeeper.app
             else
               mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
@@ -150,7 +124,6 @@ jobs:
           else
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
-              ls -al build/Flowkeeper.app
               mv build/Flowkeeper.app dist/standalone
             else
               mv build/Flowkeeper${BINARY_EXTENSION} $PREFIX-portable${BINARY_EXTENSION}
@@ -158,8 +131,7 @@ jobs:
             fi
           fi
           echo "Moved ${{ matrix.compiler }} binaries to dist/standalone"
-          ls -al dist/
-          ls -al dist/standalone
+          tree dist/
           
           if [[ "$OSTYPE" == "darwin"* ]]; then
             echo "Building macOS DMG installer"
