@@ -84,7 +84,7 @@ jobs:
           fi
 
       - name: Package builds (Nuitka)
-        if: ${{ inputs.compiler == 'nuitka' && inputs.os != 'macos-13' && inputs.os != 'ububtu-20.04' }}
+        if: ${{ inputs.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
