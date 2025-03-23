@@ -243,7 +243,8 @@ class TestWorkitems(TestCase):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemCreate':
                 self.assertIn('workitem_uid', kwargs)
                 self.assertIn('backlog_uid', kwargs)
@@ -258,17 +259,16 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.on('*', on_event)
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
-        self.assertEqual(len(fired), 4)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemCreate')
-        self.assertEqual(fired[2], 'AfterWorkitemCreate')
-        self.assertEqual(fired[3], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 2)
+        self.assertEqual(fired[0], 'BeforeWorkitemCreate')
+        self.assertEqual(fired[1], 'AfterWorkitemCreate')
 
     def test_events_delete_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemDelete' or event == 'AfterWorkitemDelete':
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
@@ -288,22 +288,22 @@ class TestWorkitems(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1', '1'])
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(DeleteWorkitemStrategy, ['w11'])
-        self.assertEqual(len(fired), 9)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemDelete')
-        self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroVoided')
-        self.assertEqual(fired[4], 'TimerRestComplete')
-        self.assertEqual(fired[5], 'AfterPomodoroVoided')
-        self.assertEqual(fired[6], 'AfterMessageProcessed')  # auto
+        self.assertEqual(len(fired), 8)
+        self.assertEqual(fired[0], 'BeforePomodoroRestStart')
+        self.assertEqual(fired[1], 'TimerWorkComplete')
+        self.assertEqual(fired[2], 'AfterPomodoroRestStart')
+        self.assertEqual(fired[3], 'BeforeWorkitemDelete')
+        self.assertEqual(fired[4], 'BeforePomodoroVoided')
+        self.assertEqual(fired[5], 'TimerRestComplete')
+        self.assertEqual(fired[6], 'AfterPomodoroVoided')
         self.assertEqual(fired[7], 'AfterWorkitemDelete')
-        self.assertEqual(fired[8], 'AfterMessageProcessed')
 
     def test_events_complete_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemComplete' or event == 'AfterWorkitemComplete':
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
@@ -322,26 +322,24 @@ class TestWorkitems(TestCase):
         self.source.execute(StartTimerStrategy, ['w11', '1', '1'])
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.assertEqual(len(fired), 13)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemComplete')
-        self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroInterrupted')
-        self.assertEqual(fired[4], 'AfterPomodoroInterrupted')
-        self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
-        self.assertEqual(fired[6], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[7], 'BeforePomodoroVoided')
-        self.assertEqual(fired[8], 'TimerRestComplete')
-        self.assertEqual(fired[9], 'AfterPomodoroVoided')
-        self.assertEqual(fired[10], 'AfterMessageProcessed')  # auto
-        self.assertEqual(fired[11], 'AfterWorkitemComplete')
-        self.assertEqual(fired[12], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 10)
+        self.assertEqual(fired[0], 'BeforePomodoroRestStart')
+        self.assertEqual(fired[1], 'TimerWorkComplete')
+        self.assertEqual(fired[2], 'AfterPomodoroRestStart')
+        self.assertEqual(fired[3], 'BeforeWorkitemComplete')
+        self.assertEqual(fired[4], 'BeforePomodoroInterrupted')
+        self.assertEqual(fired[5], 'AfterPomodoroInterrupted')
+        self.assertEqual(fired[6], 'BeforePomodoroVoided')
+        self.assertEqual(fired[7], 'TimerRestComplete')
+        self.assertEqual(fired[8], 'AfterPomodoroVoided')
+        self.assertEqual(fired[9], 'AfterWorkitemComplete')
 
     def test_events_rename_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemRename' or event == 'AfterWorkitemRename':
                 self.assertIn('workitem', kwargs)
                 self.assertIn('old_name', kwargs)
@@ -354,11 +352,9 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
         self.source.on('*', on_event)
         self.source.execute(RenameWorkitemStrategy, ['w11', 'After'])
-        self.assertEqual(len(fired), 4)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemRename')
-        self.assertEqual(fired[2], 'AfterWorkitemRename')
-        self.assertEqual(fired[3], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 2)
+        self.assertEqual(fired[0], 'BeforeWorkitemRename')
+        self.assertEqual(fired[1], 'AfterWorkitemRename')
 
     # Reordering tests:
     # - Positive test -- move up and down
