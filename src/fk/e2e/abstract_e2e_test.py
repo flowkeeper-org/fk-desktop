@@ -37,8 +37,9 @@ from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.2  # seconds
 STARTUP_DURATION = 3  # seconds
-WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
-SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
+WINDOW_GALLERY_FILENAME = 'test-results/screenshots-window.html'
+WINDOW_BORDER_GALLERY_FILENAME = 'test-results/screenshots-window-border.html'
+FULLSCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ class AbstractE2eTest(ABC):
         self._app = app
         self._screenshot = None
         self._main_window = None
+        self._current_method = 'N/A'
         app.get_settings().set(self.custom_settings())
         self._initialized = False
         self._seq = self._get_test_cases()
@@ -334,9 +336,24 @@ class AbstractE2eTest(ABC):
         with open(WINDOW_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}-window.png" title="{name}">\n')
 
+        # Update window w/border gallery
+        if not os.path.isfile(WINDOW_BORDER_GALLERY_FILENAME):
+            with open(WINDOW_BORDER_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+                f.write('''
+                    <style>
+                    .screenshot {
+                        margin: 30px;
+                        width: 500px;
+                        height: auto;
+                    }
+                    </style>
+                ''')
+        with open(WINDOW_BORDER_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+            f.write(f'<img class="screenshot" src="{name}-window-border.png" title="{name}">\n')
+
         # Update screen gallery
-        if not os.path.isfile(SCREEN_GALLERY_FILENAME):
-            with open(SCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+        if not os.path.isfile(FULLSCREEN_GALLERY_FILENAME):
+            with open(FULLSCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
                 f.write('''
                     <style>
                     .screenshot {
@@ -347,7 +364,7 @@ class AbstractE2eTest(ABC):
                     }
                     </style>
                 ''')
-        with open(SCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+        with open(FULLSCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}-full.png" title="{name}">\n')
 
     def center_window(self):

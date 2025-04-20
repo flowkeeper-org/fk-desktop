@@ -101,8 +101,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         if 'Application.table_row_height' in new_values:
             self._update_row_height()
 
-    def _update_row_height(self):
-        self._row_height = int(self._actions.get_settings().get('Application.table_row_height'))
+    def _update_row_height(self, new_height: int):
+        self._row_height = new_height
         self.verticalHeader().setDefaultSectionSize(self._row_height)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:

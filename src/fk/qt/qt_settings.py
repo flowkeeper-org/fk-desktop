@@ -142,8 +142,8 @@ class QtSettings(AbstractSettings):
                         keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
                     else:
                         logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
+                self._emit(events.AfterSettingsChanged, params)
             invoke_in_main_thread(set_settings)
-            self._emit(events.AfterSettingsChanged, params)
 
     def load_secret(self) -> dict[str, str]:
         json_str = keyring.get_password(self._app_name, SECRET_NAME)

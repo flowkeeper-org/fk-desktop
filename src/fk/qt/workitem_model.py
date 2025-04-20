@@ -180,19 +180,19 @@ class WorkitemModel(AbstractDropModel):
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog_or_tag = None
-        self._hide_completed = (source_holder.get_settings().get('Application.hide_completed') == 'True')
-        self._update_row_height()
+        settings = source_holder.get_settings()
+        self._hide_completed = (settings.get('Application.hide_completed') == 'True')
+        self._update_row_height(int(settings.get('Application.table_row_height')))
         self.itemChanged.connect(lambda item: self.handle_rename(item, RenameWorkitemStrategy))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.table_row_height' in new_values:
-            self._update_row_height()
+            self._update_row_height(int(new_values["Application.table_row_height"]))
 
-    def _update_row_height(self):
-        rh = int(self._source_holder.get_settings().get('Application.table_row_height'))
-        self._row_height = rh
+    def _update_row_height(self, new_height: int):
+        self._row_height = new_height
         # TODO: Updating existing rows doesn't work.
         #  The right way to do it is by using QStandardItem subclass, like we do for BacklogModel
         # for i in range(self.rowCount()):

@@ -11,7 +11,8 @@ from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.timer_strategies import StartTimerStrategy, StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
-from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
+from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, FULLSCREEN_GALLERY_FILENAME, \
+    WINDOW_BORDER_GALLERY_FILENAME
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -29,8 +30,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
     def setup(self) -> None:
         if os.path.isfile(WINDOW_GALLERY_FILENAME):
             os.unlink(WINDOW_GALLERY_FILENAME)
-        if os.path.isfile(SCREEN_GALLERY_FILENAME):
-            os.unlink(SCREEN_GALLERY_FILENAME)
+        if os.path.isfile(WINDOW_BORDER_GALLERY_FILENAME):
+            os.unlink(WINDOW_BORDER_GALLERY_FILENAME)
+        if os.path.isfile(FULLSCREEN_GALLERY_FILENAME):
+            os.unlink(FULLSCREEN_GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
         custom = {
