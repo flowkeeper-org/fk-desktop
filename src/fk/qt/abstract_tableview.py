@@ -89,7 +89,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.setAcceptDrops(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
 
-        self._update_row_height()
+        self._update_row_height(int(self._actions.get_settings().get('Application.table_row_height')))
 
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
@@ -99,7 +99,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.table_row_height' in new_values:
-            self._update_row_height()
+            self._update_row_height(int(new_values["Application.table_row_height"]))
 
     def _update_row_height(self, new_height: int):
         self._row_height = new_height
