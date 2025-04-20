@@ -155,6 +155,10 @@ def recreate_tray_icon() -> None:
 def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
     status.showMessage('Settings changed')
+
+    backlogs_visible = None
+    users_visible = None
+
     for name in new_values.keys():
         new_value = new_values[name]
         if name == 'Application.show_main_menu':
@@ -170,9 +174,18 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.always_on_top':
             pin_if_needed()
         elif name == 'Application.focus_flavor':
-            focus_widget.set_flavor(settings.get('Application.focus_flavor'))
+            focus_widget.set_flavor(new_value)
         elif name == 'Application.tray_icon_flavor':
             recreate_tray_icon()
+        elif name == 'Application.backlogs_visible':
+            backlogs_visible = new_value == 'True'
+            backlogs_widget.setVisible(backlogs_visible)
+        elif name == 'Application.users_visible':
+            users_visible = new_value == 'True'
+            users_table.setVisible(users_visible)
+
+    if backlogs_visible is not None or users_visible is not None:
+        left_table_layout.setVisible((users_visible is not None and users_visible) or (backlogs_visible is not None and backlogs_visible))
 
 
 class MainWindow:
@@ -226,11 +239,9 @@ class MainWindow:
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
-        update_tables_visibility()
 
     def toggle_users(self, enabled):
         settings.set({'Application.users_visible': str(enabled)})
-        update_tables_visibility()
 
     @staticmethod
     def define_actions(actions: Actions):
