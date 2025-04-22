@@ -37,11 +37,11 @@ class Actions:
         self._domains = dict()
         self._actions = dict()
         self._settings = settings
-        self.update_from_settings()
+        self.update_from_settings(settings.get('Application.shortcuts'))
         Actions.ALL = self
 
-    def update_from_settings(self):
-        self._shortcuts = json.loads(self._settings.get('Application.shortcuts'))
+    def update_from_settings(self, serialized: str):
+        self._shortcuts = json.loads(serialized)
         for a in self._actions.keys():
             if a in self._shortcuts:
                 action = self._actions[a]

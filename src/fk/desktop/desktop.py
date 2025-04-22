@@ -60,11 +60,11 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
-def pin_if_needed():
+def pin_if_needed(always_on_top_setting: str):
     window_was_visible = window.isVisible()
     focus_window_was_visible = focus_window.isVisible()
 
-    is_pinned = settings.get('Application.always_on_top') == 'True'
+    is_pinned = always_on_top_setting == 'True'
     # Adding Qt.WindowType.WindowCloseButtonHint explicitly to fix #77
     window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
                           window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
@@ -136,12 +136,11 @@ def update_mode(timer_ticking: bool) -> None:
                 raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
 
-def recreate_tray_icon() -> None:
+def recreate_tray_icon(flavor: str, show_tray_icon_setting: str) -> None:
     global tray
     if tray is not None:
         tray.kill()
         tray.setVisible(False)
-    flavor = settings.get('Application.tray_icon_flavor')
     tray = TrayIcon(window,
                     pomodoro_timer,
                     app.get_source_holder(),
@@ -149,10 +148,10 @@ def recreate_tray_icon() -> None:
                     48,
                     MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
                     'dark' in flavor)
-    tray.setVisible(settings.get('Application.show_tray_icon') == 'True')
+    tray.setVisible(show_tray_icon_setting == 'True')
 
 
-def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
+def on_settings_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
     status.showMessage('Settings changed')
 
@@ -170,13 +169,15 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.show_tray_icon':
             tray.setVisible(new_value == 'True')
         elif name == 'Application.shortcuts':
-            actions.update_from_settings()
+            actions.update_from_settings(new_value)
         elif name == 'Application.always_on_top':
-            pin_if_needed()
+            pin_if_needed(new_value)
         elif name == 'Application.focus_flavor':
             focus_widget.set_flavor(new_value)
         elif name == 'Application.tray_icon_flavor':
-            recreate_tray_icon()
+            recreate_tray_icon(new_value,
+                               new_values.get('Application.show_tray_icon',
+                                              settings.get('Application.show_tray_icon')))
         elif name == 'Application.backlogs_visible':
             backlogs_visible = new_value == 'True'
             backlogs_widget.setVisible(backlogs_visible)
@@ -281,7 +282,7 @@ if __name__ == "__main__":
         settings = app.get_settings()
 
         logger.debug(f'UI thread: {threading.get_ident()}')
-        settings.on(events.AfterSettingsChanged, on_setting_changed)
+        settings.on(events.AfterSettingsChanged, on_settings_changed)
 
         def _on_workitem_complete(workitem: Workitem, timer: TimerData):
             if timer.get_running_workitem() == workitem:
@@ -468,7 +469,7 @@ if __name__ == "__main__":
 
         # Tray icon
         tray: TrayIcon | None = None
-        recreate_tray_icon()
+        recreate_tray_icon(settings.get('Application.tray_icon_flavor'), settings.get('Application.show_tray_icon'))
 
         # Some global variables to support "Next pomodoro" mode
         # TODO Empty it if it gets deleted or completed
@@ -518,7 +519,7 @@ if __name__ == "__main__":
         actions.bind('focus', focus_widget)
         actions.bind('window', main_window)
 
-        pin_if_needed()
+        pin_if_needed(settings.get('Application.always_on_top'))
 
         tutorial: Tutorial = None
 

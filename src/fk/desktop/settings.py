@@ -285,9 +285,9 @@ class SettingsDialog(QDialog):
             ed6.setCurrentIndex(found)
 
             def find_item(name: str) -> int:
-                for i in range(data_model6.rowCount()):
-                    if data_model6.index(i).data(500) == name:
-                        return i
+                for j in range(data_model6.rowCount()):
+                    if data_model6.index(j, 0).data(500) == name:
+                        return j
 
             ed6.currentIndexChanged.connect(lambda v: self._on_value_changed(
                 option_id,
@@ -296,14 +296,13 @@ class SettingsDialog(QDialog):
             self._widgets_get_value[option_id] = lambda: ed6.currentData(500)
             self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(find_item(txt))
             return [ed6]
-        elif option_type == 'font' and platform.system() in ('Darwin', 'Linux'):
-            is_mac = platform.system() == 'Darwin'
-            system_font = '.AppleSystemUIFont' if is_mac else 'Sans Serif'
+        elif option_type == 'font' and platform.system() == 'Darwin':
+            system_font = '.AppleSystemUIFont'
             widget = QWidget(parent)
             layout = QVBoxLayout(widget)
             layout.setContentsMargins(0, 6, 0, 0)
 
-            ed7_checkbox = QCheckBox(f'Use {"macOS" if is_mac else "Qt"} system font', parent)
+            ed7_checkbox = QCheckBox(f'Use macOS system font', parent)
             layout.addWidget(ed7_checkbox)
             ed7_font = QFontComboBox(parent)
             layout.addWidget(ed7_font)
