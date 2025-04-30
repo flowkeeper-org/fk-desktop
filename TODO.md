@@ -18,7 +18,7 @@
 2. "standalone" directory in ZIPs 
 3. Sign binaries in standalone ZIPs and repack
 
-## Linx binaries
+## Linux binaries
 
 ### AppImage
 
@@ -26,3 +26,6 @@
 
 ## macOS binaries
 
+1. On Ventura 13 / x86 and ARM, both Nuitka and PyInstaller -- no signature
+2. "Too many values to unpack" when launching Settings, even after settings reset
+3. No sound for Nuitka, same as Windows
