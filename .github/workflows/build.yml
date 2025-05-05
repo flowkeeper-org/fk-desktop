@@ -45,6 +45,10 @@ jobs:
             export BINARY_EXTENSION=""
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
           elif [[ "$OSTYPE" == "msys" ]]; then
+            # Disable Defender for the workspace directory
+            echo "Will disable Defender"
+            echo "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath $(cmd //c cd)"
+            powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath "$(cmd //c cd)"
             scripts/windows/install-innosetup.sh
             export BINARY_EXTENSION=".exe"
             echo "BINARY_EXTENSION=.exe" >> $GITHUB_ENV
