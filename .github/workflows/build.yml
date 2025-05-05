@@ -91,6 +91,7 @@ jobs:
           script-name: src/fk/desktop/desktop.py
           mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
+          include-qt-plugins: multimedia
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
           macos-app-icon: flowkeeper.icns
