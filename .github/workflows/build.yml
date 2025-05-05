@@ -89,7 +89,7 @@ jobs:
 
       - name: Package builds (Nuitka)
         if: ${{ inputs.compiler == 'nuitka' }}
-        uses: Nuitka/Nuitka-Action@v1.2
+        uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: "2.6.8"
           script-name: src/fk/desktop/desktop.py
