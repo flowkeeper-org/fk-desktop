@@ -14,12 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
         compiler: [nuitka, pyinstaller]
         exclude:
           - os: macos-13
-            compiler: nuitka
-          - os: ubuntu-20.04
             compiler: nuitka
     uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
     with:
@@ -32,12 +30,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
         compiler: [nuitka, pyinstaller]
         exclude:
           - os: macos-13
-            compiler: nuitka
-          - os: ubuntu-20.04
             compiler: nuitka
     runs-on: ubuntu-latest
     steps:
