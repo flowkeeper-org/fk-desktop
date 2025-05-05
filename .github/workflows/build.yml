@@ -91,7 +91,7 @@ jobs:
         if: ${{ inputs.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
         with:
-          nuitka-version: "2.7"
+          nuitka-version: "2.6.8"
           script-name: src/fk/desktop/desktop.py
           mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
