@@ -58,7 +58,7 @@ jobs:
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
           fi
           pip install -r requirements.txt
-          
+
           if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
             pip install nuitka
           else
@@ -123,7 +123,7 @@ jobs:
           mkdir -p dist/standalone
           PREFIX="dist/flowkeeper-${FK_VERSION}-${{ inputs.os }}-${{ inputs.compiler }}"
           echo "Will create artifacts with $PREFIX prefix"
-          
+
           if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
@@ -146,7 +146,7 @@ jobs:
           fi
           echo "Moved ${{ inputs.compiler }} binaries to dist/standalone"
           find dist/
-          
+
           if [[ "$OSTYPE" == "darwin"* ]]; then
             echo "Building macOS DMG installer"
             scripts/macos/create-dmg.sh
@@ -175,12 +175,12 @@ jobs:
           cd dist/standalone
           if [[ "$OSTYPE" == "msys" ]]; then
             echo "No zip on Windows"
-            powershell Compress-Archive . ../../$PREFIX-standalone.zip
+            powershell Compress-Archive ./* ../../$PREFIX-standalone.zip
           else
             zip -9 -r "../../$PREFIX-standalone.zip" ./*
           fi
           cd ../..
-          
+
           echo "Cleaning /dist up"
           rm -rf dist/standalone
 
