@@ -17,7 +17,7 @@ import logging
 import sys
 import threading
 
-from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6 import QtCore, QtWidgets, QtUiTools
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
@@ -539,6 +539,7 @@ if __name__ == "__main__":
         if app.is_e2e_mode():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
+            from PySide6 import QtAsyncio
             QtAsyncio.run()
         else:
             if '--reset' in app.arguments():
