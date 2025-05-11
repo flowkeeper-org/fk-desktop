@@ -36,6 +36,7 @@ Technical improvements:
 - Flowkeeper binaries are now built using Nuitka, which is more efficient and has better tolerance to Windows
 Defender (#114).
 - Madelene music composition changed its format from mp3 to m4a/aac.
+- Removed support for Ubuntu 20.04, as GitHub Actions deprecated it.
 
 Bug fixes:
 

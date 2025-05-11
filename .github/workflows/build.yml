@@ -45,6 +45,10 @@ jobs:
             export BINARY_EXTENSION=""
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
           elif [[ "$OSTYPE" == "msys" ]]; then
+            # Disable Defender for the workspace directory
+            echo "Will disable Defender"
+            echo "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath $(cmd //c cd)"
+            powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath "$(cmd //c cd)"
             scripts/windows/install-innosetup.sh
             export BINARY_EXTENSION=".exe"
             echo "BINARY_EXTENSION=.exe" >> $GITHUB_ENV
@@ -87,10 +91,11 @@ jobs:
         if: ${{ inputs.compiler == 'nuitka' }}
         uses: Nuitka/Nuitka-Action@main
         with:
-          nuitka-version: main
+          nuitka-version: "2.6.8"
           script-name: src/fk/desktop/desktop.py
           mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
+          include-qt-plugins: multimedia
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
           macos-app-icon: flowkeeper.icns
