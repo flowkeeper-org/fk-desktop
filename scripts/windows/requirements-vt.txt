@@ -1,0 +1,3 @@
+-r requirements-run.txt
+pyinstaller
+vt-py
