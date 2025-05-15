@@ -1,0 +1,30 @@
+name: Notify
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        required: true
+        default: 'Hello, World!'
+        type: string
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binaries
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "${{ inputs.text }}"
+      - name: Post message
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "${{ inputs.text }}"

@@ -38,7 +38,7 @@ async def upload_hashes(queue, apikey):
             file_path = await queue.get()
             with open(file_path, 'rb') as f:
                 analysis = await client.scan_file_async(file=f)
-                print(f"File {file_path} uploaded.")
+                # print(f"File {file_path} uploaded.")
                 queue.task_done()
                 return_values.append((analysis, file_path))
 
@@ -50,17 +50,17 @@ async def process_analysis_results(apikey, analysis, file_path):
         completed_analysis = await client.wait_for_analysis_completion(analysis)
         detected = list()
         # See https://docs.virustotal.com/reference/analyses-object
-        print(f"{file_path}: {completed_analysis.stats}")
-        print(f"analysis id: {completed_analysis.id}")
         results = completed_analysis.results
-        print(f"results: {results}")
+        # print(f"{file_path}: {completed_analysis.stats}")
+        # print(f"analysis id: {completed_analysis.id}")
+        # print(f"results: {results}")
         for engine in results:
             result = results[engine]
             # See https://virustotal.github.io/vt-py/_modules/vt/object.html
             if result['category'] == 'malicious':
                 detected.append(f' - {engine}: {result["category"]} - {result["result"]}')
-        overall = 'Positive detections:\n' if len(detected) > 0 else 'Clean.'
-
+        overall = (f'Detected malware:\n' + "\n".join(detected)) if len(detected) > 0 else 'Clean.'
+        print(f'Analyzed {file_path} - {overall}\n')
 
 
 async def main(key: str, path: str):
