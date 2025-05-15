@@ -1,4 +1,4 @@
-name: Notify
+name: Scan release
 
 on:
   workflow_dispatch:
