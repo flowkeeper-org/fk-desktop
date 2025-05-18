@@ -46,6 +46,8 @@ for f in "$OUTPUT"/*.zip; do
   unzip -p "$f" "Flowkeeper.exe" > "${f/zip/exe}"
 done
 
+echo "Cleanup..."
+rm -rf "$OUTPUT"/*.zip
+
 echo "Done. Extracted all:"
 ls -al "$OUTPUT"
-
