@@ -43,7 +43,7 @@ ls -al "$OUTPUT"
 echo "Unpacking standalone ZIPs"
 for f in "$OUTPUT"/*.zip; do
   echo "Unpacking $f..."
-  unzip -p "$OUTPUT/$f" "Flowkeeper.exe" > "$OUTPUT/$f.exe"
+  unzip -p "$f" "Flowkeeper.exe" > "${f/zip/exe}"
 done
 
 echo "Done. Extracted all:"
