@@ -33,7 +33,11 @@ jobs:
           pip install vt-py
           SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/flowkeeper-0.10.0-windows-2025-pyinstaller-standalone.exe)
           echo "$SCAN_STATUS"
-          echo "SCAN_STATUS=$(SCAN_STATUS)" >> $GITHUB_ENV
+          {
+            echo 'SCAN_STATUS<<EOF'
+            echo "$SCAN_STATUS"
+            echo EOF
+          } >> $GITHUB_ENV
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:
