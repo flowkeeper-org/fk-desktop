@@ -27,6 +27,8 @@ jobs:
           python-version: '3.11'
       - name: Scan binaries
         shell: bash
+        env:
+          VTCLI_APIKEY: ${{ secrets.VTCLI_APIKEY }}
         run: |
           pip install vt-py
           SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/flowkeeper-0.10.0-windows-2025-pyinstaller-standalone.exe)
