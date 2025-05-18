@@ -13,44 +13,18 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Download binaries
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ inputs.release }}
-        run: |
-          if [ -z "$RELEASE" ]; then
-              echo "Fetching the latest release..."
-              echo Getting the latest release...
-              RELEASE=$(gh release list --repo "$REPO" --json tagName,isPrerelease --jq ".[] | select(.isPrerelease) | .tagName")
-          else
-              echo "Release variable is specified"
-          fi
-
-          echo "Downloading binaries for release $RELEASE to $(pwd)"
-
-          REPO="flowkeeper-org/fk-desktop"
-          gh release download "$RELEASE" --clobber --dir . --pattern "*.exe" --repo "$REPO"
-          gh release download "$RELEASE" --clobber --dir . --pattern "*-windows-*-standalone.zip" --repo "$REPO"
-          echo "Done. Downloaded:"
-          ls -al
-
-          echo "Unpacking standalone ZIPs"
-          for f in ./*.zip; do
-            echo "Unpacking $f..."
-            unzip "$f" -d "$f-unzipped"
-            echo "Done. Unzipped:"
-            ls -al "$f-unzipped"
-          done
-
-          echo "Done. Extracted all:"
-          ls -al
-
+        run: scripts/common/download-release.sh
       - name: Scan binaries
         shell: bash
         run: |
           echo "SCAN_STATUS=$(ls -al)" >> $GITHUB_ENV
-
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:
