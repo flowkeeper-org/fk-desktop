@@ -20,6 +20,11 @@
 
 set -e
 
+REPO="flowkeeper-org/fk-desktop"
+OUTPUT="downloads"
+
+mkdir -p "$OUTPUT"
+
 if [ -z "$RELEASE" ]; then
     echo "Fetching the latest release..."
     echo Getting the latest release...
@@ -30,20 +35,19 @@ fi
 
 echo "Downloading binaries for release $RELEASE to $(pwd)"
 
-REPO="flowkeeper-org/fk-desktop"
-gh release download "$RELEASE" --clobber --dir . --pattern "*.exe" --repo "$REPO"
-gh release download "$RELEASE" --clobber --dir . --pattern "*-windows-*-standalone.zip" --repo "$REPO"
+gh release download "$RELEASE" --clobber --dir "$OUTPUT" --pattern "*.exe" --repo "$REPO"
+gh release download "$RELEASE" --clobber --dir "$OUTPUT" --pattern "*-windows-*-standalone.zip" --repo "$REPO"
 echo "Done. Downloaded:"
-ls -al
+ls -al "$OUTPUT"
 
 echo "Unpacking standalone ZIPs"
-for f in ./*.zip; do
+for f in "$OUTPUT"/*.zip; do
   echo "Unpacking $f..."
-  unzip "$f" -d "$f-unzipped"
+  unzip "$f" -d "$OUTPUT/$f-unzipped"
   echo "Done. Unzipped:"
-  ls -al "$f-unzipped"
+  ls -al "$OUTPUT/$f-unzipped"
 done
 
 echo "Done. Extracted all:"
-ls -al
+ls -al "$OUTPUT"
 
