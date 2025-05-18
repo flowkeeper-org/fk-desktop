@@ -15,9 +15,10 @@ jobs:
     steps:
       - name: Download binaries
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
         run: |
-          RELEASE="${{ inputs.release }}"
-
           if [ -z "$RELEASE" ]; then
               echo "Fetching the latest release..."
               echo Getting the latest release...
