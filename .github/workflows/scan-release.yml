@@ -31,7 +31,7 @@ jobs:
           VTCLI_APIKEY: ${{ secrets.VTCLI_APIKEY }}
         run: |
           pip install vt-py
-          SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/flowkeeper-0.10.0-windows-2025-pyinstaller-standalone.exe)
+          SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/*.exe)
           echo "$SCAN_STATUS"
           {
             echo 'SCAN_STATUS<<EOF'
