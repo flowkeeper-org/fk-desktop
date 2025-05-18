@@ -3,9 +3,10 @@ name: Scan release
 on:
   workflow_dispatch:
     inputs:
-      text:
-        required: true
-        default: 'Hello, World!'
+      release:
+        description: 'Release to scan, e.g. v0.10.0. Empty means latest.'
+        required: false
+        default: ''
         type: string
 
 jobs:
@@ -13,13 +14,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download binaries
-        uses: slackapi/slack-github-action@v2.0.0
-        with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "${{ inputs.text }}"
+        shell: bash
+        run: |
+          RELEASE="${{ inputs.release }}"
+
+          if [ -z "$RELEASE" ]; then
+              echo "Fetching the latest release..."
+              echo Getting the latest release...
+              RELEASE=$(gh release list --repo "$REPO" --json tagName,isPrerelease --jq ".[] | select(.isPrerelease) | .tagName")
+          else
+              echo "Release variable is specified"
+          fi
+
+          echo "Downloading binaries for release $RELEASE to $(pwd)"
+
+          REPO="flowkeeper-org/fk-desktop"
+          gh release download "$RELEASE" --clobber --dir . --pattern "*.exe" --repo "$REPO"
+          gh release download "$RELEASE" --clobber --dir . --pattern "*-windows-*-standalone.zip" --repo "$REPO"
+          echo "Done. Downloaded:"
+          ls -al
+
+          echo "Unpacking standalone ZIPs"
+          for f in ./*.zip; do
+            echo "Unpacking $f..."
+            unzip "$f" -d "$f-unzipped"
+            echo "Done. Unzipped:"
+            ls -al "$f-unzipped"
+          done
+
+          echo "Done. Extracted all:"
+          ls -al
+
+      - name: Scan binaries
+        shell: bash
+        run: |
+          echo "SCAN_STATUS=$(ls -al)" >> $GITHUB_ENV
+
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:
@@ -27,4 +57,4 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "${{ inputs.text }}"
+            text: "Downloaded and extracted all necessary binaries:\n${{ env.SCAN_STATUS }}"
