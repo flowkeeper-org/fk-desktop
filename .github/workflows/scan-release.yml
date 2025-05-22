@@ -45,4 +45,4 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "Downloaded and extracted all necessary binaries:\n${{ env.SCAN_STATUS }}"
+            text: "${{ env.SCAN_STATUS }}"

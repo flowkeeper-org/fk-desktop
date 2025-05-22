@@ -21,9 +21,8 @@ import sys
 import vt
 
 
-async def get_files_to_upload(queue, path):
+async def get_files_to_upload(queue, files: list[str]):
     """Finds which files will be uploaded to VirusTotal."""
-    files = path.split(',')
     for f in files:
         await queue.put(f)
     return len(files)
@@ -58,14 +57,14 @@ async def process_analysis_results(apikey, analysis, file_path):
             result = results[engine]
             # See https://virustotal.github.io/vt-py/_modules/vt/object.html
             if result['category'] == 'malicious':
-                detected.append(f' - {engine}: {result["category"]} - {result["result"]}')
+                detected.append(f'- *{engine}*: {result["result"]}')
         overall = (f'Detected malware:\n' + "\n".join(detected)) if len(detected) > 0 else 'Clean.'
         print(f'Analyzed {file_path} - {overall}\n')
 
 
-async def main(key: str, path: str):
+async def main(key: str, paths: list[str]):
     queue = asyncio.Queue()
-    n_files = await get_files_to_upload(queue, path)
+    n_files = await get_files_to_upload(queue, paths)
 
     worker_tasks = []
     for _ in range(min(4, n_files)):
@@ -83,4 +82,4 @@ async def main(key: str, path: str):
 
 if __name__ == '__main__':
     env_key = os.environ.get('VTCLI_APIKEY')
-    asyncio.run(main(env_key, sys.argv[1]))
+    asyncio.run(main(env_key, sys.argv[1:]))
