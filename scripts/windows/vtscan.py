@@ -57,9 +57,9 @@ async def process_analysis_results(apikey, analysis, file_path):
             result = results[engine]
             # See https://virustotal.github.io/vt-py/_modules/vt/object.html
             if result['category'] == 'malicious':
-                detected.append(f'- *{engine}*: {result["result"]}')
-        overall = (f'Detected malware:\n' + "\n".join(detected)) if len(detected) > 0 else 'Clean.'
-        print(f'Analyzed {file_path} - {overall}\n')
+                detected.append(f'* *{engine}*: {result["result"]}')
+        overall = '\n'.join(detected) if len(detected) > 0 else '*Clean.*'
+        print(f'{file_path}: {overall}\n')
 
 
 async def main(key: str, paths: list[str]):
