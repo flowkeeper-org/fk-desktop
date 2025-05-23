@@ -47,7 +47,8 @@ jobs:
         with:
           name: vtscan-results
           path: |
-            vtscan-results.json
+            vtscan-results-all.json
+            vtscan-results-warnings.json
 
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
@@ -79,4 +80,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ inputs.release }}
-        run: scripts/common/upload-release.sh vtscan-results.json
+        run: scripts/common/upload-release.sh vtscan-results-all.json vtscan-results-warnings.json
