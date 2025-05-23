@@ -59,11 +59,15 @@ jobs:
             text: "${{ env.SCAN_STATUS }}"
 
   upload:
+    # Making it a standalone job to limit security its perimeter
     runs-on: ubuntu-latest
     needs: scan
     permissions:
       contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
