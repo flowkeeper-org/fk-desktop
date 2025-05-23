@@ -33,11 +33,18 @@ jobs:
           pip install vt-py
           SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/*.exe)
           echo "$SCAN_STATUS"
+          cat vtscan-results.json
           {
             echo 'SCAN_STATUS<<EOF'
             echo "$SCAN_STATUS"
             echo EOF
           } >> $GITHUB_ENV
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: vtscan-results
+          path: |
+            vtscan-results.json
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:

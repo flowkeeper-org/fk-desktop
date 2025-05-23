@@ -14,7 +14,9 @@
 """Shows how to upload files to VT using vt-py."""
 
 import asyncio
+import datetime
 import itertools
+import json
 import os
 import sys
 
@@ -44,8 +46,10 @@ async def upload_hashes(queue, apikey):
     return return_values
 
 
-async def process_analysis_results(apikey, analysis, file_path):
+async def process_analysis_results(apikey, analysis, file_path, output: dict[str, dict[str, dict[str, str]]]):
     async with vt.Client(apikey) as client:
+        to_add: dict[str, dict[str, str]] = dict()
+        output[file_path] = to_add
         completed_analysis = await client.wait_for_analysis_completion(analysis)
         detected = list()
         # See https://docs.virustotal.com/reference/analyses-object
@@ -56,8 +60,11 @@ async def process_analysis_results(apikey, analysis, file_path):
         for engine in results:
             result = results[engine]
             # See https://virustotal.github.io/vt-py/_modules/vt/object.html
+            to_add[engine] = {'type': result['category'],
+                              'details': result["result"],
+                              'date': datetime.datetime.now().isoformat()}
             if result['category'] == 'malicious':
-                detected.append(f'* *{engine}*: {result["result"]}')
+                detected.append(f'* *{engine}*: {result["result"]}\n')
         overall = '\n'.join(detected) if len(detected) > 0 else '*Clean.*'
         print(f'{file_path}: {overall}\n')
 
@@ -72,12 +79,16 @@ async def main(key: str, paths: list[str]):
 
     # Wait until all worker tasks has completed.
     analyses = itertools.chain.from_iterable(await asyncio.gather(*worker_tasks))
+    output = dict()
     await asyncio.gather(
         *[
-            asyncio.create_task(process_analysis_results(key, a, f))
+            asyncio.create_task(process_analysis_results(key, a, f, output))
             for a, f in analyses
         ]
     )
+
+    with open('vtscan-results.json', 'w') as f:
+        json.dump(output, f, indent=4)
 
 
 if __name__ == '__main__':
