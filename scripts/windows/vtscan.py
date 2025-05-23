@@ -75,7 +75,7 @@ async def process_analysis_results(apikey,
                 detected.append(f'* *{engine}*: {result["result"]}\n')
                 to_add_warn[engine] = j
         overall = '\n'.join(detected) if len(detected) > 0 else '*Clean.*'
-        print(f'{file_path}: {overall}\n')
+        print(f'{file_path}: {overall}\n\n')
 
 
 async def main(key: str, paths: list[str]):
