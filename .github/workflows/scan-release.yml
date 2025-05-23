@@ -42,13 +42,6 @@ jobs:
             echo EOF
           } >> $GITHUB_ENV
 
-      - name: Upload scan results back to release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE: ${{ inputs.release }}
-        run: scripts/common/upload-release.sh vtscan-results.json
-
       - name: Save scan results as an artifact
         uses: actions/upload-artifact@v4
         with:
@@ -64,3 +57,22 @@ jobs:
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
             text: "${{ env.SCAN_STATUS }}"
+
+  upload:
+    runs-on: ubuntu-latest
+    needs: scan
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vtscan-results
+          path: .
+
+      - name: Upload scan results back to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
+        run: scripts/common/upload-release.sh vtscan-results.json
