@@ -49,6 +49,7 @@ async def upload_hashes(queue, apikey):
 async def process_analysis_results(apikey, analysis, file_path, output: dict[str, dict[str, dict[str, str]]]):
     async with vt.Client(apikey) as client:
         to_add: dict[str, dict[str, str]] = dict()
+        file_path = os.path.basename(file_path)
         output[file_path] = to_add
         completed_analysis = await client.wait_for_analysis_completion(analysis)
         detected = list()

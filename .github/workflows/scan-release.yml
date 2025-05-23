@@ -15,16 +15,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Download binaries
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ inputs.release }}
         run: scripts/common/download-release.sh
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Scan binaries
         shell: bash
         env:
@@ -33,18 +36,26 @@ jobs:
           pip install vt-py
           SCAN_STATUS=$(python3 scripts/windows/vtscan.py downloads/*.exe)
           echo "$SCAN_STATUS"
-          cat vtscan-results.json
           {
             echo 'SCAN_STATUS<<EOF'
             echo "$SCAN_STATUS"
             echo EOF
           } >> $GITHUB_ENV
-      - name: Upload scan results
+
+      - name: Upload scan results back to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
+        run: scripts/common/upload-release.sh vtscan-results.json
+
+      - name: Save scan results as an artifact
         uses: actions/upload-artifact@v4
         with:
           name: vtscan-results
           path: |
             vtscan-results.json
+
       - name: Post message
         uses: slackapi/slack-github-action@v2.0.0
         with:
