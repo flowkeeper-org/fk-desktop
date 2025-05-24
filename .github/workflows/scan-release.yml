@@ -8,6 +8,18 @@ on:
         required: false
         default: ''
         type: string
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+    secrets:
+      VTCLI_APIKEY:
+        required: true
+      SLACK_BOT_TOKEN:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: true
 
 jobs:
   scan:
