@@ -10,8 +10,10 @@ on:
         type: string
   workflow_call:
     inputs:
-      os:
+      release:
+        description: 'Release to scan, e.g. v0.10.0. Empty means latest.'
         required: true
+        default: ''
         type: string
     secrets:
       VTCLI_APIKEY:
