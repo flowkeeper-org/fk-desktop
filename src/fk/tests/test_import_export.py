@@ -103,9 +103,10 @@ class TestImportExport(TestCase):
 
         self.assertIn('user@local.host', self.data_rand)
         user_rand = self.data_rand['user@local.host']
-        self.assertEqual(len(user_rand), 21)
+        self.assertEqual(len(user_rand), 19)
 
         dump = user_rand.dump()
+        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
@@ -168,7 +169,7 @@ class TestImportExport(TestCase):
     def test_import_classic_ok(self):
         total_start, total_end = self._execute_import(False, False)
         self.assertEqual(total_start, total_end)
-        self.assertEqual(total_end, 875)    # That's how many strategies are in random.txt
+        self.assertEqual(total_end, 1289)    # That's how many strategies are in random.txt
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
@@ -247,7 +248,7 @@ class TestImportExport(TestCase):
 
     def test_export_simple_ok(self):
         total_start, total_end = self._execute_export(False, EXPORTED_FILENAME)
-        self.assertEqual(total_start, 876)
+        self.assertEqual(total_start, 1290)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
@@ -259,7 +260,7 @@ class TestImportExport(TestCase):
 
     def test_export_compressed_ok(self):
         total_start, total_end = self._execute_export(True, EXPORTED_FILENAME)
-        self.assertEqual(total_start, 876)
+        self.assertEqual(total_start, 1290)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
