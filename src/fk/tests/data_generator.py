@@ -19,15 +19,16 @@ from typing import Iterable
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.backlog_strategies import CreateBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
-from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy, RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import ADMIN_USER
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.user_strategies import CreateUserStrategy
-from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy, DeleteWorkitemStrategy, \
+    RenameWorkitemStrategy
 from fk.tests.test_utils import one_of, shuffle, randint, rand_normal, random
 
 PROJECTS = ['#Alpha', '#Beta', '#Gamma', '#Delta', '#Omega']
@@ -43,6 +44,10 @@ NOUNS = ['screenshot', 'bug', 'code', 'function', 'website',
 
 def lorem_ipsum() -> str:
     return f'{one_of(VERBS)} {one_of(NOUNS)} for {one_of(PROJECTS)}'
+
+
+def lorem_ipsum_backlog() -> str:
+    return f'Template for {one_of(PROJECTS)}'
 
 
 def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
@@ -75,7 +80,9 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                     [backlog_uid, backlog_name],
                                     settings)
 
-        pomodoros = list[str]()
+        pomodoros = list[tuple[str, str]]()
+        incomplete_workitems = set[str]()
+
         for w in range(rand_normal(1, 10)):
             seq += 1
             now += datetime.timedelta(seconds=rand_normal(1, 60))
@@ -85,32 +92,128 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                          user,
                                          [workitem_uid, backlog_uid, lorem_ipsum()],
                                          settings)
+            incomplete_workitems.add(workitem_uid)
 
-            for p in range(rand_normal(0, 4)):
+            if randint(0, 10) > 6:
+                # This *will be* a tracker pomodoro. AddPomodoro will be called later.
+                for _ in range(rand_normal(0, 8)):
+                    pomodoros.append((workitem_uid, 'tracker'))
+            else:
+                # Normal pomodoro
+                for _ in range(rand_normal(0, 4)):
+                    seq += 1
+                    now += datetime.timedelta(seconds=rand_normal(1, 10))
+                    pomodoros.append((workitem_uid, 'normal'))
+                    yield AddPomodoroStrategy(seq,
+                                              now,
+                                              user,
+                                              [workitem_uid, '1', 'normal'],
+                                              settings)
+
+        completed_in_series = 0
+        shuffle(pomodoros)
+
+        while len(pomodoros) > 0:
+            workitem_uid, pomodoro_type = pomodoros.pop()
+
+            choice = randint(1, 10)
+            if choice < 2:
+                continue    # Ignore it
+            elif choice < 3 and pomodoro_type == 'normal':
+                # Remove it
                 seq += 1
-                now += datetime.timedelta(seconds=rand_normal(1, 10))
-                pomodoros.append(workitem_uid)
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                yield RemovePomodoroStrategy(seq,
+                                             now,
+                                             user,
+                                             [workitem_uid, '1'],
+                                             settings)
+                continue
+
+            if random() < 0.2:
+                # Rename workitem
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                yield RenameWorkitemStrategy(seq,
+                                             now,
+                                             user,
+                                             [workitem_uid, lorem_ipsum()],
+                                             settings)
+
+            if random() < 0.01:
+                # Rename backlog
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                yield RenameBacklogStrategy(seq,
+                                            now,
+                                            user,
+                                            [backlog_uid, lorem_ipsum_backlog()],
+                                            settings)
+
+            if random() < 0.01:
+                # Delete backlog
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                yield DeleteBacklogStrategy(seq,
+                                            now,
+                                            user,
+                                            [backlog_uid],
+                                            settings)
+                incomplete_workitems.clear()
+                break
+
+            # Else, start it and...
+            seq += 1
+            now += datetime.timedelta(seconds=rand_normal(1, 120))
+
+            if pomodoro_type == 'tracker':
+                # That's what the GUI does for trackers -- it creates a pomodoro right before starting it
                 yield AddPomodoroStrategy(seq,
                                           now,
                                           user,
-                                          [workitem_uid, '1'],
+                                          [workitem_uid, '1', 'tracker'],
                                           settings)
-
-        shuffle(pomodoros)
-        for p in pomodoros:
-            choice = randint(1, 10)
-            if choice < 3:  # Ignore it
-                continue
-            else:
-                # Start it and...
                 seq += 1
-                now += datetime.timedelta(seconds=rand_normal(1, 120))
+                now += datetime.timedelta(seconds=0.01)
                 yield StartTimerStrategy(seq,
                                          now,
                                          user,
-                                         [p, '1500', '300'],
+                                         [workitem_uid],
                                          settings)
 
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 1200))
+                if random() < 0.05:
+                    yield CompleteWorkitemStrategy(seq,
+                                                   now,
+                                                   user,
+                                                   [workitem_uid, 'finished'],
+                                                   settings)
+                    incomplete_workitems.remove(workitem_uid)
+                    pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
+                elif random() < 0.05:
+                    yield DeleteWorkitemStrategy(seq,
+                                                now,
+                                                user,
+                                                [workitem_uid],
+                                                settings)
+                    incomplete_workitems.remove(workitem_uid)
+                    pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
+                else:
+                    yield StopTimerStrategy(seq,
+                                            now,
+                                            user,
+                                            [],
+                                            settings)
+            else:
+                # For normal pomodoros only
+                yield StartTimerStrategy(seq,
+                                         now,
+                                         user,
+                                         [workitem_uid, '1500', '300' if completed_in_series < 3 else '0'],
+                                         settings)
+
+                choice = randint(1, 10)
                 if choice < 3:  # Void it
                     seq += 1
                     now += datetime.timedelta(seconds=rand_normal(1, 1800))
@@ -118,7 +221,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                         yield AddInterruptionStrategy(seq,
                                                       now,
                                                       user,
-                                                      [p, 'Voided for a good reason', ''],
+                                                      [workitem_uid, 'Voided for a good reason', ''],
                                                       settings)
                         seq += 1
                     yield StopTimerStrategy(seq,
@@ -127,42 +230,81 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                             [],
                                             settings)
                 else:
-                    end = now + datetime.timedelta(seconds=1800)
+                    pomodoro_duration = 1500
+                    if completed_in_series < 3:
+                        pomodoro_duration += 300
+                    else:
+                        # Take a long break every 4 pomodoro
+                        pomodoro_duration += randint(1, 3600)
                     if choice < 5:  # Add an interruption
                         seq += 1
-                        after = rand_normal(1, 1800)
+                        after = rand_normal(1, pomodoro_duration)
                         now += datetime.timedelta(seconds=after)
                         yield AddInterruptionStrategy(seq,
                                                       now,
                                                       user,
-                                                      [p,
+                                                      [workitem_uid,
                                                        'An interruption' if random() < 0.5 else '',
                                                        str(after / 2) if random() < 0.5 else ''],
                                                       settings)
-                    # Complete it -- just increment the timer, let it "finish"
-                    now = end
 
-                if choice > 8:
-                    seq += 1
-                    now += datetime.timedelta(seconds=rand_normal(1, 10))
-                    yield AddPomodoroStrategy(seq,
-                                              now,
-                                              user,
-                                              [p, '1'],
-                                              settings)
+                    if random() < 0.05:
+                        now += datetime.timedelta(seconds=randint(1, pomodoro_duration - 1))
+                        seq += 1
+                        yield CompleteWorkitemStrategy(seq,
+                                                       now,
+                                                       user,
+                                                       [workitem_uid, 'finished'],
+                                                       settings)
+                        incomplete_workitems.remove(workitem_uid)
+                        pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
+                    elif random() < 0.05:
+                        now += datetime.timedelta(seconds=randint(1, pomodoro_duration - 1))
+                        seq += 1
+                        yield DeleteWorkitemStrategy(seq,
+                                                     now,
+                                                     user,
+                                                     [workitem_uid],
+                                                     settings)
+                        incomplete_workitems.remove(workitem_uid)
+                        pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
+                    else:
+                        # Complete it -- just increment the timer, let it "finish"
+                        now += datetime.timedelta(seconds=pomodoro_duration)
+                        completed_in_series += 1
+                        if completed_in_series == 4:
+                            # We've just took a long break -- stop the timer and reset the series
+                            seq += 1
+                            yield StopTimerStrategy(seq,
+                                                    now,
+                                                    user,
+                                                    [],
+                                                    settings)
+                            completed_in_series = 0
 
-        for w in set(pomodoros):
+                        if choice > 8:
+                            seq += 1
+                            now += datetime.timedelta(seconds=rand_normal(1, 10))
+                            yield AddPomodoroStrategy(seq,
+                                                      now,
+                                                      user,
+                                                      [workitem_uid, '1', 'normal'],
+                                                      settings)
+                            pomodoros.append((workitem_uid, 'normal'))
+
+        for w in incomplete_workitems:
             choice = randint(1, 10)
             if choice < 4:  # Ignore it
                 continue
-            else:   # Complete it
-                seq += 1
-                now += datetime.timedelta(seconds=rand_normal(1, 120))
-                yield CompleteWorkitemStrategy(seq,
-                                               now,
-                                               user,
-                                               [w, 'finished'],
-                                               settings)
+
+            # Else complete it
+            seq += 1
+            now += datetime.timedelta(seconds=rand_normal(1, 120))
+            yield CompleteWorkitemStrategy(seq,
+                                           now,
+                                           user,
+                                           [w, 'finished'],
+                                           settings)
 
 
 if __name__ == '__main__':
