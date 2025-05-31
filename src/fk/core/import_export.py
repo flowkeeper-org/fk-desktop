@@ -28,7 +28,7 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro import POMODORO_TYPE_NORMAL
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag
@@ -95,17 +95,17 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                               [workitem.get_uid(), '1', pomodoro.get_type()],
                                               source.get_settings())
                     seq += 1
+
                     if pomodoro.is_finished():
-                        params = [workitem.get_uid(),
-                                  str(pomodoro.get_work_duration())]
-                        if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
-                            params.append(str(pomodoro.get_rest_duration()))
                         yield StartTimerStrategy(seq,
                                                  pomodoro.get_work_start_date(),
                                                  user.get_identity(),
-                                                 params,
+                                                 [workitem.get_uid(),
+                                                  str(pomodoro.get_work_duration()),
+                                                  str(pomodoro.get_rest_duration()) if pomodoro.get_type() == POMODORO_TYPE_NORMAL else ''],
                                                  source.get_settings())
                         seq += 1
+
                     for interruption in pomodoro.values():
                         if interruption.is_void():
                             yield StopTimerStrategy(seq, interruption.get_create_date(), user.get_identity(),
@@ -117,6 +117,17 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
                                                            interruption.get_reason() if interruption.get_reason() is not None else '',
                                                            str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
                                                           source.get_settings())
+                        seq += 1
+
+                    if pomodoro.is_finished():
+                        if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.get_rest_duration() == 0:
+                            # Long break or tracker -- both require explicit StopTimer. This has to be done *after*
+                            # any AddInterruption.
+                            yield StopTimerStrategy(seq,
+                                                    pomodoro.get_last_modified_date(),
+                                                    user.get_identity(),
+                                                    [],
+                                                    source.get_settings())
                         seq += 1
 
                 if workitem.is_sealed():
@@ -214,7 +225,7 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                      user.get_identity(),
                                                      [workitem.get_uid(),
                                                       str(p_new.get_work_duration()),
-                                                      str(p_new.get_rest_duration())],
+                                                      str(p_new.get_rest_duration()) if p_new.get_type() == POMODORO_TYPE_NORMAL else ''],
                                                      source.get_settings())
                             seq += 1
 
@@ -236,6 +247,17 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                                str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
                                                               source.get_settings())
                                 seq += 1
+
+                    if p_old.is_startable() and p_new.is_finished():
+                        if p_new.get_type() == POMODORO_TYPE_TRACKER or p_new.get_rest_duration() == 0:
+                            # Trackers and normal pomodoros with long breaks both require an explicit StopTimerStrategy
+                            # We have to do it *after* any AddInterruption.
+                            yield StopTimerStrategy(seq,
+                                                    p_new.get_last_modified_date(),
+                                                    user.get_identity(),
+                                                    [],
+                                                    source.get_settings())
+                            seq += 1
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):
                     yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),

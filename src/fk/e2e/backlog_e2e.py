@@ -12,8 +12,8 @@ from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
 TEMP_FILENAME = './backlog-e2e.txt'
-POMODORO_WORK_DURATION = 0.25  # seconds
-POMODORO_REST_DURATION = 0.25  # seconds
+POMODORO_WORK_DURATION = 2  # seconds
+POMODORO_REST_DURATION = 2  # seconds
 
 
 class BacklogE2eTest(AbstractE2eTest):
@@ -49,6 +49,10 @@ class BacklogE2eTest(AbstractE2eTest):
 
     async def _start_pomodoro(self) -> None:
         self.keypress(Qt.Key.Key_S, True)   # self.execute_action('workitems_table.startItem')
+        await self.instant_pause()
+
+    async def _finish_tracking(self) -> None:
+        self.execute_action('focus.finishTracking')
         await self.instant_pause()
 
     async def _wait_pomodoro_complete(self) -> None:
@@ -185,30 +189,30 @@ class BacklogE2eTest(AbstractE2eTest):
         ####################################
         self.info('Complete pomodoros and workitems')
         await self._find_workitem('Generate new screenshots')
-        await self._start_pomodoro()
+        await self._start_pomodoro()   # 1
         await self._wait_pomodoro_complete()
-        await self._start_pomodoro()
+        await self._start_pomodoro()   # 2
         await self._wait_pomodoro_complete()
         await self._add_pomodoro()
-        await self._start_pomodoro()
+        await self._start_pomodoro()   # 3
         await self._wait_pomodoro_complete()
-
         await self._find_workitem('Reply to Peter')
-        await self._start_pomodoro()
+        await self._start_pomodoro()   # 4
         await self._wait_pomodoro_complete()
+        await self._finish_tracking()   # Long break
         await self._add_pomodoro()
-        await self._start_pomodoro()
+        await self._start_pomodoro()    # 1
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
+        await self._void_pomodoro()     # 0
         await self._complete_workitem()
 
         await self._find_workitem('Slides for the demo')
-        await self._start_pomodoro()
+        await self._start_pomodoro()    # 1
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
-        await self._start_pomodoro()
+        await self._void_pomodoro()     # 0
+        await self._start_pomodoro()    # 1
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
+        await self._void_pomodoro()     # 0
         await self._complete_workitem()
 
         await self._find_workitem('Order coffee capsules')
