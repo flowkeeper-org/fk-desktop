@@ -1,4 +1,8 @@
-Constantine Kulak <https://github.com/co-stig>: Author and maintaner.
+Constantine Kulak <https://github.com/co-stig>: Flowkeeper author.
+
+Marco Sarti <marco@elogiclab.com>: AUR package maintainer.
+
+faveoled <https://github.com/faveoled>: Created the first Flatpak package for Flowkeeper, which we adopted.
 
 Flowkeeper is built using Qt Community Edition by The Qt Company <https://www.qt.io/licensing>.
 
@@ -40,3 +44,5 @@ The Windows installer is created using Inno Setup by Jordan Russell <https://jrs
 The Debian installer is created using dpkg-deb tool <https://www.apt-browse.org/browse/ubuntu/bionic/main/amd64/dpkg/1.19.0.5ubuntu2/file/usr/share/doc/dpkg/copyright>.
 
 The embedded font is Noto Sans, licensed under the SIL Open Font License, Version 1.1. Copyright 2022 The Noto Project Authors <https://github.com/notofonts/latin-greek-cyrillic>.
+
+Linux package repositories are provided by (awesome!) openSUSE Build Service <https://build.opensuse.org/>.

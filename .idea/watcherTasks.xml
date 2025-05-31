@@ -14,7 +14,7 @@
         <array />
       </option>
       <option name="outputFromStdout" value="false" />
-      <option name="program" value="$ProjectFileDir$/generate-resources.sh" />
+      <option name="program" value="$ProjectFileDir$/scripts/common/generate-resources.sh" />
       <option name="runOnExternalChanges" value="true" />
       <option name="scopeName" value="/res" />
       <option name="trackOnlyRoot" value="false" />

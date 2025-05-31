@@ -17,15 +17,17 @@ import logging
 import sys
 import threading
 
-from PySide6 import QtCore, QtWidgets, QtUiTools, QtAsyncio
+from PySide6 import QtCore, QtWidgets, QtUiTools
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
+from semantic_version import Version
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed
+from fk.core.events import AfterWorkitemComplete, SourceMessagesProcessed, TimerRestComplete, TimerWorkStart
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application, AfterSourceChanged
 from fk.desktop.config_wizard import ConfigWizard
@@ -58,11 +60,11 @@ def get_timer_ui_mode() -> str:
     return settings.get('Application.timer_ui_mode')
 
 
-def pin_if_needed():
+def pin_if_needed(always_on_top_setting: str):
     window_was_visible = window.isVisible()
     focus_window_was_visible = focus_window.isVisible()
 
-    is_pinned = settings.get('Application.always_on_top') == 'True'
+    is_pinned = always_on_top_setting == 'True'
     # Adding Qt.WindowType.WindowCloseButtonHint explicitly to fix #77
     window.setWindowFlags(window.windowFlags() | Qt.WindowType.WindowStaysOnTopHint if is_pinned else
                           window.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowCloseButtonHint)
@@ -76,6 +78,8 @@ def pin_if_needed():
 
 def to_focus_mode(**kwargs) -> None:
     logger.debug('Switching to focus mode')
+
+    was_already_hidden = window.isHidden()
     window.hide()
     root_layout.removeWidget(focus_widget)
 
@@ -84,13 +88,18 @@ def to_focus_mode(**kwargs) -> None:
     focus_window.setFixedWidth(focus_widget.width())
     focus_window.setFixedHeight(focus_widget.height())
 
+    if was_already_hidden:
+        # This must be due to hiding with --autostart. Make sure focus window has adequate size.
+        logger.debug('Main window was already hidden when we entered focus mode.')
+        focus_window.setFixedWidth(window.width())
+
     show_title = settings.get('Application.show_window_title') == 'True'
     focus_window.setWindowFlags(focus_window.windowFlags() & ~Qt.WindowType.FramelessWindowHint if show_title else
                                 focus_window.windowFlags() | Qt.WindowType.FramelessWindowHint)
     focus_window.show()
 
 
-def from_focus_mode(**kwargs) -> None:
+def from_focus_mode(**_) -> None:
     logger.debug('Switching from focus mode')
     focus_window.hide()
     focus_widget.setParent(root_layout_widget)
@@ -106,9 +115,9 @@ def update_tables_visibility() -> None:
     left_table_layout.setVisible(users_visible or backlogs_visible)
 
 
-def update_mode(**kwargs) -> None:
+def update_mode(timer_ticking: bool) -> None:
     mode = get_timer_ui_mode()
-    if pomodoro_timer.is_working() or pomodoro_timer.is_resting():
+    if timer_ticking:
         if mode == 'focus':
             actions['window.focusMode'].setChecked(True)  # This will trigger to_focus_mode() automatically
         elif mode == 'minimize':
@@ -127,12 +136,11 @@ def update_mode(**kwargs) -> None:
                 raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
 
-def recreate_tray_icon() -> None:
+def recreate_tray_icon(flavor: str, show_tray_icon_setting: str) -> None:
     global tray
     if tray is not None:
         tray.kill()
         tray.setVisible(False)
-    flavor = settings.get('Application.tray_icon_flavor')
     tray = TrayIcon(window,
                     pomodoro_timer,
                     app.get_source_holder(),
@@ -140,12 +148,16 @@ def recreate_tray_icon() -> None:
                     48,
                     MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
                     'dark' in flavor)
-    tray.setVisible(settings.get('Application.show_tray_icon') == 'True')
+    tray.setVisible(show_tray_icon_setting == 'True')
 
 
-def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
+def on_settings_changed(event: str, old_values: dict[str, str], new_values: dict[str, str]):
     logger.debug(f'Settings changed from {old_values} to {new_values}')
     status.showMessage('Settings changed')
+
+    backlogs_visible = None
+    users_visible = None
+
     for name in new_values.keys():
         new_value = new_values[name]
         if name == 'Application.show_main_menu':
@@ -157,13 +169,24 @@ def on_setting_changed(event: str, old_values: dict[str, str], new_values: dict[
         elif name == 'Application.show_tray_icon':
             tray.setVisible(new_value == 'True')
         elif name == 'Application.shortcuts':
-            actions.update_from_settings()
+            actions.update_from_settings(new_value)
         elif name == 'Application.always_on_top':
-            pin_if_needed()
+            pin_if_needed(new_value)
         elif name == 'Application.focus_flavor':
-            focus_widget.set_flavor(settings.get('Application.focus_flavor'))
+            focus_widget.set_flavor(new_value)
         elif name == 'Application.tray_icon_flavor':
-            recreate_tray_icon()
+            recreate_tray_icon(new_value,
+                               new_values.get('Application.show_tray_icon',
+                                              settings.get('Application.show_tray_icon')))
+        elif name == 'Application.backlogs_visible':
+            backlogs_visible = new_value == 'True'
+            backlogs_widget.setVisible(backlogs_visible)
+        elif name == 'Application.users_visible':
+            users_visible = new_value == 'True'
+            users_table.setVisible(users_visible)
+
+    if backlogs_visible is not None or users_visible is not None:
+        left_table_layout.setVisible((users_visible is not None and users_visible) or (backlogs_visible is not None and backlogs_visible))
 
 
 class MainWindow:
@@ -206,18 +229,20 @@ class MainWindow:
         global tutorial
         tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
 
-    def show_quick_config(self):
-        wizard = ConfigWizard(app, actions, window)
-        wizard.closed.connect(self.show_tutorial)
-        wizard.show()
+    def on_upgrade(self, from_version: Version):
+        if from_version.major == 0 and from_version.minor < 9:
+            if window.isHidden() and focus_window.isHidden():
+                # Even if it was configured to hide, typically thanks to --autostart
+                window.show()
+            wizard = ConfigWizard(app, actions, window)
+            wizard.closed.connect(self.show_tutorial)
+            wizard.show()
 
     def toggle_backlogs(self, enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
-        update_tables_visibility()
 
     def toggle_users(self, enabled):
         settings.set({'Application.users_visible': str(enabled)})
-        update_tables_visibility()
 
     @staticmethod
     def define_actions(actions: Actions):
@@ -225,7 +250,6 @@ class MainWindow:
         actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
-        actions.add('window.quickConfig', "Quick Config", '', None, MainWindow.show_quick_config)
 
         backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -254,27 +278,29 @@ if __name__ == "__main__":
     # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
     # will pass through to Qt data models via Qt-like connect / emit mechanism.
     try:
-        settings = None
         app = Application(sys.argv)
         settings = app.get_settings()
 
         logger.debug(f'UI thread: {threading.get_ident()}')
-        settings.on(events.AfterSettingsChanged, on_setting_changed)
+        settings.on(events.AfterSettingsChanged, on_settings_changed)
 
-        def _on_workitem_complete(workitem: Workitem, **_):
-            if pomodoro_timer is not None and pomodoro_timer.get_running_workitem() == workitem:
-                update_mode()
+        def _on_workitem_complete(workitem: Workitem, timer: TimerData):
+            if timer.get_running_workitem() == workitem:
+                update_mode(False)
 
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
-            source.on(SourceMessagesProcessed, update_mode, last=True)
-            source.on(AfterWorkitemComplete, _on_workitem_complete, last=True)
+            source.on(SourceMessagesProcessed, lambda **_: update_mode(source.get_data().get_current_user().get_timer().is_ticking()), last=True)
+            source.on(AfterWorkitemComplete, lambda workitem, **_: _on_workitem_complete(workitem, source.get_data().get_current_user().get_timer()), last=True)
+            source.on(TimerRestComplete, lambda **_: update_mode(False))
+            source.on(TimerWorkStart, lambda **_: update_mode(True))
 
         app.get_source_holder().on(AfterSourceChanged, _on_source_changed)
 
-        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), app.get_settings(), app.get_source_holder())
-        pomodoro_timer.on(PomodoroTimer.TimerRestComplete, lambda timer, workitem, pomodoro, event: update_mode())
-        pomodoro_timer.on(PomodoroTimer.TimerWorkStart, lambda timer, event: update_mode())
+        pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"),
+                                       QtTimer("Pomodoro Transition"),
+                                       app.get_settings(),
+                                       app.get_source_holder())
 
         loader = QtUiTools.QUiLoader(app)
 
@@ -295,17 +321,26 @@ if __name__ == "__main__":
         MainWindow.define_actions(actions)
         actions.all_actions_defined()
 
-        audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
+        audio = AudioPlayer(window, app.get_source_holder(), settings)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
         menu_file.addAction(actions['application.settings'])
-        menu_file.addAction(actions['window.quickConfig'])
         menu_file.addAction(actions['application.import'])
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
         menu_file.addAction(actions['application.workSummary'])
         menu_file.addSeparator()
+
+        menu_contact = QtWidgets.QMenu("Contact us", window)
+        menu_contact.addAction(actions['application.contactGithub'])
+        menu_contact.addAction(actions['application.contactDiscord'])
+        menu_contact.addAction(actions['application.contactLinkedIn'])
+        menu_contact.addAction(actions['application.contactReddit'])
+        menu_contact.addAction(actions['application.contactTelegram'])
+        menu_contact.addAction(actions['application.contactEmail'])
+        menu_file.addMenu(menu_contact)
+
         menu_file.addAction(actions['application.about'])
         menu_file.addSeparator()
         menu_file.addAction(actions['application.quit'])
@@ -419,6 +454,7 @@ if __name__ == "__main__":
             workitems_menu.addAction(actions['workitems_table.addPomodoro'])
             workitems_menu.addAction(actions['workitems_table.removePomodoro'])
             workitems_menu.addAction(actions['focus.voidPomodoro'])
+            workitems_menu.addAction(actions['focus.finishTracking'])
             main_menu.addMenu(workitems_menu)
             show_main_menu = (settings.get('Application.show_main_menu') == 'True')
             main_menu.setVisible(show_main_menu)
@@ -432,8 +468,8 @@ if __name__ == "__main__":
             status.setVisible(show_status_bar)
 
         # Tray icon
-        tray = None
-        recreate_tray_icon()
+        tray: TrayIcon | None = None
+        recreate_tray_icon(settings.get('Application.tray_icon_flavor'), settings.get('Application.show_tray_icon'))
 
         # Some global variables to support "Next pomodoro" mode
         # TODO Empty it if it gets deleted or completed
@@ -473,7 +509,7 @@ if __name__ == "__main__":
         window.installEventFilter(theme_change_event_filter)
 
         main_window = MainWindow()
-        app.upgraded.connect(main_window.show_quick_config)
+        app.upgraded.connect(main_window.on_upgrade)
 
         # Bind action domains to widget instances
         actions.bind('application', app)
@@ -483,11 +519,12 @@ if __name__ == "__main__":
         actions.bind('focus', focus_widget)
         actions.bind('window', main_window)
 
-        pin_if_needed()
+        pin_if_needed(settings.get('Application.always_on_top'))
 
         tutorial: Tutorial = None
 
-        window.show()
+        if not app.is_hide_on_start():
+            window.show()
 
         # With Qt 6.7.1 on Windows this needs to happen AFTER the Window is shown.
         # Otherwise, the font size for the focus' header is picked correctly, but
@@ -502,12 +539,17 @@ if __name__ == "__main__":
         if app.is_e2e_mode():
             # Our end-to-end tests use asyncio.sleep() extensively, so we need Qt event loop to support coroutines.
             # This is an experimental feature in Qt 6.6.2+.
+            from PySide6 import QtAsyncio
             QtAsyncio.run()
         else:
             if '--reset' in app.arguments():
                 settings.reset_to_defaults()
             # This would work on any Qt 6.6.x
-            sys.exit(app.exec())
+            code = app.exec()
+            if tray is not None and tray.isVisible():
+                # To avoid tray icon getting stuck on Windows
+                tray.hide()
+            sys.exit(code)
 
     except Exception as exc:
         logger.error("FATAL: Exception on startup", exc_info=exc)

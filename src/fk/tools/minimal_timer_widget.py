@@ -33,11 +33,11 @@ timer = TimerWidget(mc.get_window(),
                     'minimal',
                     None,
                     500)
-timer.set_values(0 * 25 * 60 * 1000,
-                 25 * 60 * 1000,
+timer.set_values(1 * 60 * 60 + 5 * 60 + 20,
                  None,
                  None,
-                 'ready')
+                 None,
+                 'tracking')
 mc.get_window().setCentralWidget(timer)
 
 mc.main_loop()

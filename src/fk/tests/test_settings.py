@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -31,6 +32,7 @@ class TestSettings(TestCase):
     data: dict[str, User]
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
         self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
@@ -52,7 +54,7 @@ class TestSettings(TestCase):
 
     def test_categories(self):
         categories = self.settings.get_categories()
-        self.assertEqual(len(categories), 6)
+        self.assertEqual(len(categories), 7)
         self.assertIn('General', categories)
         self.settings.set({
             'Pomodoro.default_work_duration': '10',

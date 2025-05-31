@@ -4,331 +4,45 @@ on:
   push:
     tags:
       - "v*.*.*"
-      
+
 permissions:
   contents: write
   checks: write
 
 jobs:
-  run-tests:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Test coverage
-        run: |
-          PYTHONPATH=src coverage run -m xmlrunner -o test-results discover -v fk.tests
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v4
-        with:
-          report_paths: 'test-results/TEST-*.xml'
-      - name: Upload code coverage to coveralls.io
-        run: coveralls --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  call-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
+        compiler: [nuitka, pyinstaller]
+        exclude:
+          - os: macos-13
+            compiler: nuitka
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
+    with:
+      os: ${{ matrix.os }}
+      compiler: ${{ matrix.compiler }}
+    secrets: inherit
 
-  package-linux:
-    runs-on: ubuntu-22.04
-    needs: run-tests
+  release:
+    needs: call-build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
+        compiler: [nuitka, pyinstaller]
+        exclude:
+          - os: macos-13
+            compiler: nuitka
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-build.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Package builds
-        run: |
-          pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
-          cd dist
-          tar -czf flowkeeper.tar.gz flowkeeper
-          cd ..
-      - name: Create DEB installer
-        run: |
-          ./package-deb.sh
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
+          path: .
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            dist/Flowkeeper
-            dist/flowkeeper.deb
-            dist/flowkeeper.tar.gz
-
-  package-linux-legacy:
-    runs-on: ubuntu-20.04
-    needs: run-tests
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-build.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Package builds
-        run: |
-          pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
-          cd dist
-          tar -czf flowkeeper.tar.gz flowkeeper
-          cd ..
-      - name: Create DEB installer
-        run: |
-          ./package-deb.sh
-      - name: Rename files to avoid conflicts
-        run: |
-          mv dist/Flowkeeper dist/Flowkeeper-legacy
-          mv dist/flowkeeper.deb dist/flowkeeper-legacy.deb
-          mv dist/flowkeeper.tar.gz dist/flowkeeper-legacy.tar.gz
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/Flowkeeper-legacy
-            dist/flowkeeper-legacy.deb
-            dist/flowkeeper-legacy.tar.gz
-
-  package-windows:
-    runs-on: windows-latest
-    needs: run-tests
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-build.txt
-      - name: Generate resources
-        run: |
-          cd res
-          pyside6-rcc --project -o resources.qrc
-          pyside6-rcc -g python resources.qrc -o "../src/fk/desktop/resources.py"
-      - name: Package builds
-        run: |
-          pyinstaller installer\portable-build.spec
-          pyinstaller installer\normal-build.spec
-      - name: Download innosetup installer
-        run: |
-          Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-      - name: Install innosetup
-        shell: cmd
-        run: |
-          start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
-      - name: Create FK installer
-        shell: cmd
-        run: |
-          set /p FIRST_LINE=< res\CHANGELOG.txt
-          set FK_VERSION=%FIRST_LINE:* =%
-          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
-          move installer\Output\mysetup.exe dist\setup.exe
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/Flowkeeper.exe
-            dist/setup.exe
-
-  package-macOS-arm:
-    runs-on: macOS-latest
-    needs: run-tests
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-build.txt
-          brew install create-dmg
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Install the Apple certificate and provisioning profile
-        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
-          P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-
-          # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # import certificate to keychain
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      - name: Package builds
-        run: |
-          pyinstaller "installer/normal-build.spec" -- --sign
-      - name: Create DMG installer
-        run: |
-          rm -rf "dist/flowkeeper"
-          create-dmg \
-            --volname "Flowkeeper Installer" \
-            --volicon "res/flowkeeper.icns" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "Flowkeeper.app" 200 190 \
-            --hide-extension "Flowkeeper.app" \
-            --app-drop-link 600 185 \
-            "Flowkeeper.dmg" \
-            "dist/"
-      - name: Notarize the DMG
-        env:
-          NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
-          NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
-          NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
-        run: |
-          # Create the notary key
-          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
-          # Send the DMG for notarization
-          xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            Flowkeeper.dmg
-
-  package-macOS-x86:
-    runs-on: macOS-13
-    needs: run-tests
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-build.txt
-          brew install create-dmg
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Install the Apple certificate and provisioning profile
-        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
-          P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-
-          # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # import certificate to keychain
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      - name: Package builds
-        run: |
-          pyinstaller "installer/normal-build.spec" -- --sign
-      - name: Create DMG installer
-        run: |
-          rm -rf "dist/flowkeeper"
-          create-dmg \
-            --volname "Flowkeeper Installer" \
-            --volicon "res/flowkeeper.icns" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "Flowkeeper.app" 200 190 \
-            --hide-extension "Flowkeeper.app" \
-            --app-drop-link 600 185 \
-            "Flowkeeper-x86.dmg" \
-            "dist/"
-      - name: Notarize the DMG
-        env:
-          NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
-          NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
-          NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
-        run: |
-          # Create the notary key
-          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
-          # Send the DMG for notarization
-          xcrun notarytool submit "Flowkeeper-x86.dmg" --keychain-profile "notary-key" --wait
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            Flowkeeper-x86.dmg
-
-  sign-windows:
-    runs-on: ubuntu-22.04
-    needs: package-windows
-    steps:
-      - name: Trigger remote EXE signing job
-        env:
-          REMOTE_URL: ${{ secrets.REMOTE_URL }}
-          REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
-          REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_RELEASE_JOB_TOKEN }}
-        run: |
-          curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-release/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
-          # This curl will return a queue reference. Wait here till it starts and finishes. Handle timeouts and errors.
-          # Write a little Python script for that, e.g. https://pypi.org/project/python-jenkins/ or https://pypi.org/project/jenkinsapi/
+          files: "./*"

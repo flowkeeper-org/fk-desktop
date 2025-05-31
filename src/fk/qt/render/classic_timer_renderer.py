@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import math
+
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import QRect
-from PySide6.QtGui import QColor, QPainterPath, QPen, QPixmap
+from PySide6.QtCore import QPointF
+from PySide6.QtGui import QColor, QPainterPath, QPen
 
 from fk.qt.render.abstract_timer_renderer import AbstractTimerRenderer
 
@@ -29,26 +31,30 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                  small: bool = False):
         super(ClassicTimerRenderer, self).__init__(parent, bg_color, fg_color, thin, small)
 
-    def clear_pie(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
+    def clip(self, painter: QtGui.QPainter, rect: QtCore.QRectF | None, entire: QtCore.QRectF, shift: float = 0) -> None:
         # I also tried painter.setClipRegion(QRegion), but it won't apply antialiasing, looking ugly
         full = QPainterPath()
         full.addRect(entire)
-        hole = QPainterPath()
-        w = 1
-        hole_rect = QRect(rect.x() + w, rect.y() + w, rect.width() - 2 * w, rect.height() - 2 * w)
-        hole.addEllipse(hole_rect)
-        full = full.subtracted(hole)
+        if rect is not None:
+            hole = QPainterPath()
+            hole.addEllipse(rect.center(), rect.width() / 2 + shift, rect.height() / 2 + shift)
+            full = full.subtracted(hole)
         painter.setClipPath(full)
 
-    def clear_pie_outline(self, painter: QtGui.QPainter, rect: QtCore.QRect, entire: QtCore.QRect) -> None:
+    def clear_pie_outline(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
         pen_border = QPen(self._fg_color)
-        pen_border.setWidth(2)
+        pen_border.setWidthF(3)
         painter.setPen(pen_border)
         painter.drawEllipse(rect)
 
-    def draw_sector(self, painter: QtGui.QPainter, my_rect: QtCore.QRect, value: float, max_value: float):
-        hue_from = 0
-        hue_to = 120
+    def draw_sector(self,
+                    painter: QtGui.QPainter,
+                    my_rect: QtCore.QRectF,
+                    value: float,
+                    max_value: float,
+                    invert_colors: bool = False):
+        hue_from = 120 if invert_colors else 0
+        hue_to = 0 if invert_colors else 120
         pen_width = 2
 
         my_hue = int((hue_to - hue_from) * value / max_value + hue_from)
@@ -61,9 +67,19 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
                         int(5760 * (1.0 - value / max_value) + 1440),
                         int(5760 * value / max_value))
 
-    def _paint_icon(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
-        pixmap = QPixmap(self._default_icon)
-        painter.drawPixmap(rect, pixmap)
+    def draw_points(self,
+                    painter: QtGui.QPainter,
+                    my_rect: QtCore.QRectF):
+        pen_width = 2
+        pen = QtGui.QPen(self._fg_color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        center = my_rect.center()
+        radius = my_rect.width() / 2.0
+        for hour in range(0, 12):
+            sin = math.sin(hour * math.pi / 6)
+            cos = math.cos(hour * math.pi / 6)
+            painter.drawPoint(QPointF(center.x() + radius * sin, center.y() + radius * cos))
 
     def has_idle_display(self) -> bool:
         return False
@@ -71,67 +87,75 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
     def has_next_display(self) -> bool:
         return False
 
-    def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect) -> None:
-        if self.get_mode() not in ('working', 'resting'):
+    def paint(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
+        if self.get_mode() not in ('working', 'resting', 'long-resting', 'tracking'):
             painter.end()
             return
 
         margin = 0.05
         thickness = 0.3
+        has_two_sectors = self._team_value is not None
 
         rw = rect.width()
         rh = rect.height()
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
-        my_width = int(rw * (1 - 2 * margin) * thickness)
-        my_height = int(rh * (1 - 2 * margin) * thickness)
-        if self._team_value is not None:
+        my_width = rw * (1 - 2 * margin) * thickness
+        my_height = rh * (1 - 2 * margin) * thickness
+        if has_two_sectors:
             my_width /= 2
             my_height /= 2
 
         # My
-        my_rect = QtCore.QRect(
-            rect.left() + int(rw * margin),
-            rect.top() + int(rh * margin),
-            rect.width() - int(2 * rw * margin),
-            rect.height() - int(2 * rh * margin),
+        my_rect = QtCore.QRectF(
+            rect.left() + rw * margin,
+            rect.top() + rh * margin,
+            rect.width() - 2 * rw * margin,
+            rect.height() - 2 * rh * margin,
         )
 
-        if self._team_value is not None:
-            # Team
+        if has_two_sectors:
+            # Team or tracking
             team_width = rw * (1 - 2 * margin) * thickness / 2
             team_height = rh * (1 - 2 * margin) * thickness / 2
         else:
             team_width = 0
             team_height = 0
 
+        hole_rect = None
         if thickness < 0.5 and not self._small:
             # Hole
-            hole_rect = QtCore.QRect(
+            hole_rect = QtCore.QRectF(
                 my_rect.left() + my_width + team_width,
                 my_rect.top() + my_height + team_height,
                 my_rect.width() - 2 * (my_width + team_width),
                 my_rect.height() - 2 * (my_height + team_height),
             )
-            self.clear_pie(painter, hole_rect, rect)
+            self.clip(painter, hole_rect, rect, 1)
 
-        if self._my_max > 0:
-            self.draw_sector(painter, my_rect, self._my_value, self._my_max)
-
-        if self._team_value is not None:
-            # Team
-            team_rect = QtCore.QRect(
+        if has_two_sectors:
+            # Team or tracking
+            team_rect = QtCore.QRectF(
                 my_rect.left() + my_width,
                 my_rect.top() + my_height,
                 my_rect.width() - 2 * my_width,
                 my_rect.height() - 2 * my_height,
             )
-            self.clear_pie(painter, team_rect, rect)
-            if self._team_max > 0:
+            if self._team_value is not None and self._team_max > 0:
                 self.draw_sector(painter, team_rect, self._team_value, self._team_max)
+            self.clip(painter, team_rect, rect, 1)
 
-        if thickness < 0.5 and not self._small:
+        if self.get_mode() == 'tracking' or self.get_mode() == 'long-resting':
+            minutes = (self._my_value / 60) % 60.0
+            self.draw_sector(painter, my_rect, minutes, 60, True)
+        elif self._my_max > 0:
+            self.draw_sector(painter, my_rect, self._my_value, self._my_max)
+
+        self.draw_points(painter, my_rect)
+
+        if hole_rect is not None:
             # Draw the hole outline
-            self.clear_pie_outline(painter, hole_rect, rect)
+            self.clip(painter, hole_rect, rect, 0)
+            self.clear_pie_outline(painter, hole_rect)
 
         painter.end()

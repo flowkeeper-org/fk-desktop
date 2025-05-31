@@ -36,8 +36,9 @@ class QtFilesystemWatcher(AbstractFilesystemWatcher):
         self._connections[filename].append(callback)
 
     def unwatch(self, filename: str) -> None:
-        self._watcher.removePath(filename)
-        del self._connections[filename]
+        if filename in self._connections:
+            self._watcher.removePath(filename)
+            del self._connections[filename]
 
     def unwatch_all(self) -> None:
         self._watcher.removePaths(self._watcher.files())

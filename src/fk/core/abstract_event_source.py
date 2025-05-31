@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from typing import Iterable, Callable, TypeVar, Generic
 
 from fk.core import events
@@ -26,17 +27,19 @@ from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.auto_seal import auto_seal
 from fk.core.backlog import Backlog
-from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
-from fk.core.tenant import ADMIN_USER
+from fk.core.tenant import ADMIN_USER, Tenant
+from fk.core.timer_data import TimerData
+from fk.core.timer_strategies import TimerRingInternalStrategy, StartTimerStrategy
 from fk.core.user import User
-from fk.core.user_strategies import CreateUserStrategy
+from fk.core.user_strategies import CreateUserStrategy, AutoSealInternalStrategy
 from fk.core.workitem import Workitem
 
 logger = logging.getLogger(__name__)
-TRoot = TypeVar('TRoot')
+TRoot = TypeVar('TRoot', bound=Tenant)
 
 
 class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
@@ -80,6 +83,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterWorkitemRename,
             events.BeforeWorkitemReorder,
             events.AfterWorkitemReorder,
+            events.BeforeWorkitemMove,
+            events.AfterWorkitemMove,
             events.BeforePomodoroAdd,
             events.AfterPomodoroAdd,
             events.BeforePomodoroRemove,
@@ -90,6 +95,10 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterPomodoroRestStart,
             events.BeforePomodoroComplete,
             events.AfterPomodoroComplete,
+            events.BeforePomodoroVoided,
+            events.AfterPomodoroVoided,
+            events.BeforePomodoroInterrupted,
+            events.AfterPomodoroInterrupted,
             events.TagCreated,
             events.TagDeleted,
             events.TagContentChanged,
@@ -98,6 +107,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.BeforeMessageProcessed,
             events.AfterMessageProcessed,
             events.PongReceived,
+            events.TimerWorkStart,
+            events.TimerRestComplete,
+            events.TimerWorkComplete,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help us do master/slave for strategies.
         self._serializer = serializer
@@ -135,24 +147,72 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events: bool = True) -> None:
         pass
 
-    def execute_prepared_strategy(self, strategy: AbstractStrategy[TRoot], auto: bool = False, persist: bool = False) -> None:
-        params = {'strategy': strategy, 'auto': auto}
+    def _auto_seal_at_the_end(self, last_executed: AbstractStrategy) -> None:
+        if last_executed is not None:
+            sealant = AutoSealInternalStrategy(last_executed.get_sequence(),
+                                               datetime.datetime.now(datetime.timezone.utc),
+                                               last_executed.get_user_identity(),
+                                               [],
+                                               self.get_settings(),
+                                               None)
+            self.execute_prepared_strategy(sealant, True, False)
+
+    def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
+        timer: TimerData = strategy.get_user(self.get_data()).get_timer()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Auto-sealing, timer: {timer}, second time: {second_time}')
+        if second_time:
+            pass
+        if timer.is_ticking():
+            expected_timer_ring = timer.get_next_state_change()
+            if expected_timer_ring is not None:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'Expected to ring at {expected_timer_ring}, comparing to {strategy.get_when()}')
+                # Adding one-second margin to account for the series mode, where the next pomodoro starts automatically
+                # on timer immediately after the previous one finishes. In this case we depend on the timers accuracy,
+                # which in practice results in ~0.3s errors back and forth. Sometimes this results in the "Can't start
+                # next pomodoro because the timer is still ticking" errors when loading strategies.
+                if strategy.get_when() + timedelta(seconds=1) >= expected_timer_ring:
+                    # Timer rings, maybe even twice
+                    strategy.execute_another(self._emit,
+                                             self.get_data(),
+                                             TimerRingInternalStrategy,
+                                             [],
+                                             expected_timer_ring)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f'Rang the timer, resulting state: {timer}')
+                    if timer.is_ticking():
+                        if second_time:
+                            logger.error(f'The timer is still ticking after stopping it twice. Strategy: {strategy}')
+                            raise Exception("The timer refuses to ring. "
+                                            "This should never happen, please report it as a bug.")
+                        self._auto_seal(strategy, True)
+
+    def execute_prepared_strategy(self,
+                                  strategy: AbstractStrategy[TRoot],
+                                  auto: bool = False,
+                                  persist: bool = False) -> None:
+        if strategy.requires_sealing():
+            self._auto_seal(strategy)
+
+        params = {
+            'strategy': strategy,
+            'auto': auto,
+            'persist': persist,
+        }
+        # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events.
         self._emit(events.BeforeMessageProcessed, params)
-        # UC-2: All executed strategies are wrapped in BeforeMessageProcessed / AfterMessageProcessed events
-        res = strategy.execute(self._emit, self.get_data())
-        self._emit(events.AfterMessageProcessed, params)
-        if res is not None and res[0] == 'auto-seal':
-            # A special case for auto-seal. Can be used for other unusual "retry" cases, too.
-            # UC-3: Certain strategies may request the "auto-seal" BEFORE they execute
-            self.auto_seal()
-            res = strategy.execute(self._emit, self.get_data())
-            if res is not None and res[0] == 'auto-seal':
-                raise Exception(f'There is another running pomodoro in "{res[1].get_name()}"')
-        self._estimated_count += 1
-        if persist:
-            self._append([strategy])
-            # UC-2: Strategy sequence is incremented only after it is persisted
-            self._last_seq = strategy.get_sequence()   # Only save it if all went well
+
+        try:
+            strategy.execute(self._emit, self.get_data())
+            self._estimated_count += 1
+            if persist:
+                self._append([strategy])
+                # UC-2: Strategy sequence is incremented only after it is persisted
+                self._last_seq = strategy.get_sequence()   # Only save it if all went well
+        finally:
+            # UC-2: AfterMessageProcessed is triggered after the strategy is persisted, no matter what
+            self._emit(events.AfterMessageProcessed, params)
 
     def execute(self,
                 strategy_class: type[AbstractStrategy[TRoot]],
@@ -173,15 +233,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             self._settings,
             carry)
         self.execute_prepared_strategy(s, auto, persist)
-
-    def auto_seal(self, when: datetime.datetime | None = None) -> None:
-        auto_seal(self.workitems(),
-                  lambda strategy_class, params, persist, exec_when: self.execute(strategy_class,
-                                                                                  params,
-                                                                                  persist=persist,
-                                                                                  when=exec_when,
-                                                                                  auto=True),
-                  when)
 
     def users(self) -> Iterable[User]:
         for user in self.get_data().values():
@@ -258,7 +309,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def connect(self):
         raise Exception('Connect is not supported on this type of event source')
 
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[AbstractEventSource[TRoot]]:
+    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[TRoot]:
         return CreateUserStrategy(1,
                                   datetime.datetime.now(datetime.timezone.utc),
                                   ADMIN_USER,
@@ -267,3 +318,41 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
 
     def get_last_sequence(self):
         return self._last_seq
+
+
+# ********************* Misc. Utils *********************
+
+
+def start_workitem(workitem: Workitem, source: AbstractEventSource) -> None:
+    settings = source.get_settings()
+
+    # TODO: Move this entire piece of logic into StartTimerStrategy
+    if len(workitem) == 0 or workitem.is_tracker():
+        # This is going to be a tracker workitem
+        source.execute(AddPomodoroStrategy, [
+            workitem.get_uid(),
+            "1",
+            POMODORO_TYPE_TRACKER
+        ])
+        source.execute(StartTimerStrategy, [
+            workitem.get_uid(),
+        ])
+    else:
+        rest_duration = None
+
+        if settings.get('Pomodoro.long_break_algorithm') == 'simple':
+            timer: TimerData = source.get_data().get_current_user().get_timer()
+            pomodoro_in_series = timer.get_pomodoro_in_series()
+            if pomodoro_in_series >= int(settings.get('Pomodoro.long_break_each')) - 1:
+                logger.debug('The user starts a workitem. A long break is suggested after it is completed.')
+                rest_duration = "0"
+
+        if rest_duration is None:  # Default to standard duration
+            logger.debug('The user starts a workitem. A short break is suggested after it is completed.')
+            rest_duration = settings.get('Pomodoro.default_rest_duration')
+
+        source.execute(StartTimerStrategy, [
+            workitem.get_uid(),
+            settings.get('Pomodoro.default_work_duration'),
+            rest_duration,
+        ])

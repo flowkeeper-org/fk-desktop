@@ -52,8 +52,9 @@ class AuthenticateStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
-        return None, None
+                data: Tenant) -> None:
+        # Send only
+        pass
 
 
 # Replay("105")
@@ -76,9 +77,9 @@ class ReplayStrategy(AbstractStrategy):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         # Send only
-        return None, None
+        pass
 
 
 # ReplayCompleted()
@@ -96,11 +97,14 @@ class ReplayCompletedStrategy(AbstractStrategy):
     def encryptable(self) -> bool:
         return False
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         # Send only
-        return None, None
+        pass
 
 
 # Error("401", "User not found")
@@ -125,7 +129,7 @@ class ErrorStrategy(AbstractStrategy):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if self._error_message == 'User consent is required':
             # TODO: Transfer this message from the server
             if QMessageBox().warning(
@@ -194,13 +198,12 @@ class PongStrategy(AbstractStrategy):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Received Pong - {self._uid}')
         emit(events.PongReceived, {
             'uid': self._uid
         }, self._carry)
-        return None, None
 
 
 # Ping("123-456-789-012", "")
@@ -223,9 +226,9 @@ class PingStrategy(AbstractStrategy):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         # Send only
-        return None, None
+        pass
 
 
 # DeleteAccount("reason")
@@ -248,6 +251,6 @@ class DeleteAccountStrategy(AbstractStrategy):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         # Send only
-        return None, None
+        pass

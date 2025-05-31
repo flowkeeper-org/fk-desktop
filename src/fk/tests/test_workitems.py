@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -23,12 +24,14 @@ from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy
+from fk.core.pomodoro import Pomodoro
+from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tenant import Tenant
+from fk.core.timer_strategies import StartTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CreateWorkitemStrategy, RenameWorkitemStrategy, DeleteWorkitemStrategy, \
-    CompleteWorkitemStrategy
+    CompleteWorkitemStrategy, MoveWorkitemStrategy
 
 
 class TestWorkitems(TestCase):
@@ -38,6 +41,7 @@ class TestWorkitems(TestCase):
     data: dict[str, User]
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
         self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
@@ -61,7 +65,6 @@ class TestWorkitems(TestCase):
         
     def _standard_backlog(self) -> (User, Backlog): 
         self.source.execute(CreateBacklogStrategy, ['b1', 'First backlog'])
-        self.source.auto_seal()
         user = self.data['user@local.host']
         backlog = user['b1']
         return user, backlog
@@ -70,7 +73,6 @@ class TestWorkitems(TestCase):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
-        self.source.auto_seal()
         self.assertIn('w11', backlog)
         self.assertIn('w12', backlog)
         workitem1: Workitem = backlog['w11']
@@ -86,7 +88,6 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w14', 'b1', 'Fourth #workitem and some more #workitem text'])
         self.source.execute(CreateWorkitemStrategy, ['w15', 'b1', 'Fifth #workitem.'])
         self.source.execute(CreateWorkitemStrategy, ['w16', 'b1', 'Six #workitem and #workitems'])
-        self.source.auto_seal()
         self.assertIn('w11', backlog)
         self.assertIn('w12', backlog)
         self.assertIn('w13', backlog)
@@ -126,7 +127,6 @@ class TestWorkitems(TestCase):
                                   ['w11', 'b1', 'First workitem'],
                                   self.settings)
         self.source.execute_prepared_strategy(s)
-        self.source.auto_seal()
         self.assertIn('w11', backlog)
         workitem1: Workitem = backlog['w11']
         self._assert_workitem(workitem1, user, backlog)
@@ -134,7 +134,6 @@ class TestWorkitems(TestCase):
     def test_create_duplicate_workitem_failure(self):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem 1'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem 2']))
 
@@ -142,7 +141,6 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(RenameWorkitemStrategy, ['w13', 'Renamed workitem']))
 
@@ -150,14 +148,12 @@ class TestWorkitems(TestCase):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(RenameWorkitemStrategy, ['w11', 'Renamed workitem'])
-        self.source.auto_seal()
         self.assertEqual(backlog['w11'].get_name(), 'Renamed workitem')
 
     def test_delete_nonexistent_workitem_failure(self):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(DeleteWorkitemStrategy, ['w13']))
 
@@ -165,38 +161,37 @@ class TestWorkitems(TestCase):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
-        self.source.auto_seal()
         self.assertIn('w11', backlog)
         self.source.execute(DeleteWorkitemStrategy, ['w11'])
-        self.source.auto_seal()
         self.assertNotIn('w11', backlog)
         self.assertIn('w12', backlog)
 
     def test_complete_workitem_basic(self):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
-        self.source.auto_seal()
         workitem = backlog['w11']
+        incomplete = list(backlog.get_incomplete_workitems())
+        self.assertEqual(len(incomplete), 1)
+        self.assertEqual(incomplete[0], workitem)
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertIn('w11', backlog)
         self.assertFalse(workitem.is_startable())
         self.assertTrue(workitem.is_sealed())
         self.assertFalse(workitem.is_running())
         self.assertFalse(workitem.has_running_pomodoro())
+        incomplete = list(backlog.get_incomplete_workitems())
+        self.assertEqual(len(incomplete), 0)
 
     def test_complete_workitem_with_two_pomodoros(self):
         user, backlog = self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertFalse(backlog['w11'].is_startable())
 
     def test_complete_workitem_invalid_state(self):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(CompleteWorkitemStrategy, ['w11', 'invalid']))
 
@@ -204,7 +199,6 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished']))
 
@@ -212,7 +206,6 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(RenameWorkitemStrategy, ['w11', 'After']))
 
@@ -220,7 +213,6 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
                           lambda: self.source.execute(AddPomodoroStrategy, ['w11', '1']))
 
@@ -229,7 +221,6 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
         self.source.execute(DeleteWorkitemStrategy, ['w11'])
-        self.source.auto_seal()
         self.assertNotIn('w11', backlog)
 
     def test_start_completed_workitem(self):
@@ -237,9 +228,8 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
         self.source.execute(AddPomodoroStrategy, ['w11', '1'])
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
         self.assertRaises(Exception,
-                          lambda: self.source.execute(StartWorkStrategy, ['w11', '1', '1']))
+                          lambda: self.source.execute(StartTimerStrategy, ['w11', '1', '1']))
 
     # Next -- Test all workitem-specific stuff (check coverage)
     # - Lifecycle, including automatic voiding and completion of pomodoros (check all situations)
@@ -253,7 +243,8 @@ class TestWorkitems(TestCase):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemCreate':
                 self.assertIn('workitem_uid', kwargs)
                 self.assertIn('backlog_uid', kwargs)
@@ -268,89 +259,87 @@ class TestWorkitems(TestCase):
         self._standard_backlog()
         self.source.on('*', on_event)
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
-        self.source.auto_seal()
-        self.assertEqual(len(fired), 4)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemCreate')
-        self.assertEqual(fired[2], 'AfterWorkitemCreate')
-        self.assertEqual(fired[3], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 2)
+        self.assertEqual(fired[0], 'BeforeWorkitemCreate')
+        self.assertEqual(fired[1], 'AfterWorkitemCreate')
 
     def test_events_delete_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemDelete' or event == 'AfterWorkitemDelete':
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-            elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
-                self.assertIn('workitem', kwargs)
-                self.assertIn('target_state', kwargs)
-                self.assertTrue(type(kwargs['workitem']) is Workitem)
-                self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-                self.assertEqual(kwargs['target_state'], 'canceled')
+            elif event == 'BeforePomodoroVoided' or event == 'AfterPomodoroVoided':
+                self.assertIn('pomodoro', kwargs)
+                self.assertIn('reason', kwargs)
+                self.assertTrue(type(kwargs['pomodoro']) is Pomodoro)
+                self.assertEqual(kwargs['pomodoro'].get_parent().get_name(), 'First item')
+                self.assertTrue(kwargs['reason'].startswith('Voided automatically'))
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second item'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
-        self.source.execute(StartWorkStrategy, ['w11', '1', '1'])
-        self.source.auto_seal()
+        self.source.execute(StartTimerStrategy, ['w11', '1', '1'])
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(DeleteWorkitemStrategy, ['w11'])
-        self.source.auto_seal()
         self.assertEqual(len(fired), 8)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemDelete')
-        self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroComplete')
-        self.assertEqual(fired[4], 'AfterPomodoroComplete')
-        self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
-        self.assertEqual(fired[6], 'AfterWorkitemDelete')
-        self.assertEqual(fired[7], 'AfterMessageProcessed')
+        self.assertEqual(fired[0], 'BeforePomodoroRestStart')
+        self.assertEqual(fired[1], 'TimerWorkComplete')
+        self.assertEqual(fired[2], 'AfterPomodoroRestStart')
+        self.assertEqual(fired[3], 'BeforeWorkitemDelete')
+        self.assertEqual(fired[4], 'BeforePomodoroVoided')
+        self.assertEqual(fired[5], 'TimerRestComplete')
+        self.assertEqual(fired[6], 'AfterPomodoroVoided')
+        self.assertEqual(fired[7], 'AfterWorkitemDelete')
 
     def test_events_complete_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemComplete' or event == 'AfterWorkitemComplete':
                 self.assertIn('workitem', kwargs)
                 self.assertTrue(type(kwargs['workitem']) is Workitem)
                 self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-            elif event == 'BeforePomodoroComplete' or event == 'AfterPomodoroComplete':
-                self.assertIn('workitem', kwargs)
-                self.assertIn('target_state', kwargs)
-                self.assertTrue(type(kwargs['workitem']) is Workitem)
-                self.assertEqual(kwargs['workitem'].get_name(), 'First item')
-                self.assertEqual(kwargs['target_state'], 'canceled')
+            elif event == 'BeforePomodoroVoided' or event == 'AfterPomodoroVoided':
+                self.assertIn('pomodoro', kwargs)
+                self.assertIn('reason', kwargs)
+                self.assertTrue(type(kwargs['pomodoro']) is Pomodoro)
+                self.assertEqual(kwargs['pomodoro'].get_parent().get_name(), 'First item')
+                self.assertTrue(kwargs['reason'].startswith('Voided automatically'))
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First item'])
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second item'])
         self.source.execute(AddPomodoroStrategy, ['w11', '2'])
-        self.source.execute(StartWorkStrategy, ['w11', '1', '1'])
-        self.source.auto_seal()
+        self.source.execute(StartTimerStrategy, ['w11', '1', '1'])
         self.source.on('*', on_event)  # We only care about delete here
         self.source.execute(CompleteWorkitemStrategy, ['w11', 'finished'])
-        self.source.auto_seal()
-        self.assertEqual(len(fired), 8)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemComplete')
-        self.assertEqual(fired[2], 'BeforeMessageProcessed')  # auto
-        self.assertEqual(fired[3], 'BeforePomodoroComplete')
-        self.assertEqual(fired[4], 'AfterPomodoroComplete')
-        self.assertEqual(fired[5], 'AfterMessageProcessed')  # auto
-        self.assertEqual(fired[6], 'AfterWorkitemComplete')
-        self.assertEqual(fired[7], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 10)
+        self.assertEqual(fired[0], 'BeforePomodoroRestStart')
+        self.assertEqual(fired[1], 'TimerWorkComplete')
+        self.assertEqual(fired[2], 'AfterPomodoroRestStart')
+        self.assertEqual(fired[3], 'BeforeWorkitemComplete')
+        self.assertEqual(fired[4], 'BeforePomodoroInterrupted')
+        self.assertEqual(fired[5], 'AfterPomodoroInterrupted')
+        self.assertEqual(fired[6], 'BeforePomodoroVoided')
+        self.assertEqual(fired[7], 'TimerRestComplete')
+        self.assertEqual(fired[8], 'AfterPomodoroVoided')
+        self.assertEqual(fired[9], 'AfterWorkitemComplete')
 
     def test_events_rename_workitem(self):
         fired = list()
 
         def on_event(event, **kwargs):
-            fired.append(event)
+            if event not in ('BeforeMessageProcessed', 'AfterMessageProcessed'):
+                fired.append(event)
             if event == 'BeforeWorkitemRename' or event == 'AfterWorkitemRename':
                 self.assertIn('workitem', kwargs)
                 self.assertIn('old_name', kwargs)
@@ -361,15 +350,11 @@ class TestWorkitems(TestCase):
 
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'Before'])
-        self.source.auto_seal()
         self.source.on('*', on_event)
         self.source.execute(RenameWorkitemStrategy, ['w11', 'After'])
-        self.source.auto_seal()
-        self.assertEqual(len(fired), 4)
-        self.assertEqual(fired[0], 'BeforeMessageProcessed')
-        self.assertEqual(fired[1], 'BeforeWorkitemRename')
-        self.assertEqual(fired[2], 'AfterWorkitemRename')
-        self.assertEqual(fired[3], 'AfterMessageProcessed')
+        self.assertEqual(len(fired), 2)
+        self.assertEqual(fired[0], 'BeforeWorkitemRename')
+        self.assertEqual(fired[1], 'AfterWorkitemRename')
 
     # Reordering tests:
     # - Positive test -- move up and down
@@ -383,7 +368,6 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Second workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w13', 'b1', 'Third workitem'])
         self.source.execute(CreateWorkitemStrategy, ['w14', 'b1', 'Fourth workitem'])
-        self.source.auto_seal()
         return backlog
 
     def _assert_workitem_order(self, backlog: Backlog, order: str):
@@ -393,3 +377,12 @@ class TestWorkitems(TestCase):
         backlog = self._create_workitems_for_reorder_tests()
         self._assert_workitem_order(backlog, 'w11,w12,w13,w14')
 
+    def test_move_workitems_ok(self):
+        self.source.execute(CreateBacklogStrategy, ['b1', 'Backlog 1'])
+        self.source.execute(CreateBacklogStrategy, ['b2', 'Backlog 2'])
+        self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
+        self.source.execute(MoveWorkitemStrategy, ['w11', 'b2'])
+        user: User = self.data.get_current_user()
+        self.assertEqual(len(user['b1']), 0)
+        self.assertEqual(len(user['b2']), 1)
+        self.assertIn('w11', user['b2'])

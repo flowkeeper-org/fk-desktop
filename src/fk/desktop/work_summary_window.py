@@ -39,9 +39,13 @@ def _format_date(date: datetime.datetime):
     return date.strftime('%d %b %Y')
 
 
+def _format_duration(duration: datetime.timedelta):
+    return str(duration).split('.')[0]
+
+
 class Formatter(ABC):
     @abstractmethod
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         pass
 
     @abstractmethod
@@ -54,7 +58,7 @@ class Formatter(ABC):
 
     def workitem_plaintext(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         if duration is not None:
-            text += f': {duration}'
+            text += f': {_format_duration(duration)}'
         if backlogs is not None and len(backlogs) > 0:
             text += f''', in backlog{"s" if len(backlogs) > 1 else ""} "{'", "'.join(backlogs)}"'''
         return text
@@ -69,7 +73,7 @@ class Formatter(ABC):
 
 
 class MarkdownFormatter(Formatter):
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         return f'# Work summary\n'
 
     def week(self, text: str) -> str:
@@ -86,7 +90,7 @@ class MarkdownFormatter(Formatter):
 
 
 class OrgModeFormatter(Formatter):
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         return f'#+title:  Work Summary\n' \
                f'#+author: Flowkeeper\n' \
                f'#+date:   {str(datetime.date.today())}\n' \
@@ -114,9 +118,9 @@ class MarkdownTableFormatter(Formatter):
         self._last_week = ''
         self._last_day = ''
 
-    def header(self) -> str:
-        return '| Week number | Date | Work item | Time spent | Backlogs |\n' \
-               '| ----------- | ---- | --------- | ---------- | -------- |\n'
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
+        return f'| Week number | Date | Work item {"| Time spent " if include_durations else ""}{"| Backlogs " if include_backlogs else ""}|\n' \
+               f'| ----------- | ---- | --------- {"| ---------- " if include_durations else ""}{"| -------- " if include_backlogs else ""}|\n'
 
     def week(self, text: str) -> str:
         self._last_week = text
@@ -127,14 +131,14 @@ class MarkdownTableFormatter(Formatter):
         return ''
 
     def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
-        return f'| {self._last_week} | {self._last_day} | {text} | {duration if duration is not None else ""} | {", ".join(backlogs) if backlogs is not None else ""} |\n'
+        return f'| {self._last_week} | {self._last_day} | {text} {("| " + _format_duration(duration) + " ") if duration is not None else ""}{("| " + ", ".join(backlogs) + " ") if backlogs is not None else ""}|\n'
 
     def footer(self) -> str:
         return ''
 
 
 class PlaintextFormatter(Formatter):
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         return ''
 
     def week(self, text: str) -> str:
@@ -158,11 +162,17 @@ class CsvFormatter(Formatter):
         self._last_week = ''
         self._last_day = ''
 
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         f = StringIO()
         # TODO: It would be more efficient and elegant, if we used streams throughout this entire file
         #  instead of string concatenation
-        csv.writer(f).writerow(['Week number', 'Date', 'Work item', 'Time spent', 'Backlogs'])
+        headers = ['Week number', 'Date', 'Work item']
+        if include_durations:
+            headers.append('Time spent')
+        if include_backlogs:
+            headers.append('Backlogs')
+        csv.writer(f).writerow(headers)
+
         return f.getvalue()
 
     def week(self, text: str) -> str:
@@ -178,7 +188,7 @@ class CsvFormatter(Formatter):
         csv.writer(f).writerow([self._last_week,
                                 self._last_day,
                                 text,
-                                duration if duration is not None else "",
+                                _format_duration(duration) if duration is not None else "",
                                 ('"' + '", "'.join(backlogs) + '"') if backlogs is not None and len(backlogs) > 0 else ""])
         return f.getvalue()
 
@@ -196,7 +206,7 @@ class JsonFormatter(Formatter):
         self._last_week = ''
         self._last_day = ''
 
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         self._json['weeks'] = dict()
         return ''
 
@@ -213,7 +223,7 @@ class JsonFormatter(Formatter):
     def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         to_append = {"title": text}
         if duration is not None:
-            to_append['duration'] = str(duration)
+            to_append['duration'] = _format_duration(duration)
         if backlogs is not None:
             to_append['backlogs'] = list(backlogs)
         self._json['weeks'][self._last_week][self._last_day].append(to_append)
@@ -233,7 +243,7 @@ class XmlFormatter(Formatter):
         self._last_week = ''
         self._last_day = ''
 
-    def header(self) -> str:
+    def header(self, include_durations: bool, include_backlogs: bool) -> str:
         return ''
 
     def week(self, text: str) -> str:
@@ -251,7 +261,7 @@ class XmlFormatter(Formatter):
     def workitem(self, text: str, duration: datetime.timedelta = None, backlogs: set[str] = None) -> str:
         el = Element('item', title=text)
         if duration is not None:
-            el.attrib['duration'] = str(duration)
+            el.attrib['duration'] = _format_duration(duration)
         if backlogs is not None and len(backlogs) > 0:
             bs = Element('backlogs')
             el.append(bs)
@@ -465,7 +475,7 @@ class WorkSummaryWindow(QObject):
             formatter = PlaintextFormatter()
 
         # Now iterate through the groups and format
-        res = formatter.header()
+        res = formatter.header(include_durations, include_backlogs)
         for week in weeks_sorted:
             res += formatter.week(week)
             for date in weeks[week]:
