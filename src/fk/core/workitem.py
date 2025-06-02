@@ -28,11 +28,46 @@ from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 TAG_REGEX = re.compile('#(\\w+)')
 
 
+class Interval:
+    _started: datetime.datetime
+    _ended: datetime.datetime | None
+    _work_duration: float
+    _rest_duration: float
+
+    def __init__(self, started: datetime.datetime, work_duration: float, rest_duration: float, ended: datetime.datetime | None = None):
+        self._started = started
+        self._ended = ended
+        self._work_duration = work_duration
+        self._rest_duration = rest_duration
+
+    def end(self, when: datetime.datetime):
+        self._ended = when
+
+    def get_started(self) -> datetime.datetime:
+        return self._started
+
+    def is_ended_manually(self) -> bool:
+        return self._ended is not None
+
+    def get_ended(self) -> datetime.datetime:
+        return self._ended
+
+    def get_work_duration(self) -> float:
+        return self._work_duration
+
+    def get_rest_duration(self) -> float:
+        return self._rest_duration
+
+    def __str__(self) -> str:
+        return f'From {self._started} to {self._ended} [{self._work_duration} / {self._rest_duration}]'
+
+
 class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     # State is one of the following: new, running, finished, canceled
     _state: str
     _date_work_started: datetime.datetime | None
     _date_work_ended: datetime.datetime | None
+    _intervals: list[Interval]
 
     def __init__(self,
                  name: str,
@@ -43,6 +78,7 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         self._state = 'new'
         self._date_work_started = None
         self._date_work_ended = None
+        self._intervals = list()
 
     def __str__(self):
         if self._state == 'new':
@@ -127,11 +163,21 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         self._date_work_started = when
         self.get_parent().update_start_date(when)
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, mask_uid)}\n' \
+    def add_interval(self, start: datetime.datetime, work_duration: float, rest_duration: float):
+        self._intervals.append(Interval(start, work_duration, rest_duration))
+
+    def end_interval(self, when: datetime.datetime):
+        self._intervals[-1].end(when)
+
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
+               f'{indent}  Intervals: {[str(i) for i in self._intervals]}\n' \
                f'{indent}  State: {self._state}\n' \
                f'{indent}  Work started: {self._date_work_started}\n' \
                f'{indent}  Work ended: {self._date_work_ended}'
+
+    def get_work_start_date(self) -> datetime.datetime:
+        return self._date_work_started
 
     def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
         for pomodoro in self.values():
@@ -160,9 +206,13 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                 return True
         return False
 
+    def get_intervals(self) -> Iterable[Interval]:
+        return self._intervals
+
     def to_dict(self) -> dict:
         d = super().to_dict()
         d['date_work_started'] = self._date_work_started
         d['date_work_ended'] = self._date_work_ended
         d['state'] = self._state
+        d['intervals'] = self._intervals
         return d

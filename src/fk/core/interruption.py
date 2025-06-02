@@ -60,8 +60,8 @@ class Interruption(AbstractDataItem['Pomodoro']):
     def get_parent(self) -> 'Pomodoro':
         return self._parent
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, True)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, True, mask_last_modified)}\n' \
                f'{indent}  Reason: {self._reason if self._reason else "<None>"}\n' \
                f'{indent}  Void: {self._void}\n' \
                f'{indent}  Duration: {self._duration if self._duration else "<None>"}'

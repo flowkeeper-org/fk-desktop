@@ -67,8 +67,8 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_timer(self) -> TimerData:
         return self._timer
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, mask_uid)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
                f'{indent}  System user: {self._is_system_user}'
         # TODO: Dump tags and timer
 

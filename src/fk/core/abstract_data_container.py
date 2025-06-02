@@ -25,7 +25,7 @@ TParent = TypeVar('TParent', bound=AbstractDataItem)
 class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent]):
     _name: str
     _children: dict[str, TChild]
-    _children_sorted: list[TChild]
+    _children_with_order: list[TChild]
 
     def __init__(self,
                  name: str,
@@ -35,7 +35,7 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         super().__init__(uid=uid, parent=parent, create_date=create_date)
         self._name = name
         self._children = dict()
-        self._children_sorted = list()
+        self._children_with_order = list()
 
     def __getitem__(self, uid: str) -> TChild:
         return self._children[uid]
@@ -46,25 +46,25 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
     def __setitem__(self, uid: str, value: TChild):
         if uid not in self._children:
             self._children[uid] = value
-            self._children_sorted.append(value)
+            self._children_with_order.append(value)
 
     def __delitem__(self, uid: str):
         old = self._children.get(uid, None)
         del self._children[uid]
-        self._children_sorted.remove(old)
+        self._children_with_order.remove(old)
 
     def __iter__(self) -> Iterable[str]:
-        for child in self._children_sorted:
+        for child in self._children_with_order:
             yield child.get_uid()
 
     def __len__(self):
-        return len(self._children_sorted)
+        return len(self._children_with_order)
 
     def values(self) -> list[TChild]:
-        return self._children_sorted
+        return self._children_with_order
 
     def keys(self) -> Iterable[str]:
-        for child in self._children_sorted:
+        for child in self._children_with_order:
             yield child.get_uid()
 
     def names(self) -> list[str]:
@@ -77,9 +77,9 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
         self._name = new_name
 
     def move_child(self, child: TChild, index_to: int) -> None:
-        index_from = self._children_sorted.index(child)
-        self._children_sorted.insert(index_to if index_to <= index_from else index_to - 1,
-                                     self._children_sorted.pop(index_from))
+        index_from = self._children_with_order.index(child)
+        self._children_with_order.insert(index_to if index_to <= index_from else index_to - 1,
+                                         self._children_with_order.pop(index_from))
 
     def get(self, key: str, default: TChild = None) -> TChild:
         if key in self._children:
@@ -90,12 +90,12 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
     def supports_children(self) -> bool:
         return True
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
         if len(self) > 0:
-            children = f'\n'.join(child.dump(indent + '  ', mask_uid) for child in self.values())
+            children = f'\n'.join(child.dump(indent + '  ', mask_uid, mask_last_modified) for child in self.values())
         else:
             children = f'{indent}  - <Empty>'
-        return f'{super().dump(indent, mask_uid)}\n' \
+        return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
                f'{indent}  Name: {self._name}\n' \
                f'{indent}  Children:\n' \
                f'{children}'
