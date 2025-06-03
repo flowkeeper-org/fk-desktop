@@ -72,3 +72,9 @@ class Interruption(AbstractDataItem['Pomodoro']):
         d['duration'] = self._duration
         d['void'] = self._void
         return d
+
+    def __eq__(self, other: Interruption) -> bool:
+        # We can't rely on UIDs here, as those are auto-generated
+        return (self._reason == other._reason
+                and self._create_date == other._create_date
+                and self._duration == other._duration)

@@ -204,13 +204,13 @@ class TestImportExport(TestCase):
 
     def _compare_imported_and_original_dumps(self):
         # We skip the first 7 lines, as the existing user is kept
-        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
-        dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(mask_last_modified=True), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(mask_last_modified=True), 7)
         self.assertEqual(dump_imported, dump_original)
 
     def test_import_smart_ok(self):
         total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 874)
+        self.assertEqual(total_end, 827)
         self._compare_imported_and_original_dumps()
 
     def test_import_smart_twice_ok(self):
@@ -265,8 +265,8 @@ class TestImportExport(TestCase):
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
 
         # We skip the first 7 lines, as the existing user is kept
-        dump_imported = _skip_first(self.data_temp['user@local.host'].dump('', False, True), 7)
-        dump_original = _skip_first(self.data_rand['user@local.host'].dump('', False, True), 7)
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(mask_last_modified=True), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(mask_last_modified=True), 7)
         self.assertEqual(dump_imported, dump_original)
 
     def test_import_github_ok(self):

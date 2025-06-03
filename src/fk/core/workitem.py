@@ -61,6 +61,12 @@ class Interval:
     def __str__(self) -> str:
         return f'From {self._started} to {self._ended} [{self._work_duration} / {self._rest_duration}]'
 
+    def __eq__(self, other: Interval) -> bool:
+        return (self._ended == other._ended
+                and self._started == other._started
+                and self._work_duration == other._work_duration
+                and self._rest_duration == other._rest_duration)
+
 
 class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     # State is one of the following: new, running, finished, canceled
