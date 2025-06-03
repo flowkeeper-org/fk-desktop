@@ -31,13 +31,13 @@ from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
-    CompleteWorkitemStrategy
+    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -272,8 +272,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 all_users[uid] = set()
                 log.append(f'Created a missing user on first reference: {uid}')
                 changes += 1
-
-            # Handle duplicates and other logic
             if t is CreateUserStrategy:
                 cast: CreateUserStrategy = s
                 uid = cast.get_target_user_identity()
@@ -370,8 +368,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Create workitems on the first reference. All those strategies assume an existing workitem.
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
+                    t is MoveWorkitemStrategy or \
+                    t is ReorderWorkitemStrategy or \
                     t is StartWorkStrategy or \
                     t is StartTimerStrategy or \
+                    t is AddInterruptionStrategy or \
                     t is AddPomodoroStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
@@ -397,6 +398,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     all_backlogs[repaired_backlog].add(uid)
                     log.append(f'Created a missing workitem on first reference: {uid}')
                     changes += 1
+
+            # Handle duplicates and other logic
 
             strategies.append(s)
 
