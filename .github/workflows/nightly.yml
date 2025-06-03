@@ -6,7 +6,7 @@ on:
 
 jobs:
   call-scan:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/scan-release.yml
+    uses: flowkeeper-org/fk-desktop/.github/workflows/scan-release.yml@main
     with:
       release: ''
     secrets: inherit
