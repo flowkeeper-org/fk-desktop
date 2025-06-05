@@ -532,7 +532,7 @@ class Application(QApplication, AbstractEventEmitter):
                                  QMessageBox.StandardButton.Cancel) \
                 == QMessageBox.StandardButton.Ok:
             cast: FileEventSource = self._source_holder.get_source()
-            log = cast.repair()
+            log, _ = cast.repair()
             if 'No changes were made' in log[-1]:
                 # Reload the source
                 self._source_holder.close_current_source()

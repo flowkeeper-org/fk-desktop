@@ -352,7 +352,7 @@ class PageImportProgress(QWizardPage):
 
     def finish_for_file(self):
         # Repair it, if file source
-        repair_result = self._source_holder.get_source().repair()
+        repair_result, _ = self._source_holder.get_source().repair()
         if repair_result is not None:
             log = "\n".join(repair_result)
             self.log.setText(f'The result was cleaned up:\n{log}')

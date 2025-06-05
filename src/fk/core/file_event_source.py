@@ -209,7 +209,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
-    def repair(self) -> list[str] | None:
+    def repair(self) -> tuple[list[str], str | None]:
         # This method attempts some basic repairs, trying to save as much
         # data as possible:
         # 0. Reorder strategies by date
@@ -243,7 +243,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
             for line in f:
                 try:
                     s = self._serializer.deserialize(line)
-                    parsed.append(s)
+                    if s:
+                        parsed.append(s)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {line}')
                     changes += 1
@@ -433,13 +434,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if changes > 0:
             log.append(f'Made {changes} changes in total')
             # UC-2: File event source repair won't do any changes if the source file is correct
-            self._overwrite_file(strategies, log)
+            backup_filename = self._overwrite_file(strategies, log)
         else:
             log.append(f'No changes were made')
+            backup_filename = None
 
         self._watcher = original_watcher
         # UC-3: File event source repair returns the log of all changes it made
-        return log
+        return log, backup_filename
 
     def _overwrite_file(self, strategies: Iterable[AbstractStrategy], log: list[str]) -> str:
         filename = self._get_filename()
