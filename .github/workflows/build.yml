@@ -102,6 +102,9 @@ jobs:
           macos-signed-app-name: org.flowkeeper.Flowkeeper
           macos-app-name: Flowkeeper
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          # macos-sign-notarization:  
+          macos-sign-keyring-filename: "${{ env.RUNNER_TEMP }}/app-signing.keychain-db"
+          macos-sign-keyring-password: "${{ env.KEYCHAIN_PASSWORD }}"
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
@@ -111,6 +114,7 @@ jobs:
           output-file: 'Flowkeeper'
         env:
           PYTHONPATH: src
+          KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
 
       - name: Create installers
         env:
