@@ -101,7 +101,7 @@ jobs:
           macos-app-icon: flowkeeper.icns
           macos-signed-app-name: org.flowkeeper.Flowkeeper
           macos-app-name: Flowkeeper
-          macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-sign-identity: "Developer ID Application: Constantine Kulaks (ELWZ9S676C)"
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
