@@ -276,6 +276,8 @@ class SettingsDialog(QDialog):
             i = 0
             for o in option_options:
                 n, v = o.split(':')
+                n = n.replace('$$', ':')
+                v = v.replace('$$', ':')
                 if n == option_value:
                     found = i
                 item = QStandardItem(v)
