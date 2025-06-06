@@ -103,8 +103,6 @@ jobs:
           macos-app-name: Flowkeeper
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
           macos-sign-notarization: true 
-          # macos-sign-keyring-filename: "${{ env.RUNNER_TEMP }}/app-signing.keychain-db"
-          # macos-sign-keyring-password: "${{ env.KEYCHAIN_PASSWORD }}"
           macos-app-protected-resource: "com.apple.security.cs.allow-unsigned-executable-memory:true"
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
