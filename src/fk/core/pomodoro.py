@@ -103,6 +103,8 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def seal(self, when: datetime.datetime) -> None:
         if self._type == POMODORO_TYPE_NORMAL:
             if self.is_resting():
+                if self._rest_duration == 0:
+                    self.get_parent().end_interval(when)
                 self._state = 'finished'
                 self._date_completed = when
                 self._last_modified_date = when
@@ -125,6 +127,7 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
                 self._state = 'finished'
                 self._date_completed = when
                 self._last_modified_date = when
+                self.get_parent().end_interval(when)
             else:
                 raise Exception(f'Cannot seal tracker pomodoro from {self._state}')
         elif self._type == POMODORO_TYPE_COUNTER:
@@ -135,12 +138,14 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
             if self.is_resting() or self.is_working():
                 self._state = 'new'
                 self._last_modified_date = when
+                self.get_parent().end_interval(when)
             else:
                 raise Exception(f'Cannot void normal pomodoro from {self._state}')
         else:
             raise Exception(f'Cannot void pomodoro of type {self._type}')
 
     def start_work(self, when: datetime.datetime) -> None:
+        self.get_parent().add_interval(when, self._work_duration, self._rest_duration)
         if self._type != POMODORO_TYPE_COUNTER:
             self._state = 'work'
             self._date_work_started = when
@@ -267,8 +272,8 @@ class Pomodoro(AbstractDataContainer[Interruption, 'Workitem']):
     def get_parent(self) -> 'Workitem':
         return self._parent
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, True)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, True, mask_last_modified)}\n' \
                f'{indent}  Type: {self._type}\n' \
                f'{indent}  State: {self._state}\n' \
                f'{indent}  Is planned: {self._is_planned}\n' \

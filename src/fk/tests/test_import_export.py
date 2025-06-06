@@ -103,10 +103,9 @@ class TestImportExport(TestCase):
 
         self.assertIn('user@local.host', self.data_rand)
         user_rand = self.data_rand['user@local.host']
-        self.assertEqual(len(user_rand), 19)
+        self.assertEqual(15, len(user_rand))
 
         dump = user_rand.dump()
-        print(dump)
         with open(RAND_DUMP_FILENAME, encoding='UTF-8') as f:
             self.assertEqual(f.read(), dump)
 
@@ -169,7 +168,7 @@ class TestImportExport(TestCase):
     def test_import_classic_ok(self):
         total_start, total_end = self._execute_import(False, False)
         self.assertEqual(total_start, total_end)
-        self.assertEqual(total_end, 1289)    # That's how many strategies are in random.txt
+        self.assertEqual(1175, total_end)    # That's how many strategies are in random.txt
 
         # We skip the first 7 lines, as the existing user is kept
         dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
@@ -205,13 +204,13 @@ class TestImportExport(TestCase):
 
     def _compare_imported_and_original_dumps(self):
         # We skip the first 7 lines, as the existing user is kept
-        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
-        dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(mask_last_modified=True), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(mask_last_modified=True), 7)
         self.assertEqual(dump_imported, dump_original)
 
     def test_import_smart_ok(self):
         total_start, total_end = self._execute_import(False, True)
-        self.assertEqual(total_end, 874)
+        self.assertEqual(total_end, 827)
         self._compare_imported_and_original_dumps()
 
     def test_import_smart_twice_ok(self):
@@ -248,7 +247,7 @@ class TestImportExport(TestCase):
 
     def test_export_simple_ok(self):
         total_start, total_end = self._execute_export(False, EXPORTED_FILENAME)
-        self.assertEqual(total_start, 1290)
+        self.assertEqual(1176, total_start)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
@@ -260,14 +259,14 @@ class TestImportExport(TestCase):
 
     def test_export_compressed_ok(self):
         total_start, total_end = self._execute_export(True, EXPORTED_FILENAME)
-        self.assertEqual(total_start, 1290)
+        self.assertEqual(1176, total_start)
         self.assertEqual(total_end, total_start)
 
         self._execute_import(False, False, filename=EXPORTED_FILENAME)
 
         # We skip the first 7 lines, as the existing user is kept
-        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(), 7)
-        dump_original = _skip_first(self.data_rand['user@local.host'].dump(), 7)
+        dump_imported = _skip_first(self.data_temp['user@local.host'].dump(mask_last_modified=True), 7)
+        dump_original = _skip_first(self.data_rand['user@local.host'].dump(mask_last_modified=True), 7)
         self.assertEqual(dump_imported, dump_original)
 
     def test_import_github_ok(self):
@@ -387,7 +386,7 @@ class TestImportExport(TestCase):
                                  ['w1', backlog.get_uid(), 'Item #one'], True, when)
         workitem: Workitem = backlog['w1']
         d = workitem.to_dict()
-        self.assertEqual(len(d), 7)
+        self.assertEqual(len(d), 8)
         self.assertEqual(d['date_work_started'], None)
         self.assertEqual(d['date_work_ended'], None)
         self.assertEqual(d['state'], 'new')

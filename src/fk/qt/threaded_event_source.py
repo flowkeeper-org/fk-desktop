@@ -147,7 +147,7 @@ class ThreadedEventSource(AbstractEventSource[TRoot]):
     def can_connect(self):
         return self._wrapped.can_connect()
 
-    def repair(self) -> list[str] | None:
+    def repair(self) -> tuple[list[str], str | None]:
         return self._wrapped.repair()
 
     def compress(self):

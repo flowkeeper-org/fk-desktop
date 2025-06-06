@@ -67,6 +67,9 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     def get_sequence(self) -> int:
         return self._seq
 
+    def update_sequence(self, new_seq: int) -> None:
+        self._seq = new_seq
+
     def encryptable(self) -> bool:
         # UC-3: All strategies should be e2e-encrypted by default
         return True

@@ -217,13 +217,15 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                 if choice < 3:  # Void it
                     seq += 1
                     now += datetime.timedelta(seconds=rand_normal(1, 1800))
-                    if random() < 0.5:
-                        yield AddInterruptionStrategy(seq,
-                                                      now,
-                                                      user,
-                                                      [workitem_uid, 'Voided for a good reason', ''],
-                                                      settings)
-                        seq += 1
+                    yield AddInterruptionStrategy(seq,
+                                                  now,
+                                                  user,
+                                                  [
+                                                      workitem_uid,
+                                                      'Voided for a good reason' if random() < 0.5 else 'Pomodoro voided',
+                                                      ''],
+                                                  settings)
+                    seq += 1
                     yield StopTimerStrategy(seq,
                                             now,
                                             user,

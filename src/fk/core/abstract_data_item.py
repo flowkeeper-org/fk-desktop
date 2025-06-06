@@ -66,7 +66,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
     def get_parent(self) -> TParent:
         return self._parent
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
         owner = self.get_owner()
         owner_name = owner.get_uid() if owner is not None else 'N/A'
         parent_uid = self._parent.get_uid() if self._parent is not None else 'N/A'
@@ -75,7 +75,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
                f'{indent}  Owner: {owner_name}\n' \
                f'{indent}  Parent UID: {"<MASKED>" if mask_uid else parent_uid}\n' \
                f'{indent}  Create date: {self._create_date}\n' \
-               f'{indent}  Last modified: {self._last_modified_date}'
+               f'{indent}  Last modified: {"<MASKED>" if mask_last_modified else self._last_modified_date}'
 
     def to_dict(self) -> dict:
         return {

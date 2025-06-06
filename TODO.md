@@ -20,9 +20,17 @@
 
 ## Linux binaries
 
+1. KUbuntu 24.04 doesn't support deb-min installer (Qt 6.4.2 max, same for Debian)
+2. Ubuntu 22.04 ships with Qt 6.2.4 (Universe repo) -- check all for Pyside6
+3. The "fat" versions has GTK / default theme
+4. No sound for Nuitka, same as Windows
+5. Keyboard doesn't work with PyInstaller binaries on openSUSE -- both 22 and 24
+
 ### AppImage
 
 ### Flatpak
+
+### openSUSE installer
 
 ## macOS binaries
 

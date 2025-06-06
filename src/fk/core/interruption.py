@@ -60,8 +60,8 @@ class Interruption(AbstractDataItem['Pomodoro']):
     def get_parent(self) -> 'Pomodoro':
         return self._parent
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, True)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, True, mask_last_modified)}\n' \
                f'{indent}  Reason: {self._reason if self._reason else "<None>"}\n' \
                f'{indent}  Void: {self._void}\n' \
                f'{indent}  Duration: {self._duration if self._duration else "<None>"}'
@@ -72,3 +72,9 @@ class Interruption(AbstractDataItem['Pomodoro']):
         d['duration'] = self._duration
         d['void'] = self._void
         return d
+
+    def __eq__(self, other: Interruption) -> bool:
+        # We can't rely on UIDs here, as those are auto-generated
+        return (self._reason == other._reason
+                and self._create_date == other._create_date
+                and self._duration == other._duration)

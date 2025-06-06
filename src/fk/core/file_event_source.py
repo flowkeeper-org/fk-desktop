@@ -31,13 +31,13 @@ from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
-    CompleteWorkitemStrategy
+    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -209,7 +209,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
-    def repair(self) -> list[str] | None:
+    def repair(self) -> tuple[list[str], str | None]:
         # This method attempts some basic repairs, trying to save as much
         # data as possible:
         # 0. Reorder strategies by date
@@ -243,7 +243,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
             for line in f:
                 try:
                     s = self._serializer.deserialize(line)
-                    parsed.append(s)
+                    if s:
+                        parsed.append(s)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {line}')
                     changes += 1
@@ -272,8 +273,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 all_users[uid] = set()
                 log.append(f'Created a missing user on first reference: {uid}')
                 changes += 1
-
-            # Handle duplicates and other logic
             if t is CreateUserStrategy:
                 cast: CreateUserStrategy = s
                 uid = cast.get_target_user_identity()
@@ -370,8 +369,11 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Create workitems on the first reference. All those strategies assume an existing workitem.
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
+                    t is MoveWorkitemStrategy or \
+                    t is ReorderWorkitemStrategy or \
                     t is StartWorkStrategy or \
                     t is StartTimerStrategy or \
+                    t is AddInterruptionStrategy or \
                     t is AddPomodoroStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
@@ -397,6 +399,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     all_backlogs[repaired_backlog].add(uid)
                     log.append(f'Created a missing workitem on first reference: {uid}')
                     changes += 1
+
+            # Handle duplicates and other logic
 
             strategies.append(s)
 
@@ -430,13 +434,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if changes > 0:
             log.append(f'Made {changes} changes in total')
             # UC-2: File event source repair won't do any changes if the source file is correct
-            self._overwrite_file(strategies, log)
+            backup_filename = self._overwrite_file(strategies, log)
         else:
             log.append(f'No changes were made')
+            backup_filename = None
 
         self._watcher = original_watcher
         # UC-3: File event source repair returns the log of all changes it made
-        return log
+        return log, backup_filename
 
     def _overwrite_file(self, strategies: Iterable[AbstractStrategy], log: list[str]) -> str:
         filename = self._get_filename()

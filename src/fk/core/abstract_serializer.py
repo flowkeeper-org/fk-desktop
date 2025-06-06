@@ -32,7 +32,7 @@ class AbstractSerializer(ABC, Generic[T, TRoot]):
     _settings: AbstractSettings
     _cryptograph: AbstractCryptograph
 
-    def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):
+    def __init__(self, settings: AbstractSettings | None, cryptograph: AbstractCryptograph | None):
         self._settings = settings
         self._cryptograph = cryptograph
 

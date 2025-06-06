@@ -99,6 +99,9 @@ class AbstractTimerDisplay:
     def _on_tick(self, **kwargs) -> None:
         timer = self.timer
         pomodoro = timer.get_running_pomodoro()
+        if pomodoro is None:
+            # This may happen if a tick was canceled, but still fired
+            return
         timer.update_remaining_duration(None)
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL and not pomodoro.is_long_break():
             state = 'Focus' if timer.is_working() else 'Rest'

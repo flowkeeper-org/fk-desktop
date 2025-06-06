@@ -68,11 +68,11 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
             if uid in backlog:
                 workitem: Workitem = backlog[uid]
                 if fail_if_sealed and workitem.is_sealed():
-                    raise Exception(f'Workitem "{uid}" is sealed')
+                    raise Exception(f'Cannot start timer at {self.get_sequence()} because workitem "{uid}" is sealed')
                 return workitem
 
         if fail_if_not_found:
-            raise Exception(f'Workitem "{uid}" not found')
+            raise Exception(f'Cannot start timer at at {self.get_sequence()} because workitem "{uid}" not found')
         else:
             return None
 
@@ -81,7 +81,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                 data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_ticking():
-            raise Exception(f'Cannot start timer for workitem {self._workitem_uid}, '
+            raise Exception(f'Cannot start timer at {self.get_sequence()} for workitem {self._workitem_uid}, '
                             f'because it is already running for "{timer.get_running_workitem()}"')
 
         workitem: Workitem = self.get_workitem(data, self._workitem_uid, True, True)
@@ -115,7 +115,7 @@ class StartTimerStrategy(AbstractStrategy[Tenant]):
                 emit(events.AfterPomodoroWorkStart, params, self._carry)
                 return
 
-        raise Exception(f'No startable pomodoro in "{self._workitem_uid}"')
+        raise Exception(f'Cannot start timer at {self.get_sequence()} because there are no startable pomodoros in "{self._workitem_uid}"')
 
 
 # StopTimer("")
@@ -139,12 +139,12 @@ class StopTimerStrategy(AbstractStrategy[Tenant]):
                 data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_idling():
-            raise Exception('Cannot stop the timer, because it is not running')
+            raise Exception(f'Cannot stop the timer at {self.get_sequence()}, because it is not running')
 
         pomodoro = timer.get_running_pomodoro()
 
         if pomodoro.get_type() not in [POMODORO_TYPE_TRACKER, POMODORO_TYPE_NORMAL]:
-            raise Exception(f'Cannot stop the timer for a running pomodoro of type {pomodoro.get_type()}')
+            raise Exception(f'Cannot stop the timer at {self.get_sequence()} for a running pomodoro of type {pomodoro.get_type()}')
 
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL and (pomodoro.get_rest_duration() > 0 or pomodoro.is_working()):
             # Stopping a normal running pomodoro with predefined rest duration means voiding it
@@ -199,7 +199,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
                 data: Tenant) -> None:
         timer: TimerData = self.get_user(data).get_timer()
         if timer.is_idling():
-            raise Exception('The timer rings, but it was not running')
+            raise Exception(f'The timer rings at {self.get_sequence()}, but it was not running')
 
         pomodoro: Pomodoro = timer.get_running_pomodoro()
         if timer.is_working():
@@ -214,7 +214,7 @@ class TimerRingInternalStrategy(AbstractStrategy[Tenant]):
                 timer.rest(pomodoro.get_rest_duration(), self._when)
                 timer.item_updated(self._when)
             else:
-                raise Exception('The timer should not ring for a tracker pomodoro')
+                raise Exception(f'The timer should not ring at {self.get_sequence()} for a tracker pomodoro')
 
             emit(events.TimerWorkComplete, {
                 'timer': timer,

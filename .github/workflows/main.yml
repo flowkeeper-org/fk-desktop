@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements-test.txt
       - name: Generate resources
         run: |
-          ./generate-resources.sh
+          scripts/common/generate-resources.sh
       - name: Run unit tests for fk.core
         run: |
           PYTHONPATH=src coverage run -m xmlrunner -o test-results discover -v fk.tests
