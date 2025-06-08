@@ -245,5 +245,5 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     def can_connect(self):
         return True
 
-    def repair(self) -> list[str] | None:
-        return None
+    def repair(self) -> tuple[list[str], str | None]:
+        return list(), None

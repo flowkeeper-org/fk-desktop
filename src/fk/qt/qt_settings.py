@@ -202,8 +202,8 @@ class QtSettings(AbstractSettings):
                 choice = d[4]
                 choice.clear()
                 for output in QMediaDevices.audioOutputs():
-                    name = output.id().toStdString()
-                    choice.append(f'{name}:{output.description()}')
+                    name = output.id().toStdString().replace(':', '$$')
+                    choice.append(f'{name}:{output.description().replace(":", "$$")}')
                     if output.isDefault():
                         self.update_default('Application.audio_output', name)
                 break

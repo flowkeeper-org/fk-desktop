@@ -20,8 +20,13 @@
 
 set -e
 
-# Create the notary key
+echo "Create the notary key"
 xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
 
-# Send the DMG for notarization
+echo "Send the DMG for notarization"
 xcrun notarytool submit "dist/Flowkeeper.dmg" --keychain-profile "notary-key" --wait
+
+echo "Submission history"
+xcrun notarytool log a65c29d5-dcff-48e5-a132-dc6c2b31cf84 --keychain-profile "notary-key"
+xcrun notarytool info a65c29d5-dcff-48e5-a132-dc6c2b31cf84 --keychain-profile "notary-key"
+

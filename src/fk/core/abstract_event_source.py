@@ -303,7 +303,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         pass
 
     @abstractmethod
-    def repair(self) -> list[str] | None:
+    def repair(self) -> tuple[list[str], str | None]:
         pass
 
     def connect(self):

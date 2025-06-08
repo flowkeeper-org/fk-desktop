@@ -33,6 +33,6 @@ class Tags(AbstractDataContainer[Tag, 'User']):
     def __str__(self):
         return f'Tags {self.get_name()}'
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
-        return f'{super().dump(indent, mask_uid)}\n' \
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
+        return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
                f'{indent} - Tags'
