@@ -228,6 +228,7 @@ class SettingsDialog(QDialog):
             layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
             layout.setContentsMargins(0, 0, 0, 0)
             ed3 = QLineEdit(parent)
+            ed3.setMinimumWidth(150)
             ed3.setObjectName(f'{option_id}-edit')
             ed3.setText(option_value)
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
@@ -430,8 +431,8 @@ class SettingsDialog(QDialog):
             return [widget]
         elif option_type == 'label':
             ed11 = QLabel(parent)
-            ed11.setWordWrap(True)
-            sp = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            ed11.setWordWrap(False)
+            sp = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             ed11.setSizePolicy(sp)
             ed11.setText(option_value)
             return [ed11]
@@ -504,7 +505,7 @@ class SettingsDialog(QDialog):
         res = QWidget()
         layout = QFormLayout(res)
         # layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
-        layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        # layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         # layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
