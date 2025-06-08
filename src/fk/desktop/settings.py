@@ -23,7 +23,7 @@ from PySide6.QtCore import QSize, QTime, Qt
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem, QSizePolicy
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.sandbox import get_sandbox_type
@@ -81,10 +81,10 @@ class SettingsDialog(QDialog):
         location.setFont(small_font)
         location.setText(f'Settings saved in {data.location()}')
 
-        root_layout = QGridLayout(self)
-        root_layout.addWidget(tabs, 0, 0)
-        root_layout.addWidget(location, 1, 0)
-        root_layout.addWidget(buttons, 2, 0)
+        root_layout = QVBoxLayout(self)
+        root_layout.addWidget(tabs)
+        root_layout.addWidget(location)
+        root_layout.addWidget(buttons)
         self.setLayout(root_layout)
         self._set_buttons_state(False)
 
@@ -225,6 +225,7 @@ class SettingsDialog(QDialog):
         elif option_type == 'file':
             widget = QWidget(parent)
             layout = QHBoxLayout(widget)
+            layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
             layout.setContentsMargins(0, 0, 0, 0)
             ed3 = QLineEdit(parent)
             ed3.setObjectName(f'{option_id}-edit')
@@ -430,6 +431,8 @@ class SettingsDialog(QDialog):
         elif option_type == 'label':
             ed11 = QLabel(parent)
             ed11.setWordWrap(True)
+            sp = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            ed11.setSizePolicy(sp)
             ed11.setText(option_value)
             return [ed11]
         elif option_type == 'keyvalue':
@@ -498,8 +501,11 @@ class SettingsDialog(QDialog):
         self._widgets_set_value[name](value)
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
-        res = QWidget(tabs)
+        res = QWidget()
         layout = QFormLayout(res)
+        # layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        # layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
             widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)
