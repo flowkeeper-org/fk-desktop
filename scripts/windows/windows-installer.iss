@@ -9,6 +9,7 @@ DefaultDirName={userpf}\Flowkeeper
 DefaultGroupName=Flowkeeper
 SetupIconFile=res\flowkeeper.ico
 PrivilegesRequired=lowest
+UninstallDisplayName=Flowkeeper
 SourceDir=..\..
 OutputDir=dist
 
