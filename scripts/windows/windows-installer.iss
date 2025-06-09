@@ -10,6 +10,7 @@ DefaultGroupName=Flowkeeper
 SetupIconFile=res\flowkeeper.ico
 UninstallDisplayIcon={app}\Flowkeeper.exe
 PrivilegesRequired=lowest
+UninstallDisplayName=Flowkeeper
 SourceDir=..\..
 OutputDir=dist
 
