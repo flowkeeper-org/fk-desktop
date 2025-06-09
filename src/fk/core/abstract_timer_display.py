@@ -70,7 +70,7 @@ class AbstractTimerDisplay:
                 raise Exception(f'Encountered impossible timer mode change from {old_mode} to {mode}')
             self._mode = mode
             self.mode_changed(old_mode, mode)
-            logger.debug(f'Timer display mode changed from {old_mode} to {mode}')
+            logger.debug(f'{self.objectName()}: Timer display mode changed from {old_mode} to {mode}')
             if mode == 'working' or mode == 'resting' or mode == 'long-resting':
                 self._on_tick()
 
@@ -85,6 +85,12 @@ class AbstractTimerDisplay:
         source.on(TimerWorkStart, self._on_work_start)
         source.on(TimerWorkComplete, self._on_work_complete)
         source.on(TimerRestComplete, self._on_rest_complete)
+
+    # We call this method if the timer display is (re)created after all messages has already fired,
+    #  e.g. when the user changes tray icon appearance settings in the middle of a pomodoro.
+    def initialized(self):
+        self._on_source_changed('manual', self._source_holder.get_source())
+        self._on_timer_initialized()
 
     def _on_timer_initialized(self, **kwargs) -> None:
         timer = self.timer
