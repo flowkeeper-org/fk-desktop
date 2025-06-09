@@ -8,6 +8,7 @@ AppUpdatesURL=https://flowkeeper.org
 DefaultDirName={userpf}\Flowkeeper
 DefaultGroupName=Flowkeeper
 SetupIconFile=res\flowkeeper.ico
+UninstallDisplayIcon={app}\Flowkeeper.exe
 PrivilegesRequired=lowest
 SourceDir=..\..
 OutputDir=dist
