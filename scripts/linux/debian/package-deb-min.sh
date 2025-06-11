@@ -35,8 +35,10 @@ echo "2. Prepared temp folder"
 mkdir -p "$dist/usr/lib/flowkeeper"
 cp -r src/* "$dist/usr/lib/flowkeeper/"
 
-mkdir -p "$dist/usr/share/icons/hicolor/512x512/flowkeeper"
-cp res/flowkeeper.png "$dist/usr/share/icons/hicolor/512x512/flowkeeper/"
+mkdir -p "$dist/usr/share/icons/hicolor/1024x1024/apps"
+mkdir -p "$dist/usr/share/icons/hicolor/48x48/apps"
+cp res/flowkeeper.png "$dist/usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png"
+cp flowkeeper-48x48.png "$dist/usr/share/icons/hicolor/48x48/apps/flowkeeper.png"
 
 mkdir -p "$dist/usr/bin"
 cp scripts/linux/common/flowkeeper "$dist/usr/bin/flowkeeper"
