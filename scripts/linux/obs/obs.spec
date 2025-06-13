@@ -19,7 +19,7 @@
 
 
 Name:           flowkeeper
-Version:        0.10.0
+Version:        1.0.0
 Release:        0
 Summary:        Pomodoro Technique desktop timer for power users
 License:        GPL-3.0-only

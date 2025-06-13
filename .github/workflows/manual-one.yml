@@ -30,7 +30,7 @@ on:
 
 jobs:
   call-build:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.0.0
     with:
       os: ${{ inputs.os }}
       compiler: ${{ inputs.compiler }}

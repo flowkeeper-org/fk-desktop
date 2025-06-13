@@ -19,7 +19,7 @@ jobs:
         exclude:
           - os: macos-13
             compiler: nuitka
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-0.10.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.0.0
     with:
       os: ${{ matrix.os }}
       compiler: ${{ matrix.compiler }}

@@ -22,13 +22,13 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://flowkeeper.org/images/releases/v0.9.0/Linux/fulls/19-main-dark-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/19-main-dark-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v0.9.0/Linux/fulls/14-stats-month-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/14-stats-month-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v0.9.0/Linux/fulls/16-work-summary-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/16-work-summary-window-border.png</image>
         </screenshot>
     </screenshots>
 
@@ -37,13 +37,19 @@
     </provides>
 
     <releases>
-        <release version="0.10.0" date="2025-02-01">
+        <release version="1.0.0" date="2025-06-14">
             <description>
-                <p>Standard XDG directories are used on Linux (#65).</p>
-                <p>Voided pomodoros are displayed as ticks to better match the textbook (#92).</p>
-                <p>Basic import from GitHub Issues, try Ctrl+I (#00).</p>
+                <p>Tracking unfocused time -- try to start a work item with no pomodoros (#94, #98).</p>
+                <p>Long breaks and working in series, see Settings > Series and breaks (#53).</p>
+                <p>Dragging work items between backlogs (#60).</p>
+                <p>Recording interruptions (#75).</p>
+                <p>Voided pomodoros are displayed as ticks, and completed ones are crossed out to better match the Book (#41, #92).</p>
+                <p>Import from CSV and GitHub, try Ctrl+I (#125).</p>
+                <p>Hovering over pomodoros displays a detailed log of your work (#93).</p>
+                <p>"Contact us" submenu to facilitate feedback collection (#111).</p>
                 <p>Flowkeeper window now hides automatically on auto-start (#102).</p>
-                <p>Flowkeeper now supports Flatpak and Qt 6.8.1 (#63).</p>
+                <p>New font selector for macOS, which supports Apple system font (#113).</p>
+                <p>Resting music starts playing from the right position if we restart Flowkeeper.</p>
             </description>
         </release>
     </releases>

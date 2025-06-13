@@ -123,7 +123,7 @@ modules:
 
     sources:
       - type: archive
-        url: https://github.com/flowkeeper-org/fk-desktop/archive/refs/tags/v0.10.0.tar.gz
+        url: https://github.com/flowkeeper-org/fk-desktop/archive/refs/tags/v1.0.0.tar.gz
         dest: flowkeeper
         sha256: ab7f0e88ca34462f54a092d47b111df292211c5d18e993973b3ed3c75471dc3b
 

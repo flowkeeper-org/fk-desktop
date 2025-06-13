@@ -8,7 +8,8 @@
 - Review CHANGELOG.txt and update the date.
 - Review and merge the rc PR into main.
 - Create a new tag + release in GitHub, mark it as a draft.
-- Wait for the release pipeline to complete, then sign Windows binaries.
+- Wait for the release pipeline to complete.
+- Trigger private Jenkins pipeline to sign Windows binaries.
 - Check the binaries via Virustotal one more time.
 - Remove the "draft" flag from GitHub release.
 - Check website -- it should pick up changes automatically.
@@ -22,7 +23,7 @@ r/macapps, r/Python, r/QtFramework, r/debian, r/openSUSE, r/linux, r/pomodoro, r
 
 # Qt6 versions
 
-Last updated: **9 June 2025** for Flowkeeper **0.10.0**.
+Last updated: **9 June 2025** for Flowkeeper **1.0.0**.
 
 | OS                    | Released   | EOL        | Python  | Qt 6  | PySide6 | Running options | Comments              |
 |-----------------------|------------|------------|---------|-------|---------|-----------------|-----------------------|
