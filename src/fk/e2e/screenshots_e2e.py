@@ -3,13 +3,15 @@ import datetime
 import os
 
 from PySide6.QtCore import Qt, QPoint, QSize
-from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget, QAbstractButton
+from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.timer_strategies import StartTimerStrategy, StopTimerStrategy
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, FULLSCREEN_GALLERY_FILENAME, \
     WINDOW_BORDER_GALLERY_FILENAME
@@ -39,7 +41,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         custom = {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
-            'Application.show_window_title': 'True',
+            'Application.show_window_title': 'False',
             'Application.check_updates': 'False',
             'Pomodoro.long_break_algorithm': 'never',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
@@ -91,15 +93,20 @@ class ScreenshotE2eTest(AbstractE2eTest):
     async def _wait_long_pomodoro(self) -> None:
         await asyncio.sleep(15)
 
-    async def _complete_workitem(self) -> None:
-        self.keypress(Qt.Key.Key_P, True)   # self.execute_action('workitems_table.completeItem')
-        await self.instant_pause()
+    async def _complete_workitem(self, name: str) -> None:
+        source = self.get_application().get_source_holder().get_source()
+        for w in source.workitems():
+            if w.get_name() == name:
+                source.execute(CompleteWorkitemStrategy, [w.get_uid(), "finished"])
+                await self.instant_pause()
 
-    async def _void_pomodoro(self) -> None:
-        self.keypress(Qt.Key.Key_V, True)   # self.execute_action('focus.voidPomodoro')
-        await self.instant_pause()
-        self.close_modal()
-        await self.instant_pause()
+    async def _void_pomodoro(self, name: str) -> None:
+        source = self.get_application().get_source_holder().get_source()
+        for w in source.workitems():
+            if w.get_name() == name:
+                source.execute(AddInterruptionStrategy, [w.get_uid(), f'Pomodoro voided'])
+                source.execute(StopTimerStrategy, [])
+                await self.instant_pause()
 
     async def _stop_tracking(self) -> None:
         self.keypress(Qt.Key.Key_S, True)
@@ -211,28 +218,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         settings_tabs: QTabWidget = self.window().findChild(QTabWidget, "settings_tabs")
         settings_tabs.setCurrentIndex(2)
         await self.instant_pause()
-        source_type_dropdown: QComboBox = self.window().findChild(QComboBox, "Source.type")
-        source_type_dropdown.setCurrentIndex(0)
-        await self.instant_pause()
         data_file_edit: QLineEdit = self.window().findChild(QLineEdit, "FileEventSource.filename-edit")
         data_file_edit.selectAll()
         await self.instant_pause()
         self.take_screenshot('03-settings-connection-offline')
-
-        source_type_dropdown.setCurrentIndex(2)
-        await self.instant_pause()
-        self.take_screenshot('04-settings-connection-self-hosted')
-
-        source_type_dropdown.setCurrentIndex(1)
-        await self.instant_pause()
-        auth_type_dropdown: QComboBox = self.window().findChild(QComboBox, "WebsocketEventSource.auth_type")
-        auth_type_dropdown.showPopup()
-        await self.instant_pause()
-
-        self.take_screenshot('05-settings-connection-flowkeeper-org')
-
-        auth_type_dropdown.hidePopup()
-        await self.instant_pause()
 
         settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
@@ -294,8 +283,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._add_pomodoro()
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
-        await self._complete_workitem()
+        await self._void_pomodoro('Reply to Peter')
+        await self._complete_workitem('Reply to Peter')
         await self.longer_pause()
 
         # Demo the tracker items -- start another WI in the past
@@ -308,12 +297,12 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         await self._new_workitem('Order coffee capsules')
         await self._find_workitem('Order coffee capsules')
-        await self._complete_workitem()
+        await self._complete_workitem('Order coffee capsules')
 
         await self._find_workitem('Slides for #Flowkeeper demo')
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
+        await self._void_pomodoro('Slides for #Flowkeeper demo')
 
         # Tags
         await self._select_tag('Flowkeeper')
@@ -364,8 +353,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.longer_pause()
         self.take_screenshot('19-main-dark')
 
-        await self._void_pomodoro()
-        await self._complete_workitem()
+        await self._void_pomodoro('Slides for #Flowkeeper demo')
+        await self._complete_workitem('Slides for #Flowkeeper demo')
 
         settings.set({
             'Pomodoro.default_work_duration': old_value_work,
