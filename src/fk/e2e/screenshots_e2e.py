@@ -211,6 +211,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
+        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'simple', 'Pomodoro.start_next_automatically': 'True'})
+        await self.instant_pause()
+
         self.keypress(Qt.Key.Key_F10)
         await self.instant_pause()
         self.center_window()
@@ -222,6 +225,15 @@ class ScreenshotE2eTest(AbstractE2eTest):
         data_file_edit.selectAll()
         await self.instant_pause()
         self.take_screenshot('03-settings-connection-offline')
+
+        settings_tabs.setCurrentIndex(1)
+        await self.instant_pause()
+        series_check: QCheckBox = self.window().findChild(QCheckBox, "Pomodoro.start_next_automatically")
+        series_check.setChecked(True)
+        await self.instant_pause()
+        self.take_screenshot('04-settings-long-breaks')
+        series_check.setChecked(False)
+        await self.instant_pause()
 
         settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
@@ -249,6 +261,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('21-settings-integration')
 
         self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
+
+        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'never', 'Pomodoro.start_next_automatically': 'False'})
         await self.instant_pause()
 
         await self._new_workitem('Generate new screenshots for #Flowkeeper', 2)

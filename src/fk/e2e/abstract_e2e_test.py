@@ -327,7 +327,7 @@ class AbstractE2eTest(ABC):
     def take_screenshot(self, name: str):
         if self._screenshot is None:    # Lazy init, because we don't always want to take screenshots
             self._screenshot = Screenshot()
-        # self._screenshot.take_window(name, self.window())
+        self._screenshot.take_window(name, self.window())
         self._screenshot.take_screen(name)
 
         # Update window gallery
