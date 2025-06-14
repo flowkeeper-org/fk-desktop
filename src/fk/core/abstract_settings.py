@@ -192,7 +192,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Pomodoro.long_break_within', 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
                 ('', 'separator', '', '', [], _always_show),
                 ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'False', [], _always_show),
-                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next '
+                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
                                                               'planned pomodoro in the same work item automatically.', [], _always_show),
             ],
             'Connection': [
@@ -303,7 +303,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)", (C) Lobo Loco\n<https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
@@ -313,13 +313,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
             'Integration': [
-                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{} syntax for variable substitution:\n'
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{}\n'
+                                                             'syntax for variable substitution:\n'
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
-                                                             'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                                                             'WARNING: Placeholders are substituted as-is, without any sanitization.', [], _always_show),
                 ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
-                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
-                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to check\n'
+                                                                 'the above checkbox and then grant Flowkeeper access to dbus. This has a major impact\n'
                                                                  'on the sandbox security, so do this only when strictly necessary:\n'
                                                                  '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),

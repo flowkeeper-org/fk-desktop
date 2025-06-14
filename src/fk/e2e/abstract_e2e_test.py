@@ -20,7 +20,6 @@ import atexit
 import inspect
 import logging
 import os
-import sys
 import traceback
 from abc import ABC
 from datetime import datetime
@@ -186,12 +185,15 @@ class AbstractE2eTest(ABC):
         return widget.visualRect(widget.model().index(row, col)).center()
 
     async def mouse_click_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        logger.debug(f'mouse_click_row({widget.objectName()}, {row}, {col})')
         await self.mouse_click(widget, self._get_row_position(widget, row, col))
 
     async def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        logger.debug(f'mouse_doubleclick_row({widget.objectName()}, {row}, {col})')
         await self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
     async def mouse_click(self, widget: QWidget, pos: QPoint, left_button: bool = True):
+        logger.debug(f'mouse_click({widget.objectName()}, {pos}, {left_button})')
         widget.focusInEvent(QFocusEvent(
             QEvent.Type.FocusIn,
         ))
@@ -214,6 +216,7 @@ class AbstractE2eTest(ABC):
         await self.instant_pause()
 
     async def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
+        logger.debug(f'mouse_doubleclick({widget.objectName()}, {pos})')
         widget.mouseDoubleClickEvent(QMouseEvent(
             QEvent.Type.MouseButtonDblClick,
             pos,
@@ -224,6 +227,7 @@ class AbstractE2eTest(ABC):
         await self.instant_pause()
 
     def keypress(self, key: int, ctrl: bool = False, widget: QWidget = None):
+        logger.debug(f'keypress({key}, {ctrl}, {widget})')
         if widget is None:
             widget = self.get_focused()
         self._app.postEvent(widget, QKeyEvent(
@@ -233,6 +237,7 @@ class AbstractE2eTest(ABC):
         ))
 
     def close_modal(self, ok: bool = True):
+        logger.debug(f'close_modal({ok})')
         for w in self._app.allWindows():
             if w.isModal():
                 if ok:
@@ -241,6 +246,7 @@ class AbstractE2eTest(ABC):
                     self.keypress(Qt.Key.Key_Escape, False, w)
 
     def type_text(self, text: str):
+        logger.debug(f'type_text({text})')
         self._app.postEvent(self.get_focused(), QKeyEvent(
             QEvent.Type.KeyPress,
             Qt.Key.Key_No,
@@ -265,24 +271,28 @@ class AbstractE2eTest(ABC):
         return win
 
     def click_button(self, text: str = None, name: str = None):
+        logger.debug(f'click_button({text}, {name})')
         buttons: list[QAbstractButton] = self.get_application().activeWindow().findChildren(QAbstractButton)
         for b in buttons:
             if text is not None and b.text() == text or name is not None and b.objectName() == name:
                 b.click()
 
     def check_checkbox(self, checked: bool = True, text: str = None, name: str = None):
+        logger.debug(f'check_checkbox({checked}, {text}, {name})')
         checkboxes: list[QCheckBox] = self.get_application().activeWindow().findChildren(QCheckBox)
         for c in checkboxes:
             if text is not None and c.text() == text or name is not None and c.objectName() == name:
                 c.setChecked(checked)
 
     def check_radiobutton(self, checked: bool = True, text: str = None, name: str = None):
+        logger.debug(f'check_radiobutton({checked}, {text}, {name})')
         radios: list[QRadioButton] = self.get_application().activeWindow().findChildren(QRadioButton)
         for r in radios:
             if text is not None and r.text() == text or name is not None and r.objectName() == name:
                 r.setChecked(checked)
 
     def execute_action(self, name: str) -> None:
+        logger.debug(f'execute_action({name})')
         Actions.ALL[name].trigger()
 
     def is_action_enabled(self, name: str) -> bool:

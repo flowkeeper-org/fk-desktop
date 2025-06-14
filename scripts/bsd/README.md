@@ -16,6 +16,6 @@ Tested with:
 
 - KDE 5.27.11 on X11
 - FreeBSD 14.1 RELEASE
-- Flowkeeper v0.10.0
+- Flowkeeper v1.0.0
 - Python 3.11.11
 - Qt 6.8.2 (xcb)

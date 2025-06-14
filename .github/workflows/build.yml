@@ -107,7 +107,7 @@ jobs:
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
-          file-description: Flowkeeper is a Pomodoro Technique desktop timer for power users
+          file-description: ${{ contains('windows-2025 windows-2022 windows-2019', inputs.os) && 'Flowkeeper' || 'Flowkeeper is a Pomodoro Technique desktop timer for power users' }}
           copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
           output-dir: 'build'
           output-file: 'Flowkeeper'

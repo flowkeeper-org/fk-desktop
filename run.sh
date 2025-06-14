@@ -18,6 +18,5 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-source venv/bin/activate
-PYTHONPATH=src python -m fk.desktop.desktop "$@"
+PYTHONPATH=src python3 -m fk.desktop.desktop "$@"
 

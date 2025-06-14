@@ -19,7 +19,7 @@
 
 
 Name:           flowkeeper
-Version:        0.10.0
+Version:        1.0.0
 Release:        0
 Summary:        Pomodoro Technique desktop timer for power users
 License:        GPL-3.0-only
@@ -59,8 +59,10 @@ rm "$qrc"
 mkdir -p "%{buildroot}%{_libexecdir}/flowkeeper"
 cp -r src/* "%{buildroot}%{_libexecdir}/flowkeeper/"
 
-mkdir -p "%{buildroot}%{_datadir}/icons/hicolor/512x512/flowkeeper"
-cp -av res/flowkeeper.png "%{buildroot}%{_datadir}/icons/hicolor/512x512/flowkeeper/"
+mkdir -p "%{buildroot}%{_datadir}/icons/hicolor/1024x1024/apps"
+mkdir -p "%{buildroot}%{_datadir}/icons/hicolor/48x48/apps"
+cp -av res/flowkeeper.png "%{buildroot}%{_datadir}/icons/hicolor/1024x1024/apps/flowkeeper.png"
+cp -av flowkeeper-48x48.png "%{buildroot}%{_datadir}/icons/hicolor/48x48/apps/flowkeeper.png"
 
 mkdir -p "%{buildroot}%{_bindir}"
 cp -av installer/flowkeeper "%{buildroot}%{_bindir}/flowkeeper"

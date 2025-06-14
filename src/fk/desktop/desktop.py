@@ -138,9 +138,11 @@ def update_mode(timer_ticking: bool) -> None:
 
 def recreate_tray_icon(flavor: str, show_tray_icon_setting: str) -> None:
     global tray
+    initialize_timer = False
     if tray is not None:
         tray.kill()
         tray.setVisible(False)
+        initialize_timer = True
     tray = TrayIcon(window,
                     pomodoro_timer,
                     app.get_source_holder(),
@@ -148,6 +150,8 @@ def recreate_tray_icon(flavor: str, show_tray_icon_setting: str) -> None:
                     48,
                     MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
                     'dark' in flavor)
+    if initialize_timer:
+        tray.initialized()
     tray.setVisible(show_tray_icon_setting == 'True')
 
 

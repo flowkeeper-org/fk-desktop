@@ -56,6 +56,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self._next_icon = QIcon(':/icons/light/24x24/tool-next.svg')
         self._actions = actions
         self._continue_workitem = None
+        self.setObjectName('tray')
         self._timer_renderer = cls(None,
                                    QColor('#000000' if is_dark else '#ffffff'),
                                    QColor('#ffffff' if is_dark else '#000000'),
