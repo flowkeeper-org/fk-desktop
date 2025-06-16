@@ -171,7 +171,7 @@ jobs:
             # Temporarily disable AppImage build
             echo "Building AppImage package"
             scripts/linux/appimage/package-appimage.sh
-            mv dist/org.flowkeeper.Flowkeeper.AppImage "$PREFIX.AppImage"
+            mv dist/Flowkeeper-x86_64.AppImage "$PREFIX.AppImage"
           fi
 
           echo "Zipping the standalone directory"
