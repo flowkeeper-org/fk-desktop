@@ -40,11 +40,11 @@ from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
-from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.resize_event_filter import ResizeEventFilter
+from fk.qt.rest_fullscreen_widget import RestFullscreenWidget
 from fk.qt.search_completer import SearchBar
 from fk.qt.theme_change_event_filter import ThemeChangeEventFilter
 from fk.qt.tray_icon import TrayIcon
@@ -178,6 +178,8 @@ def on_settings_changed(event: str, old_values: dict[str, str], new_values: dict
             pin_if_needed(new_value)
         elif name == 'Application.focus_flavor':
             focus_widget.set_flavor(new_value)
+        elif name == 'RestScreen.flavor':
+            rest_fullscreen_widget.set_flavor(new_value)
         elif name == 'Application.tray_icon_flavor':
             recreate_tray_icon(new_value,
                                new_values.get('Application.show_tray_icon',
@@ -411,6 +413,13 @@ if __name__ == "__main__":
         # Focus window should keep the same title as the main one
         focus_window.setWindowTitle(window.windowTitle())
         window.windowTitleChanged.connect(focus_window.setWindowTitle)
+
+        # Create the fullscreen rest widget
+        rest_fullscreen_widget = RestFullscreenWidget(window,
+                                                     app,
+                                                     pomodoro_timer,
+                                                     app.get_source_holder(),
+                                                     settings)
 
         # Layouts
         # noinspection PyTypeChecker
