@@ -18,7 +18,7 @@ from html import escape
 
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QTextDocument, QColor, QBrush
+from PySide6.QtGui import QColor, QBrush, QStaticText
 
 from fk.core.workitem import Workitem
 
@@ -57,15 +57,12 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
         if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
             painter.fillRect(option.rect, self._selection_brush)
 
-        painter.translate(option.rect.topLeft())
-
-        document = QTextDocument(self)
-        document.setTextWidth(option.rect.width())
-
         workitem: Workitem = index.data(500)
-        document.setHtml(self._format_html(workitem, is_placeholder))
-        document.drawContents(painter)
+        st = QStaticText(self._format_html(workitem, is_placeholder))
+        st.setTextWidth(option.rect.width())
 
+        painter.translate(option.rect.topLeft())
+        painter.drawStaticText(0, 4, st)
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:
