@@ -84,8 +84,15 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
-        # Update colors from settings
-        self._update_colors()
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {self._bg_color.name()};
+                color: {self._text_color.name()};
+            }}
+            QLabel {{
+                color: {self._text_color.name()};
+            }}
+        """)
 
     def set_flavor(self, flavor):
         layout = self.layout()
@@ -130,8 +137,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._message_text.setFont(header_font)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.theme' in new_values:
-            self._update_colors()
         if 'RestScreen.enabled' in new_values:
             # If disabled while showing, hide the window
             if new_values['RestScreen.enabled'] == 'False' and self._window.isVisible():
@@ -140,27 +145,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             self._message_text.setText(new_values['RestScreen.message'])
         if 'RestScreen.flavor' in new_values:
             self.set_flavor(new_values['RestScreen.flavor'])
-
-    def _update_colors(self):
-        variables = self._application.get_theme_variables()
-        self._bg_color = QColor(variables.get('REST_BG_COLOR', '#2b2b2b'))
-        self._text_color = QColor(variables.get('REST_TEXT_COLOR', '#ffffff'))
-
-        # Update timer widget colors if it exists
-        if hasattr(self, '_timer_widget') and self._timer_widget is not None:
-            self._timer_widget.fg_color = QColor(variables.get('FOCUS_TEXT_COLOR', '#ffffff'))
-            self._timer_widget.bg_color = QColor(variables.get('FOCUS_BG_COLOR', '#2b2b2b'))
-
-        # Apply colors
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {self._bg_color.name()};
-                color: {self._text_color.name()};
-            }}
-            QLabel {{
-                color: {self._text_color.name()};
-            }}
-        """)
 
     def paintEvent(self, event):
         super().paintEvent(event)
