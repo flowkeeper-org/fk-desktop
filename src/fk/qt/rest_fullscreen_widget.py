@@ -195,3 +195,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._application.unsubscribe(self._on_fonts_changed)
         self._window.hide()
         self._window.deleteLater()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton or event.button() == Qt.MouseButton.RightButton:
+            self._window.close()
