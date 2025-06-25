@@ -38,7 +38,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _settings: AbstractSettings
     _application: Application
     _window: QMainWindow
-    _timer_text: QLabel
     _message_text: QLabel
     _bg_color: QColor
     _text_color: QColor
@@ -62,7 +61,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
 
         self._window = QMainWindow()
         self._window.setWindowTitle("Flowkeeper - Rest Time")
-        # self._window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self._window.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
 
         self._window.setCentralWidget(self)
