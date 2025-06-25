@@ -250,8 +250,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                                                                 'classic-light:Classic, light background',
                                                                                                 'classic-dark:Classic, dark background'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
-                ('RestScreen.flavor', 'choice', 'Rest screen flavor', 'minimal', ['classic:Classic (with buttons)',
-                                                                                 'minimal:Minimalistic (with timer)'], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
@@ -292,6 +290,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
                 ('RestScreen.enabled', 'bool', 'Show fullscreen during rest', 'True', [], _always_show),
                 ('RestScreen.message', 'str', 'Rest message', 'Take a break. Relax your eyes and stretch your body.', [], _always_show),
+                ('RestScreen.flavor', 'choice', 'Rest screen flavor', 'minimal', ['classic:Classic (with buttons)',
+                                                                                  'minimal:Minimalistic (with timer)'], _always_show),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
