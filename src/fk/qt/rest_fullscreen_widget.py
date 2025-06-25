@@ -187,7 +187,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             self._window.hide()
 
     def kill(self):
-        print("RestFullscreenWidget: kill called")
         super().kill()
         self._settings.unsubscribe(self._on_setting_changed)
         self._application.unsubscribe(self._on_fonts_changed)
