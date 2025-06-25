@@ -199,3 +199,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton or event.button() == Qt.MouseButton.RightButton:
             self._window.close()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Q and event.modifiers() == Qt.ControlModifier:
+            QApplication.quit()
