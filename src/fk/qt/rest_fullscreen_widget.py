@@ -79,7 +79,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         # Message text
         self._message_text = QLabel(self)
         self._message_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._message_text.setText(self._settings.get('RestScreen.message'))
+        self._message_text.setText("")
         application.on(AfterFontsChanged, self._on_fonts_changed)
         layout.addWidget(self._message_text)
 
@@ -171,8 +171,8 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         if mode in ('resting', 'long-resting'):
-            # Update the timer widget
             self._timer_widget.set_values(my_value, my_max, None, None, mode)
+            self._message_text.setText(state_text)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if self._settings.get('RestScreen.enabled') != 'True':
