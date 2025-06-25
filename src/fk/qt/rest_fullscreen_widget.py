@@ -109,12 +109,9 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         center_button = None
         if flavor == 'classic':
             # Add timer and action buttons like in FocusWidget
-            center_button = QWidget(self)
+            center_button = QToolButton(self)
             center_button.setContentsMargins(0, 0, 0, 0)
-            center_button_layout = QHBoxLayout()
-            center_button_layout.setContentsMargins(0, 0, 0, 0)
-            center_button_layout.setSpacing(0)
-            center_button.setLayout(center_button_layout)
+            self._added.append(center_button)
 
 
         # Create the timer widget
