@@ -179,9 +179,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             return
 
         if new_mode in ('resting', 'long-resting'):
-            # Set header text based on rest type
-            is_long_break = new_mode == 'long-resting'
-
             # Get the active screen (where the parent window is) or fallback to primary
             active_screen = None
             parent_window = self.parent().window() if self.parent() else None
