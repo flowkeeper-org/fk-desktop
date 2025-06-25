@@ -141,8 +141,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             # If disabled while showing, hide the window
             if new_values['RestScreen.enabled'] == 'False' and self._window.isVisible():
                 self._window.hide()
-        if 'RestScreen.message' in new_values:
-            self._message_text.setText(new_values['RestScreen.message'])
         if 'RestScreen.flavor' in new_values:
             self.set_flavor(new_values['RestScreen.flavor'])
 
