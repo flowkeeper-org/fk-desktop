@@ -136,6 +136,9 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def _on_fonts_changed(self, event, header_font, **kwargs):
         self._message_text.setFont(header_font)
 
+    def update_fonts(self):
+        self._message_text.setFont(self._application.get_header_font())
+
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'RestScreen.enabled' in new_values:
             # If disabled while showing, hide the window

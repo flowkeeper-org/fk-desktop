@@ -543,6 +543,7 @@ if __name__ == "__main__":
         # Otherwise, the font size for the focus' header is picked correctly, but
         # default font family is used.
         focus_widget.update_fonts()
+        rest_fullscreen_widget.update_fonts()
 
         try:
             app.initialize_source()
