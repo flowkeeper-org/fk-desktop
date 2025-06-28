@@ -49,7 +49,9 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
                  application: Application,
                  timer: PomodoroTimer,
                  source_holder: EventSourceHolder,
-                 settings: AbstractSettings):
+                 settings: AbstractSettings,
+                 flavor: str = 'minimal'
+                 ):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._added = []
@@ -71,7 +73,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self.setLayout(layout)
 
         # Setup timer widget with the appropriate flavor
-        flavor = self._settings.get('RestScreen.flavor')
         self.set_flavor(flavor)
 
         # Message text

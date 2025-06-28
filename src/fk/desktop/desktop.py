@@ -419,7 +419,8 @@ if __name__ == "__main__":
                                                      app,
                                                      pomodoro_timer,
                                                      app.get_source_holder(),
-                                                     settings)
+                                                     settings,
+                                                      settings.get('RestScreen.flavor'))
 
         # Layouts
         # noinspection PyTypeChecker
