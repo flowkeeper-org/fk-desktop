@@ -38,7 +38,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _settings: AbstractSettings
     _application: Application
     _window: QMainWindow
-    _message_text: QLabel
+    _header_text: QLabel
     _bg_color: QColor
     _text_color: QColor
     _timer_widget: TimerWidget
@@ -75,12 +75,13 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         # Setup timer widget with the appropriate flavor
         self.set_flavor(flavor)
 
-        # Message text
-        self._message_text = QLabel(self)
-        self._message_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._message_text.setText("")
+        self._header_text = QLabel(self)
+        self._header_text.setObjectName("headerText")
+        self._header_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._header_text.setText("")
+
         application.on(AfterFontsChanged, self._on_fonts_changed)
-        layout.addWidget(self._message_text)
+        layout.addWidget(self._header_text)
 
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -135,10 +136,10 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             self._timer_widget.set_values(**last_values)
 
     def _on_fonts_changed(self, event, header_font, **kwargs):
-        self._message_text.setFont(header_font)
+        self._header_text.setFont(header_font)
 
     def update_fonts(self):
-        self._message_text.setFont(self._application.get_header_font())
+        self._header_text.setFont(self._application.get_header_font())
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'RestScreen.enabled' in new_values:
@@ -156,7 +157,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         if mode in ('resting', 'long-resting'):
             self._timer_widget.set_values(my_value, my_max, None, None, mode)
-            self._message_text.setText(state_text)
+            self._header_text.setText(state_text)
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if self._settings.get('RestScreen.enabled') != 'True':
@@ -204,3 +205,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Q and event.modifiers() == Qt.ControlModifier:
             QApplication.quit()
+
+    def showEvent(self, event, /):
+        super().showEvent(event)
