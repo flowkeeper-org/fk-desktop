@@ -33,8 +33,7 @@ echo "2. Prepared temp folder"
 
 # 3. Copy application files
 mkdir -p deb/usr/lib/flowkeeper
-mkdir -p deb/usr/share/icons/hicolor/1024x1024/apps
-mkdir -p deb/usr/share/icons/hicolor/48x48/apps
+qmkdir -p deb/usr/share/icons/hicolor/{48x48,1024x1024}/apps
 cp -r ../dist/standalone/* deb/usr/lib/flowkeeper/
 cp ../res/flowkeeper.png deb/usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png
 cp ../flowkeeper-48x48.png deb/usr/share/icons/hicolor/48x48/apps/flowkeeper.png

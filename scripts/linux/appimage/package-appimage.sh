@@ -30,8 +30,7 @@ echo "1. Prepared temp folder"
 
 # 2. Copy application files
 mkdir -p AppDir/usr/lib/flowkeeper
-mkdir -p AppDir/usr/share/icons/hicolor/1024x1024/apps
-mkdir -p AppDir/usr/share/icons/hicolor/48x48/apps
+mkdir -p AppDir/usr/share/icons/hicolor/{48x48,1024x1024}/apps
 mkdir -p AppDir/usr/share/metainfo
 cp -r ../dist/standalone/* AppDir/usr/lib/flowkeeper/
 cp ../res/flowkeeper.png AppDir/usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png
