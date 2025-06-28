@@ -81,7 +81,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._header_text.setText("")
 
         application.on(AfterFontsChanged, self._on_fonts_changed)
-        layout.addWidget(self._header_text)
+        layout.addWidget(self._header_text, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -128,7 +128,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
                                          center_button,
                                          256)
         self._added.append(self._timer_widget)
-        layout.insertWidget(insert_index, self._timer_widget)
+        layout.insertWidget(insert_index, self._timer_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
 
         # Update the timer widget with the previous values if available
