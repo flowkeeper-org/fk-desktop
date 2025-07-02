@@ -68,7 +68,8 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         layout.setSpacing(20)
         self.setLayout(layout)
 
-        # Setup timer widget with the appropriate flavor
+        self._timer_widget = None
+
         self.set_flavor(flavor)
 
         self._header_text = QLabel(self)
@@ -88,7 +89,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         layout = self.layout()
         last_values = None
 
-        if hasattr(self, '_timer_widget') and self._timer_widget is not None:
+        if self._timer_widget is not None:
             # Delete all widgets from the layout except the header and message
             for w in self._added:
                 if isinstance(w, QSpacerItem):
