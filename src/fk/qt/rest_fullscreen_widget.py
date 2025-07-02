@@ -16,7 +16,7 @@
 import logging
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QToolButton, QSpacerItem
 
 from fk.core.abstract_settings import AbstractSettings
@@ -76,8 +76,14 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._header_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._header_text.setText("")
 
+        self._hint_text = QLabel(self)
+        self._hint_text.setObjectName("hintText")
+        self._hint_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._hint_text.setText("Single click to close")
+
         application.on(AfterFontsChanged, self._on_fonts_changed)
         layout.addWidget(self._header_text, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._hint_text, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
