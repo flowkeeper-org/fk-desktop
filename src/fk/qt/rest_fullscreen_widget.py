@@ -195,6 +195,8 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Q and event.modifiers() == Qt.ControlModifier:
             QApplication.quit()
+        elif event.key() == Qt.Key_Escape:
+            self._window.close()
 
     def showEvent(self, event, /):
         super().showEvent(event)
