@@ -197,6 +197,3 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             QApplication.quit()
         elif event.key() == Qt.Key_Escape:
             self._window.close()
-
-    def showEvent(self, event, /):
-        super().showEvent(event)
