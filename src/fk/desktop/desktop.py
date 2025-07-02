@@ -416,10 +416,10 @@ if __name__ == "__main__":
 
         # Create the fullscreen rest widget
         rest_fullscreen_widget = RestFullscreenWidget(window,
-                                                     app,
-                                                     pomodoro_timer,
-                                                     app.get_source_holder(),
-                                                     settings,
+                                                      app,
+                                                      pomodoro_timer,
+                                                      app.get_source_holder(),
+                                                      settings,
                                                       settings.get('Application.focus_flavor'))
 
         # Layouts
