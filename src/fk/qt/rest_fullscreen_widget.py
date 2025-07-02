@@ -39,8 +39,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _application: Application
     _window: QMainWindow
     _header_text: QLabel
-    _bg_color: QColor
-    _text_color: QColor
     _timer_widget: TimerWidget
     _added: [QWidget]
 
@@ -58,8 +56,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
 
         self._settings = settings
         self._application = application
-        self._bg_color = QColor('#2b2b2b')
-        self._text_color = QColor('#ffffff')
 
         self._window = QMainWindow()
         self._window.setWindowTitle("Flowkeeper - Rest Time")
@@ -86,15 +82,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {self._bg_color.name()};
-                color: {self._text_color.name()};
-            }}
-            QLabel {{
-                color: {self._text_color.name()};
-            }}
-        """)
+        self.setObjectName("restFullscreenWidget")
 
     def set_flavor(self, flavor):
         layout = self.layout()
@@ -152,7 +140,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        painter.fillRect(self.rect(), self._bg_color)
+        painter.fillRect(self.rect(), self.palette().window())
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
         if mode in ('resting', 'long-resting'):

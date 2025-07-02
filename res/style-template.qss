@@ -158,3 +158,8 @@ InfoOverlay #overlay_text, #prev_button {
 #fakeClockLight {
     color: #000000;
 }
+
+#restFullscreenWidget {
+    background-color: #2b2b2b;
+    color: #ffffff;
+}
