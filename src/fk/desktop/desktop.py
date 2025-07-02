@@ -178,7 +178,7 @@ def on_settings_changed(event: str, old_values: dict[str, str], new_values: dict
             pin_if_needed(new_value)
         elif name == 'Application.focus_flavor':
             focus_widget.set_flavor(new_value)
-        elif name == 'RestScreen.flavor':
+        elif name == 'Application.focus_flavor':
             rest_fullscreen_widget.set_flavor(new_value)
         elif name == 'Application.tray_icon_flavor':
             recreate_tray_icon(new_value,
@@ -420,7 +420,7 @@ if __name__ == "__main__":
                                                      pomodoro_timer,
                                                      app.get_source_holder(),
                                                      settings,
-                                                      settings.get('RestScreen.flavor'))
+                                                      settings.get('Application.focus_flavor'))
 
         # Layouts
         # noinspection PyTypeChecker

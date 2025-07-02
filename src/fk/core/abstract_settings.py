@@ -289,8 +289,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
                 ('RestScreen.enabled', 'bool', 'Show fullscreen during rest', 'True', [], _always_show),
-                ('RestScreen.flavor', 'choice', 'Rest screen flavor', 'minimal', ['classic:Classic',
-                                                                                  'minimal:Minimalistic'], _always_show),
             ],
             'Fonts': [
                 ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
