@@ -15,11 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from PySide6.QtCore import Qt, QSize, QPoint, QEvent
-from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QIcon
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QMenu, QHBoxLayout, QToolButton, QSpacerItem, QSizePolicy
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QToolButton, QSpacerItem
 
-from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
