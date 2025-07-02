@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from PySide6.QtCore import Qt, QSize, QPoint
+from PySide6.QtCore import Qt, QSize, QPoint, QEvent
 from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QIcon
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QMenu, QHBoxLayout, QToolButton, QSpacerItem, QSizePolicy
 
@@ -109,7 +109,6 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             center_button.setContentsMargins(0, 0, 0, 0)
             self._added.append(center_button)
 
-
         # Create the timer widget
         self._timer_widget = TimerWidget(self,
                                          'timer',
@@ -119,6 +118,8 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._added.append(self._timer_widget)
         layout.insertWidget(insert_index, self._timer_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        # this makes timer widget non-interactive
+        self._timer_widget.setAttribute(Qt.WA_TransparentForMouseEvents, True)
 
         # Update the timer widget with the previous values if available
         if last_values is not None:
