@@ -153,24 +153,10 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             return
 
         if new_mode in ('resting', 'long-resting'):
-            # Get the active screen (where the parent window is) or fallback to primary
-            active_screen = None
-            parent_window = self.parent().window() if self.parent() else None
-
-            if parent_window and parent_window.isVisible():
-                # Find the screen containing the parent window
-                window_center = parent_window.geometry().center()
-                for screen in QApplication.screens():
-                    if screen.geometry().contains(window_center):
-                        active_screen = screen
-                        break
-
-            if not active_screen:
-                # Fallback to primary screen if we couldn't determine the active screen
-                active_screen = QApplication.primaryScreen()
+            screen = QApplication.primaryScreen()
 
             # Show full screen on the active screen
-            screen_geometry = active_screen.availableGeometry()
+            screen_geometry = screen.availableGeometry()
             self._window.setGeometry(screen_geometry)
             self._window.showFullScreen()
 
