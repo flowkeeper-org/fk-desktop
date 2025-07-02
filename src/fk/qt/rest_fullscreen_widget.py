@@ -40,6 +40,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _header_text: QLabel
     _timer_widget: TimerWidget
     _added: [QWidget]
+    _hint_margin: int
 
     def __init__(self,
                  parent: QWidget,
@@ -52,6 +53,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._added = []
+        self._hint_margin = 20  # Margin for hint text positioning
 
         self._settings = settings
         self._application = application
@@ -78,12 +80,11 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
 
         self._hint_text = QLabel(self)
         self._hint_text.setObjectName("hintText")
-        self._hint_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._hint_text.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
         self._hint_text.setText("Single click to close")
 
         application.on(AfterFontsChanged, self._on_fonts_changed)
         layout.addWidget(self._header_text, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self._hint_text, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
@@ -188,3 +189,11 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             QApplication.quit()
         elif event.key() == Qt.Key_Escape:
             self._window.close()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._hint_text.adjustSize()  # Ensure the label is sized to fit its text
+        hint_size = self._hint_text.size()
+        x = self.width() - hint_size.width() - self._hint_margin
+        y = self.height() - hint_size.height() - self._hint_margin
+        self._hint_text.move(max(x, 0), max(y, 0))
