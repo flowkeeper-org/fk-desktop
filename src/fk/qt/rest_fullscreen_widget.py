@@ -83,7 +83,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._hint_text = QLabel(self)
         self._hint_text.setObjectName("hintText")
         self._hint_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._hint_text.setText("Single click to close")
+        self._hint_text.setText("Click to dismiss")
 
         self._do_not_show_again_button = QPushButton("Do not show this screen again", self)
         self._do_not_show_again_button.setObjectName("doNotShowAgainButton")
