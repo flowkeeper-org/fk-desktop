@@ -167,3 +167,8 @@ InfoOverlay #overlay_text, #prev_button {
 #restFullscreenWidget #hintText {
     color: #ffffff;
 }
+
+#restFullscreenWidget #doNotShowAgainButton {
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
