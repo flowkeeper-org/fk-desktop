@@ -118,6 +118,16 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setIcon(pixmap)
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        if pomodoro.get_state() == 'work':
+            state_text_split = state_text.split(' ')
+            time_left = state_text_split[1]
+            if time_left.strip().endswith('1:00'):  # handles 00:01:00 and 01:00
+                self.showMessage(
+                    "60 seconds left to finish this pomodoro",
+                    "Time to wrap up.",
+                    self._default_icon
+                )
+
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
         self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
