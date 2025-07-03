@@ -326,7 +326,7 @@ if __name__ == "__main__":
         MainWindow.define_actions(actions)
         actions.all_actions_defined()
 
-        audio = AudioPlayer(window, app.get_source_holder(), settings)
+        audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
 
         # File menu
         menu_file = QtWidgets.QMenu("File", window)
