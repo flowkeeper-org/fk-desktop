@@ -17,7 +17,8 @@ import logging
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QToolButton, QSpacerItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QToolButton, QSpacerItem, \
+    QPushButton
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
@@ -41,6 +42,8 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _hint_text: QLabel
     _timer_widget: TimerWidget
     _added: [QWidget]
+    _do_not_show_again_button: QPushButton
+    _corner_margin: int = 32
 
     def __init__(self,
                  parent: QWidget,
@@ -81,6 +84,10 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self._hint_text.setObjectName("hintText")
         self._hint_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._hint_text.setText("Single click to close")
+
+        self._do_not_show_again_button = QPushButton("Do not show this screen again", self)
+        self._do_not_show_again_button.setObjectName("doNotShowAgainButton")
+        self._do_not_show_again_button.clicked.connect(self._disable_rest_screen)
 
         application.on(AfterFontsChanged, self._on_fonts_changed)
         layout.addWidget(self._header_text, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -189,3 +196,16 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
             QApplication.quit()
         elif event.key() == Qt.Key_Escape:
             self._window.close()
+
+    def _disable_rest_screen(self):
+        self._settings.set({'RestScreen.enabled': 'False'})
+        self._window.close()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        btn = self._do_not_show_again_button
+        btn.adjustSize()
+        btn_size = btn.sizeHint()
+        x = self.width() - btn_size.width() - self._corner_margin
+        y = self.height() - btn_size.height() - self._corner_margin
+        btn.move(x, y)
