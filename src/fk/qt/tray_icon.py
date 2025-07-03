@@ -121,7 +121,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         if pomodoro.get_state() == 'work':
             state_text_split = state_text.split(' ')
             time_left = state_text_split[1]
-            if time_left.strip().endswith('1:00'):  # handles 00:01:00 and 01:00
+            if time_left.strip() == '01:00':
                 self.showMessage(
                     "60 seconds left to finish this pomodoro",
                     "Time to wrap up.",
