@@ -38,6 +38,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
     _application: Application
     _window: QMainWindow
     _header_text: QLabel
+    _hint_text: QLabel
     _timer_widget: TimerWidget
     _added: [QWidget]
 
