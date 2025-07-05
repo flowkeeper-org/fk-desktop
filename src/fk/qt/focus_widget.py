@@ -68,7 +68,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _timer_widget: TimerWidget
     _moving_around: QPoint | None
     _hint_label: QLabel | None
-    _added: [QWidget]
+    _added: [QWidget] # type: ignore
     _readonly: bool
 
     def __init__(self,
@@ -83,7 +83,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._apply_size_policy()
-
         self._settings = settings
         self._actions = actions
         self._application = application
@@ -133,6 +132,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def set_flavor(self, flavor):
+
         layout = self.layout()
         last_values = None
 
@@ -162,6 +162,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             finish_tracking_button = self._create_button("focus.finishTracking")
             center_button_layout.addWidget(finish_tracking_button)
             self._added.append(finish_tracking_button)
+            
 
         self._timer_widget = TimerWidget(self,
                                          'timer',
@@ -182,6 +183,22 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             layout.addWidget(w)
 
             w = self._create_button("focus.completeItem")
+            
+            self._added.append(w)
+            layout.addWidget(w)
+            
+            w = self._create_button("focus.muteAudio")
+            w.setStyleSheet("""
+            QToolButton#focus\\.muteAudio {
+                background-color: transparent;
+            }
+            QToolButton#focus\\.muteAudio:pressed {
+                background-color: transparent;  
+            }
+            QToolButton#focus\\.muteAudio:checked {
+                background-color: transparent;  
+            }
+            """)
             self._added.append(w)
             layout.addWidget(w)
 
@@ -189,6 +206,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 w = self._create_button("window.pinWindow")
                 self._added.append(w)
                 layout.addWidget(w)
+
 
         elif flavor == 'minimal':
             w = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding)
@@ -233,6 +251,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
+        actions.add('focus.muteAudio', "Toggle Audio", None, ("volume-up", "volume-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
+        
+
 
     def _create_button(self,
                        name: str,
@@ -256,6 +277,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._actions['focus.voidPomodoro'].setDisabled(True)
             self._actions['focus.interruption'].setVisible(False)
             self._actions['focus.interruption'].setDisabled(True)
+            self._actions['focus.muteAudio'].setVisible(False)
+            self._actions['focus.muteAudio'].setDisabled(True)
             self._actions['focus.finishTracking'].setVisible(False)
             self._actions['focus.finishTracking'].setDisabled(True)
         self._timer_widget.reset()
@@ -310,6 +333,21 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self.eye_candy()
         if self._hint_label is not None and 'Application.show_click_here_hint' in new_values:
             self._hint_label.hide()
+        if ('Application.play_alarm_sound' in new_values or
+        'Application.play_rest_sound' in new_values or
+        'Application.play_tick_sound' in new_values):
+        
+            play_alarm = new_values.get('Application.play_alarm_sound', self._settings.get('Application.play_alarm_sound')) == 'True'
+            play_rest = new_values.get('Application.play_rest_sound', self._settings.get('Application.play_rest_sound')) == 'True'
+            play_tick = new_values.get('Application.play_tick_sound', self._settings.get('Application.play_tick_sound')) == 'True'
+
+            is_checked = play_alarm and play_rest and play_tick
+
+            action = self._actions._actions.get('focus.muteAudio')
+            if action is not None:
+                action.blockSignals(True)
+                action.setChecked(is_checked)
+                action.blockSignals(False)
 
     def _on_fonts_changed(self, event, header_font, **kwargs):
         self._header_text.setFont(header_font)
@@ -352,7 +390,17 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         if self._continue_workitem is None:
             raise Exception('Cannot start next pomodoro on non-existent work item')
         start_workitem(self._continue_workitem, self._source_holder.get_source())
+        
+    def _mute_audio(self, is_checked=None) -> None:
+        is_checked = self._actions['focus.muteAudio'].isChecked()
+        self._settings.set({
+            'Application.play_alarm_sound': str(is_checked),
+            'Application.play_rest_sound': str(is_checked),
+            'Application.play_tick_sound': str(is_checked),
+        })
 
+
+        
     def _complete_item(self) -> None:
         item = self.timer.get_running_workitem()
         complete_item(item, self, self._source_holder.get_source())
@@ -383,6 +431,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._actions['focus.voidPomodoro'].setDisabled(True)
                     self._actions['focus.interruption'].setVisible(False)
                     self._actions['focus.interruption'].setDisabled(True)
+                    self._actions['focus.muteAudio'].setVisible(False)
+                    self._actions['focus.muteAudio'].setDisabled(True)
+
                     self._actions['focus.finishTracking'].setVisible(True)
                     self._actions['focus.finishTracking'].setDisabled(False)
                 else:
@@ -390,6 +441,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._actions['focus.voidPomodoro'].setDisabled(False)
                     self._actions['focus.interruption'].setVisible(True)
                     self._actions['focus.interruption'].setDisabled(False)
+                    self._actions['focus.muteAudio'].setVisible(True)
+                    self._actions['focus.muteAudio'].setDisabled(False)
                     self._actions['focus.finishTracking'].setVisible(False)
                     self._actions['focus.finishTracking'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setDisabled(True)
@@ -420,20 +473,25 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def _timer_clicked(self, pos: QPoint) -> None:
         self._settings.set({'Application.show_click_here_hint': 'False'})
         context_menu = QMenu(self)
-        context_menu.addAction(self._actions['focus.nextPomodoro'])
         timer = self.timer
         if timer.is_working() or timer.is_resting():
             pomodoro = timer.get_running_pomodoro()
             if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 context_menu.addAction(self._actions['focus.finishTracking'])
+                #context_menu.addAction(self._actions['focus.muteAudio'])
+
             else:
                 context_menu.addAction(self._actions['focus.interruption'])
                 context_menu.addAction(self._actions['focus.voidPomodoro'])
+
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
         context_menu.addAction(self._actions['window.pinWindow'])
         context_menu.addSeparator()
+        context_menu.addAction(self._actions['focus.muteAudio'])
+        context_menu.addSeparator()
         context_menu.addAction(self._actions['focus.completeItem'])
+
         context_menu.exec(self._timer_widget.mapToGlobal(pos))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -449,4 +507,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         if not self._readonly:
             self._actions['window.focusMode'].toggle()
+
+
 
