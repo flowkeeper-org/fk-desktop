@@ -16,7 +16,7 @@
 import datetime
 import logging
 
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, QTimer
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QMediaDevices, QAudioDevice
 from PySide6.QtWidgets import QWidget
 
@@ -25,6 +25,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged, TimerWorkStart
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, Pomodoro
+from fk.core.timer import PomodoroTimer
 from fk.core.timer_data import TimerData
 from fk.qt.qt_invoker import invoke_in_main_thread
 
@@ -40,13 +41,17 @@ class AudioPlayer(QObject):
     def __init__(self,
                  parent: QWidget,
                  source_holder: EventSourceHolder,
-                 settings: AbstractSettings):
+                 settings: AbstractSettings,
+                 timer: PomodoroTimer = None):
         super().__init__(parent)
         self._source = None
         self._settings = settings
         self._reset()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+        if timer is not None:
+            timer.on(PomodoroTimer.TimerTick, self._play_wood_knock)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         if self._audio_player is not None and self._audio_player.isPlaying():
@@ -138,6 +143,32 @@ class AudioPlayer(QObject):
                 # We'll be here if the rest started while Flowkeeper was open
                 self._start_rest_sound(pomodoro)
 
+    def _play_wood_knock(self, event: str, timer: TimerData, **kwargs):
+        if not timer.is_working():
+            return
+
+        rest_screen_enabled = self._settings.get('RestScreen.enabled') == 'True'
+        play_tick_sound = self._settings.get('Application.play_tick_sound') == 'True'
+
+        if not (rest_screen_enabled and play_tick_sound):  # conditions to play wood knock sound
+            return
+
+        time_left = timer.format_remaining_duration()
+        if not time_left.strip().endswith('01:00'):  # play only when 60 seconds left
+            return
+
+        if self._audio_player is not None:
+            self._audio_player.stop()  # don't overlap tick sound and wood knock sound
+            self._reset()
+
+            if self._audio_player is not None:
+                self._set_volume('Application.tick_sound_volume')
+                self._audio_player.setSource("qrc:/sound/wood_knock.mp3")
+                self._audio_player.setLoops(1)
+                self._audio_player.play()
+
+                QTimer.singleShot(1000, self._start_ticking)  # wood knock sound effect is 0.75 seconds long
+
     def _start_ticking(self, event: str = None, **kwargs) -> None:
         if self._audio_player is not None:
             play_tick_sound = (self._settings.get('Application.play_tick_sound') == 'True')
@@ -197,4 +228,3 @@ class AudioPlayer(QObject):
             elif timer.is_resting() and timer.get_running_pomodoro().get_type() == POMODORO_TYPE_NORMAL:
                 # We'll be here if we started Flowkeeper while the timer is resting
                 self._start_rest_sound(timer.get_running_pomodoro())
-

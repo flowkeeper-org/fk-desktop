@@ -20,6 +20,7 @@ from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import start_workitem
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
@@ -37,6 +38,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _timer_renderer: AbstractTimerRenderer | None
     _continue_workitem: Workitem | None
     _size: int
+    _settings: AbstractSettings
 
     def __init__(self,
                  parent: QWidget,
@@ -45,9 +47,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  actions: Actions,
                  size: int,
                  cls: Type[AbstractTimerRenderer],
-                 is_dark: bool):
+                 is_dark: bool,
+                 settings: AbstractSettings):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
+        self._settings = settings
         self._default_icon = QIcon(":/flowkeeper.png")
         if is_dark:
             # We don't use QIcon.fromTheme() here because we can't predict the tray background color
@@ -118,6 +122,16 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setIcon(pixmap)
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        if pomodoro.get_state() == 'work':
+            state_text_split = state_text.split(' ')
+            time_left = state_text_split[1]
+            if time_left.strip() == '01:00' and self._settings.get('RestScreen.enabled') == 'True':
+                self.showMessage(
+                    "60 seconds left to finish this pomodoro",
+                    "Time to wrap up.",
+                    self._default_icon
+                )
+
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
         self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
