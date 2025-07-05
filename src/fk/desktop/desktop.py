@@ -149,7 +149,8 @@ def recreate_tray_icon(flavor: str, show_tray_icon_setting: str) -> None:
                     actions,
                     48,
                     MinimalTimerRenderer if 'thin' in flavor else ClassicTimerRenderer,
-                    'dark' in flavor)
+                    'dark' in flavor,
+                    settings)
     if initialize_timer:
         tray.initialized()
     tray.setVisible(show_tray_icon_setting == 'True')
