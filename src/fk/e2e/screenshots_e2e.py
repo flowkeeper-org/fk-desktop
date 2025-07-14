@@ -382,7 +382,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         await self._find_workitem('Generate new screenshots for #Flowkeeper')
 
-        backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 400)))
+        backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 300)))
         await self.instant_pause()
         self.take_screenshot('01-backlog')
         backlogs_table._menu.close()

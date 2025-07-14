@@ -14,6 +14,8 @@ Pomodoro and Pomodoro Technique are registered trademarks of Francesco Cirillo <
 
 Embedded sounds (bell and tick): Cannot find the original author. I used the same sounds in the original Flowkeeper (v1) in 2010.
 
+Embedded wood knock sound effect: "wood_knock" by freesound_community on pixabay <https://pixabay.com/sound-effects/wood-knock-93900/> under Pixabay Content License
+
 Embedded resting music: Madelene (ID 1315), kindly provided by Lobo Loco <https://www.musikbrause.de> under CC-BY-NC-ND (Creative Commons Attribution NonCommercial NoDerivs).
 
 Flowkeeper is hosted on GitHub <https://github.com/flowkeeper-org/fk-desktop>, with its CI/CD based on GitHub Actions.
