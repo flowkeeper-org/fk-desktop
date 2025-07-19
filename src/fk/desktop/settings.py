@@ -435,6 +435,10 @@ class SettingsDialog(QDialog):
             sp = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             ed11.setSizePolicy(sp)
             ed11.setText(option_value)
+
+            if 'copyable' in option_options:
+                ed11.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+
             return [ed11]
         elif option_type == 'keyvalue':
             ed13 = QTableWidget(parent)
