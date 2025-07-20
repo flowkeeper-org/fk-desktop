@@ -16,7 +16,7 @@
 import logging
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QFont
+from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QMainWindow, QToolButton, QSpacerItem, \
     QPushButton
 

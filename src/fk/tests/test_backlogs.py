@@ -23,7 +23,6 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy
 from fk.core.backlog_strategies import RenameBacklogStrategy, DeleteBacklogStrategy
 from fk.core.ephemeral_event_source import EphemeralEventSource
-from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy

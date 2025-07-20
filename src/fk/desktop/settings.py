@@ -21,7 +21,7 @@ from typing import Callable
 
 from PySide6.QtCore import QSize, QTime, Qt
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QStandardItemModel, QStandardItem
-from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
+from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem, QSizePolicy
 

@@ -19,7 +19,7 @@ import logging
 from abc import abstractmethod
 
 from PySide6 import QtCore
-from PySide6.QtCore import Qt, QMimeData, QModelIndex, QSize
+from PySide6.QtCore import Qt, QMimeData, QModelIndex
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QColor
 from PySide6.QtWidgets import QMessageBox
 

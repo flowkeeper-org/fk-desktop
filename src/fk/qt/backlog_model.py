@@ -19,7 +19,7 @@ import datetime
 import logging
 
 from PySide6 import QtGui, QtCore
-from PySide6.QtCore import Qt, QMimeData, QModelIndex
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QStandardItem
 
 from fk.core import events

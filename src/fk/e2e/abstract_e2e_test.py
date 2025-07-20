@@ -22,7 +22,6 @@ import logging
 import os
 import pathlib
 import subprocess
-import sys
 import traceback
 import uuid
 from abc import ABC
