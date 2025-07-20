@@ -29,7 +29,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Pomodoro Statistics</string>
+   <string>Pomodoro Health</string>
   </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">

@@ -1,2 +1,0 @@
--r requirements-run.txt
-pyinstaller

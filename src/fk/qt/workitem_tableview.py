@@ -13,38 +13,43 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
-from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged
-from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
-from fk.core.pomodoro_strategies import StartWorkStrategy, AddPomodoroStrategy, RemovePomodoroStrategy
+from fk.core.pomodoro import POMODORO_TYPE_NORMAL, Pomodoro, POMODORO_TYPE_TRACKER
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy
 from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
+from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, CompleteWorkitemStrategy
+from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
+from fk.qt.focus_widget import complete_item
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
 from fk.qt.workitem_text_delegate import WorkitemTextDelegate
+
+logger = logging.getLogger(__name__)
 
 
 class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
     _application: Application
     _menu: QMenu
-    _pomodoro_timer: PomodoroTimer
 
     def __init__(self,
                  parent: QWidget,
                  application: Application,
                  source_holder: EventSourceHolder,
-                 pomodoro_timer: PomodoroTimer,
+                 timer: PomodoroTimer | None,
                  actions: Actions):
         super().__init__(parent,
                          source_holder,
@@ -56,13 +61,15 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                          'The selected backlog is empty.\nCreate the first workitem by pressing Ins key.',
                          1)
         self._application = application
-        self._pomodoro_timer = pomodoro_timer
         self._configure_delegate()
         self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        pomodoro_timer.on('Timer(Work|Rest)(Start|Complete)', lambda **_: self.update_actions(self.get_current()))
         self.update_actions(None)
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+        if timer is not None:
+            timer.on(PomodoroTimer.TimerTick, self._on_tick)
+        else:
+            logger.debug('WorkitemTableView will not update automatically on timer ticks')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.theme' in new_values or 'Application.feature_tags' in new_values:
@@ -99,8 +106,11 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._update_actions_if_needed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
+        source.on('Timer(Work|Rest)(Start|Complete)', lambda **_: self.update_actions(self.get_current()))
         self.selectionModel().clear()
         self.upstream_selected(None)
 
@@ -137,26 +147,27 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                     True,
                     actions.get_settings().get('Application.hide_completed') == 'True')
 
-    def upstream_selected(self, backlog_or_tag: Backlog | Tag) -> None:
+    def upstream_selected(self, backlog_or_tag: Backlog | Tag | None) -> None:
         super().upstream_selected(backlog_or_tag)
         is_backlog = type(backlog_or_tag) is Backlog
         self._actions['workitems_table.newItem'].setEnabled(is_backlog)
-        self.setDragEnabled(is_backlog)
         self._resize()
 
-    def update_actions(self, selected: Workitem) -> None:
+    def update_actions(self, selected: Workitem | None) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
         is_workitem_selected = selected is not None
         is_workitem_editable = is_workitem_selected and not selected.is_sealed()
+        is_tracker = is_workitem_selected and selected.is_tracker()
         self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
         self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
         self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable
                                                               and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
-                                                              and self._pomodoro_timer.is_idling())
+                                                              and self._source.get_data().get_current_user().get_timer().is_idling())
         self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable)
+        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable and not is_tracker)
         self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable
-                                                                   and selected.is_startable())
+                                                                   and selected.is_startable()
+                                                                   and not is_tracker)
 
     # Actions
 
@@ -208,39 +219,11 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         selected: Workitem = self.get_current()
         if selected is None:
             raise Exception("Trying to start a workitem, while there's none selected")
-        settings = self._source.get_settings()
-
-        if len(selected) == 0 or selected.is_tracker():
-            # This is going to be a tracker workitem
-            self._source.execute(AddPomodoroStrategy, [
-                selected.get_uid(),
-                "1",
-                POMODORO_TYPE_TRACKER
-            ])
-            self._source.execute(StartWorkStrategy, [
-                selected.get_uid(),
-                '0',
-                '0',
-            ])
-        else:
-            self._source.execute(StartWorkStrategy, [
-                selected.get_uid(),
-                settings.get('Pomodoro.default_work_duration'),
-                settings.get('Pomodoro.default_rest_duration'),
-            ])
+        start_workitem(selected, self._source)
 
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
-        if selected is None:
-            raise Exception("Trying to complete a workitem, while there's none selected")
-        if not selected.has_running_pomodoro() or QMessageBox().warning(
-                self,
-                "Confirmation",
-                f"Are you sure you want to complete current workitem? This will void current pomodoro.",
-                QMessageBox.StandardButton.Ok,
-                QMessageBox.StandardButton.Cancel
-                ) == QMessageBox.StandardButton.Ok:
-            self._source.execute(CompleteWorkitemStrategy, [selected.get_uid(), "finished"])
+        complete_item(selected, self, self._source)
 
     def add_pomodoro(self) -> None:
         selected: Workitem = self.get_current()
@@ -274,3 +257,13 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         # Resizing to contents results in visible blinking on Kubuntu 20.04, so cannot be enabled by default.
         self.verticalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents if self._is_tags_enabled() else QHeaderView.ResizeMode.Fixed)
+
+    def _on_tick(self, timer: TimerData, counter: int, event: str) -> None:
+        if counter % 10 == 0:
+            pomodoro: Pomodoro = timer.get_running_pomodoro()
+            # We only care about repainting workitems in tracking mode
+            if pomodoro is not None and pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                workitem: Workitem = pomodoro.get_parent()
+                backlog: Backlog = workitem.get_parent()
+                if backlog == self.model().get_backlog_or_tag():
+                    self.model().repaint_workitem(workitem)

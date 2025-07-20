@@ -32,13 +32,13 @@ from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, StartWorkStrategy, VoidPomodoroStrategy, \
-    RemovePomodoroStrategy, FinishTrackingStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, RemovePomodoroStrategy, AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
+from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
-    CompleteWorkitemStrategy
+    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -66,20 +66,21 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self._last_strategy = None
         if self._is_watch_changes() and filesystem_watcher is not None:
             self._watcher = filesystem_watcher
-            self._watcher.watch(self._get_filename(), lambda f: self._on_file_change(f))
+            self._watcher.watch(self._get_filename(), self._on_file_change)
 
     def get_last_strategy(self) -> AbstractStrategy | None:
         return self._last_strategy
 
     def _on_file_change(self, filename: str) -> None:
         # This method is called when we get updates from "remote"
-        logger.debug(f'Data file content changed: {filename}')
+        logger.info(f'Data file content changed: {filename}')
         # UC-1: File event source: If file watching is enabled, the strategies with the sequence > last_seq are executed
         # UC-3: Any event source fires all events for the incremental processing
         # We open the file as r+ to make sure that another process finished writing and
         # released the file handler. By default, OSes won't allow concurrent writes to the
         # file, so if something is still writing into it, then this call will fail.
         with open(filename, 'r+', encoding='UTF-8') as file:
+            last_executed = None
             for line in file:
                 try:
                     strategy = self._serializer.deserialize(line)
@@ -92,18 +93,18 @@ class FileEventSource(AbstractEventSource[TRoot]):
                             self._sequence_error(self._last_seq, seq)
                         self._last_seq = seq
                         if logger.isEnabledFor(logging.DEBUG):
-                            logger.debug(f" - {strategy}")
-                        # TODO: This is SLOW
-                        self.auto_seal(strategy.get_when())
+                            logger.debug(f"Will execute new strategy: {strategy}")
                         # UC-1: For any event source, whenever it executes a strategy with seq_num != last_seq + 1, and "ignore sequence" settings is disables, it fails
                         self.execute_prepared_strategy(strategy)
+                        last_executed = strategy
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
-        # UC-2: File event source auto-seals running pomodoros at the end of any file read, including file watch case
-        self.auto_seal()
+                finally:
+                    if last_executed is not None:
+                        self._auto_seal_at_the_end(last_executed)
 
     def _get_filename(self) -> str:
         return self.get_config_parameter("FileEventSource.filename")
@@ -121,11 +122,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
     def _process_from_existing(self, fail_early: bool) -> None:
         # UC-2: File event source can be created from the existing pre-parsed strategies.
         #  It behaves just like normal "read file", but without the deserialization checks.
-        #  It checks sequences, auto-seals and triggers SourceMessagesRequested events.
+        #  It checks sequences and triggers SourceMessagesRequested events.
         #  All events are muted during processing.
         self._emit(events.SourceMessagesRequested, dict())
         self.mute()
         is_first = True
+        last_executed = None
         seq = 1
         for strategy in self._existing_strategies:
             try:
@@ -141,16 +143,16 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if (fail_early or not self._ignore_invalid_sequences) and seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                 self._last_seq = seq
-                self.auto_seal(strategy.get_when())
                 self.execute_prepared_strategy(strategy)
+                last_executed = strategy
             except Exception as ex:
                 if self._ignore_errors and not fail_early:
                     logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
                 else:
                     raise ex
-        self.auto_seal()
+        self._auto_seal_at_the_end(last_executed)
         self.unmute()
-        self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
+        self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _process_from_file(self, mute_events=True, from_seq=0) -> None:
         # This method is called when we read the history
@@ -198,6 +200,9 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 logger.info(f'Created empty data file {filename}')
                 # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist
 
+        is_first = True
+        last_executed = None
+        seq = 1
         logger.info(f'FileEventSource: Reading file {filename}')
         with open(filename, encoding='UTF-8') as f:
             # TODO: If we wrap this for into a generator, we'll be able to reuse a this entire loop
@@ -207,14 +212,34 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     strategy = self._serializer.deserialize(line)
                     if strategy is None:
                         continue
-                    yield strategy
+                    self._last_strategy = strategy
+
+                    if is_first:
+                        is_first = False
+                    else:
+                        seq = strategy.get_sequence()
+                        if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
+                            self._sequence_error(self._last_seq, seq)
+                    # UC-3: Strategies may start with any sequence number
+                    self._last_seq = seq
+                    self.execute_prepared_strategy(strategy)
+                    last_executed = strategy
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
+        logger.debug('FileEventSource: Processed file content, will unmute events now')
 
-    def repair(self) -> list[str] | None:
+        # UC-1: The last strategy is auto-sealed after execution to ensure that the timer rings offline, if needed
+        self._auto_seal_at_the_end(last_executed)
+
+        # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
+        if mute_events:
+            self.unmute()
+        self._emit(events.SourceMessagesProcessed, {'source': self})
+
+    def repair(self) -> tuple[list[str], str | None]:
         # This method attempts some basic repairs, trying to save as much
         # data as possible:
         # 0. Reorder strategies by date
@@ -248,7 +273,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
             for line in f:
                 try:
                     s = self._serializer.deserialize(line)
-                    parsed.append(s)
+                    if s:
+                        parsed.append(s)
                 except Exception as ex:
                     log.append(f'Skipped invalid strategy ({ex}): {line}')
                     changes += 1
@@ -277,8 +303,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 all_users[uid] = set()
                 log.append(f'Created a missing user on first reference: {uid}')
                 changes += 1
-
-            # Handle duplicates and other logic
             if t is CreateUserStrategy:
                 cast: CreateUserStrategy = s
                 uid = cast.get_target_user_identity()
@@ -375,10 +399,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Create workitems on the first reference. All those strategies assume an existing workitem.
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
+                    t is MoveWorkitemStrategy or \
+                    t is ReorderWorkitemStrategy or \
                     t is StartWorkStrategy or \
+                    t is StartTimerStrategy or \
+                    t is AddInterruptionStrategy or \
                     t is AddPomodoroStrategy or \
-                    t is VoidPomodoroStrategy or \
-                    t is FinishTrackingStrategy or \
                     t is RemovePomodoroStrategy:
                 cast: RenameWorkitemStrategy = s
                 uid = cast.get_workitem_uid()
@@ -403,6 +429,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     all_backlogs[repaired_backlog].add(uid)
                     log.append(f'Created a missing workitem on first reference: {uid}')
                     changes += 1
+
+            # Handle duplicates and other logic
 
             strategies.append(s)
 
@@ -436,13 +464,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
         if changes > 0:
             log.append(f'Made {changes} changes in total')
             # UC-2: File event source repair won't do any changes if the source file is correct
-            self._overwrite_file(strategies, log)
+            backup_filename = self._overwrite_file(strategies, log)
         else:
             log.append(f'No changes were made')
+            backup_filename = None
 
         self._watcher = original_watcher
         # UC-3: File event source repair returns the log of all changes it made
-        return log
+        return log, backup_filename
 
     def _overwrite_file(self, strategies: Iterable[AbstractStrategy], log: list[str]) -> str:
         filename = self._get_filename()
@@ -462,9 +491,15 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # TODO: If compression is enabled and <base>-complete.<ext> file exists,
         #  then append to both files at the same time.
         # UC-2: For file source, new strategies get appended to the file immediately after execution
-        with open(self._get_filename(), 'a', encoding='UTF-8') as f:
-            for s in strategies:
-                f.write(self._serializer.serialize(s) + '\n')
+        if self._watcher is not None:
+            self._watcher.unwatch(self._get_filename())
+        try:
+            with open(self._get_filename(), 'a', encoding='UTF-8') as f:
+                for s in strategies:
+                    f.write(self._serializer.serialize(s) + '\n')
+        finally:
+            if self._watcher is not None:
+                self._watcher.watch(self._get_filename(), self._on_file_change)
 
     def get_name(self) -> str:
         return "File"
@@ -522,7 +557,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
     def disconnect(self):
         if self._watcher is not None:
-            self._watcher.unwatch_all()
+            self._watcher.unwatch(self._get_filename())
 
     def send_ping(self) -> str | None:
         raise Exception("FileEventSource does not support send_ping()")

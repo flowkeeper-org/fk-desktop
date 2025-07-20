@@ -1,371 +1,195 @@
-name: Build binaries
+name: Build subflow
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      OS:
-        description: 'Operating system'
+      os:
         required: true
-        default: 'linux'
-        type: choice
-        options:
-          - linux
-          - windows
-          - macOS
-          - all
+        type: string
+      compiler:
+        required: true
+        type: string
+    secrets:
+      MAC_SIGN_CERT:
+        required: true
+      MAC_SIGN_PASSWORD:
+        required: true
+      MAC_KEYCHAIN_PASSWORD:
+        required: true
+
 jobs:
-  build-linux:
-    runs-on: ubuntu-22.04
-    if:  ${{ inputs.OS == 'linux' || inputs.OS == 'all' }}
+  build:
+    runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Package builds
-        run: |
-          pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-standalone
-          path: |
-            dist/Flowkeeper
-      - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-one-folder
-          path: |
-            dist/flowkeeper
-      - name: Create DEB installer
-        run: |
-          ./package-deb.sh
-      - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-deb
-          path: |
-            dist/flowkeeper.deb
 
-  build-linux-arm:
-    runs-on: ubuntu-22.04-arm
-    if:  ${{ inputs.OS == 'linux' || inputs.OS == 'all' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Package builds
-        run: |
-          pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-arm64-standalone
-          path: |
-            dist/Flowkeeper
-      - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-arm64-one-folder
-          path: |
-            dist/flowkeeper
-      - name: Create DEB installer
-        run: |
-          ./package-deb.sh
-      - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-arm64-deb
-          path: |
-            dist/flowkeeper.deb
 
-  build-linux-legacy:
-    runs-on: ubuntu-20.04
-    if:  ${{ inputs.OS == 'linux' || inputs.OS == 'all' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
       - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Package builds
-        run: |
-          pyinstaller installer/portable-build.spec
-          pyinstaller installer/normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-legacy-standalone
-          path: |
-            dist/Flowkeeper
-      - name: Archive one-folder build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-legacy-one-folder
-          path: |
-            dist/flowkeeper
-      - name: Create DEB installer
-        run: |
-          ./package-deb.sh
-      - name: Archive DEB installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-linux-legacy-deb
-          path: |
-            dist/flowkeeper.deb
-
-  build-windows:
-    runs-on: windows-latest
-    if:  ${{ inputs.OS == 'windows' || inputs.OS == 'all' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-      - name: Generate resources
-        run: |
-          cd res
-          pyside6-rcc --project -o resources.qrc
-          pyside6-rcc -g python resources.qrc -o "../src/fk/desktop/resources.py"
-      - name: Package builds
-        run: |
-          pyinstaller installer\portable-build.spec
-          pyinstaller installer\normal-build.spec
-      - name: Archive portable build
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-windows-standalone
-          path: |
-            dist/Flowkeeper.exe
-      - name: Download innosetup installer
-        run: |
-          Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup.exe"
-      - name: Install innosetup
-        shell: cmd
-        run: |
-          start /wait innosetup.exe /VERYSILENT /CURRENTUSER /SUPPRESSMSGBOXES /NOICONS
-      - name: Create FK installer
-        shell: cmd
-        run: |
-          set /p FIRST_LINE=< res\CHANGELOG.txt
-          set FK_VERSION=%FIRST_LINE:* =%
-          "%USERPROFILE%\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
-          move installer\Output\mysetup.exe dist\setup.exe
-      - name: Archive installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-windows-setup
-          path: |
-            dist\setup.exe
-        
-  build-macOS-arm:
-    runs-on: macOS-latest
-    if:  ${{ inputs.OS == 'macOS' || inputs.OS == 'all' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-          brew install create-dmg
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Install the Apple certificate and provisioning profile
-        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
           P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+        shell: bash
         run: |
-          # create variables
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          export FK_VERSION=$(scripts/common/get-version.sh)
+          echo "FK_VERSION=$FK_VERSION" >> $GITHUB_ENV
 
-          # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            scripts/macos/install-create-dmg.sh
+            scripts/macos/install-certificates.sh
+            export BINARY_EXTENSION=""
+            echo "BINARY_EXTENSION=" >> $GITHUB_ENV
+          elif [[ "$OSTYPE" == "msys" ]]; then
+            # Disable Defender for the workspace directory
+            echo "Will disable Defender"
+            echo "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath $(cmd //c cd)"
+            powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath "$(cmd //c cd)"
+            scripts/windows/install-innosetup.sh
+            export BINARY_EXTENSION=".exe"
+            echo "BINARY_EXTENSION=.exe" >> $GITHUB_ENV
+          else
+            scripts/linux/appimage/install-appimage.sh
+            export BINARY_EXTENSION=""
+            echo "BINARY_EXTENSION=" >> $GITHUB_ENV
+          fi
+          pip install -r requirements.txt
 
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
+            pip install nuitka
+          else
+            pip install pyinstaller
+          fi
 
-          # import certificate to keychain
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      - name: Package builds
+      - name: Prepare sources
+        shell: bash
         run: |
-          pyinstaller "installer/normal-build.spec" -- --sign
-      - name: Create DMG installer
+          scripts/common/generate-resources.sh
+          rm -rf build dist
+          mkdir -p build dist
+
+      - name: Package builds (PyInstaller)
+        if: ${{ inputs.compiler == 'pyinstaller' }}
+        shell: bash
         run: |
-          rm -rf "dist/flowkeeper"
-          create-dmg \
-            --volname "Flowkeeper Installer" \
-            --volicon "res/flowkeeper.icns" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "Flowkeeper.app" 200 190 \
-            --hide-extension "Flowkeeper.app" \
-            --app-drop-link 600 185 \
-            "Flowkeeper.dmg" \
-            "dist/"
-      - name: Notarize the DMG
-        env:
-          NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
-          NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
-          NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
-        run: |
-          # Create the notary key
-          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
-          # Send the DMG for notarization
-          xcrun notarytool submit "Flowkeeper.dmg" --keychain-profile "notary-key" --wait
-      - name: Archive DMG installer
-        uses: actions/upload-artifact@v3
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            pyinstaller scripts/common/pyinstaller/normal.spec --distpath=build -- --sign
+            echo "Built PyInstaller for macOS"
+            ls -al build/
+          else
+            pyinstaller scripts/common/pyinstaller/portable.spec --distpath=build
+            pyinstaller scripts/common/pyinstaller/normal.spec --distpath=build
+            echo "Built PyInstaller for Linux or Windows"
+            ls -al build/
+          fi
+
+      - name: Package builds (Nuitka)
+        if: ${{ inputs.compiler == 'nuitka' }}
+        uses: Nuitka/Nuitka-Action@main
         with:
-          name: dist-macOS-dmg
-          path: |
-            Flowkeeper.dmg
-
-  build-macOS-x86:
-    runs-on: macOS-13
-    if:  ${{ inputs.OS == 'macOS' || inputs.OS == 'all' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Create Virtual Environment
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-      - name: Install dependencies
-        run: |
-          pip install -r requirements-test.txt
-          brew install create-dmg
-      - name: Generate resources
-        run: |
-          ./generate-resources.sh
-      - name: Install the Apple certificate and provisioning profile
-        # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+          nuitka-version: "2.6.8"
+          script-name: src/fk/desktop/desktop.py
+          mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
+          enable-plugins: pyside6
+          include-qt-plugins: multimedia
+          windows-console-mode: disable
+          windows-icon-from-ico: res/flowkeeper.ico
+          macos-app-icon: flowkeeper.icns
+          macos-signed-app-name: org.flowkeeper.Flowkeeper
+          macos-app-name: Flowkeeper
+          macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
+          macos-sign-notarization: true 
+          macos-app-protected-resource: "com.apple.security.cs.allow-unsigned-executable-memory:true"
+          macos-app-version: "${{ env.FK_VERSION }}"
+          product-name: Flowkeeper
+          product-version: "${{ env.FK_VERSION }}"
+          file-description: ${{ contains('windows-2025 windows-2022 windows-2019', inputs.os) && 'Flowkeeper' || 'Flowkeeper is a Pomodoro Technique desktop timer for power users' }}
+          copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
+          output-dir: 'build'
+          output-file: 'Flowkeeper'
         env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
-          P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
+          PYTHONPATH: src
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
-        run: |
-          # create variables
-          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
 
-          # import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # import certificate to keychain
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S "apple-tool:,apple:" -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-      - name: Package builds
-        run: |
-          pyinstaller "installer/normal-build.spec" -- --sign
-      - name: Create DMG installer
-        run: |
-          rm -rf "dist/flowkeeper"
-          create-dmg \
-            --volname "Flowkeeper Installer" \
-            --volicon "res/flowkeeper.icns" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "Flowkeeper.app" 200 190 \
-            --hide-extension "Flowkeeper.app" \
-            --app-drop-link 600 185 \
-            "Flowkeeper-x86.dmg" \
-            "dist/"
-      - name: Notarize the DMG
+      - name: Create installers
         env:
           NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
           NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
           NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
+        shell: bash
         run: |
-          # Create the notary key
-          xcrun notarytool store-credentials "notary-key" --apple-id "$NOTARIZATION_ID" --team-id "$NOTARIZATION_TEAM" --password "$NOTARIZATION_PASSWORD"
-          # Send the DMG for notarization
-          xcrun notarytool submit "Flowkeeper-x86.dmg" --keychain-profile "notary-key" --wait
-      - name: Archive DMG installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-macOS-dmg-x86
-          path: |
-            Flowkeeper-x86.dmg
+          echo "Prepare dist directory"
+          mkdir -p dist/standalone
+          PREFIX="dist/flowkeeper-${FK_VERSION}-${{ inputs.os }}-${{ inputs.compiler }}"
+          echo "Will create artifacts with $PREFIX prefix"
 
-  remote-pipeline:
-    needs: [build-windows]
-    runs-on: ubuntu-22.04
-    if: ${{ inputs.OS == 'all' }}
-    steps:
-      - name: Trigger remote job
-        env:
-          REMOTE_URL: ${{ secrets.REMOTE_URL }}
-          REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
-          REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_BUILD_JOB_TOKEN }}
-        run: |
-          curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-build/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
+          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              echo "macOS doesn't support portable binaries"
+              mv build/desktop.app dist/standalone/Flowkeeper.app
+            else
+              mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
+              mv build/desktop.dist/* dist/standalone
+            fi
+            if [[ "$OSTYPE" == "linux"* ]]; then
+              mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper
+            fi
+          else
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              echo "macOS doesn't support portable binaries"
+              mv build/Flowkeeper.app dist/standalone
+            else
+              mv build/Flowkeeper${BINARY_EXTENSION} $PREFIX-portable${BINARY_EXTENSION}
+              mv build/flowkeeper/* dist/standalone
+            fi
+          fi
+          echo "Moved ${{ inputs.compiler }} binaries to dist/standalone"
+          find dist/
+
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Building macOS DMG installer"
+            scripts/macos/create-dmg.sh
+            scripts/macos/notarize-dmg.sh
+            mv dist/Flowkeeper.dmg "$PREFIX-installer.dmg"
+          elif [[ "$OSTYPE" == "msys" ]]; then
+            echo "Building Windows setup.exe installer"
+            scripts/windows/package-installer.sh
+            mv dist/setup.exe "$PREFIX-installer.exe"
+          else
+            echo "Building Debian "fat" DEB package"
+            scripts/linux/debian/package-deb.sh
+            mv dist/flowkeeper.deb "$PREFIX-package.deb"
+
+            echo "Building Debian "lean" DEB package"
+            scripts/linux/debian/package-deb-min.sh
+            mv dist/flowkeeper-min.deb "$PREFIX-min-package.deb"
+
+            # Temporarily disable AppImage build
+            echo "Building AppImage package"
+            scripts/linux/appimage/package-appimage.sh
+            mv dist/Flowkeeper-*.AppImage "$PREFIX.AppImage"
+          fi
+
+          echo "Zipping the standalone directory"
+          cd dist/standalone
+          if [[ "$OSTYPE" == "msys" ]]; then
+            echo "No zip on Windows"
+            powershell Compress-Archive "./*" "../../$PREFIX-standalone.zip"
+          else
+            zip -9 -r "../../$PREFIX-standalone.zip" ./*
+          fi
+          cd ../..
+
+          echo "Cleaning /dist up"
+          rm -rf dist/standalone
+
+      - name: Archive the binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ inputs.os }}-${{ inputs.compiler }}-all
+          path: |
+            dist

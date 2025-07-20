@@ -24,7 +24,7 @@ from fk.core.abstract_settings import AbstractSettings
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged, BeforeSourceChanged
 from fk.core.events import AfterSettingsChanged, SourceMessagesProcessed, AfterBacklogCreate, \
     AfterBacklogRename, AfterWorkitemCreate, AfterWorkitemRename, AfterPomodoroAdd, AfterPomodoroRemove, \
-    AfterPomodoroWorkStart, AfterPomodoroComplete, AfterWorkitemComplete
+    AfterPomodoroWorkStart, AfterPomodoroComplete, AfterWorkitemComplete, AfterPomodoroVoided
 from fk.core.pomodoro import Pomodoro
 from fk.core.workitem import Workitem
 from fk.qt.backlog_tableview import BacklogTableView
@@ -73,6 +73,7 @@ class Tutorial:
             AfterPomodoroRemove: self._on_pomodoro_remove,
             AfterPomodoroWorkStart: self._on_pomodoro_work_start,
             AfterPomodoroComplete: self._on_pomodoro_complete,
+            AfterPomodoroVoided: self._on_pomodoro_complete,
             AfterWorkitemComplete: self._on_workitem_complete,
         }
 
@@ -251,11 +252,11 @@ class Tutorial:
     def _on_pomodoro_complete(self, complete: Callable, skip: Callable, pomodoro: Pomodoro, **kwargs) -> None:
         completed_count = 0
         for p in self._source_holder.get_source().pomodoros():
-            if p.is_finished() or p.is_canceled():
+            if p.is_finished() or len(p) > 0:
                 completed_count += 1
         if completed_count == 1:
             workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
-            show_tutorial_overlay(f'9 / 11: {"We are very sorry that you had to void" if pomodoro.is_canceled() else "Congratulations! You successfully completed"} your first pomodoro. '
+            show_tutorial_overlay(f'9 / 11: {"We are very sorry that you had to void" if len(pomodoro) > 0 else "Congratulations! You successfully completed"} your first pomodoro. '
                                   'Note how its icon changed.\n\n'
                                   'You might have heard a DING when that happened -- you can configure all Flowkeeper '
                                   'sounds in the Settings > Audio.\n\n'

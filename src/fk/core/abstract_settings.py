@@ -44,8 +44,12 @@ def _never_show(_) -> bool:
     return False
 
 
-def _show_for_system_font(values: dict[str, str]) -> bool:
-    return values['Application.font_embedded'] == 'False'
+def _show_for_simple_long_breaks(values: dict[str, str]) -> bool:
+    return values['Pomodoro.long_break_algorithm'] == 'simple'
+
+
+def _show_for_smart_long_breaks(values: dict[str, str]) -> bool:
+    return values['Pomodoro.long_break_algorithm'] == 'smart'
 
 
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
@@ -106,7 +110,7 @@ def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
 
 
 def _show_if_madelene(values: dict[str, str]) -> bool:
-    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.mp3'
+    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.m4a'
 
 
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
@@ -176,6 +180,21 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
             ],
+            'Series and breaks': [
+                ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [
+                    'simple:After [N] completed pomodoros',
+                    # 'smart:After focusing for [X] time within the last [Y] hours',
+                    # 'done:After completing a series of pomodoros',
+                    'never:Never (let me decide)',
+                ], _always_show),
+                ('Pomodoro.long_break_each', 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
+                ('Pomodoro.long_break_focus', 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                ('Pomodoro.long_break_within', 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                ('', 'separator', '', '', [], _always_show),
+                ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'False', [], _always_show),
+                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
+                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
+            ],
             'Connection': [
                 ('Source.fullname', 'str', 'User full name', '', [], _never_show),
                 ('Source.type', 'choice', 'Data source', 'local', [
@@ -232,10 +251,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
                 ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
                                                                                        'minimal:Minimalistic (with context menu)'], _always_show),
-                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'thin-dark', ['thin-light:Thin, light background',
-                                                                                                   'thin-dark:Thin, dark background',
-                                                                                                   'classic-light:Classic, light background',
-                                                                                                   'classic-dark:Classic, dark background'], _always_show),
+                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'classic-dark', ['thin-light:Thin, light background',
+                                                                                                'thin-dark:Thin, dark background',
+                                                                                                'classic-light:Classic, light background',
+                                                                                                'classic-dark:Classic, dark background'], _always_show),
                 ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
@@ -275,39 +294,40 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
                 ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
                 ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
+                ('RestScreen.enabled', 'bool', 'Full-screen rest notifications', 'True', [], _always_show),
             ],
             'Fonts': [
-                ('Application.font_embedded', 'bool', 'Use embedded font', 'True', [], _always_show),
-                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _show_for_system_font),
-                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _show_for_system_font),
-                ('Application.font_header_size', 'int', 'Title font size', '26', [3, 72], _show_for_system_font),
+                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
+                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _always_show),
+                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _always_show),
+                ('Application.font_header_size', 'int', 'Title font size', '24', [3, 72], _always_show),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
                 ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
-                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3'], _show_if_play_alarm_enabled),
+                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
                 ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.mp3', ['*.wav;*.mp3'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315), (C) Lobo Loco <https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
+                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
+                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)", (C) Lobo Loco\n<https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
-                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3'], _show_if_play_tick_enabled),
+                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
                 ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 ('separator', 'separator', '', '', [], _always_show),
                 ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
             'Integration': [
-                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{} syntax for variable substitution:\n'
+                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{}\n'
+                                                             'syntax for variable substitution:\n'
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
-                                                             'WARNING: Placeholders are substituted as-is, without any sanitization or escaping.', [], _always_show),
+                                                             'WARNING: Placeholders are substituted as-is, without any sanitization.', [], _always_show),
                 ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
-                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to '
-                                                                 'check the above checkbox and then grant Flowkeeper access to dbus. This has a major impact '
+                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to check\n'
+                                                                 'the above checkbox and then grant Flowkeeper access to dbus. This has a major impact\n'
                                                                  'on the sandbox security, so do this only when strictly necessary:\n'
                                                                  '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
@@ -327,6 +347,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     @abstractmethod
+    def is_set(self, name: str) -> bool:
+        pass
+
+    @abstractmethod
     def get(self, name: str) -> str:
         # Note that there's no default value -- we can get it from self._defaults
         pass
@@ -340,7 +364,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_username(self) -> str:
-        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user.
+        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.
         if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
             return 'user@local.host'
         else:
@@ -413,12 +437,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
-        to_set = dict[str, str]()
-        for lst in self._definitions.values():
-            for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-                to_set[option_id] = option_default
+        # It seems to be sufficient just to clear all settings -- then defaults will be
+        # used when we do .get(name)
+        # to_set = dict[str, str]()
+        # for lst in self._definitions.values():
+        #     for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
+        #         to_set[option_id] = option_default
         self.clear()
-        self.set(to_set)
+        # self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
         return _show_when_encryption_is_enabled({
@@ -450,7 +476,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             raise Exception(f"Unexpected source type for WebSocket event source: {source_type}")
 
     def update_default(self, name: str, value: str) -> None:
+        old = self._defaults[name]
         self._defaults[name] = value
+        logger.debug(f'Updated default {name} from {old} to {value}. Got: {self.get(name)}')
 
     @abstractmethod
     def init_audio_outputs(self):

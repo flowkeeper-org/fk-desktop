@@ -14,9 +14,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 import uuid
 from abc import ABC
 from typing import Iterable, TypeVar, Generic
+
+
+logger = logging.getLogger(__name__)
 
 
 def generate_uid() -> str:
@@ -62,16 +66,23 @@ class AbstractDataItem(ABC, Generic[TParent]):
     def get_parent(self) -> TParent:
         return self._parent
 
-    def dump(self, indent: str = '', mask_uid: bool = False) -> str:
+    def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
         owner = self.get_owner()
         owner_name = owner.get_uid() if owner is not None else 'N/A'
         parent_uid = self._parent.get_uid() if self._parent is not None else 'N/A'
-        return f'{indent}- Type: {self.__class__.__name__}\n' \
+        return f'{indent}- Class: {self.__class__.__name__}\n' \
                f'{indent}  UID: {"<MASKED>" if mask_uid else self._uid}\n' \
                f'{indent}  Owner: {owner_name}\n' \
-               f'{indent}  Parent UID: {parent_uid}\n' \
+               f'{indent}  Parent UID: {"<MASKED>" if mask_uid else parent_uid}\n' \
                f'{indent}  Create date: {self._create_date}\n' \
-               f'{indent}  Last modified: {self._last_modified_date}'
+               f'{indent}  Last modified: {"<MASKED>" if mask_last_modified else self._last_modified_date}'
+
+    def to_dict(self) -> dict:
+        return {
+            'uid': self._uid,
+            'create_date': self._create_date,
+            'last_modified_date': self._last_modified_date,
+        }
 
     def get_create_date(self) -> datetime.datetime:
         return self._create_date
@@ -84,7 +95,7 @@ class AbstractDataItem(ABC, Generic[TParent]):
         # UC-2: Update timestamps propagate to parents. The latest timestamp is kept, they can't decrease.
         if date is None:
             date = datetime.datetime.now(datetime.timezone.utc)
-        # Some actions may happen retroactively, e.g. a Pomodoro might be auto-sealed "in the past"
+        # Some actions may happen retroactively, although it is unusual, so let's display a warning
         if self._last_modified_date is None or self._last_modified_date < date:
             self._last_modified_date = date
         if self._parent is not None:

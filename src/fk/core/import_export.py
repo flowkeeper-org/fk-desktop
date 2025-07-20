@@ -18,8 +18,6 @@ import logging
 from os import path
 from typing import Iterable, Callable, TypeVar
 
-from more_itertools import tail
-
 from fk.core import events
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
@@ -30,10 +28,11 @@ from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrat
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
-from fk.core.pomodoro_strategies import AddPomodoroStrategy, VoidPomodoroStrategy, StartWorkStrategy
+from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy
 from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tags import sanitize_tag
 from fk.core.tenant import ADMIN_USER
+from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
 from fk.core.user import User
 from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem import Workitem
@@ -71,49 +70,89 @@ def compressed_strategies(source: AbstractEventSource[TRoot]) -> Iterable[Abstra
     """The minimal list of strategies required to get the same end result"""
     # UC-2: Export can compress strategies to the bare minimum without losing crucial timestamps.
 
-    seq = 1
+    strategies = list[AbstractStrategy]()
+
     for user in source.get_data().values():
         if user.is_system_user():
             continue
-        yield CreateUserStrategy(seq, user.get_create_date(), ADMIN_USER,
+        strategies.append(
+            CreateUserStrategy(0,
+                               user.get_create_date(),
+                               ADMIN_USER,
                                  [user.get_identity(), user.get_name()],
-                                 source.get_settings())
-        seq += 1
+                                 source.get_settings()))
+
         for backlog in user.values():
-            yield CreateBacklogStrategy(seq, backlog.get_create_date(), user.get_identity(),
+            strategies.append(
+                CreateBacklogStrategy(0,
+                                      backlog.get_create_date(),
+                                      user.get_identity(),
                                         [backlog.get_uid(), backlog.get_name()],
-                                        source.get_settings())
-            seq += 1
+                                        source.get_settings()))
+
             for workitem in backlog.values():
-                yield CreateWorkitemStrategy(seq, workitem.get_create_date(), user.get_identity(),
+                strategies.append(
+                    CreateWorkitemStrategy(0,
+                                           workitem.get_create_date(),
+                                           user.get_identity(),
                                              [workitem.get_uid(), backlog.get_uid(), workitem.get_name()],
-                                             source.get_settings())
-                seq += 1
+                                             source.get_settings()))
+
                 for pomodoro in workitem.values():
                     # We could create all at once, but then we'd lose the information about unplanned pomodoros
-                    yield AddPomodoroStrategy(seq, pomodoro.get_create_date(), user.get_identity(),
+                    strategies.append(
+                        AddPomodoroStrategy(0,
+                                            pomodoro.get_create_date(),
+                                            user.get_identity(),
                                               [workitem.get_uid(), '1', pomodoro.get_type()],
-                                              source.get_settings())
-                    seq += 1
-                    if pomodoro.is_canceled() or pomodoro.is_finished():
-                        yield StartWorkStrategy(seq,
-                                                pomodoro.get_work_start_date(),
-                                                user.get_identity(),
-                                                [workitem.get_uid(),
-                                                 str(pomodoro.get_work_duration()),
-                                                 str(pomodoro.get_rest_duration())],
-                                                source.get_settings())
-                        seq += 1
-                    if pomodoro.is_canceled():
-                        yield VoidPomodoroStrategy(seq, pomodoro.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid()],
-                                                   source.get_settings())
-                        seq += 1
+                                              source.get_settings()))
+
+                    for interruption in pomodoro.values():
+                        strategies.append(
+                            AddInterruptionStrategy(0,
+                                                    interruption.get_create_date(),
+                                                    user.get_identity(),
+                                                    [
+                                                        workitem.get_uid(),
+                                                        interruption.get_reason() if interruption.get_reason() is not None else '',
+                                                        str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
+                                                    source.get_settings()))
+
+                for interval in workitem.get_intervals():
+                    strategies.append(
+                        StartTimerStrategy(0,
+                                           interval.get_started(),
+                                           user.get_identity(),
+                                           [
+                                               workitem.get_uid(),
+                                               str(interval.get_work_duration()),
+                                               str(interval.get_rest_duration())],
+                                           source.get_settings()))
+
+                    if interval.is_ended_manually():
+                        strategies.append(
+                            StopTimerStrategy(0,
+                                              interval.get_ended(),
+                                              user.get_identity(),
+                                              [],
+                                              source.get_settings()))
+
                 if workitem.is_sealed():
-                    yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid(), 'finished'],
-                                                   source.get_settings())
-                    seq += 1
+                    strategies.append(
+                        CompleteWorkitemStrategy(0,
+                                                 workitem.get_last_modified_date(),
+                                                 user.get_identity(),
+                                                 [
+                                                     workitem.get_uid(),
+                                                     'finished'],
+                                                 source.get_settings()))
+
+    strategies.sort(key=lambda x: x.get_when())
+    seq = 1
+    for s in strategies:
+        s.update_sequence(seq)
+        seq += 1
+        yield s
 
 
 def merge_strategies(source: AbstractEventSource[TRoot],
@@ -129,6 +168,8 @@ def merge_strategies(source: AbstractEventSource[TRoot],
     existing_workitems = dict[str, Workitem]()
     for workitem in source.workitems():
         existing_workitems[workitem.get_uid()] = workitem
+
+    strategies = list[AbstractStrategy]()
 
     seq = source.get_last_sequence() + 1
     for user in data.values():
@@ -183,51 +224,82 @@ def merge_strategies(source: AbstractEventSource[TRoot],
                                                          source.get_settings())
                             seq += 1
 
-                    # # TODO: I'm not sure why we do this. Commenting out for now.
-                    # running = existing_workitem.get_running_pomodoro()
-                    # if running is not None:
-                    #     # TODO: Also check that this pomodoro is to be voided
-                    #     yield VoidPomodoroStrategy(seq, running.get_last_modified_date(), user.get_identity(),
-                    #                                [workitem.get_uid()],
-                    #                                source.get_settings())
-                    #     seq += 1
-
                 # Merge pomodoros by adding the new ones and completing some, if needed
                 num_pomodoros_to_add = len(workitem) - len(existing_workitem)
                 if num_pomodoros_to_add > 0:
-                    for p_old in tail(num_pomodoros_to_add, workitem.values()):
+                    for p_old in list(workitem.values())[-num_pomodoros_to_add:]:
                         # UC-2: Smart import would result in the max(existing, imported) number of pomodoros for each workitem
-                        yield AddPomodoroStrategy(seq, p_old.get_create_date(), user.get_identity(),
-                                                  [workitem.get_uid(), '1', p_old.get_type()],
+                        yield AddPomodoroStrategy(seq,
+                                                  p_old.get_create_date(),
+                                                  user.get_identity(),
+                                                  [
+                                                      workitem.get_uid(),
+                                                      '1',
+                                                      p_old.get_type()],
                                                   source.get_settings())
                         seq += 1
 
-                # Here we rely on the fact that there are at least len(workitem) pomodoros now
+                # From here on we are adding strategies to the list instead of yielding them directly,
+                # because they must be sorted by time. StartTimer on another workitem might come in the
+                # middle between StartTimer on _this_ one.
+
+                # We start with interruptions, because for the voided pomodoros their timestamps are
+                # identical to StopTimer ones, so if we do the Intervals first, we'd have "workitem
+                # is not running" errors.
                 pomodoros_old = list(existing_workitem.values())
                 for i, p_new in enumerate(workitem.values()):
+                    # Here we rely on the fact that because we yielded AddPomodoros above, there
+                    # are at least len(workitem) pomodoros now, so we won't go out of array bounds
                     p_old = pomodoros_old[i]
-                    if p_old.is_startable():
-                        if p_new.is_canceled() or p_new.is_finished():
-                            yield StartWorkStrategy(seq,
-                                                    p_new.get_work_start_date(),
-                                                    user.get_identity(),
-                                                    [workitem.get_uid(),
-                                                     str(p_new.get_work_duration()),
-                                                     str(p_new.get_rest_duration())],
-                                                    source.get_settings())
-                            seq += 1
-                            if p_new.is_canceled():
-                                # UC-2: Smart import would result in the max(existing, imported) number of completed and voided pomodoros for each workitem
-                                yield VoidPomodoroStrategy(seq, p_new.get_last_modified_date(), user.get_identity(),
-                                                           [workitem.get_uid()],
-                                                           source.get_settings())
-                                seq += 1
+
+                    # Import interruptions similarly to pomodoros
+                    for interruption in p_new.values():
+                        if interruption not in p_old.values():
+                            strategies.append(
+                                AddInterruptionStrategy(0,
+                                                        interruption.get_create_date(),
+                                                        user.get_identity(),
+                                                        [
+                                                            workitem.get_uid(),
+                                                            interruption.get_reason() if interruption.get_reason() is not None else '',
+                                                            str(interruption.get_duration().total_seconds()) if interruption.get_duration() is not None else ''],
+                                                        source.get_settings()))
+
+                for interval in workitem.get_intervals():
+                    if interval not in existing_workitem.get_intervals():
+                        strategies.append(
+                            StartTimerStrategy(0,
+                                               interval.get_started(),
+                                               user.get_identity(),
+                                               [
+                                                   workitem.get_uid(),
+                                                   str(interval.get_work_duration()),
+                                                   str(interval.get_rest_duration())],
+                                               source.get_settings()))
+
+                        if interval.is_ended_manually():
+                            strategies.append(
+                                StopTimerStrategy(0,
+                                                  interval.get_ended(),
+                                                  user.get_identity(),
+                                                  [],
+                                                  source.get_settings()))
 
                 if workitem.is_sealed() and (existing_workitem is None or not existing_workitem.is_sealed()):
-                    yield CompleteWorkitemStrategy(seq, workitem.get_last_modified_date(), user.get_identity(),
-                                                   [workitem.get_uid(), 'finished'],
-                                                   source.get_settings())
-                    seq += 1
+                    strategies.append(
+                        CompleteWorkitemStrategy(0,
+                                                 workitem.get_last_modified_date(),
+                                                 user.get_identity(),
+                                                 [
+                                                     workitem.get_uid(),
+                                                     'finished'],
+                                                 source.get_settings()))
+
+        strategies.sort(key=lambda x: x.get_when())
+        for s in strategies:
+            s.update_sequence(seq)
+            seq += 1
+            yield s
 
 
 def _export_compressed(source: AbstractEventSource[TRoot],
@@ -300,15 +372,16 @@ def import_(source: AbstractEventSource[TRoot],
         # 1. Read import file by doing a classic import on an ephemeral source
         settings = MockSettings(username=source.get_settings().get_username(),
                                 source_type='ephemeral')
-        new_source = EventSourceHolder(settings, NoCryptograph(settings)).request_new_source()
-        import_classic(new_source,
+        new_source_holder = EventSourceHolder(settings, NoCryptograph(settings))
+        import_classic(new_source_holder.request_new_source(),
                        filename,
                        ignore_errors,
                        start_callback,
                        progress_callback,
-                       lambda total: _merge_sources(source,
-                                                    new_source,
-                                                    completion_callback))  # Step 2 is done there
+                       lambda total: _merge_sources(source,  # Step 2 is done there
+                                                    new_source_holder,
+                                                    ignore_errors,
+                                                    completion_callback))
     else:
         import_classic(source,
                        filename,
@@ -401,20 +474,87 @@ def import_github_issues(source: AbstractEventSource[TRoot],
     return log
 
 
+def import_simple(source: AbstractEventSource[TRoot],
+                  tasks: dict[str, list[object]]) -> str:
+    log = ''
+    user: User = source.get_data().get_current_user()
+
+    for name in tasks.keys():
+        found: Backlog = None
+        for b in user.values():
+            if b.get_name() == name:
+                found = b
+                log = f'Found existing backlog "{name}"\n'
+                break
+
+        if found is None:
+            b_uid = generate_uid()
+            source.execute(CreateBacklogStrategy, [b_uid, name])
+            found = user[b_uid]
+            log = f'Created backlog "{name}"\n'
+
+        created = 0
+        skipped = 0
+        completed = 0
+        for task in tasks[name]:
+            title = task[0]
+            state = task[1]
+
+            # Check if such workitem already exists
+            existing: Workitem = None
+            for wi in found.values():
+                if wi.get_name() == title:
+                    existing = wi
+                    break
+
+            if existing is None:
+                w_uid = generate_uid()
+                source.execute(CreateWorkitemStrategy, [w_uid, found.get_uid(), title])
+                existing = found[w_uid]
+                created += 1
+            else:
+                w_uid = existing.get_uid()
+                skipped += 1
+
+            if state == 'completed' and not existing.is_sealed():
+                source.execute(CompleteWorkitemStrategy, [w_uid, 'finished'])
+                completed += 1
+
+        if created == 0:
+            log += ' - Did not create any new work items\n'
+        else:
+            log += f' - Created {created} work items\n'
+
+        if skipped > 0:
+            log += f' - Skipped {skipped} existing work items\n'
+
+        if completed > 0:
+            log += f' - Marked {completed} work items as completed\n'
+
+        log += '\n'
+
+    return log
+
+
 def _merge_sources(existing_source,
-                   new_source,
+                   new_source_holder,
+                   ignore_errors,
                    completion_callback: Callable[[int], None]) -> None:
     # 2. Execute the "merge" sequence of strategies obtained via source.merge_strategies()
     count = 0
     # UC-3: Any import mutes all events on the existing event source for the duration of the import
     existing_source.mute()
-    new_username = existing_source.get_settings().get_username()
-    for strategy in merge_strategies(existing_source, new_source.get_data()):
-        existing_source.auto_seal(strategy.get_when())  # Note that we do this BEFORE executing this strategy
-        existing_source.execute_prepared_strategy(strategy, False, True)
+    for strategy in merge_strategies(existing_source, new_source_holder.get_source().get_data()):
+        try:
+            existing_source.execute_prepared_strategy(strategy, False, True)
+        except Exception as e:
+            if ignore_errors:
+                logger.warning(f'Error while importing data, ignoring: {e}')
+            else:
+                raise e
         count += 1
-    existing_source.auto_seal()
     existing_source.unmute()
+    new_source_holder.close_current_source()
     completion_callback(count)
 
 
@@ -471,7 +611,6 @@ def import_classic(source: AbstractEventSource[TRoot],
                     # UC-3: Classic import ignores CreateUser strategies
                     continue
                 i += 1
-                source.auto_seal(strategy.get_when())
                 source.execute_prepared_strategy(strategy, False, True)
                 if i % every == 0:
                     progress_callback(i, total)

@@ -2,7 +2,7 @@ Constantine Kulak <https://github.com/co-stig>: Flowkeeper author.
 
 Marco Sarti <marco@elogiclab.com>: AUR package maintainer.
 
-faveoled <https://github.com/faveoled>: Flatpak package maintainer.
+faveoled <https://github.com/faveoled>: Created the first Flatpak package for Flowkeeper, which we adopted.
 
 Flowkeeper is built using Qt Community Edition by The Qt Company <https://www.qt.io/licensing>.
 
@@ -13,6 +13,8 @@ Flowkeeper logo (red tomato icon): "Tomate" by Andreas Preuss AKA marauder <http
 Pomodoro and Pomodoro Technique are registered trademarks of Francesco Cirillo <https://www.pomodorotechnique.com/pomodoro-trademark-guidelines.php>.
 
 Embedded sounds (bell and tick): Cannot find the original author. I used the same sounds in the original Flowkeeper (v1) in 2010.
+
+Embedded wood knock sound effect: "wood_knock" by freesound_community on pixabay <https://pixabay.com/sound-effects/wood-knock-93900/> under Pixabay Content License
 
 Embedded resting music: Madelene (ID 1315), kindly provided by Lobo Loco <https://www.musikbrause.de> under CC-BY-NC-ND (Creative Commons Attribution NonCommercial NoDerivs).
 
@@ -44,3 +46,5 @@ The Windows installer is created using Inno Setup by Jordan Russell <https://jrs
 The Debian installer is created using dpkg-deb tool <https://www.apt-browse.org/browse/ubuntu/bionic/main/amd64/dpkg/1.19.0.5ubuntu2/file/usr/share/doc/dpkg/copyright>.
 
 The embedded font is Noto Sans, licensed under the SIL Open Font License, Version 1.1. Copyright 2022 The Noto Project Authors <https://github.com/notofonts/latin-greek-cyrillic>.
+
+Linux package repositories are provided by (awesome!) openSUSE Build Service <https://build.opensuse.org/>.

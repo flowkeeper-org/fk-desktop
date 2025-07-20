@@ -18,8 +18,9 @@ from __future__ import annotations
 import datetime
 import logging
 
-from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6 import QtGui, QtCore
 from PySide6.QtCore import Qt, QMimeData, QModelIndex
+from PySide6.QtGui import QStandardItem
 
 from fk.core import events
 from fk.core.abstract_event_source import AbstractEventSource
@@ -28,6 +29,7 @@ from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import RenameBacklogStrategy, ReorderBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
+from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import MoveWorkitemStrategy
 from fk.qt.abstract_drop_model import AbstractDropModel
 from fk.qt.qt_timer import QtTimer
@@ -38,7 +40,7 @@ font_today = QtGui.QFont()
 # font_today.setBold(True)
 
 
-class BacklogItem(QtGui.QStandardItem):
+class BacklogItem(QStandardItem):
     _backlog: Backlog
 
     def __init__(self, backlog: Backlog):
@@ -77,7 +79,7 @@ class BacklogModel(AbstractDropModel):
         self._midnight_timer = QtTimer('Midnight check for BacklogModel')
         self._schedule_at_midnight()
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
+        self.itemChanged.connect(lambda item: self.handle_rename(item, RenameBacklogStrategy))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         self.load(None)
@@ -85,24 +87,6 @@ class BacklogModel(AbstractDropModel):
         source.on(events.AfterBacklogDelete, self._backlog_removed)
         source.on(events.AfterBacklogRename, self._backlog_renamed)
         source.on(events.AfterBacklogReorder, self._backlog_reordered)
-
-    def _handle_rename(self, item: QtGui.QStandardItem) -> None:
-        if item.data(501) == 'title':
-            backlog = item.data(500)
-            old_name = backlog.get_name()
-            new_name = item.text()
-            if old_name != new_name:
-                try:
-                    self._source_holder.get_source().execute(RenameBacklogStrategy, [backlog.get_uid(), new_name])
-                except Exception as e:
-                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
-                    item.setText(old_name)
-                    QtWidgets.QMessageBox().warning(
-                        self.parent(),
-                        "Cannot rename",
-                        str(e),
-                        QtWidgets.QMessageBox.StandardButton.Ok
-                    )
 
     def _backlog_added(self, backlog: Backlog, **kwargs) -> None:
         self.insertRow(0, BacklogItem(backlog))
@@ -148,48 +132,33 @@ class BacklogModel(AbstractDropModel):
                     self.insertRow(new_index, row)
                     return
 
-    def load(self, user: User) -> None:
+    def load(self, user: User | None) -> None:
         self.clear()
         if user is not None:
             for backlog in reversed(user.values()):
                 self.appendRow(BacklogItem(backlog))
-        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
+        self.setHorizontalHeaderItem(0, QStandardItem(''))
 
-    def get_type(self) -> str:
+    def get_primary_type(self) -> str:
         return 'application/flowkeeper.backlog.id'
 
-    def item_by_id(self, uid: str) -> BacklogItem:
-        return BacklogItem(self._source_holder.get_source().find_backlog(uid))
+    def get_secondary_type(self) -> str:
+        return 'application/flowkeeper.workitem.id'
 
+    def item_for_object(self, backlog: Backlog) -> list[QStandardItem]:
+        return [BacklogItem(backlog)]
+    
     def reorder(self, to_index: int, uid: str):
         self._source_holder.get_source().execute(ReorderBacklogStrategy,
                                                  # We display backlogs in reverse order, so need to subtract here
-                                                 [uid, str(self.rowCount() - to_index - 1)],
+                                                 [uid, str(self.rowCount() - to_index)],
                                                  carry='ui')
 
-    def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        print('BacklogModel - canDropMimeData')
-        for_backlogs = super().canDropMimeData(data, action, row, column, where)
-        # We also allow dropping workitems here
-        workitem_uid = data.data('application/flowkeeper.workitem.id')
-        for_workitems = (workitem_uid is not None and workitem_uid != b'') and where.isValid()
-        print('canDropMimeData - Backlog', for_backlogs, for_workitems)
-        print(' - ', workitem_uid)
-        print(' - ', where)
-        return for_backlogs or for_workitems
-
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, where: QModelIndex):
-        #print('BacklogModel - dropMimeData', data, action, row, column, where.data(501), where.isValid())
-        if where.data(501) == 'title' and data.hasFormat('application/flowkeeper.workitem.id'):
-            # We are dropping a workitem on a backlog
-            item_id = data.data('application/flowkeeper.workitem.id').toStdString()
-            backlog = where.data(500)
-            for wi in backlog.values():
-                if wi.get_uid() == item_id:
-                    return False
-            # TODO: Handle external move
-            self._source_holder.get_source().execute(MoveWorkitemStrategy,
-                                                     [item_id, backlog.get_uid()])
-            return True
-        else:
-            return super().dropMimeData(data, action, row, column, where)
+    def adopt_foreign_item(self, backlog: Backlog, workitem_uid: str) -> bool:
+        workitem: Workitem = self._source_holder.get_source().find_workitem(workitem_uid)
+        if workitem is None or backlog is None or workitem.get_parent() == backlog:
+            return False
+        logger.debug(f'Moving workitem {workitem.get_name()} to backlog {backlog.get_name()}')
+        self._source_holder.get_source().execute(MoveWorkitemStrategy,
+                                                 [workitem_uid, backlog.get_uid()])
+        return True

@@ -32,7 +32,7 @@ from xml.etree import ElementTree
 
 from PySide6.QtCore import QTimer, QPoint, QEvent, Qt
 from PySide6.QtGui import QWindow, QMouseEvent, QKeyEvent, QFocusEvent
-from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow
+from PySide6.QtWidgets import QWidget, QAbstractItemView, QMainWindow, QAbstractButton, QCheckBox, QRadioButton
 
 from fk.desktop.application import Application
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
@@ -41,9 +41,10 @@ from fk.e2e.testing_strategies import ShutdownServerStrategy, CreateAccountStrat
 from fk.qt.actions import Actions
 
 INSTANT_DURATION = 0.2  # seconds
-STARTUP_DURATION = 1  # seconds
-WINDOW_GALLERY_FILENAME = 'test-results/screenshots.html'
-SCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
+STARTUP_DURATION = 3  # seconds
+WINDOW_GALLERY_FILENAME = 'test-results/screenshots-window.html'
+WINDOW_BORDER_GALLERY_FILENAME = 'test-results/screenshots-window-border.html'
+FULLSCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ class AbstractE2eTest(ABC):
         self._app = app
         self._screenshot = None
         self._main_window = None
+        self._current_method = 'N/A'
         app.get_settings().set(self.custom_settings())
         self._initialized = False
         self._seq = self._get_test_cases()
@@ -87,6 +89,7 @@ class AbstractE2eTest(ABC):
         return res
 
     async def _run(self):
+        self._timer.stop()
         if not self._initialized:
             self._initialized = True
             # noinspection PyTypeChecker
@@ -124,8 +127,8 @@ class AbstractE2eTest(ABC):
                     logger.debug(' - Closed the window')
                     self._app.exit(0)
                     logger.debug(' - Exited Qt')
-                    sys.exit(0)
-                    logger.debug(' - Exited Python')
+                    # sys.exit(0)
+                    # logger.debug(' - Exited Python')
 
     def _update_log_for_method(self, name: str, value: str):
         el = self._log_xml.find(f"testcase[@name='{self._current_method}']")
@@ -188,12 +191,15 @@ class AbstractE2eTest(ABC):
         return widget.visualRect(widget.model().index(row, col)).center()
 
     async def mouse_click_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        logger.debug(f'mouse_click_row({widget.objectName()}, {row}, {col})')
         await self.mouse_click(widget, self._get_row_position(widget, row, col))
 
     async def mouse_doubleclick_row(self, widget: QAbstractItemView, row: int, col: int = 0):
+        logger.debug(f'mouse_doubleclick_row({widget.objectName()}, {row}, {col})')
         await self.mouse_doubleclick(widget, self._get_row_position(widget, row, col))
 
     async def mouse_click(self, widget: QWidget, pos: QPoint, left_button: bool = True):
+        logger.debug(f'mouse_click({widget.objectName()}, {pos}, {left_button})')
         widget.focusInEvent(QFocusEvent(
             QEvent.Type.FocusIn,
         ))
@@ -216,6 +222,7 @@ class AbstractE2eTest(ABC):
         await self.instant_pause()
 
     async def mouse_doubleclick(self, widget: QWidget, pos: QPoint = QPoint(5, 5)):
+        logger.debug(f'mouse_doubleclick({widget.objectName()}, {pos})')
         widget.mouseDoubleClickEvent(QMouseEvent(
             QEvent.Type.MouseButtonDblClick,
             pos,
@@ -226,6 +233,7 @@ class AbstractE2eTest(ABC):
         await self.instant_pause()
 
     def keypress(self, key: int, ctrl: bool = False, widget: QWidget = None):
+        logger.debug(f'keypress({key}, {ctrl}, {widget})')
         if widget is None:
             widget = self.get_focused()
         self._app.postEvent(widget, QKeyEvent(
@@ -235,13 +243,16 @@ class AbstractE2eTest(ABC):
         ))
 
     def close_modal(self, ok: bool = True):
+        logger.debug(f'close_modal({ok})')
         for w in self._app.allWindows():
             if w.isModal():
                 if ok:
-                    self.keypress(Qt.Key.Key_Tab, False, w)
-                self.keypress(Qt.Key.Key_Enter, False, w)
+                    self.keypress(Qt.Key.Key_Enter, False, w)
+                else:
+                    self.keypress(Qt.Key.Key_Escape, False, w)
 
     def type_text(self, text: str):
+        logger.debug(f'type_text({text})')
         self._app.postEvent(self.get_focused(), QKeyEvent(
             QEvent.Type.KeyPress,
             Qt.Key.Key_No,
@@ -265,7 +276,29 @@ class AbstractE2eTest(ABC):
             self._main_window = win
         return win
 
+    def click_button(self, text: str = None, name: str = None):
+        logger.debug(f'click_button({text}, {name})')
+        buttons: list[QAbstractButton] = self.get_application().activeWindow().findChildren(QAbstractButton)
+        for b in buttons:
+            if text is not None and b.text() == text or name is not None and b.objectName() == name:
+                b.click()
+
+    def check_checkbox(self, checked: bool = True, text: str = None, name: str = None):
+        logger.debug(f'check_checkbox({checked}, {text}, {name})')
+        checkboxes: list[QCheckBox] = self.get_application().activeWindow().findChildren(QCheckBox)
+        for c in checkboxes:
+            if text is not None and c.text() == text or name is not None and c.objectName() == name:
+                c.setChecked(checked)
+
+    def check_radiobutton(self, checked: bool = True, text: str = None, name: str = None):
+        logger.debug(f'check_radiobutton({checked}, {text}, {name})')
+        radios: list[QRadioButton] = self.get_application().activeWindow().findChildren(QRadioButton)
+        for r in radios:
+            if text is not None and r.text() == text or name is not None and r.objectName() == name:
+                r.setChecked(checked)
+
     def execute_action(self, name: str) -> None:
+        logger.debug(f'execute_action({name})')
         Actions.ALL[name].trigger()
 
     def is_action_enabled(self, name: str) -> bool:
@@ -319,9 +352,24 @@ class AbstractE2eTest(ABC):
         with open(WINDOW_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}-window.png" title="{name}">\n')
 
+        # Update window w/border gallery
+        if not os.path.isfile(WINDOW_BORDER_GALLERY_FILENAME):
+            with open(WINDOW_BORDER_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+                f.write('''
+                    <style>
+                    .screenshot {
+                        margin: 30px;
+                        width: 500px;
+                        height: auto;
+                    }
+                    </style>
+                ''')
+        with open(WINDOW_BORDER_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+            f.write(f'<img class="screenshot" src="{name}-window-border.png" title="{name}">\n')
+
         # Update screen gallery
-        if not os.path.isfile(SCREEN_GALLERY_FILENAME):
-            with open(SCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
+        if not os.path.isfile(FULLSCREEN_GALLERY_FILENAME):
+            with open(FULLSCREEN_GALLERY_FILENAME, 'w', encoding='UTF-8') as f:
                 f.write('''
                     <style>
                     .screenshot {
@@ -332,7 +380,7 @@ class AbstractE2eTest(ABC):
                     }
                     </style>
                 ''')
-        with open(SCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
+        with open(FULLSCREEN_GALLERY_FILENAME, 'a', encoding='UTF-8') as f:
             f.write(f'<img class="screenshot" src="{name}-full.png" title="{name}">\n')
 
     def center_window(self):

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import logging
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -40,6 +41,7 @@ class TestTags(TestCase):
     data: dict[str, User]
 
     def setUp(self) -> None:
+        logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
         self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
@@ -51,22 +53,18 @@ class TestTags(TestCase):
         user = self.data['user@local.host']
         if 'b1' not in user:
             self.source.execute(CreateBacklogStrategy, ['b1', 'First backlog'])
-            self.source.auto_seal()
-        return user, user['b1']
+            return user, user['b1']
 
     def _add_workitem(self, name: str, uid: str = 'w11') -> Workitem:
         self._standard_backlog()
         self.source.execute(CreateWorkitemStrategy, [uid, 'b1', name])
-        self.source.auto_seal()
         return self.data['user@local.host']['b1'][uid]
 
     def _delete_workitem(self, uid: str) -> None:
         self.source.execute(DeleteWorkitemStrategy, [uid])
-        self.source.auto_seal()
 
     def _rename_workitem(self, uid: str, new_name: str) -> None:
         self.source.execute(RenameWorkitemStrategy, [uid, new_name])
-        self.source.auto_seal()
 
     def tearDown(self) -> None:
         self.source.dump()
@@ -192,20 +190,17 @@ class TestTags(TestCase):
         found_one = False
         found_two = False
         found_three = False
-        found_another = False
         for tag in self.source.tags():
+            self.assertIn(tag.get_uid(), ['one', 'two', 'three'])
             if tag.get_uid() == 'one':
                 found_one = True
             elif tag.get_uid() == 'two':
                 found_two = True
             elif tag.get_uid() == 'three':
                 found_three = True
-            else:
-                found_another = True
         self.assertTrue(found_one)
         self.assertTrue(found_two)
         self.assertTrue(found_three)
-        self.assertFalse(found_another)
 
         self.assertIsNotNone(self.source.find_tag('one'))
         self.assertIsNone(self.source.find_tag('four'))
@@ -300,7 +295,6 @@ class TestTags(TestCase):
             self.settings,
             None), False, True)
 
-        self.source.auto_seal()
 
         local_tags = self.data['user@local.host'].get_tags()
         self.assertEqual(len(local_tags), 1)
@@ -379,7 +373,6 @@ class TestTags(TestCase):
 
         self.source.on('*', on_event)
         self.source.execute(RenameWorkitemStrategy, ['w11', 'Tags #one and #two only'])
-        self.source.auto_seal()
 
         self.assertEqual(len(fired), 6)
         self.assertEqual(fired[0], 'BeforeMessageProcessed')
@@ -395,12 +388,7 @@ class TestTags(TestCase):
 
         def on_event(event, **kwargs):
             fired.append(event)
-            if event == 'TagCreated':
-                self.assertIn('tag', kwargs)
-                tag = kwargs['tag']
-                self.assertEqual(tag.get_uid(), 'new')
-                self.assertEqual(tag.get_parent().get_parent(), self.data['user@local.host'])
-            elif event == 'TagContentChanged':
+            if event == 'TagContentChanged':
                 self.assertIn('tag', kwargs)
                 tag = kwargs['tag']
                 self.assertEqual(tag.get_uid(), 'new')
@@ -411,7 +399,6 @@ class TestTags(TestCase):
 
         self.source.on('*', on_event)
         self.source.execute(CreateWorkitemStrategy, ['w12', 'b1', 'Another #new workitem'])
-        self.source.auto_seal()
 
         self.assertEqual(len(fired), 5)
         self.assertEqual(fired[0], 'BeforeMessageProcessed')

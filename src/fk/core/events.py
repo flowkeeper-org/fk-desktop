@@ -58,6 +58,10 @@ BeforePomodoroRestStart = "BeforePomodoroRestStart"
 AfterPomodoroRestStart = "AfterPomodoroRestStart"
 BeforePomodoroComplete = "BeforePomodoroComplete"
 AfterPomodoroComplete = "AfterPomodoroComplete"
+BeforePomodoroVoided = "BeforePomodoroVoided"
+AfterPomodoroVoided = "AfterPomodoroVoided"
+BeforePomodoroInterrupted = "BeforePomodoroInterrupted"
+AfterPomodoroInterrupted = "AfterPomodoroInterrupted"
 
 TagCreated = "TagCreated"
 TagDeleted = "TagDeleted"
@@ -83,6 +87,10 @@ AfterTenantCreate = "AfterTenantCreate"
 
 WentOnline = "WentOnline"
 WentOffline = "WentOffline"
+
+TimerWorkStart = "TimerWorkStart"
+TimerWorkComplete = "TimerWorkComplete"
+TimerRestComplete = "TimerRestComplete"
 
 
 class EmittedEvent:

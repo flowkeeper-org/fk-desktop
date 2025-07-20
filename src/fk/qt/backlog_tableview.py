@@ -83,8 +83,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         # This is done to update the "New backlog from incomplete" action, which depends on the child workitems
         source.on("AfterWorkitem*",
                   lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
-        source.on("AfterPomodoro*",
-                  lambda workitem, **kwargs: self._update_actions_if_needed(workitem))
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._update_actions_if_needed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
 
         # TODO: Check if it's a caching source. There's no need to lock UI for caching sources.
         # source.on(events.WentOffline, self._lock_ui)
@@ -247,22 +249,3 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                                       "Backlog dump",
                                       "Technical information for debug / development purposes",
                                       selected.dump())
-
-    def dragMoveEventa(self, event: QDragMoveEvent):
-        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
-            # Don't create placeholders when we drop a workitem
-            print('Standard',
-                  self.dragDropMode() == AbstractTableView.DragDropMode.InternalMove,
-                  self.showDropIndicator(),
-                  )
-            super(QAbstractItemView, self).dragMoveEvent(event)
-            event.acceptProposedAction()
-        else:
-            super(AbstractTableView, self).dragMoveEvent(event)
-
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        # By default it only allows its own data. Here we say we accept workitems, too.
-        if event.mimeData().hasFormat('application/flowkeeper.workitem.id'):
-            event.acceptProposedAction()
-        else:
-            super().dragEnterEvent(event)

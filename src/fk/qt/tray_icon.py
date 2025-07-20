@@ -19,10 +19,11 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
+from fk.core.abstract_event_source import start_workitem
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
-from fk.core.pomodoro_strategies import StartWorkStrategy
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
 from fk.qt.actions import Actions
@@ -37,6 +38,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _timer_renderer: AbstractTimerRenderer | None
     _continue_workitem: Workitem | None
     _size: int
+    _settings: AbstractSettings
 
     def __init__(self,
                  parent: QWidget,
@@ -45,9 +47,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  actions: Actions,
                  size: int,
                  cls: Type[AbstractTimerRenderer],
-                 is_dark: bool):
+                 is_dark: bool,
+                 settings: AbstractSettings):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
+        self._settings = settings
         self._default_icon = QIcon(":/flowkeeper.png")
         if is_dark:
             # We don't use QIcon.fromTheme() here because we can't predict the tray background color
@@ -56,6 +60,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self._next_icon = QIcon(':/icons/light/24x24/tool-next.svg')
         self._actions = actions
         self._continue_workitem = None
+        self.setObjectName('tray')
         self._timer_renderer = cls(None,
                                    QColor('#000000' if is_dark else '#ffffff'),
                                    QColor('#ffffff' if is_dark else '#000000'),
@@ -68,14 +73,6 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
         self._initialize_menu()
         self.reset()
-
-        if self._timer is not None:
-            if self._timer.is_working():
-                self._set_mode('working')
-            elif self._timer.is_resting():
-                self._set_mode('resting')
-            elif self._timer.is_idling():
-                self._set_mode('idle')
 
     def _initialize_menu(self):
         menu = QMenu()
@@ -107,13 +104,10 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self.setIcon(self._default_icon)
 
     def _tray_clicked(self) -> None:
-        if self._continue_workitem is not None and self._continue_workitem.is_startable() and self._timer.is_idling():
-            settings = self._source_holder.get_settings()
-            self._source_holder.get_source().execute(StartWorkStrategy, [
-                self._continue_workitem.get_uid(),
-                settings.get('Pomodoro.default_work_duration'),
-                settings.get('Pomodoro.default_rest_duration'),
-            ])
+        if self._continue_workitem is not None and self._continue_workitem.is_startable() and self.timer.is_idling():
+            if self._continue_workitem is None:
+                raise Exception('Cannot start next pomodoro on non-existent work item')
+            start_workitem(self._continue_workitem, self._source_holder.get_source())
         else:
             if 'window.showMainWindow' in self._actions:
                 self._actions['window.showMainWindow'].trigger()
@@ -128,6 +122,16 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setIcon(pixmap)
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        if pomodoro.get_state() == 'work':
+            state_text_split = state_text.split(' ')
+            time_left = state_text_split[1]
+            if time_left.strip() == '01:00' and self._settings.get('RestScreen.enabled') == 'True':
+                self.showMessage(
+                    "60 seconds left to finish this pomodoro",
+                    "Time to wrap up.",
+                    self._default_icon
+                )
+
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
         self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
@@ -135,10 +139,12 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
             self.reset()
-            if old_mode == 'working' or old_mode == 'resting':
+            if old_mode == 'working' or old_mode == 'resting' or old_mode == 'long-resting':
                 self.showMessage("Ready", "It's time for the next Pomodoro.", self._default_icon)
         elif new_mode == 'resting' and old_mode == 'working':
             self.showMessage("Work is done", "Have some rest", self._default_icon)
+        elif new_mode == 'long-resting' and old_mode == 'working':
+            self.showMessage("A series is done", "Enjoy a long rest", self._default_icon)
         elif new_mode == 'ready':
             if self._continue_workitem is not None:
                 self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')

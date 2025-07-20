@@ -22,6 +22,8 @@ from typing import Callable, Type, Generic, TypeVar, Self
 from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.tenant import Tenant
+from fk.core.user import User
 
 TRoot = TypeVar('TRoot', bound=AbstractDataItem)
 
@@ -69,9 +71,16 @@ class AbstractStrategy(ABC, Generic[TRoot]):
         self._seq = new_seq
         return self
 
+    def update_sequence(self, new_seq: int) -> None:
+        self._seq = new_seq
+
     def encryptable(self) -> bool:
         # UC-3: All strategies should be e2e-encrypted by default
         return True
+
+    def requires_sealing(self) -> bool:
+        # UC-3: Strategies don't require auto-sealing by default
+        return False
 
     @abstractmethod
     def execute(self,
@@ -82,18 +91,36 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     def get_params(self):
         return self._params
 
+    # This is for "auto-executed" strategies only. Those won't be persisted. It doesn't support auto-sealing, but
+    # that's OK since it is always called in the context of another strategy, which was auto-sealed.
     def execute_another(self,
                         emit: Callable[[str, dict[str, any], any], None],
                         data: TRoot,
                         cls: Type[AbstractStrategy[TRoot]],
-                        params: list[str]) -> (str, any):
+                        params: list[str],
+                        when_override: datetime.datetime | None = None,
+                        user_override: str | None = None) -> None:
         strategy = cls(self._seq,
-                       self._when,
-                       self._user_identity,
+                       self._when if when_override is None else when_override,
+                       self._user_identity if user_override is None else user_override,
                        params,
                        self._settings)
-        params = {'strategy': strategy, 'auto': True}
+        params = {
+            'strategy': strategy,
+            'auto': True,
+            'persist': False,
+        }
         emit(events.BeforeMessageProcessed, params, self._carry)
-        res = strategy.execute(emit, data)
+        strategy.execute(emit, data)
         emit(events.AfterMessageProcessed, params, self._carry)
-        return res
+
+    # Convenience methods
+
+    def get_user(self, data: Tenant, fail_if_not_found: bool = True) -> User | None:
+        if self._user_identity in data:
+            return data.get_user(self._user_identity)
+
+        if fail_if_not_found:
+            raise Exception(f'User "{self._user_identity}" not found')
+        else:
+            return None

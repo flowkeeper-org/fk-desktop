@@ -78,6 +78,10 @@ def test_data() -> Tenant:
     return tenant
 
 
+def epyc() -> datetime.datetime:
+    return datetime.datetime(2025, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+
+
 ##########################################################################################
 # Random stuff
 ##########################################################################################
@@ -107,3 +111,4 @@ def shuffle(seq: list[_T]) -> list[_T]:
         res.append(v)
         lst.remove(v)
     return res
+

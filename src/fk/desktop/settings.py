@@ -15,14 +15,15 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import logging
+import platform
 import sys
 from typing import Callable
 
 from PySide6.QtCore import QSize, QTime, Qt
-from PySide6.QtGui import QFont, QKeySequence, QIcon
+from PySide6.QtGui import QFont, QKeySequence, QIcon, QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
-    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem
+    QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem, QSizePolicy
 
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.sandbox import get_sandbox_type
@@ -80,10 +81,10 @@ class SettingsDialog(QDialog):
         location.setFont(small_font)
         location.setText(f'Settings saved in {data.location()}')
 
-        root_layout = QGridLayout(self)
-        root_layout.addWidget(tabs, 0, 0)
-        root_layout.addWidget(location, 1, 0)
-        root_layout.addWidget(buttons, 2, 0)
+        root_layout = QVBoxLayout(self)
+        root_layout.addWidget(tabs)
+        root_layout.addWidget(location)
+        root_layout.addWidget(buttons)
         self.setLayout(root_layout)
         self._set_buttons_state(False)
 
@@ -224,8 +225,10 @@ class SettingsDialog(QDialog):
         elif option_type == 'file':
             widget = QWidget(parent)
             layout = QHBoxLayout(widget)
+            layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
             layout.setContentsMargins(0, 0, 0, 0)
             ed3 = QLineEdit(parent)
+            ed3.setMinimumWidth(150)
             ed3.setObjectName(f'{option_id}-edit')
             ed3.setText(option_value)
             ed3.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
@@ -268,15 +271,71 @@ class SettingsDialog(QDialog):
             return [ed5]
         elif option_type == 'choice':
             ed6 = QComboBox(parent)
-            ed6.addItems([v.split(':')[1] for v in option_options])
-            ed6.setCurrentIndex(self._find_combobox_option(option_options, option_value))
+            data_model6 = QStandardItemModel(ed6)
+            ed6.setModel(data_model6)
+
+            found = 0
+            i = 0
+            for o in option_options:
+                n, v = o.split(':')
+                n = n.replace('$$', ':')
+                v = v.replace('$$', ':')
+                if n == option_value:
+                    found = i
+                item = QStandardItem(v)
+                item.setData(n, 500)
+                data_model6.appendRow(item)
+                i += 1
+            ed6.setCurrentIndex(found)
+
+            def find_item(name: str) -> int:
+                for j in range(data_model6.rowCount()):
+                    if data_model6.index(j, 0).data(500) == name:
+                        return j
+
             ed6.currentIndexChanged.connect(lambda v: self._on_value_changed(
                 option_id,
-                option_options[ed6.currentIndex()].split(':')[0]
+                data_model6.item(v).data(500)
             ))
-            self._widgets_get_value[option_id] = lambda: option_options[ed6.currentIndex()].split(':')[0]
-            self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(self._find_combobox_option(option_options, txt))
+            self._widgets_get_value[option_id] = lambda: ed6.currentData(500)
+            self._widgets_set_value[option_id] = lambda txt: ed6.setCurrentIndex(find_item(txt))
             return [ed6]
+        elif option_type == 'font' and platform.system() == 'Darwin':
+            system_font = '.AppleSystemUIFont'
+            widget = QWidget(parent)
+            layout = QVBoxLayout(widget)
+            layout.setContentsMargins(0, 6, 0, 0)
+
+            ed7_checkbox = QCheckBox(f'Use macOS system font', parent)
+            layout.addWidget(ed7_checkbox)
+            ed7_font = QFontComboBox(parent)
+            layout.addWidget(ed7_font)
+
+            ed7_checkbox.stateChanged.connect(ed7_font.setDisabled)
+
+            ed7_checkbox.stateChanged.connect(lambda checked: self._on_value_changed(
+                option_id,
+                system_font if checked else ed7_font.currentFont().family()
+            ))
+            ed7_font.currentFontChanged.connect(lambda v: self._on_value_changed(
+                option_id,
+                v.family()
+            ))
+
+            def set_value(txt):
+                is_system_font = txt == system_font
+                if is_system_font:
+                    ed7_font.setCurrentFont('Noto Sans')  # Anything existing
+                else:
+                    ed7_font.setCurrentFont(txt)
+                ed7_checkbox.setChecked(is_system_font)
+            set_value(option_value)
+
+            self._widgets_get_value[option_id] = lambda: \
+                system_font if ed7_checkbox.isChecked() else ed7_font.currentFont().family()
+            self._widgets_set_value[option_id] = set_value
+
+            return [widget]
         elif option_type == 'font':
             ed7 = QFontComboBox(parent)
             ed7.currentFontChanged.connect(lambda v: self._on_value_changed(
@@ -372,7 +431,9 @@ class SettingsDialog(QDialog):
             return [widget]
         elif option_type == 'label':
             ed11 = QLabel(parent)
-            ed11.setWordWrap(True)
+            ed11.setWordWrap(False)
+            sp = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+            ed11.setSizePolicy(sp)
             ed11.setText(option_value)
             return [ed11]
         elif option_type == 'keyvalue':
@@ -421,14 +482,6 @@ class SettingsDialog(QDialog):
         else:
             return []
 
-    def _find_combobox_option(self, option_options: list[str], option_value: str):
-        i = 0
-        for v in option_options:
-            if v.split(':')[0] == option_value:
-                break
-            i += 1
-        return i
-
     def _handle_button_click(self, option_id: str):
         if self._buttons_mapping is None or option_id not in self._buttons_mapping:
             QMessageBox().warning(self,
@@ -441,16 +494,19 @@ class SettingsDialog(QDialog):
         for name in self._widgets_get_value:
             values[name] = self._widgets_get_value[name]()
 
-        if self._buttons_mapping[option_id](values, self._value_changed_extrnally):
+        if self._buttons_mapping[option_id](values, self._value_changed_externally):
             self.close()
 
-    def _value_changed_extrnally(self, name: str, value: str):
+    def _value_changed_externally(self, name: str, value: str):
         logger.debug(f'Update the setting display of {name} to {value}')
         self._widgets_set_value[name](value)
 
     def _create_tab(self, tabs: QTabWidget, settings) -> QWidget:
-        res = QWidget(tabs)
+        res = QWidget()
         layout = QFormLayout(res)
+        # layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        # layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        # layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
 
         for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
             widgets = self._display_option(res, option_id, option_type, option_value, option_options, option_display)

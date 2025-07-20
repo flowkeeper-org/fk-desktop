@@ -1,0 +1,20 @@
+name: Manual build - all
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm, macos-15, macos-14, macos-13, windows-2025, windows-2022, windows-2019]
+        compiler: [nuitka, pyinstaller]
+        exclude:
+          - os: macos-13
+            compiler: nuitka
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.0.0
+    with:
+      os: ${{ matrix.os }}
+      compiler: ${{ matrix.compiler }}
+    secrets: inherit

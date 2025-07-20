@@ -30,7 +30,7 @@ window = mc.get_window()
 actions = mc.get_actions()
 
 pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), app.get_source_holder())
-tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, MinimalTimerRenderer, True)   # TODO: Detect automatically
+tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, MinimalTimerRenderer, True, mc.get_settings())   # TODO: Detect automatically
 
 tray.setVisible(True)
 tray.mode_changed('idle', 'working')
@@ -43,7 +43,7 @@ pomodoro_timer._state = 'work'
 def tick():
     global value
     global pomodoro_timer
-    tray.tick(Pomodoro(False, pomodoro_timer._state, 5000, 5000, POMODORO_TYPE_NORMAL, "123", wi, None),
+    tray.tick(Pomodoro(1, False, pomodoro_timer._state, 5000, 5000, POMODORO_TYPE_NORMAL, "123", wi, None),
               'State',
               value,
               10,

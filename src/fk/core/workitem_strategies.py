@@ -20,10 +20,11 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
-from fk.core.pomodoro_strategies import VoidPomodoroStrategy
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tag import Tag
 from fk.core.tenant import Tenant
+from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
 
@@ -55,7 +56,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         user: User = data[self._user_identity]
         if self._backlog_uid not in user:
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
@@ -92,19 +93,6 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         emit(events.AfterWorkitemCreate, {
             'workitem': workitem,
         }, self._carry)
-        return None, None
-
-
-def void_running_pomodoro(strategy_: AbstractStrategy,
-                          emit: Callable[[str, dict[str, any], any], None],
-                          data: Tenant,
-                          workitem: Workitem) -> None:
-    for pomodoro in workitem.values():
-        if pomodoro.is_running():
-            strategy_.execute_another(emit,
-                                      data,
-                                      VoidPomodoroStrategy,
-                                      [workitem.get_uid()])
 
 
 # DeleteWorkitem("123-456-789")
@@ -125,9 +113,12 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         workitem: Workitem | None = None
         user: User = data[self._user_identity]
         for backlog in user.values():
@@ -143,7 +134,9 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         }
         emit(events.BeforeWorkitemDelete, params, self._carry)
 
-        void_running_pomodoro(self, emit, data, workitem)   # Void pomodoros
+        if workitem.has_running_pomodoro():
+            # No need to add an interruption like we do in CompleteWorkitemStrategy, because it is deleted anyway
+            self.execute_another(emit, data, StopTimerStrategy, [])
 
         workitem.item_updated(self._when)   # Update Backlog
 
@@ -162,7 +155,6 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
         del workitem.get_parent()[self._workitem_uid]
 
         emit(events.AfterWorkitemDelete, params, self._carry)
-        return None, None
 
 
 # RenameWorkitem("123-456-789", "Wake up")
@@ -187,7 +179,7 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         workitem: Workitem | None = None
         user: User = data[self._user_identity]
         for backlog in user.values():
@@ -200,7 +192,7 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
 
         if self._new_workitem_name == workitem.get_name():
             # Nothing to do here
-            return None, None
+            return
 
         if workitem.is_sealed():
             raise Exception(f'Cannot rename sealed workitem "{self._workitem_uid}"')
@@ -257,6 +249,9 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
     def get_workitem_uid(self) -> str:
         return self._workitem_uid
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -270,7 +265,7 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         workitem: Workitem | None = None
         user: User = data[self._user_identity]
         for backlog in user.values():
@@ -291,13 +286,20 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
         emit(events.BeforeWorkitemComplete, params, self._carry)
 
         # First void pomodoros if needed
-        void_running_pomodoro(self, emit, data, workitem)
+        if workitem.has_running_pomodoro():
+            if not workitem.get_running_pomodoro().is_long_break() and not workitem.is_tracker():
+                self.execute_another(emit,
+                                     data,
+                                     AddInterruptionStrategy,
+                                     [
+                                         self.get_workitem_uid(),
+                                         f'The item was marked completed before Pomodoro rang'])
+            self.execute_another(emit, data, StopTimerStrategy, [])
 
         # Now complete the workitem itself
         workitem.seal(self._target_state, self._when)
         workitem.item_updated(self._when)
         emit(events.AfterWorkitemComplete, params, self._carry)
-        return None, None
 
 
 # ReorderWorkitem("123-456-789", "0")
@@ -322,7 +324,7 @@ class ReorderWorkitemStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         workitem: Workitem | None = None
         backlog: Backlog | None = None
         user: User = data[self._user_identity]
@@ -343,7 +345,6 @@ class ReorderWorkitemStrategy(AbstractStrategy[Tenant]):
         backlog.move_child(workitem, self._new_index)
         backlog.item_updated(self._when)
         emit(events.AfterWorkitemReorder, params, self._carry)
-        return None, None
 
 
 # MoveWorkitem("123-456-789", "234-567-890")
@@ -371,7 +372,7 @@ class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         workitem: Workitem | None = None
         old_backlog: Backlog | None = None
         user: User = data[self._user_identity]
@@ -382,7 +383,7 @@ class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
 
         if old_backlog == new_backlog:
             # Nothing to do
-            return None, None
+            return
 
         for b in user.values():
             if self._workitem_uid in b:
@@ -403,4 +404,3 @@ class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
         old_backlog.item_updated(self._when)
         workitem.item_updated(self._when)   # Update Backlog
         emit(events.AfterWorkitemMove, params, self._carry)
-        return None, None

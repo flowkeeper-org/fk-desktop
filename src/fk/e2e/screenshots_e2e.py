@@ -6,11 +6,15 @@ from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
+from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
-from fk.core.pomodoro_strategies import StartWorkStrategy
+from fk.core.pomodoro_strategies import AddInterruptionStrategy
+from fk.core.timer_strategies import StartTimerStrategy, StopTimerStrategy
 from fk.core.workitem import Workitem
+from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application
-from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, SCREEN_GALLERY_FILENAME
+from fk.e2e.abstract_e2e_test import AbstractE2eTest, WINDOW_GALLERY_FILENAME, FULLSCREEN_GALLERY_FILENAME, \
+    WINDOW_BORDER_GALLERY_FILENAME
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.search_completer import SearchBar
 from fk.qt.workitem_tableview import WorkitemTableView
@@ -28,15 +32,18 @@ class ScreenshotE2eTest(AbstractE2eTest):
     def setup(self) -> None:
         if os.path.isfile(WINDOW_GALLERY_FILENAME):
             os.unlink(WINDOW_GALLERY_FILENAME)
-        if os.path.isfile(SCREEN_GALLERY_FILENAME):
-            os.unlink(SCREEN_GALLERY_FILENAME)
+        if os.path.isfile(WINDOW_BORDER_GALLERY_FILENAME):
+            os.unlink(WINDOW_BORDER_GALLERY_FILENAME)
+        if os.path.isfile(FULLSCREEN_GALLERY_FILENAME):
+            os.unlink(FULLSCREEN_GALLERY_FILENAME)
 
     def custom_settings(self) -> dict[str, str]:
         custom = {
             'FileEventSource.filename': TEMP_FILENAME,
             'Application.show_tutorial': 'False',
-            'Application.show_window_title': 'True',
+            'Application.show_window_title': 'False',
             'Application.check_updates': 'False',
+            'Pomodoro.long_break_algorithm': 'never',
             'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
             'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
             'Application.play_alarm_sound': 'False',
@@ -49,10 +56,11 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.window_width': '820',
             'Application.theme': 'mixed',
             'Application.tray_icon_flavor': 'thin-dark',
-            'Application.last_version': '0.9.0',
+            #'Application.last_version': self.get_application()._current_version,
+            'Application.last_version': '0.0.1',
             'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
-            'Application.show_click_here_hint': 'False',
+            'Application.show_click_here_hint': 'True',
         }
         if os.name == 'nt':
             custom['Application.font_main_size'] = '10'
@@ -82,14 +90,26 @@ class ScreenshotE2eTest(AbstractE2eTest):
     async def _wait_mid_pomodoro(self) -> None:
         await asyncio.sleep(POMODORO_WORK_DURATION * 0.75)
 
-    async def _complete_workitem(self) -> None:
-        self.keypress(Qt.Key.Key_P, True)   # self.execute_action('workitems_table.completeItem')
-        await self.instant_pause()
+    async def _wait_long_pomodoro(self) -> None:
+        await asyncio.sleep(15)
 
-    async def _void_pomodoro(self) -> None:
-        self.keypress(Qt.Key.Key_V, True)   # self.execute_action('focus.voidPomodoro')
-        await self.instant_pause()
-        self.close_modal()
+    async def _complete_workitem(self, name: str) -> None:
+        source = self.get_application().get_source_holder().get_source()
+        for w in source.workitems():
+            if w.get_name() == name:
+                source.execute(CompleteWorkitemStrategy, [w.get_uid(), "finished"])
+                await self.instant_pause()
+
+    async def _void_pomodoro(self, name: str) -> None:
+        source = self.get_application().get_source_holder().get_source()
+        for w in source.workitems():
+            if w.get_name() == name:
+                source.execute(AddInterruptionStrategy, [w.get_uid(), f'Pomodoro voided'])
+                source.execute(StopTimerStrategy, [])
+                await self.instant_pause()
+
+    async def _stop_tracking(self) -> None:
+        self.keypress(Qt.Key.Key_S, True)
         await self.instant_pause()
 
     async def _add_pomodoro(self) -> None:
@@ -144,9 +164,25 @@ class ScreenshotE2eTest(AbstractE2eTest):
             return False
 
     async def test_01_screenshots(self):
+        await self.instant_pause()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        await self._wait_mid_pomodoro()
+        self.take_screenshot('26-focus-window-types')
+        # self.click_button(name='__qt__passive_wizardbutton1')
+        self.click_button(name='qt_wizard_commit')
+        await self.instant_pause()
+        self.take_screenshot('27-tray-icon-types')
+        self.click_button(name='qt_wizard_finish')
+        await self.instant_pause()
+
+        self.get_application().get_settings().set({'Application.show_click_here_hint': 'False'})
+        await self.instant_pause()
+
         main_window = self.window()
         self.center_window()
-        await self.instant_pause()
+        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
+        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
 
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
@@ -175,37 +211,31 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
+        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'simple', 'Pomodoro.start_next_automatically': 'True'})
+        await self.instant_pause()
+
         self.keypress(Qt.Key.Key_F10)
         await self.instant_pause()
         self.center_window()
         await self.instant_pause()
         settings_tabs: QTabWidget = self.window().findChild(QTabWidget, "settings_tabs")
-        settings_tabs.setCurrentIndex(1)
-        await self.instant_pause()
-        source_type_dropdown: QComboBox = self.window().findChild(QComboBox, "Source.type")
-        source_type_dropdown.setCurrentIndex(0)
+        settings_tabs.setCurrentIndex(2)
         await self.instant_pause()
         data_file_edit: QLineEdit = self.window().findChild(QLineEdit, "FileEventSource.filename-edit")
         data_file_edit.selectAll()
         await self.instant_pause()
         self.take_screenshot('03-settings-connection-offline')
 
-        source_type_dropdown.setCurrentIndex(2)
+        settings_tabs.setCurrentIndex(1)
         await self.instant_pause()
-        self.take_screenshot('04-settings-connection-self-hosted')
-
-        source_type_dropdown.setCurrentIndex(1)
+        series_check: QCheckBox = self.window().findChild(QCheckBox, "Pomodoro.start_next_automatically")
+        series_check.setChecked(True)
         await self.instant_pause()
-        auth_type_dropdown: QComboBox = self.window().findChild(QComboBox, "WebsocketEventSource.auth_type")
-        auth_type_dropdown.showPopup()
-        await self.instant_pause()
-
-        self.take_screenshot('05-settings-connection-flowkeeper-org')
-
-        auth_type_dropdown.hidePopup()
+        self.take_screenshot('04-settings-long-breaks')
+        series_check.setChecked(False)
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(4)
+        settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
         sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_alarm_sound")
         sound_alarm_check.setChecked(True)
@@ -220,7 +250,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         sound_alarm_check.setChecked(False)
         await self.instant_pause()
 
-        settings_tabs.setCurrentIndex(5)
+        settings_tabs.setCurrentIndex(6)
         self.window().setFixedWidth(800)
         await self.instant_pause()
         self.center_window()
@@ -233,12 +263,14 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
+        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'never', 'Pomodoro.start_next_automatically': 'False'})
+        await self.instant_pause()
+
         await self._new_workitem('Generate new screenshots for #Flowkeeper', 2)
         await self._new_workitem('Reply to Peter', 1)
         await self._new_workitem('Slides for #Flowkeeper demo', 3)
         await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2)
         await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2)
-        await self._new_workitem('Order coffee capsules')
         await self._new_workitem('#Followup: Call Alex in the afternoon')
 
         ####################################
@@ -266,19 +298,26 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._add_pomodoro()
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
-        await self._complete_workitem()
+        await self._void_pomodoro('Reply to Peter')
+        await self._complete_workitem('Reply to Peter')
+        await self.longer_pause()
 
-        await self._find_workitem('Order coffee capsules')
-        await self._complete_workitem()
-
+        # Demo the tracker items -- start another WI in the past
         await self._find_workitem('#Followup: Call Alex in the afternoon')
-        await self._complete_workitem()
+        await self._start_pomodoro()
+        await self._wait_long_pomodoro()
+        source = self.get_application().get_source_holder().get_source()
+        source.execute(StopTimerStrategy, [])
+        await self.longer_pause()
+
+        await self._new_workitem('Order coffee capsules')
+        await self._find_workitem('Order coffee capsules')
+        await self._complete_workitem('Order coffee capsules')
 
         await self._find_workitem('Slides for #Flowkeeper demo')
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
-        await self._void_pomodoro()
+        await self._void_pomodoro('Slides for #Flowkeeper demo')
 
         # Tags
         await self._select_tag('Flowkeeper')
@@ -309,7 +348,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         for w in source.workitems():
             if w.get_name() == 'Slides for #Flowkeeper demo':
                 workitem_id = w.get_uid()
-        source.execute_prepared_strategy(StartWorkStrategy(
+        source.execute_prepared_strategy(StartTimerStrategy(
             1,
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=670),
             'user@local.host',
@@ -329,8 +368,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.longer_pause()
         self.take_screenshot('19-main-dark')
 
-        await self._void_pomodoro()
-        await self._complete_workitem()
+        await self._void_pomodoro('Slides for #Flowkeeper demo')
+        await self._complete_workitem('Slides for #Flowkeeper demo')
 
         settings.set({
             'Pomodoro.default_work_duration': old_value_work,
@@ -343,8 +382,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         await self._find_workitem('Generate new screenshots for #Flowkeeper')
 
-        backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
-        backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 400)))
+        backlogs_table._menu.popup(backlogs_table.mapToGlobal(QPoint(100, 300)))
         await self.instant_pause()
         self.take_screenshot('01-backlog')
         backlogs_table._menu.close()
@@ -358,7 +396,6 @@ class ScreenshotE2eTest(AbstractE2eTest):
         shortcuts_dropdown.setCurrentIndex(11)  # "New item"
         await self.instant_pause()
 
-        workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
         workitems_table._menu.popup(workitems_table.mapToGlobal(QPoint(400, 20)))
         await self.instant_pause()
         self.take_screenshot('06-shortcuts')
@@ -367,15 +404,29 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
-        self.keypress(Qt.Key.Key_I, True)
-        await self.instant_pause()
-        self.center_window()
-        await self.instant_pause()
-        self.keypress(Qt.Key.Key_Enter)
-        await self.instant_pause()
-        self.take_screenshot('11-import')
-        self.keypress(Qt.Key.Key_Escape)
-        await self.instant_pause()
+        # Import -- all, file, CSV, GitHub
+        for i in range(3):
+            self.keypress(Qt.Key.Key_I, True)
+            await self.instant_pause()
+            self.center_window()
+            await self.instant_pause()
+            if i == 0:
+                self.take_screenshot('11-import')
+            if i == 1:
+                self.check_radiobutton(text='Import from CSV')
+            elif i == 2:
+                self.check_radiobutton(name='Import from GitHub')
+            await self.instant_pause()
+            self.click_button(name='qt_wizard_commit')
+            await self.instant_pause()
+            if i == 0:
+                self.take_screenshot('23-import-file')
+            elif i == 1:
+                self.take_screenshot('24-import-CSV')
+            elif i == 2:
+                self.take_screenshot('25-import-GitHub')
+            self.keypress(Qt.Key.Key_Escape)
+            await self.instant_pause()
 
         self.keypress(Qt.Key.Key_E, True)
         await self.instant_pause()
@@ -451,11 +502,16 @@ class ScreenshotE2eTest(AbstractE2eTest):
             for p in range(num_pomos):
                 uid = generate_uid()
                 state_selector = random()
+                num_interruptions = 0
                 if state_selector < 0.1 + (365 - day) / 1200:
-                    state = 'canceled'
+                    state = 'new'
+                    num_interruptions = random() * 3
                 elif state_selector < 0.5 + day / 900:
                     state = 'finished'
                 else:
                     state = 'new'
-                workitem[uid] = Pomodoro(True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
+                workitem[uid] = Pomodoro(p + 1, True, state, 25 * 60, 5 * 60, POMODORO_TYPE_NORMAL, uid, workitem, now)
+                for _ in range(round(num_interruptions)):
+                    int_uid = generate_uid()
+                    workitem[uid][int_uid] = Interruption("Pomodoro voided" if random() < 0.5 else None, None, False, int_uid, workitem[uid], now)
                 now = now + datetime.timedelta(minutes=round(random() * 20))

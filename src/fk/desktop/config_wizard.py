@@ -136,7 +136,8 @@ class FakeTrayIcon(TrayIcon):
                  actions: Actions,
                  kind: str,
                  state: str,
-                 cls: Type[AbstractTimerRenderer]):
+                 cls: Type[AbstractTimerRenderer],
+                 settings: AbstractSettings):
         self._tray = tray
         self._kind = kind
         self._state = state
@@ -146,7 +147,8 @@ class FakeTrayIcon(TrayIcon):
                                            actions,
                                            48,
                                            cls,
-                                           kind == 'Dark')
+                                           kind == 'Dark',
+                                           settings)
         self.mode_changed(None, state)
 
     def setIcon(self, icon: QIcon | QPixmap) -> None:
@@ -169,6 +171,7 @@ class FakeTrayIcon(TrayIcon):
 
 class PageConfigIcons(QWizardPage):
     _actions: Actions
+    _application: Application
     _option_classic_light: QRadioButton
     _option_thin_light: QRadioButton
     _option_classic_dark: QRadioButton
@@ -177,7 +180,8 @@ class PageConfigIcons(QWizardPage):
     def __init__(self, application: Application, actions: Actions):
         super().__init__()
         self._actions = actions
-        flavor = application.get_settings().get('Application.tray_icon_flavor')
+        self._application = application
+        flavor = self._application.get_settings().get('Application.tray_icon_flavor')
 
         layout_v = QVBoxLayout()
         label = QLabel("Now choose how you prefer your icons:")
@@ -229,7 +233,8 @@ class PageConfigIcons(QWizardPage):
                             '1',
                             None,
                             datetime.datetime.now())
-        pomodoro = Pomodoro(True,
+        pomodoro = Pomodoro(1,
+                            True,
                             'new',
                             25 * 60 * 1000,
                             5 * 60 * 1000,
@@ -242,24 +247,24 @@ class PageConfigIcons(QWizardPage):
 
         icon1 = QLabel('', container)
         icon1.setFixedHeight(icon_size)
-        FakeTrayIcon(icon1, self._actions, kind, 'idle', cls).reset()
+        FakeTrayIcon(icon1, self._actions, kind, 'idle', cls, self._application.get_settings()).reset()
         layout.addWidget(icon1)
 
         icon2 = QLabel('', container)
         icon2.setFixedHeight(icon_size)
-        f2 = FakeTrayIcon(icon2, self._actions, kind, 'working', cls)
+        f2 = FakeTrayIcon(icon2, self._actions, kind, 'working', cls, self._application.get_settings())
         f2.tick(pomodoro, 'Working', 0.33, 1, 'working')
         layout.addWidget(icon2)
 
         icon3 = QLabel('', container)
         icon3.setFixedHeight(icon_size)
-        f3 = FakeTrayIcon(icon3, self._actions, kind, 'resting', cls)
+        f3 = FakeTrayIcon(icon3, self._actions, kind, 'resting', cls, self._application.get_settings())
         f3.tick(pomodoro, 'Resting', 0.66, 1, 'resting')
         layout.addWidget(icon3)
 
         icon4 = QLabel('', container)
         icon4.setFixedHeight(icon_size)
-        FakeTrayIcon(icon4, self._actions, kind, 'ready', cls)
+        FakeTrayIcon(icon4, self._actions, kind, 'ready', cls, self._application.get_settings())
         layout.addWidget(icon4)
 
         clock = QLabel(datetime.datetime.now().time().strftime('%H:%M'), container)

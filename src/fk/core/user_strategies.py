@@ -51,7 +51,7 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if not is_system_user(self._user_identity):
             raise Exception(f'A non-System user "{self._user_identity}" tries to create user "{self._user_identity}"')
         if self._target_user_identity in data:
@@ -71,7 +71,6 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
         emit(events.AfterUserCreate, {
             'user': user
         }, self._carry)
-        return None, None
 
     def encryptable(self) -> bool:
         return self._settings.get('Team.share_state') == 'False'
@@ -85,6 +84,9 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
     def get_target_user_identity(self) -> str:
         return self._target_user_identity
 
+    def requires_sealing(self) -> bool:
+        return True
+
     def __init__(self,
                  seq: int,
                  when: datetime.datetime,
@@ -97,7 +99,7 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if self._target_user_identity not in data:
             raise Exception(f'User "{self._target_user_identity}" not found')
         if data[self._target_user_identity].is_system_user():
@@ -114,13 +116,16 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
 
         # Cascade delete all backlogs first
         for backlog in user.values():
-            self.execute_another(emit, data, DeleteBacklogStrategy, [backlog.get_uid()])
+            self.execute_another(emit,
+                                 data,
+                                 DeleteBacklogStrategy,
+                                 [backlog.get_uid()],
+                                 user_override=self._target_user_identity)  # Delete on behalf of target user
         user.item_updated(self._when)
 
         # Now delete the user
         del data[self._target_user_identity]
         emit(events.AfterUserDelete, params, self._carry)
-        return None, None
 
     def encryptable(self) -> bool:
         return self._settings.get('Team.share_state') == 'False'
@@ -148,7 +153,7 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
-                data: Tenant) -> (str, any):
+                data: Tenant) -> None:
         if self._target_user_identity not in data:
             raise Exception(f'User "{self._target_user_identity}" not found')
         if data[self._target_user_identity].is_system_user():
@@ -168,7 +173,24 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
         user._name = self._new_user_name
         user.item_updated(self._when)
         emit(events.AfterUserRename, params, self._carry)
-        return None, None
 
     def encryptable(self) -> bool:
         return self._settings.get('Team.share_state') == 'False'
+
+class AutoSealInternalStrategy(AbstractStrategy[Tenant]):
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+
+    def requires_sealing(self) -> bool:
+        return True
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        pass

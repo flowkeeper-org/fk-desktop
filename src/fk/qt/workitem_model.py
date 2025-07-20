@@ -13,18 +13,20 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFontMetrics
+from PySide6.QtGui import QFontMetrics, QStandardItem
 from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder
+    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder, AfterWorkitemMove
+from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
@@ -33,7 +35,7 @@ from fk.qt.abstract_drop_model import AbstractDropModel
 logger = logging.getLogger(__name__)
 
 
-class WorkitemPlanned(QtGui.QStandardItem):
+class WorkitemPlanned(QStandardItem):
     _workitem: Workitem
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
@@ -55,7 +57,7 @@ class WorkitemPlanned(QtGui.QStandardItem):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
 
-class WorkitemTitle(QtGui.QStandardItem):
+class WorkitemTitle(QStandardItem):
     _workitem: Workitem
 
     def __init__(self, workitem: Workitem, font: QtGui.QFont):
@@ -83,7 +85,11 @@ class WorkitemTitle(QtGui.QStandardItem):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
 
-class WorkitemPomodoro(QtGui.QStandardItem):
+def hhmm(when: datetime.datetime) -> str:
+    return when.strftime('%H:%M')
+
+
+class WorkitemPomodoro(QStandardItem):
     _workitem: Workitem
     _row_height: int
 
@@ -98,6 +104,46 @@ class WorkitemPomodoro(QtGui.QStandardItem):
         self.setFlags(flags)
         self.update_display()
 
+    def _list_interruptions(self, pomodoro: Pomodoro, res: list[str]) -> None:
+        for i in pomodoro.values():
+            reason = f' ({i.get_reason()})' if i.get_reason() else ''
+            action = 'Voided' if i.is_void() else 'Interrupted'
+            res.append(f' - {action} at {hhmm(i.get_create_date())}{reason}')
+
+    def _format_tooltip(self) -> str:
+        res = list()
+
+        for p in self._workitem.values():
+            if p.get_type() == POMODORO_TYPE_TRACKER:
+                # The fact that we detect it as a tracker means that we started it
+                elapsed = round((p.get_last_modified_date() - p.get_work_start_date()).total_seconds())
+                res.append(f'Tracked {datetime.timedelta(seconds=elapsed)} '
+                           f'from {hhmm(p.get_work_start_date())} to {hhmm(p.get_last_modified_date())}')
+                self._list_interruptions(p, res)
+            else:
+                res.append(f'{p.get_name()} - {"planned" if p.is_planned() else "unplanned"}, {p.get_state()}:')
+                res.append(f' - Created at {hhmm(p.get_create_date())}')
+                if p.is_working():
+                    res.append(f' - Working since {hhmm(p.get_work_start_date())}')
+                if p.is_resting() or p.is_finished():
+                    res.append(f' - Started work at {hhmm(p.get_work_start_date())}')
+                if p.is_resting():
+                    res.append(f' - Resting since {hhmm(p.get_rest_start_date())}')
+                self._list_interruptions(p, res)
+                if p.is_finished():
+                    work_duration = round(p.get_elapsed_work_duration())
+                    if work_duration > 0:
+                        res.append(f' - Worked for {datetime.timedelta(seconds=work_duration)}s')
+                    rest_duration = round(p.get_elapsed_rest_duration())
+                    if rest_duration > 0:
+                        rest_type = ''
+                        if p.get_rest_duration() == 0:
+                            rest_type = ' (long break)'
+                        res.append(f' - Rested for {datetime.timedelta(seconds=rest_duration)}{rest_type}')
+                    res.append(f' - Completed at {hhmm(p.get_last_modified_date())}')
+
+        return '\n'.join(res)
+
     def update_display(self):
         self.setData(','.join([str(p) for p in self._workitem.values()]), Qt.ItemDataRole.DisplayRole)
 
@@ -111,10 +157,11 @@ class WorkitemPomodoro(QtGui.QStandardItem):
             # Calculate its size, given that voided pomodoros are just narrow ticks
             sz = 0
             for p in self._workitem.values():
-                width = self._row_height / 4 if p.is_canceled() else self._row_height
-                sz += width
+                sz += self._row_height
+                sz += len(p) * self._row_height / 4     # Voided pomodoro ticks
 
         self.setData(QSize(sz, self._row_height), Qt.ItemDataRole.SizeHintRole)
+        self.setData(self._format_tooltip(), Qt.ItemDataRole.ToolTipRole)
 
 
 class WorkitemModel(AbstractDropModel):
@@ -133,19 +180,19 @@ class WorkitemModel(AbstractDropModel):
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
         self._backlog_or_tag = None
-        self._hide_completed = (source_holder.get_settings().get('Application.hide_completed') == 'True')
-        self._update_row_height()
-        self.itemChanged.connect(lambda item: self._handle_rename(item))
+        settings = source_holder.get_settings()
+        self._hide_completed = (settings.get('Application.hide_completed') == 'True')
+        self._update_row_height(int(settings.get('Application.table_row_height')))
+        self.itemChanged.connect(lambda item: self.handle_rename(item, RenameWorkitemStrategy))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
-        source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.table_row_height' in new_values:
-            self._update_row_height()
+            self._update_row_height(int(new_values["Application.table_row_height"]))
 
-    def _update_row_height(self):
-        rh = int(self._source_holder.get_settings().get('Application.table_row_height'))
-        self._row_height = rh
+    def _update_row_height(self, new_height: int):
+        self._row_height = new_height
         # TODO: Updating existing rows doesn't work.
         #  The right way to do it is by using QStandardItem subclass, like we do for BacklogModel
         # for i in range(self.rowCount()):
@@ -160,27 +207,13 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemDelete, self._workitem_deleted)
         source.on(AfterWorkitemRename, self._workitem_renamed)
         source.on(AfterWorkitemReorder, self._workitem_reordered)
+        source.on(AfterWorkitemMove, self._workitem_moved)
         source.on(AfterWorkitemComplete, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
-        source.on('AfterPomodoro*', self._workitem_changed)
-
-    def _handle_rename(self, item: QtGui.QStandardItem) -> None:
-        if item.data(501) == 'title':
-            workitem: Workitem = item.data(500)
-            old_name = workitem.get_name()
-            new_name = item.text()
-            if old_name != new_name:
-                try:
-                    self._source_holder.get_source().execute(RenameWorkitemStrategy, [workitem.get_uid(), new_name])
-                except Exception as e:
-                    logger.error(f'Failed to rename {old_name} to {new_name}', exc_info=e)
-                    item.setText(old_name)
-                    QtWidgets.QMessageBox().warning(
-                        self.parent(),
-                        "Cannot rename",
-                        str(e),
-                        QtWidgets.QMessageBox.StandardButton.Ok
-                    )
+        source.on('AfterPomodoro*',
+                  lambda **kwargs: self._workitem_changed(
+                      kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
+                  ))
 
     def _workitem_belongs_here(self, workitem: Workitem) -> bool:
         return (type(self._backlog_or_tag) is Backlog and workitem.get_parent() == self._backlog_or_tag
@@ -188,7 +221,7 @@ class WorkitemModel(AbstractDropModel):
                 type(self._backlog_or_tag) is Tag and self._backlog_or_tag.get_uid() in workitem.get_tags())
 
     def _add_workitem(self, workitem: Workitem) -> None:
-        self.appendRow(self._item_for_object(workitem))
+        self.appendRow(self.item_for_object(workitem))
 
     def _find_workitem(self, workitem: Workitem) -> int:
         for i in range(self.rowCount()):
@@ -232,6 +265,14 @@ class WorkitemModel(AbstractDropModel):
                 row = self.takeRow(old_index)
                 self.insertRow(new_index, row)
 
+    def _workitem_moved(self, workitem: Workitem, old_backlog: Backlog, new_backlog: Backlog, **kwargs) -> None:
+        if old_backlog == self._backlog_or_tag or self._backlog_or_tag.get_uid() in workitem.get_tags():
+            # Moved from here
+            self._remove_if_found(workitem)
+        elif self._workitem_belongs_here(workitem):   # We can only drop workitems on backlogs, not tags
+            # Moved in here
+            self._add_workitem(workitem)
+
     def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
             item0: WorkitemPlanned = self.item(i, 0)
@@ -269,10 +310,10 @@ class WorkitemModel(AbstractDropModel):
             for workitem in workitems:
                 if self._hide_completed and workitem.is_sealed():
                     continue
-                self.appendRow(self._item_for_object(workitem))
-        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
-        self.setHorizontalHeaderItem(1, QtGui.QStandardItem(''))
-        self.setHorizontalHeaderItem(2, QtGui.QStandardItem(''))
+                self.appendRow(self.item_for_object(workitem))
+        self.setHorizontalHeaderItem(0, QStandardItem(''))
+        self.setHorizontalHeaderItem(1, QStandardItem(''))
+        self.setHorizontalHeaderItem(2, QStandardItem(''))
 
     def hide_completed(self, hide: bool) -> None:
         self._hide_completed = hide
@@ -281,12 +322,8 @@ class WorkitemModel(AbstractDropModel):
     def get_backlog_or_tag(self) -> Backlog | Tag | None:
         return self._backlog_or_tag
 
-    def get_type(self) -> str:
+    def get_primary_type(self) -> str:
         return 'application/flowkeeper.workitem.id'
-
-    def item_by_id(self, uid: str) -> list[QtGui.QStandardItem]:
-        workitem = self._source_holder.get_source().find_workitem(uid)
-        return self._item_for_object(workitem)
 
     def _get_font(self, workitem: Workitem) -> QtGui.QFont:
         if workitem.is_running():
@@ -295,7 +332,7 @@ class WorkitemModel(AbstractDropModel):
             return self._font_sealed
         return self._font_new
 
-    def _item_for_object(self, workitem: Workitem) -> list[QtGui.QStandardItem]:
+    def item_for_object(self, workitem: Workitem) -> list[QStandardItem]:
         font = self._get_font(workitem)
         return [
             WorkitemPlanned(workitem, font),
@@ -320,3 +357,10 @@ class WorkitemModel(AbstractDropModel):
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
                                                  carry='ui')
+
+    def repaint_workitem(self, workitem: Workitem):
+        for i in range(self.rowCount()):
+            wi = self.item(i).data(500)  # 500 ~ Qt.UserRole + 1
+            if wi == workitem:
+                item: WorkitemPomodoro = self.item(i, 2)
+                item.update_display()

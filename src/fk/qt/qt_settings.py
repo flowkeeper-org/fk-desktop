@@ -121,23 +121,29 @@ class QtSettings(AbstractSettings):
                 'new_values': values,
             }
             self._emit(events.BeforeSettingsChanged, params)
-            encrypted = dict()
-            for name in old_values.keys():  # This is not a typo, we've just filtered this list
-                # to only contain settings which actually changed.
-                if name.endswith('!'):
-                    # We want to set all secrets at once (see explanation below in get())
-                    encrypted[name] = values[name]
-                else:
-                    self._settings.setValue(name, values[name])
-            if len(encrypted) > 0:
-                if self._keyring_enabled:
-                    existing = self.load_secret()
-                    for e in encrypted:
-                        existing[e] = encrypted[e]
-                    keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
-                else:
-                    logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
-            self._emit(events.AfterSettingsChanged, params)
+            # We have to set settings via invoke_in_main_thread(), otherwise it won't be queued
+            # correctly in respect to BeforeSettingsChanged and AfterSettingsChanged. Without
+            # invoke_in_main_thread it might happen that the setting will be de-facto set first,
+            # and only then a pair of BeforeSettingsChanged / AfterSettingsChanged emitted.
+            def set_settings():
+                encrypted = dict()
+                for name in old_values.keys():  # This is not a typo, we've just filtered this list
+                    # to only contain settings which actually changed.
+                    if name.endswith('!'):
+                        # We want to set all secrets at once (see explanation below in get())
+                        encrypted[name] = values[name]
+                    else:
+                        self._settings.setValue(name, values[name])
+                if len(encrypted) > 0:
+                    if self._keyring_enabled:
+                        existing = self.load_secret()
+                        for e in encrypted:
+                            existing[e] = encrypted[e]
+                        keyring.set_password(self._app_name, SECRET_NAME, json.dumps(existing))
+                    else:
+                        logger.warning(f'Setting encrypted preferences {encrypted.keys()}, while the keyring is disabled')
+                self._emit(events.AfterSettingsChanged, params)
+            invoke_in_main_thread(set_settings)
 
     def load_secret(self) -> dict[str, str]:
         json_str = keyring.get_password(self._app_name, SECRET_NAME)
@@ -157,6 +163,16 @@ class QtSettings(AbstractSettings):
                 return self._defaults[name]
         else:
             return str(self._settings.value(name, self._defaults[name]))
+
+    def is_set(self, name: str) -> bool:
+        if name.endswith('!'):
+            if self._keyring_enabled:
+                j = self.load_secret()
+                return name in j and j[name] is not None
+            else:
+                return False
+        else:
+            return self._settings.contains(name)
 
     def location(self) -> str:
         return self._settings.fileName()
@@ -186,8 +202,8 @@ class QtSettings(AbstractSettings):
                 choice = d[4]
                 choice.clear()
                 for output in QMediaDevices.audioOutputs():
-                    name = output.id().toStdString()
-                    choice.append(f'{name}:{output.description()}')
+                    name = output.id().toStdString().replace(':', '$$')
+                    choice.append(f'{name}:{output.description().replace(":", "$$")}')
                     if output.isDefault():
                         self.update_default('Application.audio_output', name)
                 break
