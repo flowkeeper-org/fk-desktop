@@ -151,15 +151,15 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         # 90% cases, where we couldn't send only one or two strategies. So better just send it as-is.
         if super(CachingMixin, self).is_online():
             logger.debug('Appending strategies to event source')
-            super(CachingMixin, self).append(strategies)
+            super(CachingMixin, self)._append(strategies)
         else:
             logger.debug('Appending strategies to redo log')
-            self._redo_log.append(strategies)
+            self._redo_log._append(strategies)
 
     def _send_redo_log(self, **kwargs):
         # Here we know that we've already a). Restored state from cache; b). Replayed redo log;
         logger.debug('Will send redo log')
-        super(CachingMixin, self).append(self._redo_log.read_strategies())
+        super(CachingMixin, self)._append(self._redo_log.read_strategies())
         logger.debug('Redo log sent successfully, can now delete the redo log file')
         os.unlink(self._redo_log_filename)
         self.initialize_redo_log()

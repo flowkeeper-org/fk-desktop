@@ -64,6 +64,7 @@ def _fix_parameters(stage, parameters):
         parameters['redirect_uri'] = [f'http://127.0.0.1:{local_port}/']
     elif stage == QAbstractOAuth.Stage.RequestingAuthorization:
         parameters['access_type'] = ['offline']
+        parameters['prompt'] = ['consent']
     return parameters
 
 

@@ -280,9 +280,9 @@ class Application(QApplication, AbstractEventEmitter):
                                                       application=self,
                                                       root=root)
 
-        # EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
-        # EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
-        # EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('websocket', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.org', websocket_source_producer)
+        EventSourceFactory.get_event_source_factory().register_producer('flowkeeper.pro', websocket_source_producer)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         try:
@@ -623,6 +623,7 @@ class Application(QApplication, AbstractEventEmitter):
 
     def sign_in(self, _, callback: Callable) -> bool:
         def save(auth: AuthenticationRecord):
+            logger.debug(f'Received auth record: {auth}')
             to_set = {
                 'WebsocketEventSource.auth_type': 'google',
                 'WebsocketEventSource.username': auth.email,
