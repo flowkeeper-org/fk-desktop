@@ -40,6 +40,7 @@ from fk.qt.backlog_widget import BacklogWidget
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
+from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer

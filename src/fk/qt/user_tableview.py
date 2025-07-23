@@ -80,6 +80,6 @@ class UserTableView(AbstractTableView[Tenant, User]):
                                                    self._application.get_icon_theme(),
                                                    self._application.get_theme_variables()['TABLE_TEXT_COLOR']))
 
-    def _update_row_height(self):
-        self._row_height = int(self._actions.get_settings().get('Application.table_row_height')) + 10
+    def _update_row_height(self, new_height: int):
+        self._row_height = new_height + 10
         self.verticalHeader().setDefaultSectionSize(self._row_height)

@@ -93,9 +93,6 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
                                   persist: bool = False) -> None:
         self._wrapped.execute_prepared_strategy(strategy, auto, persist)
 
-    def auto_seal(self) -> None:
-        self._wrapped.auto_seal()
-
     def users(self) -> Iterable[User]:
         return self._wrapped.users()
 

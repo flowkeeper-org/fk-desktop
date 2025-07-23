@@ -170,7 +170,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._sequence_error(self._last_seq, seq)
                 # UC-3: Strategies may start with any sequence number
                 self._last_seq = seq
-                self.auto_seal(strategy.get_when())
                 self.execute_prepared_strategy(strategy)
             except Exception as ex:
                 if self._ignore_errors:
@@ -178,10 +177,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 else:
                     raise ex
         logger.debug('FileEventSource: Processed file content, will auto-seal now')
-
-        # UC-1: Any event source auto-seals pomodoros at the end of the parsing round, including incremental parsing
-        self.auto_seal()
-        logger.debug('FileEventSource: Sealed, will unmute events now')
 
         # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:
@@ -233,10 +228,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
 
         # UC-1: The last strategy is auto-sealed after execution to ensure that the timer rings offline, if needed
         self._auto_seal_at_the_end(last_executed)
-
-        # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
-        if mute_events:
-            self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def repair(self) -> tuple[list[str], str | None]:
