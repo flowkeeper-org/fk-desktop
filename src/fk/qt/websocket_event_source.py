@@ -242,7 +242,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
 
-    def append(self, strategies: Iterable[AbstractStrategy]) -> None:
+    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         if not self._online:
             raise Exception('Trying to send data to offline websocket')
         to_send = '\n'.join([self._serializer.serialize(s) for s in strategies])

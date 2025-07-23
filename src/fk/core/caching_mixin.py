@@ -145,7 +145,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                           lambda event, source: redo_log_processed(last_seq, source.get_last_sequence()))
         self._redo_log.start(mute_events, restored_seq)
 
-    def append(self, strategies: Iterable[AbstractStrategy]) -> None:
+    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         # Question -- what happens with other clients as we replay it? Shall we do it in some "batch" mode,
         # which would mute events on the other side and then "reload the source"? This would be pretty poor in
         # 90% cases, where we couldn't send only one or two strategies. So better just send it as-is.

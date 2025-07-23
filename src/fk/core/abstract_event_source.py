@@ -168,7 +168,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     # Assuming those strategies have been already executed. We do not replay them here.
     # Override
     @abstractmethod
-    def append(self, strategies: Iterable[AbstractStrategy[TRoot]]) -> None:
+    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         pass
 
     # This will initiate connection, which will trigger replay

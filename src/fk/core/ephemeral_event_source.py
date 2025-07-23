@@ -60,7 +60,7 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
             self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
-    def append(self, strategies: Iterable[AbstractStrategy[TRoot]]) -> None:
+    def _append(self, strategies: list[AbstractStrategy[TRoot]]) -> None:
         for s in strategies:
             self._content.append(str(s))
 
