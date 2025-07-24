@@ -15,12 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import datetime
 import logging
 import os
 import pickle
 from abc import ABC
 from pathlib import Path
-from typing import TypeVar, Generic, Iterable
+from typing import TypeVar, Generic
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
@@ -32,6 +33,7 @@ from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
+from fk.core.user_strategies import AutoSealInternalStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -70,6 +72,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                          root=root)
         self._cache_application = application
         self._last_seq_in_cache = 0
+        # TODO: Use XDG way to get filenames (extract from Settings > File event source filename?)
         self._cache_filename = str(Path.home() / f'flowkeeper-cache-{super(CachingMixin, self).get_id()}.bin')
         self._redo_log_filename = str(Path.home() / f'flowkeeper-redo-{super(CachingMixin, self).get_id()}.txt')
         super(CachingMixin, self).on(SourceMessagesProcessed, self._save_cache)
@@ -79,7 +82,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         if carry != 'cache' and source == self and source.get_last_sequence() != self._last_seq_in_cache:
             self.save_cache()
 
-    def _initialize_empty_redo_log(self):
+    def _initialize_redo_log_file(self):
         # This is done to avoid creating local user in the redo log
         if not os.path.isfile(self._redo_log_filename):
             with open(self._redo_log_filename, 'w', encoding='UTF-8'):
@@ -88,7 +91,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
     def initialize_redo_log(self):
         user = self._cache_application.get_settings().get_username()
         logger.debug(f'Initializing redo log with file {self._redo_log_filename} and user {user}')
-        self._initialize_empty_redo_log()
+        self._initialize_redo_log_file()
         settings = MockSettings(self._redo_log_filename, user)
         self._redo_log = FileEventSource[Tenant](settings,
                                                  NoCryptograph(settings),
@@ -103,10 +106,22 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                 super(CachingMixin, self).set_data(cached.data)
                 super(CachingMixin, self).get_data()._settings = super(CachingMixin, self).get_settings()
                 self._last_seq_in_cache = cached.last_seq
-                logger.debug(f'Restored.')
+                logger.debug(f'Restored. Will auto-seal...')
+                self.auto_seal_for_cache()
+                logger.debug(f'Auto-sealed.')
                 return self._last_seq_in_cache
         logger.debug('Cache file not found')
         return 0
+
+    def auto_seal_for_cache(self):
+        user = self._cache_application.get_settings().get_username()
+        sealant = AutoSealInternalStrategy(self._last_seq_in_cache,
+                                           datetime.datetime.now(datetime.timezone.utc),
+                                           user,
+                                           [],
+                                           self.get_settings(),
+                                           None)
+        super(CachingMixin, self).execute_prepared_strategy(sealant, True, False)
 
     def save_cache(self) -> None:
         if self._last_seq_in_cache != self.get_last_sequence():
@@ -160,6 +175,6 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         # Here we know that we've already a). Restored state from cache; b). Replayed redo log;
         logger.debug('Will send redo log')
         super(CachingMixin, self)._append(self._redo_log.read_strategies())
-        logger.debug('Redo log sent successfully, can now delete the redo log file')
+        logger.debug('Redo log sent successfully, will now delete the redo log file')
         os.unlink(self._redo_log_filename)
         self.initialize_redo_log()

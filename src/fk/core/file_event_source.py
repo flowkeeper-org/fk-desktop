@@ -163,7 +163,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         is_first = True
         last_executed = None
         seq = 1
-        for strategy in self.read_strategies():
+        for strategy in self.read_strategies(from_seq):
             try:
                 self._last_strategy = strategy
                 if type(strategy) is not CreateUserStrategy:
@@ -190,7 +190,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
 
-    def read_strategies(self) -> Iterable[AbstractStrategy]:
+    def read_strategies(self, from_seq: int = 0) -> Iterable[AbstractStrategy]:
         filename = self._get_filename()
         if path.isdir(filename):
             raise IsADirectoryError(f'{filename} is a directory. Expected a filename.')
@@ -209,7 +209,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             for line in f:
                 try:
                     strategy = self._serializer.deserialize(line)
-                    if strategy is None:
+                    if strategy is None or strategy.get_sequence() <= from_seq:
                         continue
                     yield strategy
                 except Exception as ex:
