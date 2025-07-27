@@ -149,7 +149,6 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         i = 0
         to_unmute = False
         to_emit = False
-        last_executed = None
         for line in lines:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f" - {line}")
@@ -171,13 +170,11 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                 elif type(s) in [PongStrategy, CreateUserStrategy]:
                     # A special case where we want to ignore the sequence
                     self.execute_prepared_strategy(s)
-                    last_executed = s
                 elif s.get_sequence() is not None and s.get_sequence() > self._last_seq:
                     if not self._ignore_invalid_sequences and s.get_sequence() != self._last_seq + 1:
                         self._sequence_error(self._last_seq, s.get_sequence())
-                    self._last_seq = s.get_sequence()
                     self.execute_prepared_strategy(s)
-                    last_executed = s
+                    self._last_seq = s.get_sequence()
                 i += 1
                 if i % 1000 == 0:    # Yield to Qt from time to time
                     QApplication.processEvents()
@@ -187,13 +184,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
                 else:
                     raise ex
 
-        self._auto_seal_at_the_end(last_executed)
+        self._auto_seal_all()
         if to_unmute:
             self.unmute()
         if to_emit:
             self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
-    def _authenticate_with_google_and_replay(self) -> None:
+    def _authenticate_with_oauth_and_replay(self) -> None:
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
         get_id_token(self._application, self._replay_after_auth, refresh_token)
 
@@ -237,8 +234,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             auth.type = auth_type
             auth.id_token = self.get_config_parameter('WebsocketEventSource.password!')
             self._replay_after_auth(auth)
-        elif auth_type == 'google':
-            self._authenticate_with_google_and_replay()
+        elif auth_type == 'oauth':
+            self._authenticate_with_oauth_and_replay()
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
 

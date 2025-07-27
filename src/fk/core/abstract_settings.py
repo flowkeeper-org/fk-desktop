@@ -89,8 +89,8 @@ def _show_for_basic_auth(values: dict[str, str]) -> bool:
     return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'basic'
 
 
-def _show_for_google_auth(values: dict[str, str]) -> bool:
-    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'google'
+def _show_for_oauth(values: dict[str, str]) -> bool:
+    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'oauth'
 
 
 def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
@@ -98,11 +98,11 @@ def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
 
 
 def _show_if_signed_in(values: dict[str, str]) -> bool:
-    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] != 'user@local.host'
+    return _show_for_oauth(values) and values['WebsocketEventSource.username'] != 'user@local.host'
 
 
 def _show_if_signed_out(values: dict[str, str]) -> bool:
-    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] == 'user@local.host'
+    return _show_for_oauth(values) and values['WebsocketEventSource.username'] == 'user@local.host'
 
 
 def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
@@ -216,9 +216,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
-                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
+                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'oauth', [
                     "basic:Simple username and password",
-                    "google:Google account (more secure)",
+                    "oauth:OAuth (more secure)",
                 ], _show_for_websocket_source),
                 # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
@@ -238,6 +238,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
                 ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
+                ('Source.encryption_key_label', 'label', ' ', "WARNING: Learn this key, or store it safely! \n"
+                                                              "Without it you won't be able to decrypt your \n"
+                                                              "data. This key is only stored on this computer. \n"
+                                                              "If you forget or lose it, YOU WILL LOSE YOUR \n"
+                                                              "DATA WITH NO POSSIBILITY TO RECOVER.", [], _show_when_encryption_is_enabled),
             ],
             'Teamwork': [
                 ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),

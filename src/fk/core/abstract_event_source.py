@@ -176,15 +176,17 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         pass
 
-    def _auto_seal_at_the_end(self, last_executed: AbstractStrategy) -> None:
-        if last_executed is not None:
-            sealant = AutoSealInternalStrategy(last_executed.get_sequence(),
-                                               datetime.datetime.now(datetime.timezone.utc),
-                                               last_executed.get_user_identity(),
-                                               [],
-                                               self.get_settings(),
-                                               None)
-            self.execute_prepared_strategy(sealant, True, False)
+    def _auto_seal_all(self) -> None:
+        data = self.get_data()
+        if data:
+            for user in data.keys():
+                sealant = AutoSealInternalStrategy(self._last_seq,
+                                                   datetime.datetime.now(datetime.timezone.utc),
+                                                   user,
+                                                   [],
+                                                   self.get_settings(),
+                                                   None)
+                self.execute_prepared_strategy(sealant, True, False)
 
     def _auto_seal(self, strategy: AbstractStrategy[TRoot], second_time: bool = False):
         timer: TimerData = strategy.get_user(self.get_data()).get_timer()

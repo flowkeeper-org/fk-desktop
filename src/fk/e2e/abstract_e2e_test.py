@@ -396,8 +396,8 @@ class AbstractE2eTest(ABC):
                          cwd='/home/w/projects/flowkeeper-server/fk/server',   # TODO
                          env={
                              'FK_DATA': tempdir,
-                             'FK_GOOGLE_CLIENT_ID': '',
-                             'FK_GOOGLE_CLIENT_SECRET': '',
+                             'FK_OAUTH_CLIENT_ID': '',
+                             'FK_OAUTH_CLIENT_SECRET': '',
                              'FK_HOST': 'localhost',
                              'FK_PORT': port,
                              'FK_PRIVATE': '1' if is_private else '0',

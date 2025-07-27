@@ -27,10 +27,11 @@ from PySide6.QtNetworkAuth import QAbstractOAuth, QOAuth2AuthorizationCodeFlow, 
 
 logger = logging.getLogger(__name__)
 
-client_id = '248052959881-pqd62jj04427c7amt7g72crmu591rip8.apps.googleusercontent.com'
+client_id = 'flowkeeper-desktop'
 local_port = 64166
-auth_url = 'https://accounts.google.com/o/oauth2/auth'
-token_url = 'https://app.flowkeeper.org/token'
+auth_url = 'http://localhost:8080/realms/flowkeeper/protocol/openid-connect/auth'
+token_url = 'http://localhost:8080/realms/flowkeeper/protocol/openid-connect/token'
+scopes = 'email profile openid'
 
 MGR: QNetworkAccessManager = None
 HANDLER: QOAuthHttpServerReplyHandler = None
@@ -92,7 +93,7 @@ def _perform_flow(parent: QObject, callback: Callable[[AuthenticationRecord], No
     if HANDLER is None:
         HANDLER = QOAuthHttpServerReplyHandler(local_port, parent)
     flow = QOAuth2AuthorizationCodeFlow(client_id, auth_url, token_url, MGR, parent)
-    flow.setScope('https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile')
+    flow.setScope(scopes)
     if refresh_token is not None:
         flow.setRefreshToken(refresh_token)
     # We are adding the client secret on the server side
@@ -144,7 +145,7 @@ def _granted(flow: QOAuth2AuthorizationCodeFlow, callback: Callable[[Authenticat
     id_token = flow.extraTokens().get('id_token', None)
     auth = AuthenticationRecord()
     auth.email, auth.picture, auth.fullname = _extract_user_info(id_token)
-    auth.type = 'google'
+    auth.type = 'oauth'
     auth.access_token = flow.token()
     auth.id_token = id_token
     auth.refresh_token = flow.refreshToken()

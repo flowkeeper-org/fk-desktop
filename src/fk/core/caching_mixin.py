@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import datetime
 import logging
 import os
 import pickle
@@ -33,7 +32,6 @@ from fk.core.file_event_source import FileEventSource
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.tenant import Tenant
-from fk.core.user_strategies import AutoSealInternalStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -107,21 +105,11 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                 super(CachingMixin, self).get_data()._settings = super(CachingMixin, self).get_settings()
                 self._last_seq_in_cache = cached.last_seq
                 logger.debug(f'Restored. Will auto-seal...')
-                self.auto_seal_for_cache()
+                super(CachingMixin, self)._auto_seal_all()
                 logger.debug(f'Auto-sealed.')
                 return self._last_seq_in_cache
         logger.debug('Cache file not found')
         return 0
-
-    def auto_seal_for_cache(self):
-        user = self._cache_application.get_settings().get_username()
-        sealant = AutoSealInternalStrategy(self._last_seq_in_cache,
-                                           datetime.datetime.now(datetime.timezone.utc),
-                                           user,
-                                           [],
-                                           self.get_settings(),
-                                           None)
-        super(CachingMixin, self).execute_prepared_strategy(sealant, True, False)
 
     def save_cache(self) -> None:
         if self._last_seq_in_cache != self.get_last_sequence():

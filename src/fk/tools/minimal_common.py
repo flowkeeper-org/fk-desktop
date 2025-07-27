@@ -66,7 +66,7 @@ class MinimalCommon:
         self._source = None
         self._callback = callback
         self._initialize_source = initialize_source
-        self._app = Application(sys.argv)
+        self._app = Application(['--debug'])
         self._app.setQuitOnLastWindowClosed(True)
         self._settings = self._app.get_settings()
         self._window = QMainWindow()

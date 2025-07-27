@@ -80,7 +80,6 @@ class FileEventSource(AbstractEventSource[TRoot]):
         # released the file handler. By default, OSes won't allow concurrent writes to the
         # file, so if something is still writing into it, then this call will fail.
         with open(filename, 'r+', encoding='UTF-8') as file:
-            last_executed = None
             for line in file:
                 try:
                     strategy = self._serializer.deserialize(line)
@@ -91,20 +90,18 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if seq > self._last_seq:
                         if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
                             self._sequence_error(self._last_seq, seq)
-                        self._last_seq = seq
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug(f"Will execute new strategy: {strategy}")
                         # UC-1: For any event source, whenever it executes a strategy with seq_num != last_seq + 1, and "ignore sequence" settings is disables, it fails
                         self.execute_prepared_strategy(strategy)
-                        last_executed = strategy
+                        self._last_seq = seq
                 except Exception as ex:
                     if self._ignore_errors:
                         logger.warning(f'Error processing {line} (ignored)', exc_info=ex)
                     else:
                         raise ex
                 finally:
-                    if last_executed is not None:
-                        self._auto_seal_at_the_end(last_executed)
+                    self._auto_seal_all()
 
     def _get_filename(self) -> str:
         return self.get_config_parameter("FileEventSource.filename")
@@ -142,15 +139,14 @@ class FileEventSource(AbstractEventSource[TRoot]):
                 else:
                     if (fail_early or not self._ignore_invalid_sequences) and seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
-                self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
-                last_executed = strategy
+                self._last_seq = seq
             except Exception as ex:
                 if self._ignore_errors and not fail_early:
                     logger.warning(f'Error processing {strategy} (ignored)', exc_info=ex)
                 else:
                     raise ex
-        self._auto_seal_at_the_end(last_executed)
+        self._auto_seal_all()
         self.unmute()
         self._emit(events.SourceMessagesProcessed, {'source': self})
 
@@ -171,9 +167,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                     if not self._ignore_invalid_sequences and seq != self._last_seq + 1:
                         self._sequence_error(self._last_seq, seq)
                 # UC-3: Strategies may start with any sequence number
-                self._last_seq = seq
                 self.execute_prepared_strategy(strategy)
-                last_executed = strategy
+                self._last_seq = seq
             except Exception as ex:
                 if self._ignore_errors:
                     logger.warning(f'Error processing strategy {strategy} (ignored)', exc_info=ex)
@@ -182,7 +177,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         logger.debug('FileEventSource: Processed file content, will auto-seal now')
 
         # UC-1: The last strategy is auto-sealed after execution to ensure that the timer rings offline, if needed
-        self._auto_seal_at_the_end(last_executed)
+        self._auto_seal_all()
 
         # UC-1: Any event source mutes its events for the duration of the first parsing and for the export/import
         if mute_events:

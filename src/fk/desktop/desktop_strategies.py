@@ -28,7 +28,7 @@ from fk.core.tenant import Tenant
 logger = logging.getLogger(__name__)
 
 
-# Authenticate("alice@example.com", "google|token123", "false")
+# Authenticate("alice@example.com", "oauth|token123", "false")
 @strategy
 class AuthenticateStrategy(AbstractStrategy[Tenant]):
     _username: str
@@ -154,7 +154,7 @@ class ErrorStrategy(AbstractStrategy):
         elif self._error_message == 'Deleted':
             self._settings.set({
                 'Source.fullname': '',
-                'WebsocketEventSource.auth_type': 'google',
+                'WebsocketEventSource.auth_type': 'oauth',
                 'WebsocketEventSource.username': 'user@local.host',
                 'WebsocketEventSource.userpic': '',
                 'WebsocketEventSource.consent': 'False',
@@ -167,7 +167,7 @@ class ErrorStrategy(AbstractStrategy):
                                   QMessageBox.StandardButton.Ok)
         elif (self._error_message.startswith('Unknown user') or
               self._error_message.startswith('Wrong password for user') or
-              self._error_message.startswith('Invalid Google auth token for user')):
+              self._error_message.startswith('Invalid auth token for user')):
             QMessageBox().critical(None,
                                    'Server error',
                                    self._error_message,

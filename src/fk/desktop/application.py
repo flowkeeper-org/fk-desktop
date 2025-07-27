@@ -625,7 +625,7 @@ class Application(QApplication, AbstractEventEmitter):
         def save(auth: AuthenticationRecord):
             logger.debug(f'Received auth record: {auth}')
             to_set = {
-                'WebsocketEventSource.auth_type': 'google',
+                'WebsocketEventSource.auth_type': 'oauth',
                 'WebsocketEventSource.username': auth.email,
                 'WebsocketEventSource.consent': 'False',
                 'WebsocketEventSource.refresh_token!': auth.refresh_token,
@@ -635,7 +635,7 @@ class Application(QApplication, AbstractEventEmitter):
             if auth.fullname:
                 to_set['Source.fullname'] = auth.fullname
             self._settings.set(to_set)
-            callback('WebsocketEventSource.auth_type', 'google')
+            callback('WebsocketEventSource.auth_type', 'oauth')
             callback('WebsocketEventSource.username', auth.email)
             if auth.picture:
                 callback('WebsocketEventSource.userpic', auth.picture)
@@ -650,14 +650,14 @@ class Application(QApplication, AbstractEventEmitter):
     def sign_out(self, _, callback: Callable) -> bool:
         self._settings.set({
             'Source.fullname': '',
-            'WebsocketEventSource.auth_type': 'google',
+            'WebsocketEventSource.auth_type': 'oauth',
             'WebsocketEventSource.username': 'user@local.host',
             'WebsocketEventSource.userpic': '',
             'WebsocketEventSource.consent': 'False',
             'WebsocketEventSource.refresh_token!': '',
         })
         callback('Source.fullname', '')
-        callback('WebsocketEventSource.auth_type', 'google')
+        callback('WebsocketEventSource.auth_type', 'oauth')
         callback('WebsocketEventSource.username', 'user@local.host')
         callback('WebsocketEventSource.userpic', '')
         callback('WebsocketEventSource.consent', 'False')
