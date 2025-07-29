@@ -322,8 +322,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
                 ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to check\n'
                                                                  'the above checkbox and then grant Flowkeeper access to dbus. This has a major impact\n'
-                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
-                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
+                                                                 'on the sandbox security, so do this only when strictly necessary.', [], _show_for_flatpak),
+                ('Integration.flatpak_command_label', 'label', '', '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', ['copyable'], _show_for_flatpak),
                 ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
