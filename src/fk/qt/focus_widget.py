@@ -35,6 +35,7 @@ from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
+from PySide6.QtCore import QFile #debug
 
 logger = logging.getLogger(__name__)
 DISPLAY_HEIGHT = 80
@@ -132,10 +133,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def set_flavor(self, flavor):
-
         layout = self.layout()
         last_values = None
-
         if self._timer_widget is not None:
             # Delete all widgets from the layout
             for w in self._added:
@@ -146,7 +145,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     w.deleteLater()
             self._added = []
             last_values = self._timer_widget.get_last_values()
-
         center_button = None
         if flavor == 'classic':
             # We add both buttons, but one of them will always be hidden
@@ -161,9 +159,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._added.append(void_pomodoro_button)
             finish_tracking_button = self._create_button("focus.finishTracking")
             center_button_layout.addWidget(finish_tracking_button)
-            self._added.append(finish_tracking_button)
-            
-
+            self._added.append(finish_tracking_button)            
         self._timer_widget = TimerWidget(self,
                                          'timer',
                                          flavor,
@@ -188,20 +184,9 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             layout.addWidget(w)
             
             w = self._create_button("focus.muteAudio")
-            w.setStyleSheet("""
-            QToolButton#focus\\.muteAudio {
-                background-color: transparent;
-            }
-            QToolButton#focus\\.muteAudio:pressed {
-                background-color: transparent;  
-            }
-            QToolButton#focus\\.muteAudio:checked {
-                background-color: transparent;  
-            }
-            """)
+            print("Icon path:", w.icon().isNull())
             self._added.append(w)
             layout.addWidget(w)
-
             if "window.pinWindow" in self._actions:
                 w = self._create_button("window.pinWindow")
                 self._added.append(w)
@@ -251,14 +236,13 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
-        actions.add('focus.muteAudio', "Toggle Audio", None, ("volume-up", "volume-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
-        
-
+        actions.add('focus.muteAudio',"Toggle Audio", None, ("tool-unmute", "tool-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
 
     def _create_button(self,
                        name: str,
                        parent: QWidget = None):
         action = self._actions[name]
+        icon_path = action.icon() 
         btn = QToolButton(self if parent is None else parent)
         btn.setObjectName(name)
         btn.setIcon(QIcon(action.icon()))
@@ -341,7 +325,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             play_rest = new_values.get('Application.play_rest_sound', self._settings.get('Application.play_rest_sound')) == 'True'
             play_tick = new_values.get('Application.play_tick_sound', self._settings.get('Application.play_tick_sound')) == 'True'
 
-            is_checked = play_alarm and play_rest and play_tick
+            is_checked = play_alarm or play_rest or play_tick
 
             action = self._actions._actions.get('focus.muteAudio')
             if action is not None:
@@ -478,7 +462,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             pomodoro = timer.get_running_pomodoro()
             if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 context_menu.addAction(self._actions['focus.finishTracking'])
-                #context_menu.addAction(self._actions['focus.muteAudio'])
 
             else:
                 context_menu.addAction(self._actions['focus.interruption'])
