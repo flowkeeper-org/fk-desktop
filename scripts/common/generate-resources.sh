@@ -18,24 +18,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-source ../../venv/bin/activate
+source venv/bin/activate
 
 set -e
 
 if [[ "$OSTYPE" == "msys" ]]; then
   alias "pyside6-rcc=$(pwd)/venv/Lib/site-packages/PySide6/rcc"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  echo "Running macOS create-icons.sh from: $(pwd)"
-  echo "Attempting to run: scripts/macos/create-icons.sh"
-  "$DIR/../macos/create-icons.sh"
+  scripts/macos/create-icons.sh
   echo "Generated icns file for macOS"
   ls -al
 fi
 
-
-cd ../../res
+cd res
 qrc="resources.qrc"
 pyside6-rcc --project -o "$qrc"
 pyside6-rcc -g python "$qrc" -o "../src/fk/desktop/resources.py"
