@@ -15,14 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PySide6.QtWidgets import QPushButton
 
-from fk.qt.oauth import authenticate
+from fk.qt.oauth import Authenticator
 from fk.tools.minimal_common import MinimalCommon
 
 mc = MinimalCommon(initialize_source=False)
 
 button = QPushButton(mc.get_window())
 button.setText('Login...')
-button.clicked.connect(lambda: authenticate(mc.get_app(), print))
+button.clicked.connect(lambda: Authenticator(mc.get_settings()).authenticate(mc.get_app(), print))
 mc.get_window().setCentralWidget(button)
 
 mc.main_loop()

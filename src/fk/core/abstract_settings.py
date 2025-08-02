@@ -227,6 +227,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
                 ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                ('WebsocketEventSource.client_id', 'str', 'Client ID', '', [], _show_for_oauth),
+                ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', '', [], _show_for_oauth),
+                ('WebsocketEventSource.token_url', 'str', 'Token endpoint', '', [], _show_for_oauth),
+                ('WebsocketEventSource.scopes', 'str', 'Scopes', 'email profile openid', [], _show_for_oauth),
                 # UC-2: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
                 ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
                 ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),

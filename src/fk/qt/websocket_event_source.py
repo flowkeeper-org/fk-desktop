@@ -19,7 +19,7 @@ import datetime
 import enum
 import logging
 from hashlib import md5
-from typing import TypeVar, Iterable
+from typing import TypeVar
 
 from PySide6 import QtWebSockets, QtCore
 from PySide6.QtNetwork import QAbstractSocket
@@ -37,7 +37,7 @@ from fk.core.tenant import ADMIN_USER
 from fk.core.user_strategies import CreateUserStrategy
 from fk.desktop.desktop_strategies import AuthenticateStrategy, ReplayStrategy, PongStrategy, \
     PingStrategy, ReplayCompletedStrategy, ErrorStrategy
-from fk.qt.oauth import get_id_token, AuthenticationRecord
+from fk.qt.oauth import AuthenticationRecord, Authenticator
 from fk.qt.qt_timer import QtTimer
 
 logger = logging.getLogger(__name__)
@@ -192,7 +192,7 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def _authenticate_with_oauth_and_replay(self) -> None:
         refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
-        get_id_token(self._application, self._replay_after_auth, refresh_token)
+        Authenticator(self.get_settings()).get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         logger.debug(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')

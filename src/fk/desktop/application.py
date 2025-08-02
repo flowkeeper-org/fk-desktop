@@ -61,7 +61,7 @@ from fk.qt.actions import Actions
 from fk.qt.app_version import get_latest_version, get_current_version
 from fk.qt.cached_websocket_event_source import CachedWebsocketEventSource
 from fk.qt.heartbeat import Heartbeat
-from fk.qt.oauth import authenticate, AuthenticationRecord, open_url
+from fk.qt.oauth import AuthenticationRecord, open_url, Authenticator
 from fk.qt.qt_filesystem_watcher import QtFilesystemWatcher
 from fk.qt.qt_invoker import invoke_in_main_thread
 from fk.qt.qt_settings import QtSettings
@@ -644,7 +644,7 @@ class Application(QApplication, AbstractEventEmitter):
             callback('WebsocketEventSource.consent', 'False')
             callback('WebsocketEventSource.refresh_token!', auth.refresh_token)
             callback('WebsocketEventSource.logout', f'Sign out <{auth.email}>')
-        authenticate(self, save)
+        Authenticator(self.get_settings()).authenticate(self, save)
         return False
 
     def sign_out(self, _, callback: Callable) -> bool:
