@@ -86,7 +86,7 @@ class WorkitemTitle(QStandardItem):
 
 
 def hhmm(when: datetime.datetime) -> str:
-    return when.strftime('%H:%M')
+    return when.astimezone().strftime('%H:%M')
 
 
 class WorkitemPomodoro(QStandardItem):
