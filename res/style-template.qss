@@ -151,10 +151,6 @@ InfoOverlay #overlay_text, #prev_button {
     border: 1px solid #555555;
 }
 
-#fakeClockDark {
-    color: #ffffff;
-}
-
-#fakeClockLight {
-    color: #000000;
+#warning {
+    color: red;
 }

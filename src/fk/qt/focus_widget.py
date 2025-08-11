@@ -33,6 +33,7 @@ from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
+from fk.desktop.interruption_dialog import InterruptionDialog
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
 
@@ -318,17 +319,22 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
-                dlg = QInputDialog(self.parent())
-                dlg.setInputMode(QInputDialog.InputMode.TextInput)
-                dlg.setWindowTitle('Confirmation')
-                dlg.setLabelText('Are you sure you want to void current pomodoro?')
-                dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
-                if dlg.exec_():
-                    reason = f': {sanitize_user_input(dlg.textValue())}' if dlg.textValue() else ''
-                    self._source_holder.get_source().execute(AddInterruptionStrategy,
-                                                             [workitem.get_uid(), f'Pomodoro voided{reason}'])
-                    self._source_holder.get_source().execute(StopTimerStrategy,
-                                                             [])
+                dlg = InterruptionDialog(self.parent(),
+                                         self._source_holder.get_source(),
+                                         True)
+                print(f'RES: {dlg.exec_()}')
+
+                # dlg = QInputDialog(self.parent())
+                # dlg.setInputMode(QInputDialog.InputMode.TextInput)
+                # dlg.setWindowTitle('Confirmation')
+                # dlg.setLabelText('Are you sure you want to void current pomodoro?')
+                # dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
+                # if dlg.exec_():
+                #     reason = f': {sanitize_user_input(dlg.textValue())}' if dlg.textValue() else ''
+                #     self._source_holder.get_source().execute(AddInterruptionStrategy,
+                #                                              [workitem.get_uid(), f'Pomodoro voided{reason}'])
+                #     self._source_holder.get_source().execute(StopTimerStrategy,
+                #                                              [])
 
     def _interruption(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
