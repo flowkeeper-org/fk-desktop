@@ -13,48 +13,44 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 
 from PySide6.QtGui import QHideEvent
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QDialog, QTextEdit, \
-    QDialogButtonBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QDialog, QDialogButtonBox, QLineEdit
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.events import AfterPomodoroComplete
 
+logger = logging.getLogger(__name__)
 
-# TODO Add logs
-# TODO Void / interrupt
-# TODO Better text for the warning
-# TODO Fix text based on "void" param
-# TODO Smaller reason edit
 
 class InterruptionDialog(QDialog):
     _source: AbstractEventSource
-    _void: bool
     _warning: QLabel
-    _reason: QTextEdit
+    _reason: QLineEdit
     _buttons: QDialogButtonBox
 
     def __init__(self,
                  parent: QWidget,
                  source: AbstractEventSource,
-                 void: bool):
+                 window_title: str,
+                 label_text: str,
+                 placeholder_text: str):
         super().__init__(parent)
         self._source = source
-        self._void = void
 
-        self.setWindowTitle('Confirmation')
+        self.setWindowTitle(window_title)
 
         layout = QVBoxLayout(self)
 
-        label = QLabel('Are you sure you want to void current pomodoro?', self)
+        label = QLabel(label_text, self)
         layout.addWidget(label)
 
-        self._reason = QTextEdit(self)
-        self._reason.setPlaceholderText('Reason (optional)')
+        self._reason = QLineEdit(self)
+        self._reason.setPlaceholderText(placeholder_text)
         layout.addWidget(self._reason)
 
-        self._warning = QLabel('Pomodoro finished before you saved!', self)
+        self._warning = QLabel('Too late, the pomodoro has just finished.', self)
         self._warning.setObjectName('warning')
         self._warning.setVisible(False)
         layout.addWidget(self._warning)
@@ -68,17 +64,25 @@ class InterruptionDialog(QDialog):
         layout.addWidget(self._buttons)
 
         self._source.on(AfterPomodoroComplete, self._on_pomodoro_complete)
+        logger.debug('Subscribed to AfterPomodoroComplete')
 
     def hideEvent(self, event: QHideEvent) -> None:
         self._source.unsubscribe(self._on_pomodoro_complete)
+        logger.debug('Unsubscribed from AfterPomodoroComplete')
         super(InterruptionDialog, self).hideEvent(event)
 
     def _on_pomodoro_complete(self, **_) -> None:
+        logger.debug('Received AfterPomodoroComplete')
         self._warning.setVisible(True)
         self._buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
     def _on_action(self, role: QDialogButtonBox.ButtonRole):
-        if role == QDialogButtonBox.ButtonRole.AcceptRole:
-            print('OK clicked')
+        logger.debug(f'Closing Interruption dialog with role {role}')
 
-        self.close()
+        if role == QDialogButtonBox.ButtonRole.AcceptRole:
+            self.accept()
+        else:
+            self.reject()
+
+    def get_reason(self) -> str:
+        return self._reason.text()
