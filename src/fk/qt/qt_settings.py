@@ -212,7 +212,7 @@ class QtSettings(AbstractSettings):
             self.update_default('Application.audio_output', '#none')
 
     def init_gradients(self):
-        regex = re.compile('([A-Z][a-z]+)([A-Z].+)')
+        regex = re.compile('([A-Z][a-z]+)([A-Z].+)?')
         for d in self._definitions['Appearance']:
             if d[0] == 'Application.eyecandy_gradient':
                 choice = d[4]
@@ -222,8 +222,12 @@ class QtSettings(AbstractSettings):
                         continue
                     m = regex.search(preset.name)
                     if m is not None:
-                        display_name = f'{m.group(1)} {m.group(2)}'
+                        if m.group(2):
+                            display_name = f'{m.group(1)} {m.group(2)}'
+                        else:
+                            display_name = f'{m.group(1)}'
                         choice.append(f'{preset.name}:{display_name}')
+                choice.sort()
                 break
 
     def init_fonts(self):
