@@ -26,7 +26,7 @@ from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, _is_gnome
 from fk.qt.qt_invoker import invoke_in_main_thread
 
 SECRET_NAME = 'all-secrets'
@@ -41,13 +41,15 @@ class QtSettings(AbstractSettings):
     _settings: QtCore.QSettings
     _app_name: str
     _keyring_enabled: bool
+    _is_wayland: bool
 
     def __init__(self, app_name: str = 'flowkeeper-desktop'):
         self._app_name = app_name
+        self._is_wayland = QGuiApplication.platformName() == 'wayland'
         super().__init__(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation),
                          QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
                          invoke_in_main_thread,
-                         QGuiApplication.platformName() == 'wayland')
+                         self._is_wayland)
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
         keyring_feature_enabled = self.get('Application.feature_keyring') == 'True'
@@ -68,6 +70,7 @@ class QtSettings(AbstractSettings):
         self.init_audio_outputs()
         self.init_gradients()
         self.init_fonts()
+        self.init_appearance()
 
     def _display_warning_if_needed(self) -> None:
         if self.get('Application.ignore_keyring_errors') == 'False':
@@ -236,3 +239,16 @@ class QtSettings(AbstractSettings):
         self.update_default('Application.font_main_size', str(default_font.pointSize()))
         self.update_default('Application.font_header_family', default_font.family())
         self.update_default('Application.font_header_size', str(int(8.0 / 3 * default_font.pointSize())))
+
+    def init_appearance(self):
+        if _is_gnome():
+            self.set({
+                'Application.show_window_title': 'True',
+                'Application.quit_on_close': 'True',
+            })
+        if self._is_wayland:
+            self.set({
+                'Application.show_window_title': 'True',
+                'Application.always_on_top': 'False',
+                'Application.show_window_title': 'True',
+            })

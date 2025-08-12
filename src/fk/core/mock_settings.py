@@ -103,3 +103,6 @@ class MockSettings(AbstractSettings):
 
     def init_fonts(self):
         pass
+
+    def init_appearance(self):
+        pass
