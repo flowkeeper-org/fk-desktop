@@ -26,6 +26,7 @@ class InfoOverlay(QFrame):
     _text: str
 
     def __init__(self,
+                 parent: QWidget,
                  text: str,
                  absolute_position: QPoint,
                  icon: str = None,
@@ -37,7 +38,7 @@ class InfoOverlay(QFrame):
                  on_skip: Callable[[], None] = None,
                  arrow: str = None,
                  is_last: bool = False):
-        super().__init__()
+        super().__init__(parent)
         self._on_close = on_close
         self._text = text
 
@@ -178,13 +179,15 @@ INFO_OVERLAY_INSTANCE: InfoOverlay | None = None
 TUTORIAL_STEP: int = 0
 
 
-def show_info_overlay(text: str,
+def show_info_overlay(parent,
+                      text: str,
                       absolute_position: QPoint,
                       icon: str = None,
                       duration: int = 3,
                       on_close: Callable[[None], None] = None):
     global INFO_OVERLAY_INSTANCE
-    INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+    INFO_OVERLAY_INSTANCE = InfoOverlay(parent,
+                                        text,
                                         absolute_position,
                                         icon,
                                         duration,
@@ -197,7 +200,8 @@ def show_info_overlay(text: str,
     INFO_OVERLAY_INSTANCE.show()
 
 
-def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]],
+def show_tutorial(parent,
+                  get_step: Callable[[int], Tuple[str, QPoint, str]],
                   width: int | None = None,
                   first: bool = True,
                   arrow: str = 'down'):
@@ -210,26 +214,28 @@ def show_tutorial(get_step: Callable[[int], Tuple[str, QPoint, str]],
     def on_prev():
         global TUTORIAL_STEP
         TUTORIAL_STEP -= 2  # That's because the onMousePress event also fires at the same time
-        show_tutorial(get_step, width, False, arrow)
+        show_tutorial(parent, get_step, width, False, arrow)
 
     if res is not None:
         text, pos, icon = res
         if text is not None and pos is not None:
             global INFO_OVERLAY_INSTANCE
-            INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+            INFO_OVERLAY_INSTANCE = InfoOverlay(parent,
+                                                text,
                                                 pos,
                                                 f":/icons/tutorial-{icon}.png",
                                                 0,
                                                 1,
                                                 width,
-                                                lambda: show_tutorial(get_step, width, False, arrow),
+                                                lambda: show_tutorial(parent, get_step, width, False, arrow),
                                                 on_prev if TUTORIAL_STEP > 1 else None,
                                                 None,
                                                 arrow)
             INFO_OVERLAY_INSTANCE.show()
 
 
-def show_tutorial_overlay(text: str,
+def show_tutorial_overlay(parent,
+                          text: str,
                           pos: QPoint,
                           icon: str,
                           on_close: Callable[[], None] = None,
@@ -243,7 +249,8 @@ def show_tutorial_overlay(text: str,
                 # Don't create duplicates
                 return
             INFO_OVERLAY_INSTANCE.close()
-        INFO_OVERLAY_INSTANCE = InfoOverlay(text,
+        INFO_OVERLAY_INSTANCE = InfoOverlay(parent,
+                                            text,
                                             pos,
                                             f":/icons/tutorial-{icon}.png",
                                             0,

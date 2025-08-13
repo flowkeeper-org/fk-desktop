@@ -18,9 +18,8 @@ from PySide6.QtWidgets import QPushButton
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.timer import PomodoroTimer
 from fk.core.workitem import Workitem
-from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
-from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.qt_timer import QtTimer
+from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
 from fk.qt.tray_icon import TrayIcon
 from fk.tools.minimal_common import MinimalCommon
 
