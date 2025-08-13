@@ -446,7 +446,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
-        context_menu.addAction(self._actions['window.pinWindow'])
+        if 'window.pinWindow' in self._actions:
+            context_menu.addAction(self._actions['window.pinWindow'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['focus.completeItem'])
         context_menu.exec(self._timer_widget.mapToGlobal(pos))

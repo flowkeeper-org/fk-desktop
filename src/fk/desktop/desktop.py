@@ -19,7 +19,7 @@ import threading
 
 from PySide6 import QtCore, QtWidgets, QtUiTools
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 from PySide6.QtWidgets import QMessageBox, QMainWindow, QMenu
 from semantic_version import Version
 
@@ -204,7 +204,7 @@ class MainWindow:
             from_focus_mode()
 
     def toggle_pin_window(self, state: bool):
-        is_checked: bool = actions['window.pinWindow'].isChecked()
+        is_checked: bool = 'window.pinWindow' in actions and actions['window.pinWindow'].isChecked()
         settings.set({'Application.always_on_top': str(is_checked)})
 
     def toggle_main_window(self):
@@ -251,9 +251,12 @@ class MainWindow:
     @staticmethod
     def define_actions(actions: Actions):
         actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
-        actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
         actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
         actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+
+        is_wayland = QGuiApplication.platformName() == 'wayland'
+        if not is_wayland:
+            actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
 
         backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
         actions.add('window.showBacklogs',
@@ -435,7 +438,8 @@ if __name__ == "__main__":
             main_menu.addMenu(menu_file)
             view_menu = QMenu('View', main_menu)
             view_menu.addAction(actions['window.focusMode'])
-            view_menu.addAction(actions['window.pinWindow'])
+            if 'window.pinWindow' in actions:
+                view_menu.addAction(actions['window.pinWindow'])
             view_menu.addAction(actions['window.showBacklogs'])
             view_menu.addAction(actions['application.toolbar'])
             view_menu.addSeparator()
