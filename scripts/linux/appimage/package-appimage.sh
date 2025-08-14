@@ -53,6 +53,7 @@ echo "4. Created AppRun symlink"
 # 5. Create .DirIcon symlink
 cd AppDir
 ln -s usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png ./.DirIcon
+ln -s usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png ./flowkeeper.png
 cd ..
 echo "5. Create .DirIcon symlink"
 
