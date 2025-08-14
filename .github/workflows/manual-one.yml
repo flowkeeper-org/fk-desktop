@@ -18,7 +18,6 @@ on:
           - macos-13
           - windows-2025
           - windows-2022
-          - windows-2019
       compiler:
         description: 'Compiler'
         required: true
