@@ -22,6 +22,14 @@ from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QWidget
 
 from fk.core.abstract_settings import AbstractSettings
+from fk.core.events import AfterSettingsChanged
+
+
+def update_toggle_action_icon(icon1: str, icon2: str, action: QAction) -> None:
+    qi = QIcon()
+    qi.addPixmap(QIcon.fromTheme(icon1).pixmap(48), QIcon.Mode.Normal, QIcon.State.On)
+    qi.addPixmap(QIcon.fromTheme(icon2).pixmap(48), QIcon.Mode.Normal, QIcon.State.Off)
+    action.setIcon(qi)
 
 
 class Actions:
@@ -68,18 +76,16 @@ class Actions:
                 res.setShortcut(shortcut)
                 res.setToolTip(f"{text} ({shortcut})")
         if icon is not None:
-            # res.setIcon(QIcon(icon))
             if type(icon) is str:
                 res.setIcon(QIcon.fromTheme(icon))
             else:
-                qi = QIcon()
-                qi.addPixmap(QIcon.fromTheme(icon[0]).pixmap(48),
-                             QIcon.Mode.Normal,
-                             QIcon.State.On)
-                qi.addPixmap(QIcon.fromTheme(icon[1]).pixmap(48),
-                             QIcon.Mode.Normal,
-                             QIcon.State.Off)
-                res.setIcon(qi)
+                update_toggle_action_icon(icon[0], icon[1], res)
+                # We also need to reset toggle icons, because converting them to pixmap breaks fromTheme (#138)
+                self._settings.on(
+                    AfterSettingsChanged,
+                    lambda new_values, **_:
+                        update_toggle_action_icon(icon[0], icon[1], res)
+                            if 'Application.theme' in new_values else None)
         if is_toggle:
             res.setCheckable(True)
             res.setChecked(is_checked)
@@ -130,3 +136,6 @@ class Actions:
             for a in self._actions:
                 shortcuts[a] = self._actions[a].shortcut().toString()
             self._settings.set({'Application.shortcuts': json.dumps(shortcuts)})
+
+    def _on_theme_change(self, icon1: str, icon2: str, action: QAction):
+        pass
