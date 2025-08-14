@@ -36,6 +36,7 @@ from fk.qt.actions import Actions
 from fk.qt.focus_widget import complete_item
 from fk.qt.pomodoro_delegate import PomodoroDelegate
 from fk.qt.workitem_model import WorkitemModel
+from fk.qt.workitem_state_delegate import WorkitemStateDelegate
 from fk.qt.workitem_text_delegate import WorkitemTextDelegate
 
 logger = logging.getLogger(__name__)
@@ -80,21 +81,43 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         return self._application.get_settings().get('Application.feature_tags') == 'True'
 
     def _configure_delegate(self):
+        # Workitem state -- image or no delegate
+        if self._is_tags_enabled():
+            self.setItemDelegateForColumn(
+                0,
+                WorkitemStateDelegate(
+                    self,
+                    self._application.get_icon_theme(),
+                    self._application.get_theme_variables()['SELECTION_BG_COLOR'],
+                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
+                    4))
+        else:
+            self.setItemDelegateForColumn(0, None)
+
         # Workitem text -- HTML or no delegate
         if self._is_tags_enabled():
-            self.setItemDelegateForColumn(1,
-                                          WorkitemTextDelegate(self,
-                                                               self._application.get_icon_theme(),
-                                                               self._application.get_theme_variables()['TABLE_TEXT_COLOR'],
-                                                               self._application.get_theme_variables()['SELECTION_BG_COLOR']))
+            self.setItemDelegateForColumn(
+                1,
+                WorkitemTextDelegate(
+                    self,
+                    self._application.get_icon_theme(),
+                    self._application.get_theme_variables()['TABLE_TEXT_COLOR'],
+                    self._application.get_theme_variables()['SELECTION_BG_COLOR'],
+                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
+                    4))
         else:
             self.setItemDelegateForColumn(1, None)
 
         # Pomodoros display
-        self.setItemDelegateForColumn(2,
-                                      PomodoroDelegate(self,
-                                                       self._application.get_icon_theme(),
-                                                       self._application.get_theme_variables()['SELECTION_BG_COLOR']))
+        self.setItemDelegateForColumn(
+            2,
+            PomodoroDelegate(
+                self,
+                self._application.get_icon_theme(),
+                self._application.get_theme_variables()['SELECTION_BG_COLOR'],
+                self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
+                4,
+                self._is_tags_enabled()))
 
     def _update_actions_if_needed(self, workitem: Workitem):
         current = self.get_current()

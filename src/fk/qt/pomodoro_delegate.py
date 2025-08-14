@@ -13,11 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import datetime
 
-from PySide6 import QtWidgets, QtCore, QtSvg, QtGui
-from PySide6.QtCore import QSize, QPoint, QRect
-from PySide6.QtGui import Qt, QBrush, QColor
+from PySide6.QtCore import QSize, QObject, QRectF, QModelIndex
+from PySide6.QtGui import Qt, QBrush, QPainter
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtWidgets import QStyleOptionViewItem
+
+from fk.core.workitem import Workitem
+from fk.qt.abstract_item_delegate import AbstractItemDelegate
 
 POMODORO_VOIDED = "voided"
 
@@ -30,20 +33,27 @@ POMODORO_FINISHED_UNPLANNED = "finished-unplanned"
 POMODORO_RUNNING_UNPLANNED = "running-unplanned"
 
 
-class PomodoroDelegate(QtWidgets.QItemDelegate):
-    _svg_renderer: dict[str, QtSvg.QSvgRenderer]
+class PomodoroDelegate(AbstractItemDelegate):
+    _svg_renderer: dict[str, QSvgRenderer]
     _selection_brush: QBrush
     _theme: str
+    _cross_out: bool
+    _display_tags: bool
 
     def _get_renderer(self, name):
-        return QtSvg.QSvgRenderer(f':/icons/{self._theme}/24x24/pomodoro-{name}.svg')
+        return QSvgRenderer(
+            f':/icons/{self._theme}/24x24/pomodoro-{name}.svg',
+            aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio)
 
     def __init__(self,
-                 parent: QtCore.QObject = None,
+                 parent: QObject = None,
                  theme: str = 'mixed',
-                 selection_color: str = '#555'):
-        QtWidgets.QItemDelegate.__init__(self, parent)
-        self._theme = theme
+                 selection_color: str = '#555',
+                 crossout_color: str = '#777',
+                 padding: float = 4,
+                 display_tags: bool = False):
+        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color, padding)
+        self._display_tags = display_tags
         self._svg_renderer = {
             POMODORO_VOIDED: self._get_renderer(POMODORO_VOIDED),
             POMODORO_NEW_PLANNED: self._get_renderer(POMODORO_NEW_PLANNED),
@@ -53,25 +63,22 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
             POMODORO_FINISHED_UNPLANNED: self._get_renderer(POMODORO_FINISHED_UNPLANNED),
             POMODORO_RUNNING_UNPLANNED: self._get_renderer(POMODORO_RUNNING_UNPLANNED),
         }
-        self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
 
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         if index.data(501) == 'pomodoro':  # We can also get a drop placeholder here, which we don't want to paint
             painter.save()
-            space: QtCore.QRectF = option.rect
+            space: QRectF = option.rect
 
-            # Qt 6.8 forced delegates to paint their backgrounds themselves
-            if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
-                painter.fillRect(space, self._selection_brush)
+            workitem: Workitem = index.data(500)
+            self.paint_background(painter, option, workitem.is_sealed() if self._display_tags else False)
 
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
             left = space.left()
 
-            workitem = index.data(500)
             if workitem.is_tracker():
                 elapsed: str = index.data()
-                rect = QtCore.QRectF(
+                rect = QRectF(
                     left + 4,
                     space.top() + 4,
                     space.width() - 4,
@@ -80,7 +87,7 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
             else:
                 for p in workitem.values():
                     width = height
-                    rect = QtCore.QRectF(
+                    rect = QRectF(
                         left,
                         space.top(),  # space.center().y() - (size / 2) + 1,
                         width,
@@ -98,7 +105,7 @@ class PomodoroDelegate(QtWidgets.QItemDelegate):
 
                     for _ in range(len(p)):
                         width = height / 4
-                        rect = QtCore.QRectF(
+                        rect = QRectF(
                             left,
                             space.top(),  # space.center().y() - (size / 2) + 1,
                             width,
