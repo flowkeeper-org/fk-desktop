@@ -1,3 +1,17 @@
+### v1.0.1 (15 August 2025)
+
+This version addresses all known bugs that we had in GitHub:
+
+- Miscellaneous font issues (#136).
+- Backlogs toggle icon doesn't change its color on theme change (#138).
+- Voiding a pomodoro that has already finished (#149).
+- Focus mode lost window title on Wayland (#152).
+- Timezone not handled in task tooltips (#156).
+- Tutorial bubbles don't follow underlying windows (#162).
+- Pin/unpin icon is visible on Wayland (#185).
+- Unhandled TypeError while clicking "Surprise me" button repeatedly (#188).
+- "Long break" keeps on triggering while it is deactivated in the configuration (#192).
+
 ### v1.0.0 (14 July 2025)
 
 This version brings Flowkeeper even closer to the original Pomodoro Technique definition from Francesco Cirillo's book.
