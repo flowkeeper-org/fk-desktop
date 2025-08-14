@@ -133,7 +133,7 @@ class WorkitemPomodoro(QStandardItem):
                 if p.is_finished():
                     work_duration = round(p.get_elapsed_work_duration())
                     if work_duration > 0:
-                        res.append(f' - Worked for {datetime.timedelta(seconds=work_duration)}s')
+                        res.append(f' - Worked for {datetime.timedelta(seconds=work_duration)}')
                     rest_duration = round(p.get_elapsed_rest_duration())
                     if rest_duration > 0:
                         rest_type = ''
