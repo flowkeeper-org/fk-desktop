@@ -142,6 +142,9 @@ class WorkitemPomodoro(QStandardItem):
                         res.append(f' - Rested for {datetime.timedelta(seconds=rest_duration)}{rest_type}')
                     res.append(f' - Completed at {hhmm(p.get_last_modified_date())}')
 
+        if self._workitem.is_sealed():
+            res.append(f'Marked completed at {hhmm(self._workitem.get_last_modified_date())}')
+
         return '\n'.join(res)
 
     def update_display(self):

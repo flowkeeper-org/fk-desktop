@@ -15,12 +15,12 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QSize, QObject, QRectF, QModelIndex
-from PySide6.QtGui import Qt, QBrush, QPainter
+from PySide6.QtGui import Qt, QBrush, QPainter, QStaticText
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QStyleOptionViewItem
 
 from fk.core.workitem import Workitem
-from fk.qt.abstract_item_delegate import AbstractItemDelegate
+from fk.qt.abstract_item_delegate import AbstractItemDelegate, get_padding
 
 POMODORO_VOIDED = "voided"
 
@@ -50,9 +50,8 @@ class PomodoroDelegate(AbstractItemDelegate):
                  theme: str = 'mixed',
                  selection_color: str = '#555',
                  crossout_color: str = '#777',
-                 padding: float = 4,
                  display_tags: bool = False):
-        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color, padding)
+        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color)
         self._display_tags = display_tags
         self._svg_renderer = {
             POMODORO_VOIDED: self._get_renderer(POMODORO_VOIDED),
@@ -74,22 +73,26 @@ class PomodoroDelegate(AbstractItemDelegate):
 
             s: QSize = index.data(Qt.ItemDataRole.SizeHintRole)
             height = s.height()
+            # This would've worked just fine if our SVGs had no margins
+            # height = option.fontMetrics.height()
+
             left = space.left()
+            text_padding = get_padding(option)
+            one_line_height = option.fontMetrics.height() + 2 * text_padding
+            padding = (one_line_height - height) / 2
 
             if workitem.is_tracker():
-                elapsed: str = index.data()
-                rect = QRectF(
-                    left + 4,
-                    space.top() + 4,
-                    space.width() - 4,
-                    height - 4)
-                painter.drawText(rect, elapsed)
+                st = QStaticText(index.data())
+                st.setTextWidth(space.width() - 4)
+                painter.drawStaticText(left + 4,
+                                       space.top() + text_padding,
+                                       st)
             else:
                 for p in workitem.values():
                     width = height
                     rect = QRectF(
                         left,
-                        space.top(),  # space.center().y() - (size / 2) + 1,
+                        space.top() + padding,  # space.center().y() - (size / 2) + 1,
                         width,
                         height)
 
@@ -107,7 +110,7 @@ class PomodoroDelegate(AbstractItemDelegate):
                         width = height / 4
                         rect = QRectF(
                             left,
-                            space.top(),  # space.center().y() - (size / 2) + 1,
+                            space.top() + padding,  # space.center().y() - (size / 2) + 1,
                             width,
                             height)
 

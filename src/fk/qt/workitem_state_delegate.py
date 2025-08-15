@@ -19,7 +19,7 @@ from PySide6.QtGui import Qt, QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QStyleOptionViewItem
 
-from fk.qt.abstract_item_delegate import AbstractItemDelegate
+from fk.qt.abstract_item_delegate import AbstractItemDelegate, get_padding
 
 
 class WorkitemStateDelegate(AbstractItemDelegate):
@@ -29,9 +29,8 @@ class WorkitemStateDelegate(AbstractItemDelegate):
                  parent: QObject = None,
                  theme: str = 'mixed',
                  selection_color: str = '#555',
-                 crossout_color: str = '#777',
-                 padding: float = 4):
-        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color, padding)
+                 crossout_color: str = '#777'):
+        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color)
         self._svg_renderer = QSvgRenderer(
             f':/icons/{self._theme}/24x24/workitem-unplanned.svg',
             aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio)
@@ -44,8 +43,9 @@ class WorkitemStateDelegate(AbstractItemDelegate):
             self.paint_background(painter, option, workitem.is_sealed())
 
             if not workitem.is_planned():
-                rect = option.rect.adjusted(2, 1, -2, -3)
-                rect.setHeight(option.fontMetrics.height() + 2 * self._padding)
+                padding = get_padding(option)
+                rect = option.rect.adjusted(2, padding, -2, -padding)
+                rect.setHeight(option.fontMetrics.height())
                 self._svg_renderer.render(painter, rect)
 
             painter.restore()

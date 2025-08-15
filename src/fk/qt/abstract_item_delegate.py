@@ -19,21 +19,22 @@ from PySide6.QtGui import Qt, QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QStyleOptionViewItem, QItemDelegate, QStyle
 
 
+def get_padding(option: QStyleOptionViewItem) -> int:
+    return (option.rect.height() % option.fontMetrics.height()) / 2
+
+
 class AbstractItemDelegate(QItemDelegate):
     _selection_brush: QBrush
     _crossout_pen: QPen
     _theme: str
-    _padding: float
 
     def __init__(self,
                  parent: QObject = None,
                  theme: str = 'mixed',
                  selection_color: str = '#555',
-                 crossout_color: str = '#777',
-                 padding: float = 4):
+                 crossout_color: str = '#777'):
         QItemDelegate.__init__(self, parent)
         self._theme = theme
-        self._padding = padding
         self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
         self._crossout_pen = QPen(QColor(crossout_color))
 
@@ -48,10 +49,11 @@ class AbstractItemDelegate(QItemDelegate):
             painter.translate(option.rect.topLeft())
             lh = option.fontMetrics.height()
             lines = int(option.rect.height() / lh)
+            padding = get_padding(option)
             for i in range(lines):
                 painter.drawLine(0,
-                                 lh * (i + 0.5) + self._padding,
+                                 lh * (i + 0.5) + padding,
                                  option.rect.width(),
-                                 lh * (i + 0.5) + self._padding)
+                                 lh * (i + 0.5) + padding)
 
         painter.restore()

@@ -89,8 +89,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                     self,
                     self._application.get_icon_theme(),
                     self._application.get_theme_variables()['SELECTION_BG_COLOR'],
-                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
-                    4))
+                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR']))
         else:
             self.setItemDelegateForColumn(0, None)
 
@@ -103,8 +102,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                     self._application.get_icon_theme(),
                     self._application.get_theme_variables()['TABLE_TEXT_COLOR'],
                     self._application.get_theme_variables()['SELECTION_BG_COLOR'],
-                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
-                    4))
+                    self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR']))
         else:
             self.setItemDelegateForColumn(1, None)
 
@@ -116,7 +114,6 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                 self._application.get_icon_theme(),
                 self._application.get_theme_variables()['SELECTION_BG_COLOR'],
                 self._application.get_theme_variables()['TABLE_CROSSOUT_COLOR'],
-                4,
                 self._is_tags_enabled()))
 
     def _update_actions_if_needed(self, workitem: Workitem):

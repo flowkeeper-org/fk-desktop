@@ -21,7 +21,7 @@ from PySide6.QtGui import QStaticText, QPainter
 from PySide6.QtWidgets import QStyleOptionViewItem
 
 from fk.core.workitem import Workitem
-from fk.qt.abstract_item_delegate import AbstractItemDelegate
+from fk.qt.abstract_item_delegate import AbstractItemDelegate, get_padding
 
 TAG_REGEX = re.compile('#(\\w+)')
 
@@ -34,9 +34,8 @@ class WorkitemTextDelegate(AbstractItemDelegate):
                  theme: str = 'mixed',
                  text_color: str = '#000',
                  selection_color: str = '#555',
-                 crossout_color: str = '#777',
-                 padding: float = 4):
-        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color, padding)
+                 crossout_color: str = '#777'):
+        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color)
         self._text_color = text_color
 
     def _format_html(self, workitem: Workitem, is_placeholder: bool) -> str:
@@ -58,12 +57,13 @@ class WorkitemTextDelegate(AbstractItemDelegate):
         st = QStaticText(self._format_html(workitem, is_placeholder))
         st.setTextWidth(option.rect.width())
 
-        painter.translate(option.rect.topLeft())
-        painter.drawStaticText(0, 4, st)
+        painter.drawStaticText(option.rect.left(),
+                               option.rect.top() + get_padding(option),
+                               st)
 
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:
         size = super().sizeHint(option, index)
-        size.setHeight(size.height() + 6)
+        size.setHeight(size.height() + 8)
         return size
