@@ -29,7 +29,7 @@ on:
 
 jobs:
   call-build:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.0.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@main
     with:
       os: ${{ inputs.os }}
       compiler: ${{ inputs.compiler }}
