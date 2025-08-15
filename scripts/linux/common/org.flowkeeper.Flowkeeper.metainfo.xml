@@ -18,7 +18,7 @@
         </p>
     </description>
 
-    <launchable type="desktop-id">flowkeeper.desktop</launchable>
+    <launchable type="desktop-id">org.flowkeeper.Flowkeeper.desktop</launchable>
 
     <screenshots>
         <screenshot type="default">

@@ -5,7 +5,6 @@ sdk: org.kde.Sdk
 base: io.qt.PySide.BaseApp
 base-version: '6.8'
 command: run.sh
-rename-desktop-file: flowkeeper.desktop
 rename-icon: flowkeeper
 finish-args:
   - --socket=fallback-x11
@@ -108,12 +107,12 @@ modules:
 
       - python -m compileall .
 
-      - desktop-file-edit --remove-key="Exec" --remove-key="Version" flowkeeper/installer/flowkeeper.desktop
-      - desktop-file-edit --set-key="Exec" --set-value="run.sh" flowkeeper/installer/flowkeeper.desktop
-      - install -Dm644 flowkeeper/installer/flowkeeper.desktop ${FLATPAK_DEST}/share/applications/flowkeeper.desktop
+      - desktop-file-edit --remove-key="Exec" --remove-key="Version" flowkeeper/installer/org.flowkeeper.Flowkeeper
+      - desktop-file-edit --set-key="Exec" --set-value="run.sh" flowkeeper/installer/org.flowkeeper.Flowkeeper
+      - install -Dm644 flowkeeper/installer/org.flowkeeper.Flowkeeper ${FLATPAK_DEST}/share/applications/org.flowkeeper.Flowkeeper
       - install -Dm644 flowkeeper/installer/org.flowkeeper.Flowkeeper.metainfo.xml /app/share/metainfo/org.flowkeeper.Flowkeeper.metainfo.xml
-      - install -Dm644 flowkeeper/res/flowkeeper.png /app/share/icons/hicolor/1024x1024/apps/flowkeeper.png
-      - install -Dm644 flowkeeper/flowkeeper-48x48.png /app/share/icons/hicolor/48x48/apps/flowkeeper.png
+      - install -Dm644 flowkeeper/res/flowkeeper.png /app/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png
+      - install -Dm644 flowkeeper/flowkeeper-48x48.png /app/share/icons/hicolor/48x48/apps/org.flowkeeper.Flowkeeper.png
 
       - cd flowkeeper/res; /lib/libexec/rcc -g python --project -o "resources.qrc"
       - cd flowkeeper/res; /lib/libexec/rcc -g python "resources.qrc" -o "../src/fk/desktop/resources.py"
