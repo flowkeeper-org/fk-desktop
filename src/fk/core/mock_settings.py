@@ -106,3 +106,6 @@ class MockSettings(AbstractSettings):
 
     def init_appearance(self):
         pass
+
+    def init_network_access(self):
+        pass

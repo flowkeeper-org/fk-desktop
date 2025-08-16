@@ -120,6 +120,10 @@ def _show_for_flatpak(values: dict[str, str]) -> bool:
     return get_sandbox_type() == 'Flatpak'
 
 
+def _hide_for_sandbox(values: dict[str, str]) -> bool:
+    return get_sandbox_type() is None
+
+
 def _is_tiling_wm() -> bool:
     wm = _get_desktop()
     return ('hyprland' in wm
@@ -158,9 +162,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
-                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
+                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
-                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _hide_for_sandbox),
                 ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
@@ -469,4 +473,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     @abstractmethod
     def init_appearance(self):
+        pass
+
+    @abstractmethod
+    def init_network_access(self):
         pass

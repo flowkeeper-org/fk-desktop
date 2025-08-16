@@ -27,6 +27,7 @@ from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
 from fk.core.abstract_settings import AbstractSettings, _is_gnome
+from fk.core.sandbox import get_sandbox_type
 from fk.qt.qt_invoker import invoke_in_main_thread
 
 SECRET_NAME = 'all-secrets'
@@ -71,6 +72,7 @@ class QtSettings(AbstractSettings):
         self.init_gradients()
         self.init_fonts()
         self.init_appearance()
+        self.init_network_access()
 
     def _display_warning_if_needed(self) -> None:
         if self.get('Application.ignore_keyring_errors') == 'False':
@@ -251,4 +253,11 @@ class QtSettings(AbstractSettings):
                 'Application.show_window_title': 'True',
                 'Application.always_on_top': 'False',
                 'Application.show_window_title': 'True',
+            })
+
+    def init_network_access(self):
+        if get_sandbox_type() is not None:
+            self.set({
+                'Application.singleton': 'False',
+                'Application.check_updates': 'False',
             })
