@@ -56,7 +56,7 @@ QMainWindow, #StatsWindow, #FocusBackground {
     padding: 10px;
 }
 
-#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected {
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #workitems_table QLineEdit {
     color: $TABLE_TEXT_COLOR;
     background-color: $SELECTION_BG_COLOR;
     border: none;
@@ -151,10 +151,6 @@ InfoOverlay #overlay_text, #prev_button {
     border: 1px solid #555555;
 }
 
-#fakeClockDark {
-    color: #ffffff;
-}
-
-#fakeClockLight {
-    color: #000000;
+#warning {
+    color: red;
 }

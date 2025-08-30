@@ -21,7 +21,7 @@ from typing import Callable
 
 from PySide6.QtCore import QSize, QTime, Qt
 from PySide6.QtGui import QFont, QKeySequence, QIcon, QStandardItemModel, QStandardItem
-from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QGridLayout, QDialog, QFormLayout, QLineEdit, \
+from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QDialog, QFormLayout, QLineEdit, \
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem, QSizePolicy
 
@@ -31,6 +31,13 @@ from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
 
 logger = logging.getLogger(__name__)
+
+
+def _from_total_seconds(total_seconds: int) -> QTime:
+    hours = int(total_seconds / 60 / 60)
+    minutes = int(total_seconds / 60) - hours * 60
+    seconds = total_seconds - hours * 60 * 60 - minutes * 60
+    return QTime(hours, minutes, seconds, 0)
 
 
 class SettingsDialog(QDialog):
@@ -392,15 +399,13 @@ class SettingsDialog(QDialog):
             ed9 = QTimeEdit(parent)
             ed9.setDisplayFormat('HH:mm:ss')
             ed9.setCurrentSection(QTimeEdit.Section.SecondSection)
+            ed9.setMinimumTime(_from_total_seconds(option_options[0]))
+            ed9.setMaximumTime(_from_total_seconds(option_options[1]))
             ed9.userTimeChanged.connect(lambda v: self._on_value_changed(
                 option_id,
                 str(int(v.msecsSinceStartOfDay() / 1000))
             ))
-            total_seconds = int(float(option_value))
-            hours = int(total_seconds / 60 / 60)
-            minutes = int(total_seconds / 60) - hours * 60
-            seconds = total_seconds - hours * 60 * 60 - minutes * 60
-            ed9.setTime(QTime(hours, minutes, seconds, 0))
+            ed9.setTime(_from_total_seconds(int(float(option_value))))
             self._widgets_get_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
             self._widgets_set_value[option_id] = lambda txt: logger.error('Changing durations programmatically is not implemented yet')
             return [ed9]

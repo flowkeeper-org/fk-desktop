@@ -16,29 +16,27 @@
 import re
 from html import escape
 
-from PySide6 import QtWidgets, QtCore, QtGui
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QBrush, QStaticText
+from PySide6.QtCore import QSize, QObject, QModelIndex
+from PySide6.QtGui import QStaticText, QPainter
+from PySide6.QtWidgets import QStyleOptionViewItem
 
 from fk.core.workitem import Workitem
+from fk.qt.abstract_item_delegate import AbstractItemDelegate, get_padding
 
 TAG_REGEX = re.compile('#(\\w+)')
 
 
-class WorkitemTextDelegate(QtWidgets.QItemDelegate):
-    _theme: str
+class WorkitemTextDelegate(AbstractItemDelegate):
     _text_color: str
-    _selection_brush: QBrush
 
     def __init__(self,
-                 parent: QtCore.QObject = None,
+                 parent: QObject = None,
                  theme: str = 'mixed',
                  text_color: str = '#000',
-                 selection_color: str = '#555'):
-        QtWidgets.QItemDelegate.__init__(self, parent)
-        self._theme = theme
+                 selection_color: str = '#555',
+                 crossout_color: str = '#777'):
+        AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color)
         self._text_color = text_color
-        self._selection_brush = QBrush(QColor(selection_color), Qt.BrushStyle.SolidPattern)
 
     def _format_html(self, workitem: Workitem, is_placeholder: bool) -> str:
         text = workitem.get_name()
@@ -49,23 +47,23 @@ class WorkitemTextDelegate(QtWidgets.QItemDelegate):
                 # f'font-weight: {"bold" if workitem.is_running() else "normal"};'
                 f'">{text}</span>')
 
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         is_placeholder = index.data(501) == 'drop'
         painter.save()
 
-        # Qt 6.8 forced delegates to paint their backgrounds themselves
-        if QtWidgets.QStyle.StateFlag.State_Selected in option.state:
-            painter.fillRect(option.rect, self._selection_brush)
-
         workitem: Workitem = index.data(500)
+        self.paint_background(painter, option, workitem.is_sealed())
+
         st = QStaticText(self._format_html(workitem, is_placeholder))
         st.setTextWidth(option.rect.width())
 
-        painter.translate(option.rect.topLeft())
-        painter.drawStaticText(0, 4, st)
+        painter.drawStaticText(option.rect.left(),
+                               option.rect.top() + get_padding(option),
+                               st)
+
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:
         size = super().sizeHint(option, index)
-        size.setHeight(size.height() + 6)
+        size.setHeight(size.height() + 8)
         return size

@@ -44,8 +44,8 @@ cp -r src/* "$dist/usr/lib/flowkeeper/"
 
 mkdir -p "$dist/usr/share/icons/hicolor/1024x1024/apps"
 mkdir -p "$dist/usr/share/icons/hicolor/48x48/apps"
-cp res/flowkeeper.png "$dist/usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png"
-cp flowkeeper-48x48.png "$dist/usr/share/icons/hicolor/48x48/apps/flowkeeper.png"
+cp res/flowkeeper.png "$dist/usr/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png"
+cp flowkeeper-48x48.png "$dist/usr/share/icons/hicolor/48x48/apps/org.flowkeeper.Flowkeeper.png"
 
 mkdir -p "$dist/usr/bin"
 cp installer/flowkeeper "$dist/usr/bin/flowkeeper"
@@ -54,12 +54,12 @@ echo "3. Copied application files"
 # 4. Create a desktop shortcut
 mkdir -p "$dist/usr/share/applications"
 export FK_AUTOSTART_ARGS=""
-< installer/flowkeeper.desktop envsubst > "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
+< installer/org.flowkeeper.Flowkeeper envsubst > "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
 echo "4. Created a desktop shortcut:"
 cat "$dist/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
 
 # 5. Create another one for autostart (with --autostart argument)
 mkdir -p "$dist/etc/xdg/autostart"
 export FK_AUTOSTART_ARGS="--autostart"
-< installer/flowkeeper.desktop envsubst > "$dist/etc/xdg/autostart/org.flowkeeper.Flowkeeper.desktop"
+< installer/org.flowkeeper.Flowkeeper envsubst > "$dist/etc/xdg/autostart/org.flowkeeper.Flowkeeper.desktop"
 echo "5. Added it to autostart"

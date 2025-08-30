@@ -61,8 +61,8 @@ cp -r src/* "%{buildroot}%{_libexecdir}/flowkeeper/"
 
 mkdir -p "%{buildroot}%{_datadir}/icons/hicolor/1024x1024/apps"
 mkdir -p "%{buildroot}%{_datadir}/icons/hicolor/48x48/apps"
-cp -av res/flowkeeper.png "%{buildroot}%{_datadir}/icons/hicolor/1024x1024/apps/flowkeeper.png"
-cp -av flowkeeper-48x48.png "%{buildroot}%{_datadir}/icons/hicolor/48x48/apps/flowkeeper.png"
+cp -av res/flowkeeper.png "%{buildroot}%{_datadir}/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png"
+cp -av flowkeeper-48x48.png "%{buildroot}%{_datadir}/icons/hicolor/48x48/apps/org.flowkeeper.Flowkeeper.png"
 
 mkdir -p "%{buildroot}%{_bindir}"
 cp -av installer/flowkeeper "%{buildroot}%{_bindir}/flowkeeper"
@@ -70,7 +70,7 @@ echo "3. Copied application files"
 
 mkdir -p "%{buildroot}%{_datadir}/applications"
 export FK_AUTOSTART_ARGS=""
-< installer/flowkeeper.desktop envsubst > "%{buildroot}%{_datadir}/applications/org.flowkeeper.Flowkeeper.desktop"
+< installer/org.flowkeeper.Flowkeeper.desktop envsubst > "%{buildroot}%{_datadir}/applications/org.flowkeeper.Flowkeeper.desktop"
 
 %check
 

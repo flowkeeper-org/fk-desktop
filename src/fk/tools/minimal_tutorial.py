@@ -33,7 +33,7 @@ mc = MinimalCommon(initialize_source=False)
 button = QPushButton(mc.get_window())
 button.setFixedWidth(300)
 button.setText('Tutorial')
-button.clicked.connect(lambda: show_tutorial(lambda step: get_tutorial_step(step, button), None, True))
+button.clicked.connect(lambda: show_tutorial(mc.get_window(), lambda step: get_tutorial_step(step, button), None, True))
 mc.get_window().setCentralWidget(button)
 
 mc.main_loop()

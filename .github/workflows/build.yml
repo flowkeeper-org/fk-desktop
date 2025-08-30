@@ -96,6 +96,7 @@ jobs:
           mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
           include-qt-plugins: multimedia
+          clang: ${{ startsWith(inputs.os, 'windows') && 'on' || '' }}
           windows-console-mode: disable
           windows-icon-from-ico: res/flowkeeper.ico
           macos-app-icon: flowkeeper.icns
@@ -107,7 +108,7 @@ jobs:
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
-          file-description: ${{ contains('windows-2025 windows-2022 windows-2019', inputs.os) && 'Flowkeeper' || 'Flowkeeper is a Pomodoro Technique desktop timer for power users' }}
+          file-description: ${{ startsWith(inputs.os, 'windows') && 'Flowkeeper' || 'Flowkeeper is a Pomodoro Technique desktop timer for power users' }}
           copyright: Copyright (c) 2023 Constantine Kulak <contact@flowkeeper.org>
           output-dir: 'build'
           output-file: 'Flowkeeper'
@@ -169,9 +170,9 @@ jobs:
             mv dist/flowkeeper-min.deb "$PREFIX-min-package.deb"
 
             # Temporarily disable AppImage build
-            # echo "Building AppImage package"
-            # scripts/linux/appimage/package-appimage.sh
-            # mv dist/org.flowkeeper.Flowkeeper.AppImage "$PREFIX-portable.AppImage"
+            echo "Building AppImage package"
+            scripts/linux/appimage/package-appimage.sh
+            mv dist/Flowkeeper-*.AppImage "$PREFIX.AppImage"
           fi
 
           echo "Zipping the standalone directory"

@@ -18,7 +18,7 @@ import logging
 from PySide6.QtCore import QSize, QPoint, QLine
 from PySide6.QtGui import QPainter, QPixmap, Qt, QGradient, QColor, QMouseEvent, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessageBox, QMenu, QSizePolicy, QToolButton, \
-    QSpacerItem, QInputDialog, QLineEdit
+    QSpacerItem
 
 from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.abstract_serializer import sanitize_user_input
@@ -33,6 +33,7 @@ from fk.core.timer_strategies import StopTimerStrategy
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import CompleteWorkitemStrategy
 from fk.desktop.application import Application, AfterFontsChanged
+from fk.desktop.interruption_dialog import InterruptionDialog
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
 
@@ -318,31 +319,45 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
-                dlg = QInputDialog(self.parent())
-                dlg.setInputMode(QInputDialog.InputMode.TextInput)
-                dlg.setWindowTitle('Confirmation')
-                dlg.setLabelText('Are you sure you want to void current pomodoro?')
-                dlg.findChild(QLineEdit).setPlaceholderText('Reason (optional)')
-                if dlg.exec_():
-                    reason = f': {sanitize_user_input(dlg.textValue())}' if dlg.textValue() else ''
-                    self._source_holder.get_source().execute(AddInterruptionStrategy,
-                                                             [workitem.get_uid(), f'Pomodoro voided{reason}'])
-                    self._source_holder.get_source().execute(StopTimerStrategy,
-                                                             [])
+                dlg = InterruptionDialog(
+                    self.parent(),
+                    self._source_holder.get_source(),
+                    'Confirmation',
+                    'Are you sure you want to void current pomodoro?',
+                    'Reason (optional)')
+
+                def ok():
+                    reason = f': {sanitize_user_input(dlg.get_reason())}' if dlg.get_reason() else ''
+                    self._source_holder.get_source().execute(
+                        AddInterruptionStrategy, [
+                            workitem.get_uid(),
+                            f'Pomodoro voided{reason}'])
+                    self._source_holder.get_source().execute(
+                        StopTimerStrategy,
+                        [])
+                dlg.accepted.connect(ok)
+                dlg.open()
 
     def _interruption(self) -> None:
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
-                dlg = QInputDialog(self.parent())
-                dlg.setInputMode(QInputDialog.InputMode.TextInput)
-                dlg.setWindowTitle('Interruption')
-                dlg.setLabelText("It won't pause or void your current pomodoro, only\n"
-                                 "record this incident for your future reference:")
-                dlg.findChild(QLineEdit).setPlaceholderText('What happened (optional)')
-                if dlg.exec_():
-                    self._source_holder.get_source().execute(AddInterruptionStrategy,
-                                                             [workitem.get_uid(), sanitize_user_input(dlg.textValue())])
+                dlg = InterruptionDialog(
+                    self.parent(),
+                    self._source_holder.get_source(),
+                    'Interruption',
+                    "It won't pause or void your current pomodoro, only\n"
+                    "record this incident for your future reference:",
+                    'What happened (optional)')
+
+                def ok():
+                    self._source_holder.get_source().execute(
+                        AddInterruptionStrategy, [
+                            workitem.get_uid(),
+                            sanitize_user_input(dlg.get_reason())])
+
+                dlg.accepted.connect(ok)
+                dlg.open()
 
     def _finish_tracking(self) -> None:
         # We don't check if there's a running workitem, as the action is only enabled while the timer is ticking
@@ -431,7 +446,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 context_menu.addAction(self._actions['focus.voidPomodoro'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
-        context_menu.addAction(self._actions['window.pinWindow'])
+        if 'window.pinWindow' in self._actions:
+            context_menu.addAction(self._actions['window.pinWindow'])
         context_menu.addSeparator()
         context_menu.addAction(self._actions['focus.completeItem'])
         context_menu.exec(self._timer_widget.mapToGlobal(pos))

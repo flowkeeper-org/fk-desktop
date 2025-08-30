@@ -18,7 +18,6 @@ on:
           - macos-13
           - windows-2025
           - windows-2022
-          - windows-2019
       compiler:
         description: 'Compiler'
         required: true
@@ -30,7 +29,7 @@ on:
 
 jobs:
   call-build:
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.0.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@main
     with:
       os: ${{ inputs.os }}
       compiler: ${{ inputs.compiler }}

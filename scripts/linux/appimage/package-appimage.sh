@@ -30,20 +30,23 @@ echo "1. Prepared temp folder"
 
 # 2. Copy application files
 mkdir -p AppDir/usr/lib/flowkeeper
-mkdir -p AppDir/usr/share/icons/hicolor/1024x1024/apps
-mkdir -p AppDir/usr/share/icons/hicolor/48x48/apps
+mkdir -p AppDir/usr/share/icons/hicolor/{48x48,1024x1024}/apps
 mkdir -p AppDir/usr/share/metainfo
+mkdir -p AppDir/usr/share/applications
 cp -r ../dist/standalone/* AppDir/usr/lib/flowkeeper/
-cp ../res/flowkeeper.png AppDir/usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png
-cp ../flowkeeper-48x48.png AppDir/usr/share/icons/hicolor/48x48/apps/flowkeeper.png
+cp ../res/flowkeeper.png AppDir/usr/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png
+cp ../flowkeeper-48x48.png AppDir/usr/share/icons/hicolor/48x48/apps/org.flowkeeper.Flowkeeper.png
 cp ../scripts/linux/common/org.flowkeeper.Flowkeeper.metainfo.xml AppDir/usr/share/metainfo/org.flowkeeper.Flowkeeper.appdata.xml
 echo "2. Copied application files"
 
 # 3. Create a desktop shortcut
 export FK_AUTOSTART_ARGS=""
-< ../scripts/linux/common/flowkeeper.desktop envsubst > AppDir/org.flowkeeper.Flowkeeper.desktop
+< ../scripts/linux/common/org.flowkeeper.Flowkeeper.desktop envsubst > AppDir/usr/share/applications/org.flowkeeper.Flowkeeper.desktop
+cd AppDir
+ln -s usr/share/applications/org.flowkeeper.Flowkeeper.desktop org.flowkeeper.Flowkeeper.desktop
 echo "3. Created a desktop shortcut:"
-cat AppDir/org.flowkeeper.Flowkeeper.desktop
+cat org.flowkeeper.Flowkeeper.desktop
+cd ..
 
 # 4. Create AppRun symlink
 cd AppDir
@@ -53,7 +56,8 @@ echo "4. Created AppRun symlink"
 
 # 5. Create .DirIcon symlink
 cd AppDir
-ln -s usr/share/icons/hicolor/1024x1024/apps/flowkeeper.png ./.DirIcon
+ln -s usr/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png ./.DirIcon
+ln -s usr/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png ./org.flowkeeper.Flowkeeper.png
 cd ..
 echo "5. Create .DirIcon symlink"
 
