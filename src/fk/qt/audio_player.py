@@ -171,7 +171,7 @@ class AudioPlayer(QObject):
             logger.debug('Connected to seekableChanged')
 
     def _start_rest_sound(self, pomodoro: Pomodoro) -> None:
-        if self._audio_player is not None:
+        if self._audio_player is not None and pomodoro.is_resting():
             now = datetime.datetime.now(datetime.timezone.utc)
             elapsed_ms = round(pomodoro.get_elapsed_rest_duration(now) * 1000)
 
