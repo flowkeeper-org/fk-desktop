@@ -15,8 +15,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Callable, Tuple
 
-from PySide6.QtCore import Qt, QTimer, QPoint
-from PySide6.QtGui import QPixmap, QMouseEvent, QFont
+from PySide6.QtCore import Qt, QTimer, QPoint, QObject, QEvent
+from PySide6.QtGui import QPixmap, QMouseEvent, QFont, QMoveEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QSizePolicy, QWidget, QPushButton
 
 
@@ -45,6 +45,9 @@ class InfoOverlay(QFrame):
         self.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
         if arrow is None:
             self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+
+        if parent:
+            parent.installEventFilter(self)
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
@@ -93,6 +96,12 @@ class InfoOverlay(QFrame):
 
         self.move(absolute_position)
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.Move:
+            move_event: QMoveEvent = event
+            self.move(self.pos() + move_event.pos() - move_event.oldPos())
+        return False
+
     def get_text(self):
         return self._text
 
@@ -100,6 +109,8 @@ class InfoOverlay(QFrame):
         self.close()
 
     def close(self):
+        if self.parent():
+            self.parent().removeEventFilter(self)
         global INFO_OVERLAY_INSTANCE
         if self._timer is not None:
             self._timer.stop()
