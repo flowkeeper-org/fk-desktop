@@ -266,7 +266,7 @@ class Tutorial:
             workitems: WorkitemTableView = self._main_window.findChild(WorkitemTableView, "workitems_table")
             show_tutorial_overlay(self._main_window,
                                   f'9 / 11: {"We are very sorry that you had to void" if len(pomodoro) > 0 else "Congratulations! You successfully completed"} your first pomodoro. '
-                                  ('Note a little tick meaning an interruption.\n\n') if len(pomodoro) > 0 else 'Note how its icon changed.\n\n'
+                                  f'{"Note a little tick meaning an interruption" if len(pomodoro) > 0 else "Note how its icon changed"}.\n\n'
                                   'You might have heard a DING when that happened -- you can configure all Flowkeeper '
                                   'sounds in the Settings > Audio.\n\n'
                                   'Now try to complete another pomodoro, this time see what different buttons in that '
