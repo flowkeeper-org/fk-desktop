@@ -1,4 +1,4 @@
-### v1.0.1 (15 August 2025)
+### v1.0.1 (30 August 2025)
 
 This version addresses all known bugs that we had in GitHub:
 
@@ -11,6 +11,8 @@ This version addresses all known bugs that we had in GitHub:
 - Pin/unpin icon is visible on Wayland (#185).
 - Unhandled TypeError while clicking "Surprise me" button repeatedly (#188).
 - "Long break" keeps on triggering while it is deactivated in the configuration (#192).
+
+Also, Windows binaries are now compiled using Clang to reduce antivirus false positives.
 
 ### v1.0.0 (14 July 2025)
 
