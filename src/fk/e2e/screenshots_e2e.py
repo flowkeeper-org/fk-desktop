@@ -21,8 +21,8 @@ from fk.qt.workitem_tableview import WorkitemTableView
 from fk.tests.test_utils import random
 
 TEMP_FILENAME = './screenshots-e2e.txt'
-POMODORO_WORK_DURATION = 1  # seconds
-POMODORO_REST_DURATION = 1  # seconds
+POMODORO_WORK_DURATION = 3  # seconds
+POMODORO_REST_DURATION = 3  # seconds
 
 
 class ScreenshotE2eTest(AbstractE2eTest):
@@ -459,19 +459,20 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('09-light-theme')
 
         self.get_application().get_settings().set({
-            'Application.theme': 'mixed',
+            'Application.theme': 'dark',
             'Application.eyecandy_type': 'image',
             'Application.eyecandy_image': ':/img/bg.jpg',
             'Application.font_header_family': 'Quicksand Medium',
-            'Application.font_header_size': '32',
+            'Application.font_header_size': '40',
             'Application.font_main_family': 'Quicksand',
-            'Application.font_main_size': '12',
+            'Application.font_main_size': '10',
             'Application.show_toolbar': 'False',
+            'Application.show_left_toolbar': 'False',
         })
         await self.longer_pause()
         self.keypress(Qt.Key.Key_B, True)
         await self.instant_pause()
-        self.window().resize(QSize(500, 400))
+        self.window().resize(QSize(400, 400))
         await self.instant_pause()
         self.center_window()
         await self.instant_pause()
