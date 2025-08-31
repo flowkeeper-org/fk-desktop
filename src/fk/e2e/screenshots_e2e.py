@@ -462,11 +462,11 @@ class ScreenshotE2eTest(AbstractE2eTest):
             'Application.theme': 'dark',
             'Application.eyecandy_type': 'image',
             'Application.eyecandy_image': ':/img/bg.jpg',
-            'Application.font_header_family': 'Quicksand Medium',
-            'Application.font_header_size': '40',
+            'Application.font_header_family': 'Quicksand Light',
+            'Application.font_header_size': '28',
             'Application.font_main_family': 'Quicksand',
             'Application.font_main_size': '10',
-            'Application.show_toolbar': 'False',
+            'Application.show_toolbar': 'True',
             'Application.show_left_toolbar': 'False',
         })
         await self.longer_pause()
