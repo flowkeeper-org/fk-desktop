@@ -22,15 +22,20 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/19-main-dark-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/19-main-dark-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/14-stats-month-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/14-stats-month-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/16-work-summary-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/16-work-summary-window-border.png</image>
         </screenshot>
     </screenshots>
+
+    <branding>
+      <color type="primary" scheme_preference="light">#f6f5f4</color>
+      <color type="primary" scheme_preference="dark">#241f31</color>
+    </branding>
 
     <provides>
         <binary>flowkeeper</binary>
