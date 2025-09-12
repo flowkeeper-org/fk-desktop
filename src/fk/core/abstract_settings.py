@@ -120,6 +120,10 @@ def _show_for_flatpak(values: dict[str, str]) -> bool:
     return get_sandbox_type() == 'Flatpak'
 
 
+def _hide_for_sandbox(values: dict[str, str]) -> bool:
+    return get_sandbox_type() is None
+
+
 def _is_tiling_wm() -> bool:
     wm = _get_desktop()
     return ('hyprland' in wm
@@ -158,9 +162,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
-                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _always_show),
+                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
                 ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
-                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _always_show),
+                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _hide_for_sandbox),
                 ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _always_show),
                 ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
@@ -242,14 +246,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ], _always_show),
-                ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _always_show),
+                ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _never_show if is_wayland else _always_show),
                 ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
                                                                                        'minimal:Minimalistic (with context menu)'], _always_show),
                 ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'classic-dark', ['thin-light:Thin, light background',
                                                                                                 'thin-dark:Thin, dark background',
                                                                                                 'classic-light:Classic, light background',
                                                                                                 'classic-dark:Classic, dark background'], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _always_show),
+                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _never_show if is_wayland else _always_show),
                 ('Application.theme', 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
@@ -276,7 +280,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "gradient:Gradient",
                 ], _always_show),
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
-                ('Application.eyecandy_image', 'file', 'Background image', '', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                ('Application.eyecandy_image', 'file', 'Background image', ':/img/bg.jpg', ['*.png;*.jpg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
                 ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'NorseBeauty', ['NorseBeauty:NorseBeauty'], _show_for_gradient_eyecandy),
                 ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
@@ -466,4 +470,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     @abstractmethod
     def init_fonts(self):
+        pass
+
+    @abstractmethod
+    def init_appearance(self):
+        pass
+
+    @abstractmethod
+    def init_network_access(self):
         pass

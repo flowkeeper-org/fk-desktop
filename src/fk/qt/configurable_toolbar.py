@@ -43,7 +43,8 @@ class ConfigurableToolBar(QToolBar):
         self._actions.get_settings().set({
             'Application.show_toolbar': 'False'
         })
-        show_info_overlay("You can re-enable toolbar in Settings > Appearance",
+        show_info_overlay(self,
+                          "You can re-enable toolbar in Settings > Appearance",
                           self.mapToGlobal(pos),
                           ":/icons/info.png",
                           5)

@@ -147,8 +147,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self.showMessage("A series is done", "Enjoy a long rest", self._default_icon)
         elif new_mode == 'ready':
             if self._continue_workitem is not None:
-                self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
-            self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
+                self.setToolTip(f'Continue? ({self._continue_workitem.get_name()})')
+            self.showMessage("Ready", "Continue?", self._next_icon)
             self._timer_renderer.set_values(0, 1, None, None, 'ready')
             if self._timer_renderer.has_next_display():
                 self.paint()

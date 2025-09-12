@@ -56,7 +56,7 @@ QMainWindow, #StatsWindow, #FocusBackground {
     padding: 10px;
 }
 
-#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected {
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #workitems_table QLineEdit {
     color: $TABLE_TEXT_COLOR;
     background-color: $SELECTION_BG_COLOR;
     border: none;
@@ -171,4 +171,8 @@ InfoOverlay #overlay_text, #prev_button {
 #restFullscreenWidget #doNotShowAgainButton {
     color: #ffffff;
     background-color: #1a1a1a;
+}
+
+warning {
+    color: red;
 }
