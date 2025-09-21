@@ -319,6 +319,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
+                uid = workitem.get_uid()
+
                 dlg = InterruptionDialog(
                     self.parent(),
                     self._source_holder.get_source(),
@@ -330,7 +332,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     reason = f': {sanitize_user_input(dlg.get_reason())}' if dlg.get_reason() else ''
                     self._source_holder.get_source().execute(
                         AddInterruptionStrategy, [
-                            workitem.get_uid(),
+                            uid,
                             f'Pomodoro voided{reason}'])
                     self._source_holder.get_source().execute(
                         StopTimerStrategy,
@@ -342,6 +344,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         for backlog in self._source_holder.get_source().backlogs():
             workitem, _ = backlog.get_running_workitem()
             if workitem is not None:
+                uid = workitem.get_uid()
+
                 dlg = InterruptionDialog(
                     self.parent(),
                     self._source_holder.get_source(),
@@ -353,7 +357,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 def ok():
                     self._source_holder.get_source().execute(
                         AddInterruptionStrategy, [
-                            workitem.get_uid(),
+                            uid,
                             sanitize_user_input(dlg.get_reason())])
 
                 dlg.accepted.connect(ok)
