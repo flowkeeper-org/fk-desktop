@@ -16,7 +16,7 @@
 import re
 from html import escape
 
-from PySide6.QtCore import QSize, QObject, QModelIndex
+from PySide6.QtCore import QSize, QObject, QModelIndex, Qt
 from PySide6.QtGui import QStaticText, QPainter
 from PySide6.QtWidgets import QStyleOptionViewItem
 
@@ -49,18 +49,23 @@ class WorkitemTextDelegate(AbstractItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         is_placeholder = index.data(501) == 'drop'
+        is_category = index.data(501) == 'category'
         painter.save()
 
-        workitem: Workitem = index.data(500)
-        self.paint_background(painter, option, workitem.is_sealed())
+        if is_category:
+            self.paint_background(painter, option, False)
+            txt = index.data(503)
+            st = QStaticText(f'<strong style="color: red; text-align: right;">{txt}</strong>')
+            st.setTextOption(Qt.AlignmentFlag.AlignLeft)
+        else:
+            workitem: Workitem = index.data(500)
+            self.paint_background(painter, option, workitem.is_sealed())
+            st = QStaticText(self._format_html(workitem, is_placeholder))
 
-        st = QStaticText(self._format_html(workitem, is_placeholder))
         st.setTextWidth(option.rect.width())
-
         painter.drawStaticText(option.rect.left(),
                                option.rect.top() + get_padding(option),
                                st)
-
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:

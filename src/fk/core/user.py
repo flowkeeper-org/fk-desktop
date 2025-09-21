@@ -19,6 +19,7 @@ import datetime
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
+from fk.core.category import Category
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.tags import Tags
 from fk.core.timer_data import TimerData
@@ -27,6 +28,7 @@ from fk.core.timer_data import TimerData
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _tags: Tags
+    _root_category: Category
     _timer: TimerData
 
     def __init__(self,
@@ -38,6 +40,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
         self._tags = Tags(self)
+        self._root_category = Category('Root category', 'root', self, create_date)
         self._timer = TimerData(self, create_date)
 
     def __str__(self):
@@ -64,13 +67,16 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
+    def get_categories(self) -> Category:
+        return self._root_category
+
     def get_timer(self) -> TimerData:
         return self._timer
 
     def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
         return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
                f'{indent}  System user: {self._is_system_user}'
-        # TODO: Dump tags and timer
+        # TODO: Dump tags, timer and categories
 
     def to_dict(self) -> dict:
         d = super().to_dict()

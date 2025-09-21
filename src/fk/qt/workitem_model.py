@@ -15,12 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import logging
+import random
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFontMetrics, QStandardItem
+from PySide6.QtGui import QFontMetrics, QStandardItem, QColor
 from PySide6.QtWidgets import QApplication
 
+from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -167,6 +169,16 @@ class WorkitemPomodoro(QStandardItem):
         self.setData(self._format_tooltip(), Qt.ItemDataRole.ToolTipRole)
 
 
+class CategoryItem(QStandardItem):
+    def __init__(self, name: str, uid: str):
+        super().__init__()
+        self.setData('category', 501)
+        self.setData(uid, 502)
+        self.setData(name, 503)
+        self.setData(QColor('red'), Qt.ItemDataRole.ForegroundRole)
+        self.setFlags(Qt.ItemFlag.NoItemFlags)
+
+
 class WorkitemModel(AbstractDropModel):
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
@@ -300,6 +312,24 @@ class WorkitemModel(AbstractDropModel):
     def get_row_height(self):
         return self._row_height
 
+    def group_by_category(self, workitems: list[Workitem]) -> dict[str, list[Workitem]]:
+        res: dict[str, list[Workitem]] = dict()
+        res['Critical'] = list()
+        res['Important'] = list()
+        res['Unimportant'] = list()
+        res['Uncategorized'] = list()
+        for w in workitems:
+            r = random.randint(0, 3)
+            if r == 0:
+                res['Critical'].append(w)
+            elif r == 1:
+                res['Important'].append(w)
+            elif r == 2:
+                res['Unimportant'].append(w)
+            elif r == 3:
+                res['Uncategorized'].append(w)
+        return res
+
     def load(self, backlog_or_tag: Backlog | Tag) -> None:
         logger.debug(f'WorkitemModel.load({backlog_or_tag})')
         self.clear()
@@ -310,10 +340,17 @@ class WorkitemModel(AbstractDropModel):
             else:
                 workitems = sorted(backlog_or_tag.get_workitems(),
                                    key=lambda a: a.get_last_modified_date())
-            for workitem in workitems:
-                if self._hide_completed and workitem.is_sealed():
-                    continue
-                self.appendRow(self.item_for_object(workitem))
+            grouped = self.group_by_category(workitems)
+            for category in grouped.keys():
+                self.appendRow([
+                    CategoryItem(category, category),
+                    CategoryItem(category, category),
+                    CategoryItem(category, category)
+                ])
+                for workitem in grouped[category]:
+                    if self._hide_completed and workitem.is_sealed():
+                        continue
+                    self.appendRow(self.item_for_object(workitem))
         self.setHorizontalHeaderItem(0, QStandardItem(''))
         self.setHorizontalHeaderItem(1, QStandardItem(''))
         self.setHorizontalHeaderItem(2, QStandardItem(''))
