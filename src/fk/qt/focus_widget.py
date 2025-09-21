@@ -266,7 +266,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         if eyecandy_type == 'image':
             header_bg = self._settings.get('Application.eyecandy_image')
             if header_bg:
-                header_bg = self._settings.get('Application.eyecandy_image')
                 self._pixmap = QPixmap(header_bg)
             else:
                 self._pixmap = None
@@ -278,12 +277,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         painter = QPainter(self)
         eyecandy_type = self._settings.get('Application.eyecandy_type')
         if eyecandy_type == 'image':
-            if self._pixmap is not None:
-                img = self._pixmap
+            if self._pixmap is not None and self._pixmap.width() > 0:
                 painter.drawPixmap(
                     QPoint(0, 0),
-                    img.scaled(
-                        QSize(self.width(), self.width() * img.height() / img.width()),
+                    self._pixmap.scaled(
+                        QSize(self.width(), int(self.width() * self._pixmap.height() / self._pixmap.width())),
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
             gradient = self._settings.get('Application.eyecandy_gradient')
