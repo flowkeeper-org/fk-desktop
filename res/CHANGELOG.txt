@@ -1,3 +1,10 @@
+### v1.0.2 (22 September 2025)
+
+This version addresses a couple of new bugs, one of which is quite annoying:
+
+- Can't void a pomodoro or record an interruption in non-latest backlogs (#199, #195).
+- An occasional exception when waking up from sleep (#197).
+
 ### v1.0.1 (30 August 2025)
 
 This version addresses all known bugs that we had in GitHub:
