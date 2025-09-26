@@ -94,6 +94,9 @@ def randint(a: int, b: int) -> int:
 
 def random() -> float:
     # This is slow, but works correctly
+    sz = sys.maxsize
+    if sz == 0:
+        sz = 8  # This should never happen
     return secrets.randbits(int(8 * math.log(sys.maxsize, 256))) / sys.maxsize
 
 

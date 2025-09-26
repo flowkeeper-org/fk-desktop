@@ -57,6 +57,8 @@ class ClassicTimerRenderer(AbstractTimerRenderer):
         hue_to = 0 if invert_colors else 120
         pen_width = 2
 
+        if max_value == 0:
+            max_value = 1 # This should never happen
         my_hue = int((hue_to - hue_from) * value / max_value + hue_from)
         my_color_pen = QtGui.QPen(self._fg_color)
         my_color_pen.setWidth(pen_width)

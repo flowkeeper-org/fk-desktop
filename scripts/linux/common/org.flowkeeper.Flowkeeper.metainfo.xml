@@ -14,7 +14,10 @@
 
     <description>
         <p>
-            Flowkeeper is a Pomodoro timer with a &quot;classic&quot; cross-platform UI paradigm (desktop-first, no Electron). With its keyboard shortcuts and advanced settings, Flowkeeper is optimized for power users. It stays as close as possible to the Pomodoro Technique definition and format from the original book by Francesco Cirillo.
+            Flowkeeper is a Pomodoro timer with a &quot;classic&quot; cross-platform UI paradigm (desktop-first, no Electron).
+            With its keyboard shortcuts and advanced settings, Flowkeeper is optimized for power users. It stays as
+            close as possible to the Pomodoro Technique definition and format from the original book by Francesco
+            Cirillo.
         </p>
     </description>
 
@@ -22,34 +25,30 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/19-main-dark-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/19-main-dark-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/14-stats-month-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/14-stats-month-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.0/Linux/fulls/16-work-summary-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/16-work-summary-window-border.png</image>
         </screenshot>
     </screenshots>
+
+    <branding>
+      <color type="primary" scheme_preference="light">#f6f5f4</color>
+      <color type="primary" scheme_preference="dark">#241f31</color>
+    </branding>
 
     <provides>
         <binary>flowkeeper</binary>
     </provides>
 
     <releases>
-        <release version="1.0.0" date="2025-06-14">
+        <release version="1.0.2" date="2025-09-26">
             <description>
-                <p>Tracking unfocused time -- try to start a work item with no pomodoros (#94, #98).</p>
-                <p>Long breaks and working in series, see Settings > Series and breaks (#53).</p>
-                <p>Dragging work items between backlogs (#60).</p>
-                <p>Recording interruptions (#75).</p>
-                <p>Voided pomodoros are displayed as ticks, and completed ones are crossed out to better match the Book (#41, #92).</p>
-                <p>Import from CSV and GitHub, try Ctrl+I (#125).</p>
-                <p>Hovering over pomodoros displays a detailed log of your work (#93).</p>
-                <p>"Contact us" submenu to facilitate feedback collection (#111).</p>
-                <p>Flowkeeper window now hides automatically on auto-start (#102).</p>
-                <p>New font selector for macOS, which supports Apple system font (#113).</p>
-                <p>Resting music starts playing from the right position if we restart Flowkeeper.</p>
+                <p>Bugfix: Can't void a pomodoro or record an interruption in non-latest backlogs (#199, #195).</p>
+                <p>Bugfix: An occasional exception when waking up from sleep (#197).</p>
             </description>
         </release>
     </releases>
