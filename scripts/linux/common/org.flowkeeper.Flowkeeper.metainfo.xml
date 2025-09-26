@@ -14,7 +14,10 @@
 
     <description>
         <p>
-            Flowkeeper is a Pomodoro timer with a &quot;classic&quot; cross-platform UI paradigm (desktop-first, no Electron). With its keyboard shortcuts and advanced settings, Flowkeeper is optimized for power users. It stays as close as possible to the Pomodoro Technique definition and format from the original book by Francesco Cirillo.
+            Flowkeeper is a Pomodoro timer with a &quot;classic&quot; cross-platform UI paradigm (desktop-first, no Electron).
+            With its keyboard shortcuts and advanced settings, Flowkeeper is optimized for power users. It stays as
+            close as possible to the Pomodoro Technique definition and format from the original book by Francesco
+            Cirillo.
         </p>
     </description>
 
@@ -22,13 +25,13 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/19-main-dark-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.2/Linux/fulls/19-main-dark-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/14-stats-month-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.2/Linux/fulls/14-stats-month-window-border.png</image>
         </screenshot>
         <screenshot>
-            <image>https://flowkeeper.org/images/releases/v1.0.1/Linux/fulls/16-work-summary-window-border.png</image>
+            <image>https://flowkeeper.org/images/releases/v1.0.2/Linux/fulls/16-work-summary-window-border.png</image>
         </screenshot>
     </screenshots>
 
@@ -42,7 +45,7 @@
     </provides>
 
     <releases>
-        <release version="1.0.2" date="2025-09-22">
+        <release version="1.0.2" date="2025-09-26">
             <description>
                 <p>Bugfix: Can't void a pomodoro or record an interruption in non-latest backlogs (#199, #195).</p>
                 <p>Bugfix: An occasional exception when waking up from sleep (#197).</p>

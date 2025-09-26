@@ -1,4 +1,4 @@
-### v1.0.2 (22 September 2025)
+### v1.0.2 (26 September 2025)
 
 This version addresses a couple of new bugs, one of which is quite annoying:
 
