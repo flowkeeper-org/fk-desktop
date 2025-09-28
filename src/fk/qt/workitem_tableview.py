@@ -29,7 +29,7 @@ from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
 from fk.core.timer_data import TimerData
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy
+from fk.core.workitem_strategies import DeleteWorkitemStrategy, CreateWorkitemStrategy, RestoreWorkitemStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
@@ -145,6 +145,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             actions['workitems_table.removePomodoro'],
             actions['workitems_table.hideCompleted'],
             actions['workitems_table.completeItem'],
+            actions['workitems_table.restoreItem'],
         ])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda p: menu.exec(self.mapToGlobal(p)))
@@ -157,6 +158,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         actions.add('workitems_table.deleteItem', "Delete Item", 'Del', "tool-delete", WorkitemTableView.delete_selected_workitem)
         actions.add('workitems_table.startItem', "Start Item", 'Ctrl+S', "tool-start-item", WorkitemTableView.start_selected_workitem)
         actions.add('workitems_table.completeItem', "Complete Item", 'Ctrl+P', "tool-complete-item", WorkitemTableView.complete_selected_workitem)
+        actions.add('workitems_table.restoreItem', "Undo Completion", 'Ctrl+P', "tool-restore-item", WorkitemTableView.restore_selected_workitem)
         actions.add('workitems_table.addPomodoro', "Add Pomodoro", 'Ctrl++', "tool-add-pomodoro", WorkitemTableView.add_pomodoro)
         actions.add('workitems_table.removePomodoro', "Remove Pomodoro", 'Ctrl+-', "tool-remove-pomodoro", WorkitemTableView.remove_pomodoro)
         actions.add('workitems_table.hideCompleted',
@@ -173,21 +175,27 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         self._actions['workitems_table.newItem'].setEnabled(is_backlog)
         self._resize()
 
+    def _enable_action(self, name: str, is_enabled: bool) -> None:
+        self._actions[name].setEnabled(is_enabled)
+        self._actions[name].setVisible(is_enabled)
+
     def update_actions(self, selected: Workitem | None) -> None:
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
         is_workitem_selected = selected is not None
         is_workitem_editable = is_workitem_selected and not selected.is_sealed()
+        is_workitem_sealed = is_workitem_selected and selected.is_sealed()
         is_tracker = is_workitem_selected and selected.is_tracker()
-        self._actions['workitems_table.deleteItem'].setEnabled(is_workitem_selected)
-        self._actions['workitems_table.renameItem'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.startItem'].setEnabled(is_workitem_editable
-                                                              and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
-                                                              and self._source.get_data().get_current_user().get_timer().is_idling())
-        self._actions['workitems_table.completeItem'].setEnabled(is_workitem_editable)
-        self._actions['workitems_table.addPomodoro'].setEnabled(is_workitem_editable and not is_tracker)
-        self._actions['workitems_table.removePomodoro'].setEnabled(is_workitem_editable
+        self._enable_action('workitems_table.deleteItem', is_workitem_selected)
+        self._enable_action('workitems_table.renameItem', is_workitem_editable)
+        self._enable_action('workitems_table.completeItem', is_workitem_editable)
+        self._enable_action('workitems_table.restoreItem', is_workitem_sealed)
+        self._enable_action('workitems_table.addPomodoro', is_workitem_editable and not is_tracker)
+        self._enable_action('workitems_table.removePomodoro', is_workitem_editable
                                                                    and selected.is_startable()
                                                                    and not is_tracker)
+        self._enable_action('workitems_table.startItem', is_workitem_editable
+                                                              and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
+                                                              and self._source.get_data().get_current_user().get_timer().is_idling())
 
     # Actions
 
@@ -244,6 +252,13 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
     def complete_selected_workitem(self) -> None:
         selected: Workitem = self.get_current()
         complete_item(selected, self, self._source)
+
+    def restore_selected_workitem(self) -> None:
+        selected: Workitem = self.get_current()
+        if selected is None:
+            raise Exception("Trying to restore a workitem, while there's none selected")
+        if selected.is_sealed():
+            self._source.execute(RestoreWorkitemStrategy, [selected.get_uid()])
 
     def add_pomodoro(self) -> None:
         selected: Workitem = self.get_current()

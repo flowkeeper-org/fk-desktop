@@ -36,7 +36,6 @@ from fk.desktop.application import Application, AfterFontsChanged
 from fk.desktop.interruption_dialog import InterruptionDialog
 from fk.qt.actions import Actions
 from fk.qt.timer_widget import TimerWidget
-from PySide6.QtCore import QFile #debug
 
 logger = logging.getLogger(__name__)
 DISPLAY_HEIGHT = 80
@@ -49,12 +48,11 @@ def complete_item(item: Workitem, parent: QWidget, source: AbstractEventSource) 
             or item.is_tracker()
             or item.get_running_pomodoro().is_long_break()
             or QMessageBox().warning(
-            parent,
-            "Confirmation",
-            f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
-            QMessageBox.StandardButton.Ok,
-            QMessageBox.StandardButton.Cancel
-    ) == QMessageBox.StandardButton.Ok):
+                parent,
+                "Confirmation",
+                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
+                QMessageBox.StandardButton.Ok,
+                QMessageBox.StandardButton.Cancel) == QMessageBox.StandardButton.Ok):
         source.execute(CompleteWorkitemStrategy, [item.get_uid(), "finished"])
 
 
@@ -404,7 +402,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         })
 
 
-        
     def _complete_item(self) -> None:
         item = self.timer.get_running_workitem()
         complete_item(item, self, self._source_holder.get_source())

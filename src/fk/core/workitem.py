@@ -107,6 +107,13 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
         else:
             raise Exception(f'Invalid workitem state: {target_state}')
 
+    def restore(self) -> None:
+        if self.is_sealed():
+            self._state = 'running' if len(self._intervals) > 0 else 'new'
+            self._date_work_ended = None
+        else:
+            raise Exception(f'Invalid workitem state: {self._state}')
+
     def add_pomodoro(self,
                      num_pomodoros: int,
                      default_work_duration: float,

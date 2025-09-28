@@ -37,7 +37,7 @@ from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
-    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy
+    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy, RestoreWorkitemStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -369,6 +369,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Create workitems on the first reference. All those strategies assume an existing workitem.
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
+                    t is RestoreWorkitemStrategy or \
                     t is MoveWorkitemStrategy or \
                     t is ReorderWorkitemStrategy or \
                     t is StartWorkStrategy or \

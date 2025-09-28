@@ -27,7 +27,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
-    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder, AfterWorkitemMove
+    AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder, AfterWorkitemMove, AfterWorkitemRestore
 from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
@@ -224,6 +224,7 @@ class WorkitemModel(AbstractDropModel):
         source.on(AfterWorkitemReorder, self._workitem_reordered)
         source.on(AfterWorkitemMove, self._workitem_moved)
         source.on(AfterWorkitemComplete, self._workitem_changed)
+        source.on(AfterWorkitemRestore, self._workitem_changed)
         source.on(AfterWorkitemStart, self._workitem_changed)
         source.on('AfterPomodoro*',
                   lambda **kwargs: self._workitem_changed(

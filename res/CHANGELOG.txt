@@ -2,6 +2,7 @@
 
 - Full-screen rest notifications (#67).
 - Mute button for the focus mode (#151).
+- Undo item completion (#xxx).
 
 - Sections in the task list (#112, #177).
 - Hide and pin backlogs (#123).

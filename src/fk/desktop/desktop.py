@@ -468,6 +468,7 @@ if __name__ == "__main__":
             workitems_menu.addAction(actions['workitems_table.deleteItem'])
             workitems_menu.addAction(actions['workitems_table.startItem'])
             workitems_menu.addAction(actions['workitems_table.completeItem'])
+            workitems_menu.addAction(actions['workitems_table.restoreItem'])
             workitems_menu.addSeparator()
             workitems_menu.addAction(actions['workitems_table.addPomodoro'])
             workitems_menu.addAction(actions['workitems_table.removePomodoro'])

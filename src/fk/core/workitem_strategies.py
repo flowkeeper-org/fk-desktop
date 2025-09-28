@@ -302,6 +302,49 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
         emit(events.AfterWorkitemComplete, params, self._carry)
 
 
+# RestoreWorkitem("123-456-789")
+@strategy
+class RestoreWorkitemStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
+    def requires_sealing(self) -> bool:
+        return True
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        workitem: Workitem | None = None
+        user: User = data[self._user_identity]
+        for backlog in user.values():
+            if self._workitem_uid in backlog:
+                workitem = backlog[self._workitem_uid]
+                break
+
+        if workitem is None:
+            raise Exception(f'Workitem "{self._workitem_uid}" not found')
+
+        if not workitem.is_sealed():
+            raise Exception(f'Cannot restore a workitem which is not sealed "{self._workitem_uid}"')
+
+        emit(events.BeforeWorkitemRestore, {'workitem': workitem}, self._carry)
+        workitem.restore()
+        workitem.item_updated(self._when)
+        emit(events.AfterWorkitemRestore, {'workitem': workitem}, self._carry)
+
+
 # ReorderWorkitem("123-456-789", "0")
 @strategy
 class ReorderWorkitemStrategy(AbstractStrategy[Tenant]):

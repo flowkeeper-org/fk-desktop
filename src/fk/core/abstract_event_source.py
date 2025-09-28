@@ -75,6 +75,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterWorkitemCreate,
             events.BeforeWorkitemComplete,
             events.AfterWorkitemComplete,
+            events.BeforeWorkitemRestore,
+            events.AfterWorkitemRestore,
             events.BeforeWorkitemStart,
             events.AfterWorkitemStart,
             events.BeforeWorkitemDelete,
