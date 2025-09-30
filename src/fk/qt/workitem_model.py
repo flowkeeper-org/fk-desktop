@@ -19,10 +19,9 @@ import random
 
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFontMetrics, QStandardItem, QColor
+from PySide6.QtGui import QFontMetrics, QStandardItem, QBrush
 from PySide6.QtWidgets import QApplication
 
-from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -32,7 +31,7 @@ from fk.core.pomodoro import POMODORO_TYPE_TRACKER, Pomodoro
 from fk.core.tag import Tag
 from fk.core.workitem import Workitem
 from fk.core.workitem_strategies import RenameWorkitemStrategy, ReorderWorkitemStrategy
-from fk.qt.abstract_drop_model import AbstractDropModel
+from fk.qt.abstract_drop_model import AbstractDropModel, StubItem
 
 logger = logging.getLogger(__name__)
 
@@ -170,19 +169,26 @@ class WorkitemPomodoro(QStandardItem):
 
 
 class CategoryItem(QStandardItem):
-    def __init__(self, name: str, uid: str):
+    def __init__(self, name: str, uid: str, font: QtGui.QFont):
         super().__init__()
         self.setData('category', 501)
         self.setData(uid, 502)
         self.setData(name, 503)
-        self.setData(QColor('red'), Qt.ItemDataRole.ForegroundRole)
         self.setFlags(Qt.ItemFlag.NoItemFlags)
+        self.setData(name, Qt.ItemDataRole.DisplayRole)
+        self.setData(name, Qt.ItemDataRole.ToolTipRole)
+        self.setForeground(QBrush('white'))
+        self.update_font(font)
+
+    def update_font(self, font: QtGui.QFont):
+        self.setData(font, Qt.ItemDataRole.FontRole)
 
 
 class WorkitemModel(AbstractDropModel):
     _font_new: QtGui.QFont
     _font_running: QtGui.QFont
     _font_sealed: QtGui.QFont
+    _font_category: QtGui.QFont
     _backlog_or_tag: Backlog | Tag | None
     _row_height: int
     _hide_completed: bool
@@ -194,6 +200,9 @@ class WorkitemModel(AbstractDropModel):
         # self._font_running.setWeight(QtGui.QFont.Weight.Bold)
         self._font_sealed = QtGui.QFont()
         self._font_sealed.setStrikeOut(True)
+        self._font_category = QtGui.QFont()
+        self._font_category.setBold(True)
+        self._font_category.setUnderline(True)
         self._backlog_or_tag = None
         settings = source_holder.get_settings()
         self._hide_completed = (settings.get('Application.hide_completed') == 'True')
@@ -318,7 +327,6 @@ class WorkitemModel(AbstractDropModel):
         res['Critical'] = list()
         res['Important'] = list()
         res['Unimportant'] = list()
-        res['Uncategorized'] = list()
         for w in workitems:
             r = random.randint(0, 3)
             if r == 0:
@@ -327,8 +335,6 @@ class WorkitemModel(AbstractDropModel):
                 res['Important'].append(w)
             elif r == 2:
                 res['Unimportant'].append(w)
-            elif r == 3:
-                res['Uncategorized'].append(w)
         return res
 
     def load(self, backlog_or_tag: Backlog | Tag) -> None:
@@ -344,9 +350,9 @@ class WorkitemModel(AbstractDropModel):
             grouped = self.group_by_category(workitems)
             for category in grouped.keys():
                 self.appendRow([
-                    CategoryItem(category, category),
-                    CategoryItem(category, category),
-                    CategoryItem(category, category)
+                    StubItem(),
+                    CategoryItem(category, category, self._font_category),
+                    CategoryItem(category, category, self._font_category)
                 ])
                 for workitem in grouped[category]:
                     if self._hide_completed and workitem.is_sealed():

@@ -55,7 +55,7 @@ class WorkitemTextDelegate(AbstractItemDelegate):
         if is_category:
             self.paint_background(painter, option, False)
             txt = index.data(503)
-            st = QStaticText(f'<strong style="color: red; text-align: right;">{txt}</strong>')
+            st = QStaticText(f'<strong style="color: white; text-align: right;">{txt}</strong>')
             st.setTextOption(Qt.AlignmentFlag.AlignLeft)
         else:
             workitem: Workitem = index.data(500)

@@ -45,6 +45,13 @@ class DropPlaceholderItem(QStandardItem):
                       Qt.ItemFlag.ItemIsDropEnabled)
 
 
+class StubItem(QStandardItem):
+    def __init__(self):
+        super().__init__()
+        self.setData('stub', 501)
+        self.setFlags(Qt.ItemFlag.NoItemFlags)
+
+
 class AbstractDropModel(QStandardItemModel):
     _source_holder: EventSourceHolder
     dragging: QModelIndex | None
