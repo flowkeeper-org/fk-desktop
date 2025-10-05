@@ -69,6 +69,13 @@ TagCreated = "TagCreated"
 TagDeleted = "TagDeleted"
 TagContentChanged = "TagContentChanged"
 
+BeforeCategoryCreate = "BeforeCategoryCreate"
+AfterCategoryCreate = "AfterCategoryCreate"
+BeforeCategoryDelete = "BeforeCategoryDelete"
+AfterCategoryDelete = "AfterCategoryDelete"
+BeforeCategoryRename = "BeforeCategoryRename"
+AfterCategoryRename = "AfterCategoryRename"
+
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"
 

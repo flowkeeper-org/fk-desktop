@@ -67,8 +67,20 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
-    def get_categories(self) -> Category:
+    def get_root_category(self) -> Category:
         return self._root_category
+
+    def find_category_by_id(self, category_id, parent_category: Category = None) -> Category|None:
+        if parent_category is None:
+            parent_category = self._root_category
+        if parent_category is not None:
+            if parent_category.get_uid() == category_id:
+                return parent_category
+            for child_category in parent_category.values():
+                found = self.find_category_by_id(category_id, child_category)
+                if found is not None:
+                    return found
+        return None
 
     def get_timer(self) -> TimerData:
         return self._timer

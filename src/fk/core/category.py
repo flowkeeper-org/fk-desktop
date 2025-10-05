@@ -33,7 +33,6 @@ class Category(AbstractDataContainer['Category', 'Category|User']):
                          uid=uid,
                          parent=parent,
                          create_date=create_date)
-        self._children = dict[str, Category]()
 
     def __str__(self):
         return f'Category {self.get_uid()} - {self._name}'
