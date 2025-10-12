@@ -148,6 +148,10 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
             raise Exception(f'Backlog "{self._backlog_uid}" not found')
         backlog = user[self._backlog_uid]
 
+        if self._backlog_new_name == backlog.get_name():
+            # Nothing to do here
+            return
+
         params = {
             'backlog': backlog,
             'old_name': backlog.get_name(),

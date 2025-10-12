@@ -109,3 +109,6 @@ class AbstractDataItem(ABC, Generic[TParent]):
             del self._parent[self._uid]
             new_parent[self._uid] = self
         self._parent = new_parent
+
+    def __eq__(self, other: 'AbstractDataItem') -> bool:
+        return isinstance(other, AbstractDataItem) and self._uid == other._uid

@@ -153,6 +153,11 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
 
         user: User = data[self._target_user_identity]
         old_name = user.get_name()
+
+        if self._new_user_name == old_name:
+            # Nothing to do here
+            return
+
         params = {
             'user': user,
             'old_name': old_name,

@@ -23,6 +23,7 @@ from fk.core.abstract_data_container import AbstractDataContainer
 logger = logging.getLogger(__name__)
 
 
+# TODO: Do not allow delimiters in category names
 class Category(AbstractDataContainer['Category', 'Category|User']):
     def __init__(self,
                  name: str,

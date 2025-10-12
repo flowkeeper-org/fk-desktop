@@ -70,7 +70,7 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_root_category(self) -> Category:
         return self._root_category
 
-    def find_category_by_id(self, category_id, parent_category: Category = None) -> Category|None:
+    def find_category_by_id(self, category_id, parent_category: Category = None, raise_if_not_found: bool = False) -> Category|None:
         if parent_category is None:
             parent_category = self._root_category
         if parent_category is not None:
@@ -80,7 +80,10 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
                 found = self.find_category_by_id(category_id, child_category)
                 if found is not None:
                     return found
-        return None
+        if raise_if_not_found:
+            raise KeyError(f'No category with id {category_id} found')
+        else:
+            return None
 
     def get_timer(self) -> TimerData:
         return self._timer

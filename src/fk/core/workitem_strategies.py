@@ -20,6 +20,8 @@ from fk.core import events
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
+from fk.core.category import Category
+from fk.core.category_strategies import resolve_categories
 from fk.core.pomodoro_strategies import AddInterruptionStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tag import Tag
@@ -35,6 +37,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
     _workitem_uid: str
     _backlog_uid: str
     _workitem_name: str
+    _categories: str
 
     def get_backlog_uid(self) -> str:
         return self._backlog_uid
@@ -53,6 +56,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
+        self._categories = params[3]    # TODO: Allow 4 parameters
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
@@ -65,6 +69,8 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         if self._workitem_uid in backlog:
             raise Exception(f'Workitem "{self._workitem_uid}" already exists')
 
+        categories = resolve_categories(self._categories, user)
+
         emit(events.BeforeWorkitemCreate, {
             'backlog_uid': self._backlog_uid,
             'workitem_uid': self._workitem_uid,
@@ -75,6 +81,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
             self._workitem_uid,
             backlog,
             self._when,
+            categories,
         )
         backlog[self._workitem_uid] = workitem
         workitem.item_updated(self._when)   # This will also update the Backlog
@@ -447,3 +454,53 @@ class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
         old_backlog.item_updated(self._when)
         workitem.item_updated(self._when)   # Update Backlog
         emit(events.AfterWorkitemMove, params, self._carry)
+
+
+# UpdateWorkitemCategories("123-456-789", "remove1;remove2;remove3", "add1;add2;add3")
+@strategy
+class UpdateWorkitemCategoriesStrategy(AbstractStrategy[Tenant]):
+    _workitem_uid: str
+    _to_remove: str
+    _to_add: str
+
+    def get_workitem_uid(self) -> str:
+        return self._workitem_uid
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._workitem_uid = params[0]
+        self._to_remove = params[1]
+        self._to_add = params[2]
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        workitem: Workitem | None = None
+        user: User = data[self._user_identity]
+        for backlog in user.values():
+            if self._workitem_uid in backlog:
+                workitem = backlog[self._workitem_uid]
+                break
+
+        if workitem is None:
+            raise Exception(f'Workitem "{self._workitem_uid}" not found')
+
+        to_add: set[Category] = resolve_categories(self._to_add, user)
+        to_remove: set[Category] = resolve_categories(self._to_remove, user)
+        existing: set[Category] = workitem.get_categories()
+
+        if len(existing.intersection(to_add)) > 0:
+            raise Exception(f'Trying to add duplicate categories to workitem "{self._workitem_uid}"')
+
+        if len(to_remove.difference(existing)) > 0:
+            raise Exception(f'Trying to remove non-existing categories from workitem "{self._workitem_uid}"')
+
+        workitem.set_categories(existing.difference(to_remove).union(to_add))
+
+        # TODO: Flesh it out

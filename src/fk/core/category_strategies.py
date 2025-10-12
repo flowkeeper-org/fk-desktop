@@ -25,6 +25,16 @@ from fk.core.tenant import Tenant
 from fk.core.user import User
 
 
+def parse_categories(param: str) -> set[str]:
+    if param:
+        return set(param.split(';'))
+    return set()
+
+
+def resolve_categories(param: str, user: User) -> set[Category]:
+    return set([user.find_category_by_id(s, raise_if_not_found=True) for s in parse_categories(param)])
+
+
 # CreateCategory("123-456-789", "234-567-890", "Important")
 @strategy
 class CreateCategoryStrategy(AbstractStrategy[Tenant]):
@@ -141,6 +151,12 @@ class RenameCategoryStrategy(AbstractStrategy[Tenant]):
         category = user.find_category_by_id(self._category_uid)
         if category is None:
             raise Exception(f'Category "{self._category_uid}" not found')
+        if category.is_root():
+            raise Exception(f'Cannot rename root category')
+
+        if self._category_new_name == category.get_name():
+            # Nothing to do here
+            return
 
         params = {
             'category': category,

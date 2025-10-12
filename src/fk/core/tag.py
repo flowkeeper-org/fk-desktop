@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Set
 
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.workitem import Workitem
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class Tag(AbstractDataItem['Tags']):
-    _workitems: Set[Workitem]
+    _workitems: set[Workitem]
 
     def __init__(self,
                  name: str,
@@ -40,7 +39,7 @@ class Tag(AbstractDataItem['Tags']):
     def __str__(self):
         return f'#{self.get_uid()}'
 
-    def get_workitems(self) -> Set[Workitem]:
+    def get_workitems(self) -> set[Workitem]:
         return self._workitems
 
     def add_workitem(self, workitem: Workitem) -> None:
