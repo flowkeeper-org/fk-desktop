@@ -19,7 +19,7 @@ import datetime
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
-from fk.core.category import Category
+from fk.core.category import Category, create_system_categories
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
 from fk.core.tags import Tags
 from fk.core.timer_data import TimerData
@@ -40,7 +40,8 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
         self._tags = Tags(self)
-        self._root_category = Category('Root category', 'root', self, create_date)
+        self._root_category = Category('Root category', '#root', True, self, create_date)
+        create_system_categories(self._root_category, create_date)
         self._timer = TimerData(self, create_date)
 
     def __str__(self):

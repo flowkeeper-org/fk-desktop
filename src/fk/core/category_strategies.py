@@ -72,9 +72,10 @@ class CreateCategoryStrategy(AbstractStrategy[Tenant]):
             'parent_category': parent_category,
             'category_uid': self._category_uid,
         }, self._carry)
-        category = Category(self._category_name, self._category_uid, parent_category, self._when)
+        category = Category(self._category_name, self._category_uid, False, parent_category, self._when)
         parent_category[self._category_uid] = category
         category.item_updated(self._when)    # This will also update parent Category and User
+        print('Emitting')
         emit(events.AfterCategoryCreate, {
             'category': category
         }, self._carry)
@@ -167,3 +168,41 @@ class RenameCategoryStrategy(AbstractStrategy[Tenant]):
         category.set_name(self._category_new_name)
         category.item_updated(self._when)
         emit(events.AfterCategoryRename, params, self._carry)
+
+
+# ReorderCategory("123-456-789", "0")
+@strategy
+class ReorderCategoryStrategy(AbstractStrategy[Tenant]):
+    _category_uid: str
+    _new_index: int
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._category_uid = params[0]
+        self._new_index = int(params[1])
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        user: User = data[self._user_identity]
+
+        category: Category = user.find_category_by_id(self._category_uid)
+        if category is None:
+            raise Exception(f'Category "{self._category_uid}" not found')
+        if category.is_root():
+            raise Exception(f'Cannot reorder root category')
+
+        params = {
+            'category': category,
+            'new_index': self._new_index,
+        }
+        emit(events.BeforeCategoryReorder, params, self._carry)
+        category.get_parent().move_child(category, self._new_index)
+        category.item_updated(self._when)
+        emit(events.AfterCategoryReorder, params, self._carry)

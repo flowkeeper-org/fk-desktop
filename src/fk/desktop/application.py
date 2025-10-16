@@ -50,6 +50,7 @@ from fk.core.integration_executor import IntegrationExecutor
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.sandbox import get_sandbox_type
 from fk.core.tenant import Tenant
+from fk.desktop.categories_window import CategoriesWindow
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
@@ -97,7 +98,7 @@ class Application(QApplication, AbstractEventEmitter):
 
     upgraded = Signal(Version)
 
-    def __init__(self, args: [str]):
+    def __init__(self, args: list[str]):
         super().__init__(args,
                          allowed_events=[AfterFontsChanged, NewReleaseAvailable],
                          callback_invoker=invoke_in_main_thread)
@@ -654,6 +655,11 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Pomodoro health", 'F9', None, Application.show_stats)
         actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
+        actions.add('application.manageCategories',
+                    "Manage categories",
+                    'F5',
+                    None,
+                    Application.show_categories)
 
         def contact(url: str) -> Callable:
             return lambda _: open_url(url)
@@ -708,6 +714,12 @@ class Application(QApplication, AbstractEventEmitter):
 
     def show_work_summary(self, event: str = None) -> None:
         WorkSummaryWindow(self.activeWindow(), self._source_holder.get_source()).show()
+
+    def show_categories(self, event: str = None) -> None:
+        CategoriesWindow(self.activeWindow(),
+                         self._source_holder,
+                         self,
+                         Actions.ALL).show()
 
     def on_new_version(self, event: str, current: Version, latest: Version, changelog: str) -> None:
         ignored = self._settings.get('Application.ignored_updates').split(',')

@@ -50,16 +50,20 @@ QMainWindow, #StatsWindow, #FocusBackground {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget {
+#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget, #categories_table, #categories_widget, #categories_breadcrumbs {
     color: $TABLE_TEXT_COLOR;
     border: none;
     padding: 10px;
 }
 
-#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #workitems_table QLineEdit {
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #categories_table::item:selected, #workitems_table QLineEdit {
     color: $TABLE_TEXT_COLOR;
     background-color: $SELECTION_BG_COLOR;
     border: none;
+}
+
+#categories_breadcrumbs {
+    padding-bottom: 0px;
 }
 
 #users_table, #tags_table {
@@ -67,7 +71,7 @@ QMainWindow, #StatsWindow, #FocusBackground {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#backlogs_table, #users_table, #tags_table, #backlogs_widget {
+#backlogs_table, #users_table, #tags_table, #backlogs_widget, #categories_table, #categories_widget {
     background-color: $SECONDARY_BG_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }

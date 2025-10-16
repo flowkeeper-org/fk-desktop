@@ -112,3 +112,6 @@ class AbstractDataItem(ABC, Generic[TParent]):
 
     def __eq__(self, other: 'AbstractDataItem') -> bool:
         return isinstance(other, AbstractDataItem) and self._uid == other._uid
+
+    def __hash__(self):
+        return hash(self._uid)

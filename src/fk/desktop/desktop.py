@@ -37,9 +37,11 @@ from fk.qt.actions import Actions
 from fk.qt.audio_player import AudioPlayer
 from fk.qt.backlog_tableview import BacklogTableView
 from fk.qt.backlog_widget import BacklogWidget
+from fk.qt.category_tableview import CategoryTableView
 from fk.qt.connection_widget import ConnectionWidget
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.progress_widget import ProgressWidget
+from fk.qt.qt_settings import QtSettings
 from fk.qt.qt_timer import QtTimer
 from fk.qt.render.classic_timer_renderer import ClassicTimerRenderer
 from fk.qt.render.minimal_timer_renderer import MinimalTimerRenderer
@@ -76,7 +78,7 @@ def pin_if_needed(always_on_top_setting: str):
         focus_window.show()
 
 
-def to_focus_mode(**kwargs) -> None:
+def to_focus_mode(**_) -> None:
     logger.debug('Switching to focus mode')
 
     was_already_hidden = window.isHidden()
@@ -199,17 +201,20 @@ class MainWindow:
     def __init__(self):
         super().__init__()
 
-    def toggle_focus_mode(self, state: bool):
+    @staticmethod
+    def toggle_focus_mode(state: bool):
         if state:
             to_focus_mode()
         else:
             from_focus_mode()
 
-    def toggle_pin_window(self, state: bool):
+    @staticmethod
+    def toggle_pin_window(state: bool):
         is_checked: bool = 'window.pinWindow' in actions and actions['window.pinWindow'].isChecked()
         settings.set({'Application.always_on_top': str(is_checked)})
 
-    def toggle_main_window(self):
+    @staticmethod
+    def toggle_main_window():
         if window.isVisible():
             # If main window is visible, then focus widget must be in it,
             # then it's enough to just hide the main window
@@ -228,10 +233,12 @@ class MainWindow:
                 else:
                     raise Exception("Focus widget is detached, this should never happen. Please open a bug in GitHub.")
 
-    def show_search(self):
+    @staticmethod
+    def show_search():
         search.show()
 
-    def show_tutorial(self):
+    @staticmethod
+    def show_tutorial():
         global tutorial
         tutorial = Tutorial(app.get_source_holder(), settings, window, focus_window)
 
@@ -244,39 +251,41 @@ class MainWindow:
             wizard.closed.connect(self.show_tutorial)
             wizard.show()
 
-    def toggle_backlogs(self, enabled):
+    @staticmethod
+    def toggle_backlogs(enabled):
         settings.set({'Application.backlogs_visible': str(enabled)})
 
-    def toggle_users(self, enabled):
+    @staticmethod
+    def toggle_users(enabled):
         settings.set({'Application.users_visible': str(enabled)})
 
     @staticmethod
-    def define_actions(actions: Actions):
-        actions.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
-        actions.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
-        actions.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
+    def define_actions(a: Actions):
+        a.add('window.focusMode', "Focus Mode", None, ("tool-show-timer-only", "tool-show-all"), MainWindow.toggle_focus_mode, True)
+        a.add('window.showMainWindow', "Show / Hide Main Window", None, "tool-show-timer-only", MainWindow.toggle_main_window)
+        a.add('window.showSearch', "Search...", 'Ctrl+F', '', MainWindow.show_search)
 
         is_wayland = QGuiApplication.platformName() == 'wayland'
         if not is_wayland:
-            actions.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
+            a.add('window.pinWindow', "Pin Flowkeeper", None, "tool-pin", MainWindow.toggle_pin_window, True)
 
-        backlogs_were_visible = (actions.get_settings().get('Application.backlogs_visible') == 'True')
-        actions.add('window.showBacklogs',
+        backlogs_were_visible = (a.get_settings().get('Application.backlogs_visible') == 'True')
+        a.add('window.showBacklogs',
                     "Show / Hide Backlogs",
                     'Ctrl+B',
-                    ('tool-left-close', 'tool-left-open'),
-                    MainWindow.toggle_backlogs,
-                    True,
-                    backlogs_were_visible)
+              ('tool-left-close', 'tool-left-open'),
+              MainWindow.toggle_backlogs,
+              True,
+              backlogs_were_visible)
 
-        users_were_visible = (actions.get_settings().get('Application.users_visible') == 'True')
-        actions.add('window.showUsers',
+        users_were_visible = (a.get_settings().get('Application.users_visible') == 'True')
+        a.add('window.showUsers',
                     "Team",
                     'Ctrl+T',
                     'tool-teams',
-                    MainWindow.toggle_users,
-                    True,
-                    actions.get_settings().is_team_supported() and users_were_visible)
+              MainWindow.toggle_users,
+              True,
+              a.get_settings().is_team_supported() and users_were_visible)
 
 
 if __name__ == "__main__":
@@ -286,6 +295,8 @@ if __name__ == "__main__":
     # data model. Once the Source is constructed, we can initialize the rest of the UI, including Qt data models.
     # From that moment we can respond to user actions and events from the backend, which the Source + Strategies
     # will pass through to Qt data models via Qt-like connect / emit mechanism.
+    settings = None
+
     try:
         app = Application(sys.argv)
         settings = app.get_settings()
@@ -328,6 +339,7 @@ if __name__ == "__main__":
         WorkitemTableView.define_actions(actions)
         FocusWidget.define_actions(actions)
         MainWindow.define_actions(actions)
+        CategoryTableView.define_actions(actions)
         actions.all_actions_defined()
 
         audio = AudioPlayer(window, app.get_source_holder(), settings, pomodoro_timer)
@@ -339,6 +351,7 @@ if __name__ == "__main__":
         menu_file.addAction(actions['application.export'])
         menu_file.addAction(actions['application.stats'])
         menu_file.addAction(actions['application.workSummary'])
+        menu_file.addAction(actions['application.manageCategories'])
         menu_file.addSeparator()
 
         menu_contact = QtWidgets.QMenu("Contact us", window)
@@ -540,7 +553,7 @@ if __name__ == "__main__":
 
         pin_if_needed(settings.get('Application.always_on_top'))
 
-        tutorial: Tutorial = None
+        tutorial: Tutorial | None = None
 
         if not app.is_hide_on_start():
             window.show()

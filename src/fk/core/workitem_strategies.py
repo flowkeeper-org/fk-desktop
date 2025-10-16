@@ -56,7 +56,10 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
         self._workitem_name = params[2]
-        self._categories = params[3]    # TODO: Allow 4 parameters
+        if len(params) > 3:
+            self._categories = params[3]    # TODO: Allow 4 parameters
+        else:
+            self._categories = ''
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],

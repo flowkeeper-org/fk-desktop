@@ -46,7 +46,7 @@ class TestCategories(TestCase):
     def test_create_category(self):
         user: User = self.data.get_current_user()
         self.assertIsNotNone(user.get_root_category())
-        self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Category 1'])
+        self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertIsNotNone(user.find_category_by_id('c1'))
         self.source.execute(CreateCategoryStrategy, ['c11', 'c1', 'Category 2'])
         self.assertIsNotNone(user.find_category_by_id('c11'))
@@ -54,12 +54,12 @@ class TestCategories(TestCase):
 
     def test_delete_category(self):
         user: User = self.data.get_current_user()
-        self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Category 1'])
+        self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertIsNotNone(user.find_category_by_id('c1'))
         self.source.execute(DeleteCategoryStrategy, ['c1'])
         self.assertIsNone(user.find_category_by_id('c1'))
 
-        self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Category 1'])
+        self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.source.execute(CreateCategoryStrategy, ['c11', 'c1', 'Category 2'])
         self.source.execute(DeleteCategoryStrategy, ['c1'])
         self.assertIsNone(user.find_category_by_id('c1'))
@@ -67,7 +67,7 @@ class TestCategories(TestCase):
 
     def test_rename_category(self):
         user: User = self.data.get_current_user()
-        self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Category 1'])
+        self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertEqual(user.find_category_by_id('c1').get_name(), 'Category 1')
         self.source.execute(RenameCategoryStrategy, ['c1', 'Category 2'])
         self.assertEqual(user.find_category_by_id('c1').get_name(), 'Category 2')
@@ -87,12 +87,12 @@ class TestCategories(TestCase):
 
         self.assertRaises(
             Exception,
-            lambda: self.source.execute(CreateCategoryStrategy, ['root', 'root', 'Category 1']))
+            lambda: self.source.execute(CreateCategoryStrategy, ['#root', '#root', 'Category 1']))
 
-        self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Category 1'])
+        self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertRaises(
             Exception,
-            lambda: self.source.execute(CreateCategoryStrategy, ['c1', 'root', 'Duplicate']))
+            lambda: self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Duplicate']))
 
         self.assertRaises(
             Exception,
@@ -100,5 +100,5 @@ class TestCategories(TestCase):
 
         self.assertRaises(
             Exception,
-            lambda: self.source.execute(RenameCategoryStrategy, ['root', 'Root']))
+            lambda: self.source.execute(RenameCategoryStrategy, ['#root', 'Root']))
 

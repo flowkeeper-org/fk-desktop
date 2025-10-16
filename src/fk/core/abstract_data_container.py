@@ -63,6 +63,9 @@ class AbstractDataContainer(AbstractDataItem[TParent], Generic[TChild, TParent])
     def values(self) -> list[TChild]:
         return self._children_with_order
 
+    def first(self) -> TChild:
+        return self._children_with_order[0] if len(self._children_with_order) > 0 else None
+
     def keys(self) -> Iterable[str]:
         for child in self._children_with_order:
             yield child.get_uid()

@@ -75,6 +75,8 @@ BeforeCategoryDelete = "BeforeCategoryDelete"
 AfterCategoryDelete = "AfterCategoryDelete"
 BeforeCategoryRename = "BeforeCategoryRename"
 AfterCategoryRename = "AfterCategoryRename"
+BeforeCategoryReorder = "BeforeCategoryReorder"
+AfterCategoryReorder = "AfterCategoryReorder"
 
 SourceMessagesRequested = "SourceMessagesRequested"
 SourceMessagesProcessed = "SourceMessagesProcessed"

@@ -118,6 +118,8 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterCategoryRename,
             events.BeforeCategoryDelete,
             events.AfterCategoryDelete,
+            events.BeforeCategoryReorder,
+            events.AfterCategoryReorder,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help us do master/slave for strategies.
         self._serializer = serializer

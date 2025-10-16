@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
+AfterUpstreamSelected = "AfterUpstreamSelected"
 
 TUpstream = TypeVar('TUpstream', bound=AbstractDataItem)
 TDownstream = TypeVar('TDownstream', bound=AbstractDataItem)
@@ -63,6 +64,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                          allowed_events=[
                              BeforeSelectionChanged,
                              AfterSelectionChanged,
+                             AfterUpstreamSelected,
                          ],
                          callback_invoker=source_holder.get_settings().invoke_callback)
         self._source = None
@@ -128,6 +130,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             self._is_upstream_item_selected = True
         model: AbstractDropModel = self.model()
         model.load(upstream)  # Should handle None correctly
+        self._emit(AfterUpstreamSelected, {'upstream': upstream})
 
     def get_current(self) -> TDownstream | None:
         index = self.currentIndex()
