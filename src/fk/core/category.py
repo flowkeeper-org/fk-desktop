@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_system_categories(root: Category, now: datetime.datetime) -> None:
+    root['#none'] = Category('Uncategorized', '#none', True, root, now)
+
     wg = root['#workitem_groups'] = Category('Workitem Groups', '#workitem_groups', True, root, now)
 
     gr = wg['#workitem_group_importance'] = Category('Importance', '#workitem_group_importance', True, wg, now)

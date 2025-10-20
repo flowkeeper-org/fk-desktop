@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QApplication
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.backlog import Backlog
+from fk.core.category import Category
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemRename, AfterWorkitemComplete, AfterWorkitemStart, AfterWorkitemCreate, \
     AfterWorkitemDelete, AfterSettingsChanged, AfterWorkitemReorder, AfterWorkitemMove, AfterWorkitemRestore
@@ -169,10 +170,15 @@ class WorkitemPomodoro(QStandardItem):
 
 
 class CategoryItem(QStandardItem):
-    def __init__(self, name: str, uid: str, font: QtGui.QFont):
+    _category: Category
+
+    def __init__(self, category: Category, font: QtGui.QFont):
         super().__init__()
+        self._category = category
         self.setData('category', 501)
+        uid = category.get_uid()
         self.setData(uid, 502)
+        name = category.get_name()
         self.setData(name, 503)
         self.setFlags(Qt.ItemFlag.NoItemFlags)
         self.setData(name, Qt.ItemDataRole.DisplayRole)
@@ -183,6 +189,9 @@ class CategoryItem(QStandardItem):
     def update_font(self, font: QtGui.QFont):
         self.setData(font, Qt.ItemDataRole.FontRole)
 
+    def get_category(self) -> Category:
+        return self._category
+
 
 class WorkitemModel(AbstractDropModel):
     _font_new: QtGui.QFont
@@ -192,6 +201,7 @@ class WorkitemModel(AbstractDropModel):
     _backlog_or_tag: Backlog | Tag | None
     _row_height: int
     _hide_completed: bool
+    _selected_category_uid: str
 
     def __init__(self, parent: QtWidgets.QWidget, source_holder: EventSourceHolder):
         super().__init__(1, parent, source_holder)
@@ -206,6 +216,7 @@ class WorkitemModel(AbstractDropModel):
         self._backlog_or_tag = None
         settings = source_holder.get_settings()
         self._hide_completed = (settings.get('Application.hide_completed') == 'True')
+        self._selected_category_uid = settings.get('Application.selected_category')
         self._update_row_height(int(settings.get('Application.table_row_height')))
         self.itemChanged.connect(lambda item: self.handle_rename(item, RenameWorkitemStrategy))
         source_holder.on(AfterSourceChanged, self._on_source_changed)
@@ -214,6 +225,9 @@ class WorkitemModel(AbstractDropModel):
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if 'Application.table_row_height' in new_values:
             self._update_row_height(int(new_values["Application.table_row_height"]))
+        if 'Application.selected_category' in new_values:
+            self._selected_category_uid = new_values["Application.selected_category"]
+            self.load(self._backlog_or_tag)
 
     def _update_row_height(self, new_height: int):
         self._row_height = new_height
@@ -322,19 +336,33 @@ class WorkitemModel(AbstractDropModel):
     def get_row_height(self):
         return self._row_height
 
-    def group_by_category(self, workitems: list[Workitem]) -> dict[str, list[Workitem]]:
-        res: dict[str, list[Workitem]] = dict()
-        res['Critical'] = list()
-        res['Important'] = list()
-        res['Unimportant'] = list()
+    def _get_selected_category(self) -> Category|None:
+        if self._backlog_or_tag is None or not self._selected_category_uid:
+            return None
+        else:
+            return self._backlog_or_tag.get_parent().find_category_by_id(self._selected_category_uid)
+
+    def group_by_category(self, workitems: list[Workitem], parent_category: Category) -> dict[Category, list[Workitem]]:
+        res: dict[Category, list[Workitem]] = dict()
+        uncategorized: list[Workitem] = list()
+        cats = parent_category.values()
+
+        for cat in cats:
+            res[cat] = list()
+
         for w in workitems:
-            r = random.randint(0, 3)
-            if r == 0:
-                res['Critical'].append(w)
-            elif r == 1:
-                res['Important'].append(w)
-            elif r == 2:
-                res['Unimportant'].append(w)
+            found = False
+            for cat in cats:
+                if w.has_category(cat):
+                    res[cat].append(w)
+                    found = True
+                    break
+            if not found:
+                uncategorized.append(w)
+
+        if len(uncategorized) > 0:
+            res[parent_category.get_parent().get_parent()['#none']] = uncategorized
+
         return res
 
     def load(self, backlog_or_tag: Backlog | Tag) -> None:
@@ -347,17 +375,26 @@ class WorkitemModel(AbstractDropModel):
             else:
                 workitems = sorted(backlog_or_tag.get_workitems(),
                                    key=lambda a: a.get_last_modified_date())
-            grouped = self.group_by_category(workitems)
-            for category in grouped.keys():
-                self.appendRow([
-                    StubItem(),
-                    CategoryItem(category, category, self._font_category),
-                    CategoryItem(category, category, self._font_category)
-                ])
-                for workitem in grouped[category]:
+
+            parent_category: Category = self._get_selected_category()
+            if parent_category is None:
+                for workitem in workitems:
                     if self._hide_completed and workitem.is_sealed():
                         continue
                     self.appendRow(self.item_for_object(workitem))
+            else:
+                grouped = self.group_by_category(workitems, parent_category)
+                for category in grouped.keys():
+                    self.appendRow([
+                        StubItem(),
+                        CategoryItem(category, self._font_category),
+                        CategoryItem(category, self._font_category)
+                    ])
+                    for workitem in grouped[category]:
+                        if self._hide_completed and workitem.is_sealed():
+                            continue
+                        self.appendRow(self.item_for_object(workitem))
+
         self.setHorizontalHeaderItem(0, QStandardItem(''))
         self.setHorizontalHeaderItem(1, QStandardItem(''))
         self.setHorizontalHeaderItem(2, QStandardItem(''))
@@ -387,6 +424,13 @@ class WorkitemModel(AbstractDropModel):
             WorkitemPomodoro(workitem, self._row_height)
         ]
 
+    def _update_category(self, workitem: Workitem, to_index: int) -> None:
+        # First find the new category based on the index
+        for i in range(to_index, -1, -1):
+            item = self.item(i, 1)
+            if isinstance(item, CategoryItem):
+                print(f'Found category {item.get_category()}')
+
     def reorder(self, to_index: int, uid: str):
         # Convert to_index into the "item index".
         # We are sure it's a Backlog, since reordering is disabled for tags.
@@ -404,6 +448,8 @@ class WorkitemModel(AbstractDropModel):
         self._source_holder.get_source().execute(ReorderWorkitemStrategy,
                                                  [uid, str(to_index + to_add)],
                                                  carry='ui')
+
+        self._update_category(self._backlog_or_tag[uid], to_index)
 
     def repaint_workitem(self, workitem: Workitem):
         for i in range(self.rowCount()):

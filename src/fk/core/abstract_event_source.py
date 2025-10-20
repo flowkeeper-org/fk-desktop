@@ -28,6 +28,7 @@ from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
+from fk.core.category import Category
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
@@ -247,6 +248,13 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def users(self) -> Iterable[User]:
         for user in self.get_data().values():
             yield user
+
+    def find_category(self, uid: str) -> Category | None:
+        for user in self.users():
+            found = user.find_category_by_id(uid)
+            if found is not None:
+                return found
+        return None
 
     def backlogs(self) -> Iterable[Backlog]:
         for user in self.get_data().values():

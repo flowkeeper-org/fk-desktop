@@ -183,6 +183,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
                 ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
+                ('Application.selected_category', 'str', 'Selected workitem group category', '', [], _always_show),
             ],
             'Series and breaks': [
                 ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [

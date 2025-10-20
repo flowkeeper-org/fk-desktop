@@ -15,8 +15,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtGui import Qt, QAction, QIcon
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QToolButton
 
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
@@ -25,6 +25,7 @@ from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
+from fk.qt.category_selector import CategorySelector
 from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
@@ -61,6 +62,14 @@ class WorkitemWidget(QWidget):
         tb.addAction(actions['workitems_table.hideCompleted'])
         tb.addAction(actions['workitems_table.completeItem'])
         tb.addAction(actions['workitems_table.restoreItem'])
+
+        # Category menu
+        cm = QToolButton(self)
+        cm.setMenu(CategorySelector(self, source_holder))
+        cm.setDefaultAction(QAction(parent=self, icon=QIcon.fromTheme('tool-note')))
+        cm.triggered.connect(cm.showMenu)
+        tb.addWidget(cm)
+
         layout.addWidget(tb)
 
         self._workitems_table = WorkitemTableView(self,

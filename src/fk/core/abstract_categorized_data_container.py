@@ -39,6 +39,9 @@ class AbstractCategorizedDataContainer(AbstractDataContainer[TChild, TParent], G
     def get_categories(self) -> set[Category]:
         return self._categories
 
+    def has_category(self, category: Category) -> bool:
+        return category in self._categories
+
     def set_categories(self, categories: set[Category]) -> None:
         self._categories = categories
 
