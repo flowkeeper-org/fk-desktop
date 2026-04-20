@@ -10,6 +10,7 @@ on:
 
 permissions:
   checks: write
+  contents: write
 
 jobs:
   run-tests:
@@ -77,8 +78,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update RC tag
-        permissions:
-          contents: write
         uses: richardsimko/update-tag@v1
         with:
           tag_name: rc
