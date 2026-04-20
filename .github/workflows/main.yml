@@ -88,9 +88,18 @@ jobs:
       - name: Unzip artifacts
         shell: bash
         run: |
+          echo "Before unzip"
+          ls -al          
+          unzip dist-macos-15-nuitka-all
+          unzip dist-ubuntu-24.04-nuitka-all
+          unzip dist-windows-2025-nuitka-all
+          echo "After unzip"
           ls -al
-          unzip "*.zip"
-          rm -rf *.zip
+          rm dist-macos-15-nuitka-all
+          rm dist-ubuntu-24.04-nuitka-all
+          rm dist-windows-2025-nuitka-all
+          echo "After cleanup / before upload"
+          ls -al
 #      - name: Update RC preview
 #        uses: johnwbyrd/update-release@v1
 #        with:
