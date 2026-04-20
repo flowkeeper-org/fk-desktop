@@ -89,9 +89,9 @@ jobs:
         run: |
           unzip "*.zip"
           rm -rf *.zip
-      - name: Update RC preview
-        uses: johnwbyrd/update-release@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: "*.*"
-          release: rc
+#      - name: Update RC preview
+#        uses: johnwbyrd/update-release@v1
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          files: "*.*"
+#          release: rc
