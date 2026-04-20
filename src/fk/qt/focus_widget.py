@@ -234,7 +234,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
-        actions.add('focus.muteAudio',"Toggle Audio", None, ("tool-unmute", "tool-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
+        actions.add('focus.muteAudio', "Audio", None, ("tool-unmute", "tool-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
 
     def _create_button(self,
                        name: str,
@@ -392,14 +392,13 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             raise Exception('Cannot start next pomodoro on non-existent work item')
         start_workitem(self._continue_workitem, self._source_holder.get_source())
 
-    def _mute_audio(self, domain, state) -> None:
+    def _mute_audio(self, state) -> None:
         is_checked = self._actions['focus.muteAudio'].isChecked()
         self._settings.set({
             S.APPLICATION_PLAY_ALARM_SOUND: str(is_checked),
             S.APPLICATION_PLAY_REST_SOUND: str(is_checked),
             S.APPLICATION_PLAY_TICK_SOUND: str(is_checked),
         })
-
 
     def _complete_item(self) -> None:
         item = self.timer.get_running_workitem()
