@@ -77,6 +77,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update RC tag
+        permissions:
+          contents: write
         uses: richardsimko/update-tag@v1
         with:
           tag_name: rc
@@ -87,6 +89,7 @@ jobs:
       - name: Unzip artifacts
         shell: bash
         run: |
+          ls -al
           unzip "*.zip"
           rm -rf *.zip
 #      - name: Update RC preview
