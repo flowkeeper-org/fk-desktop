@@ -73,7 +73,7 @@ jobs:
       compiler: ${{ matrix.compiler }}
     secrets: inherit
 
-  update-rc:
+  update-tag:
     needs: call-build
     runs-on: ubuntu-latest
     steps:
@@ -83,26 +83,23 @@ jobs:
           tag_name: rc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-release:
+    needs: update-tag
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+        compiler: [nuitka]
+    steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
-      - name: Unzip artifacts
-        shell: bash
-        run: |
-          echo "Before unzip"
-          ls -al          
-          unzip dist-macos-15-nuitka-all
-          unzip dist-ubuntu-24.04-nuitka-all
-          unzip dist-windows-2025-nuitka-all
-          echo "After unzip"
-          ls -al
-          rm dist-macos-15-nuitka-all
-          rm dist-ubuntu-24.04-nuitka-all
-          rm dist-windows-2025-nuitka-all
-          echo "After cleanup / before upload"
-          ls -al
-#      - name: Update RC preview
-#        uses: johnwbyrd/update-release@v1
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          files: "*.*"
-#          release: rc
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
+          path: .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: rc
+          files: "./*"
