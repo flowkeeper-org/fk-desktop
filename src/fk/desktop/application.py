@@ -51,7 +51,7 @@ from fk.core.no_cryptograph import NoCryptograph
 from fk.core.sandbox import get_sandbox_type
 from fk.core.tenant import Tenant
 from fk.desktop.categories_window import CategoriesWindow
-from fk.desktop.desktop_strategies import DeleteAccountStrategy
+from fk.desktop.desktop_strategies import DeleteAccountStrategy, SetEncryptionStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
 from fk.desktop.settings import SettingsDialog
@@ -481,6 +481,9 @@ class Application(QApplication, AbstractEventEmitter):
                     self._version_timer.schedule(2000, self.check_version, None, True)
             elif name.startswith('Logger.'):
                 request_logger_change = True
+            elif name == S.SOURCE_ENCRYPTION_KEY:
+                self.get_source_holder().get_source().execute(SetEncryptionStrategy,
+                                                              [secrets.token_urlsafe(32), '600000'])
 
         if request_ui_refresh:
             logger.debug(f'Refreshing theme and fonts twice because of a setting change')

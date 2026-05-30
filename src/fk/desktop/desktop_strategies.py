@@ -254,3 +254,29 @@ class DeleteAccountStrategy(AbstractStrategy):
                 data: Tenant) -> None:
         # Send only
         pass
+
+
+# SetEncryption("salt", "600000", "encryption-key-test")
+@strategy
+class SetEncryptionStrategy(AbstractStrategy):
+    _salt: str
+    _iterations: int
+
+    def __init__(self,
+                 seq: int,
+                 when: datetime.datetime,
+                 user_identity: str,
+                 params: list[str],
+                 settings: AbstractSettings,
+                 carry: any = None):
+        super().__init__(seq, when, user_identity, params, settings, carry)
+        self._salt = params[0]
+        self._iterations = int(params[1])
+
+    def encryptable(self) -> bool:
+        return False
+
+    def execute(self,
+                emit: Callable[[str, dict[str, any], any], None],
+                data: Tenant) -> None:
+        self._settings.set_encryption_settings(self._salt, self._iterations)

@@ -1,0 +1,6 @@
+1, 2000-01-02 23:00:00+00:00, admin@local.host: CreateUser("user@local.host", "Local User")
+2, 2026-03-21 16:27:01.572557+00:00, user@local.host: CreateBacklog("97a47773-9948-4ba5-8c17-a22383d89dd2", "2026-03-21, Saturday")
+3, 2026-03-21 16:27:04.265084+00:00, user@local.host: CreateWorkitem("cb952dd0-8f33-45ab-8948-788188f78cf6", "97a47773-9948-4ba5-8c17-a22383d89dd2", "Do something")
+4, 2026-03-21 16:27:11.516853+00:00, user@local.host: RenameWorkitem("cb952dd0-8f33-45ab-8948-788188f78cf6", "Order coffee capsules")
+5, 2026-03-21 16:27:21.138860+00:00, user@local.host: CreateWorkitem("08a988a6-1240-4818-b637-f71d6737dcc3", "97a47773-9948-4ba5-8c17-a22383d89dd2", "Do something")
+6, 2026-03-21 16:27:24.220736+00:00, user@local.host: RenameWorkitem("08a988a6-1240-4818-b637-f71d6737dcc3", "Another")

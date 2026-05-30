@@ -47,7 +47,9 @@ class S:
     LOGGER_LEVEL: Final[str] = 'Logger.level'
     LOGGER_FILENAME: Final[str] = 'Logger.filename'
     APPLICATION_IGNORE_KEYRING_ERRORS: Final[str] = 'Application.ignore_keyring_errors'
+    APPLICATION_EXPERIMENTAL_FEATURES: Final[str] = 'Application.experimental_features'
     APPLICATION_FEATURE_CONNECT: Final[str] = 'Application.feature_connect'
+    APPLICATION_FEATURE_CONNECT_LABEL: Final[str] = 'Application.feature_connect_label'
     APPLICATION_FEATURE_KEYRING: Final[str] = 'Application.feature_keyring'
     APPLICATION_WORK_SUMMARY_SETTINGS: Final[str] = 'Application.work_summary_settings'
     APPLICATION_LAST_VERSION: Final[str] = 'Application.last_version'
@@ -231,6 +233,10 @@ def _show_for_flatpak(values: dict[str, str]) -> bool:
     return get_sandbox_type() == 'Flatpak'
 
 
+def _show_if_experimental_features_enabled(values: dict[str, str]) -> bool:
+    return values[S.APPLICATION_EXPERIMENTAL_FEATURES] == 'True'
+
+
 def _hide_for_sandbox(values: dict[str, str]) -> bool:
     return get_sandbox_type() is None
 
@@ -252,6 +258,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     _defaults: dict[str, str]
     _callback_invoker: Callable
 
+    # Always in-memory settings, should not be persisted for security reasons
+    _encryption_salt: str
+    _encryption_iterations: int
+
     def __init__(self,
                  default_data_dir: str,
                  default_logs_dir: str,
@@ -263,6 +273,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         ], callback_invoker)
 
         self._callback_invoker = callback_invoker
+        self._encryption_salt = ''
+        self._encryption_iterations = 0
+
+        separator = ('', S.SEPARATOR, '', '', [], _always_show)
 
         self._defaults = dict()
         self._definitions = {
@@ -272,30 +286,34 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.POMODORO_END_OF_WORK_NOTIFICATIONS, 'bool', 'Notify about end of work', 'True', [], _always_show),
                 (S.POMODORO_END_OF_WORK_NOTIFICATION_DURATION, 'duration', 'Notification lead time', str(1 * 60), [1, 120 * 60], _show_if_end_of_work_notifications_are_enabled),
                 (S.APPLICATION_HIDE_COMPLETED, 'bool', 'Hide completed items', 'False', [], _never_show),
-                ('', S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_FEATURE_TAGS, 'bool', 'Display #tags', 'True', [], _always_show),
                 (S.APPLICATION_DEFAULT_WORKITEM_CATEGORY, 'choice', 'For new work items', 'ask', ['ask:Ask for a group', 'none:Create as uncategorized'], _always_show),
                 (S.APPLICATION_DEFAULT_BACKLOG_CATEGORY, 'choice', 'For new backlogs', 'last', ['last:Use the last grouping method', 'none:Do not use grouping'], _always_show),
-                ('', S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_CHECK_UPDATES, 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
                 (S.APPLICATION_IGNORED_UPDATES, 'str', 'Ignored updates', '', [], _never_show),
                 (S.APPLICATION_SINGLETON, 'bool', 'Single Flowkeeper instance', 'False', [], _hide_for_sandbox),
                 (S.APPLICATION_HIDE_ON_AUTOSTART, 'bool', 'Hide on autostart', 'True', [], _always_show),
-                ('', S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_SHORTCUTS, 'shortcuts', 'Shortcuts', '{}', [], _always_show),
                 (S.APPLICATION_ENABLE_TEAMS, 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 (S.APPLICATION_SHOW_TUTORIAL, 'bool', 'Show tutorial on start', 'True', [], _never_show),
                 (S.APPLICATION_COMPLETED_TUTORIAL_STEPS, 'str', 'Completed tutrial steps', '', [], _never_show),
-                ('', S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.LOGGER_LEVEL, 'choice', 'Log level', 'WARNING', [
                     "ERROR:Errors only",
                     "WARNING:Errors and warnings",
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
                 (S.LOGGER_FILENAME, 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
-                (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _never_show),
-                (S.APPLICATION_FEATURE_CONNECT, 'bool', 'Enable Connect feature', 'False', [], _never_show),
-                (S.APPLICATION_FEATURE_KEYRING, 'bool', 'Enable Keyring feature', 'False', [], _never_show),
+                (S.APPLICATION_EXPERIMENTAL_FEATURES, 'bool', 'Experimental settings', 'False', [], _always_show),
+                (S.APPLICATION_FEATURE_CONNECT, 'bool', 'Online data sync', 'False', [], _show_if_experimental_features_enabled),
+                (S.APPLICATION_FEATURE_CONNECT_LABEL, 'label', ' ', 'Data sync requires Flowkeeper server. Restart\n'
+                                                                    'Flowkeeper after enabling it, then select "Self-\n'
+                                                                    'hosted server" in Connection > Data source', [], _show_if_experimental_features_enabled),
+                (S.APPLICATION_FEATURE_KEYRING, 'bool', 'Encryption keys in keyring', 'False', [], _show_if_experimental_features_enabled),
+                (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _show_if_experimental_features_enabled),
                 (S.APPLICATION_WORK_SUMMARY_SETTINGS, 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 (S.APPLICATION_LAST_VERSION, 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
                 (S.APPLICATION_SELECTED_CATEGORY, 'str', 'Selected workitem group category', '', [], _never_show),
@@ -310,7 +328,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.POMODORO_LONG_BREAK_EACH, 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
                 (S.POMODORO_LONG_BREAK_FOCUS, 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
                 (S.POMODORO_LONG_BREAK_WITHIN, 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
-                ('', S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.POMODORO_START_NEXT_AUTOMATICALLY, 'bool', 'Work in series', 'False', [], _always_show),
                 (S.POMODORO_SERIES_EXPLANATION, 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
                                                               'planned pomodoro in the same work item automatically.', [], _always_show),
@@ -421,20 +439,20 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_PLAY_ALARM_SOUND, 'bool', 'Play alarm sound', 'True', [], _always_show),
                 (S.APPLICATION_ALARM_SOUND_FILE, 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
                 (S.APPLICATION_ALARM_SOUND_VOLUME, 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
-                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_PLAY_REST_SOUND, 'bool', 'Play "rest" sound', 'True', [], _always_show),
                 (S.APPLICATION_REST_SOUND_FILE, 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
                 (S.APPLICATION_REST_SOUND_COPYRIGHT, 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)", (C) Lobo Loco\n<https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
                 (S.APPLICATION_REST_SOUND_VOLUME, 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
-                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_PLAY_TICK_SOUND, 'bool', 'Play ticking sound', 'True', [], _always_show),
                 (S.APPLICATION_TICK_SOUND_FILE, 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
                 (S.APPLICATION_TICK_SOUND_VOLUME, 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
-                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_PLAY_NOTIFICATION_SOUND, 'bool', 'Play notification sound', 'True', [], _always_show),
                 (S.APPLICATION_NOTIFICATION_SOUND_FILE, 'file', 'Notification sound file', 'qrc:/sound/wood_knock.mp3', ['*.wav;*.mp3;*.m4a'], _show_if_play_notification_enabled),
                 (S.APPLICATION_NOTIFICATION_SOUND_VOLUME, 'int', 'Notification volume %', '100', [0, 100], _show_if_play_notification_enabled),
-                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                separator,
                 (S.APPLICATION_AUDIO_OUTPUT, 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
             'Integration': [
@@ -480,6 +498,17 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     @abstractmethod
     def location(self) -> str:
         pass
+
+    def set_encryption_settings(self, salt: str, iterations: int) -> None:
+        self._encryption_salt = salt
+        self._encryption_iterations = iterations
+        # TODO: Emit an event with the same encryption key to make sure cryptographs are recreated
+
+    def get_encryption_salt(self) -> str:
+        return self._encryption_salt
+
+    def get_encryption_iterations(self) -> int:
+        return self._encryption_iterations
 
     def get_username(self) -> str:
         # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.

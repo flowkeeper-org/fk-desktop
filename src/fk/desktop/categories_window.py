@@ -18,7 +18,7 @@ import datetime
 from PySide6 import QtUiTools, QtWidgets
 from PySide6.QtCore import QObject, QFile
 from PySide6.QtGui import QAction, Qt
-from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QSizePolicy, QSplitter, QScrollArea
+from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QSplitter, QScrollArea
 
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.category import Category

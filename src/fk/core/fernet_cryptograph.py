@@ -32,26 +32,23 @@ class FernetCryptograph(AbstractCryptograph):
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
         # UC-2: The "final" e2e encryption key is cached in the keychain
-        cached_key = self._settings.get(S.SOURCE_ENCRYPTION_KEY_CACHE)
-        self._fernet = self._create_fernet(cached_key)
+        self._fernet = self._create_fernet(self._settings.get(S.SOURCE_ENCRYPTION_KEY_CACHE))
 
-    def _create_fernet(self, cached_key) -> Fernet:
+    def _create_fernet(self, cached_key: str) -> Fernet:
+        salt = self._settings.get_encryption_salt()
+        iterations = self._settings.get_encryption_iterations()
         if cached_key is None or cached_key == '':
             logger.debug(f'There is no cached key, will generate it')
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
-                salt=b'e1a7a49b5bad75ec81fcb8cded4bbc0c',   # TODO: GitHub Security complains about hardcoded salt --
-                                                            #  see if we can fix it somehow
-                iterations=480000,
+                salt=salt.encode('ASCII'),
+                iterations=iterations,
             )
             key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
             self._settings.set({S.SOURCE_ENCRYPTION_KEY_CACHE: key.decode('utf-8')})
         else:
             key = cached_key.encode('utf-8')
-        # TODO: This doesn't look safe -- check other occurrences to ensure we don't log credentials,
-        #  since we store them in the keychain
-        logger.debug(f'Fernet encryption key: {key}')
         return Fernet(key)
 
     def _on_key_changed(self) -> None:
