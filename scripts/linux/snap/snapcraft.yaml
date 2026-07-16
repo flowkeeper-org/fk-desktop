@@ -1,0 +1,102 @@
+name: flowkeeper
+base: core22
+version: "1.0.2"
+license: GPL-3.0-only
+
+title: Flowkeeper
+contact:
+    - contact@flowkeeper.org
+issues:
+    - https://github.com/flowkeeper-org/fk-desktop/issues
+source-code:
+    - https://github.com/flowkeeper-org/fk-desktop
+website:
+    - https://flowkeeper.org/
+summary: Flowkeeper is a free Pomodoro Technique desktop timer for power users.
+description: |
+    Flowkeeper is a Pomodoro backlog and timer with a "classic" desktop-first UI paradigm.
+    With its keyboard shortcuts and advanced settings, it is optimized for power users.
+    It stays as close as possible to the Pomodoro Technique definition and format from
+    the original book by Francesco Cirillo.
+
+grade: stable
+confinement: classic
+
+platforms:
+    amd64:
+    arm64:
+
+apps:
+    flowkeeper:
+        command: usr/bin/flowkeeper
+        environment:
+            LD_LIBRARY_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_ON/pulseaudio:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_ON:$SNAP/usr/lib:$LD_LIBRARY_PATH
+        common-id: org.flowkeeper.Flowkeeper
+        desktop: usr/share/applications/org.flowkeeper.Flowkeeper.desktop
+        plugs:
+          - desktop
+          - desktop-legacy
+          - opengl
+          - wayland
+          - x11
+          - audio-playback
+          - unity7
+          - network
+          - network-bind
+
+
+parts:
+    flowkeeper:
+        plugin: dump
+        source:
+            - on amd64: https://github.com/flowkeeper-org/fk-desktop/releases/download/v1.0.2/flowkeeper-1.0.2-ubuntu-22.04-nuitka-package.deb
+            - on arm64: https://github.com/flowkeeper-org/fk-desktop/releases/download/v1.0.2/flowkeeper-1.0.2-ubuntu-22.04-arm-nuitka-package.deb
+        source-type: deb
+        stage-packages:
+            - libxcb-cursor0
+            # dependencies for Video Acceleration
+            - libva2
+            - libva-drm2
+            - libva-x11-2
+            # missing dependencies as per linter
+            - libegl1                    # provides libEGL.so.1
+            - libgl1                     # provides libGL.so.1
+            - qt6-qpa-plugins            # provides libQt6EglFsKmsGbmSupport.so.6
+            - libx11-xcb1                # provides libX11-xcb.so.1
+            - libxrandr2                 # provides libXrandr.so.2
+            - libatk1.0-0                # provides libatk-1.0.so.0
+            - libatomic1                 # provides libatomic.so.1
+            - libcairo-gobject2          # provides libcairo-gobject.so.2
+            - libcairo2                  # provides libcairo.so.2
+            - libcups2                   # provides libcups.so.2
+            - libfontconfig1             # provides libfontconfig.so.1
+            - libgbm1                    # provides libgbm.so.1
+            - libgdk-pixbuf-2.0-0        # provides libgdk_pixbuf-2.0.so.0
+            - libgtk-3-0                 # provides libgdk-3.so.0 and libgtk-3.so.0
+            - libpango-1.0-0             # provides libpango-1.0.so.0
+            - libpangocairo-1.0-0        # provides libpangocairo-1.0.so.0
+            - libpulse0                  # provides libpulse.so.0
+            - libwayland-client0         # provides libwayland-client.so.0
+            - libwayland-cursor0         # provides libwayland-cursor.so.0
+            - libwayland-egl1            # provides libwayland-egl.so.1
+            - libxcb-glx0                # provides libxcb-glx.so.0
+            - libxcb-icccm4              # provides libxcb-icccm.so.4
+            - libxcb-keysyms1            # provides libxcb-keysyms.so.1
+            - libxcb-randr0              # provides libxcb-randr.so.0
+            - libxcb-shape0              # provides libxcb-shape.so.0
+            - libxcb-sync1               # provides libxcb-sync.so.1
+            - libxcb-xfixes0             # provides libxcb-xfixes.so.0
+            - libxcb-xkb1                # provides libxcb-xkb.so.1
+            - libxkbcommon-x11-0         # provides libxkbcommon-x11.so.0
+            - libxkbcommon0              # provides libxkbcommon.so.0
+
+        override-prime: |
+            craftctl default
+
+            if [ -f "$CRAFT_PRIME/usr/share/applications/org.flowkeeper.Flowkeeper.desktop" ]; then
+              sed -i 's|^Exec=.*|Exec=flowkeeper|' \
+                "$CRAFT_PRIME/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
+
+              sed -i 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/1024x1024/apps/org.flowkeeper.Flowkeeper.png|' \
+                "$CRAFT_PRIME/usr/share/applications/org.flowkeeper.Flowkeeper.desktop"
+            fi
