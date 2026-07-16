@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shlex
 from subprocess import Popen
 
@@ -82,10 +83,23 @@ class IntegrationExecutor:
             # This is a safer, but less flexible alternative:
             # formatted = command.format(**kwargs)
             args = shlex.split(formatted)
+            env = None
             if get_sandbox_type() == 'Flatpak' and self._settings.get(S.INTEGRATION_FLATPAK_SPAWN) == 'True':
                 # Use flatpak-spawn to execute commands outside the sandbox
                 args.insert(0, '--host')
                 args.insert(0, 'flatpak-spawn')
+            elif os.environ.get('SNAP') is not None:
+                # Create a clean environment to prevent snap's bundled libraries from interfering
+                env = os.environ.copy()
+                # Remove snap-specific library paths from LD_LIBRARY_PATH
+                if 'LD_LIBRARY_PATH' in env:
+                    paths = env['LD_LIBRARY_PATH'].split(':')
+                    snap_filtered = [p for p in paths if not (p.startswith('/snap/') or '$SNAP' in p)]
+                    if snap_filtered:
+                        env['LD_LIBRARY_PATH'] = ':'.join(snap_filtered)
+                    else:
+                        env.pop('LD_LIBRARY_PATH', None)
+
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Received event {full_event}. Executing: {args}')
-            Popen(args)
+            Popen(args, env=env)
