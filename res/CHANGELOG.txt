@@ -15,6 +15,9 @@
 - Fixed a few issues when launching Flowkeeper during a long break
 
 - Fixed a few bugs with import/export handling of reordering
+- Fixed a bunch of code quality issues reported by SonarQube
+
+- Added CONTRIBUTING.md
 
 TODO: Drag-n-drop events cause breaking of categories. Need to implement category events and listed to them
  in the tableviews
