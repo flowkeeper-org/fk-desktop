@@ -45,7 +45,7 @@ jobs:
             scripts/macos/install-certificates.sh
             export BINARY_EXTENSION=""
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
-          elif [[ "$OSTYPE" == "msys" ]]; then
+          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             # Disable Defender for the workspace directory
             echo "Will disable Defender"
             echo "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath $(cmd //c cd)"
@@ -159,7 +159,7 @@ jobs:
             scripts/macos/create-dmg.sh
             scripts/macos/notarize-dmg.sh
             mv dist/Flowkeeper.dmg "$PREFIX-installer.dmg"
-          elif [[ "$OSTYPE" == "msys" ]]; then
+          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             echo "Building Windows setup.exe installer"
             scripts/windows/package-installer.sh
             mv dist/setup.exe "$PREFIX-installer.exe"
@@ -180,7 +180,7 @@ jobs:
 
           echo "Zipping the standalone directory"
           cd dist/standalone
-          if [[ "$OSTYPE" == "msys" ]]; then
+          if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             echo "No zip on Windows"
             powershell Compress-Archive "./*" "../../$PREFIX-standalone.zip"
           else
