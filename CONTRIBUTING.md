@@ -86,27 +86,30 @@ wishlist is:
 ## Learning materials and documentation
 
 Flowkeeper has a number of advanced features and targets power users. It assumes prior experience with Pomodoro 
-Technique, and works best for the users who are already familiar with Francesco Cirillo's original book. 
+Technique, and works best for the users who are already familiar with Francesco Cirillo's [original book](https://www.northbaycounselling.com/wp-content/uploads/2022/05/Cirillo-Pomodoro-Technique.pdf). 
 
 Unfortunately, it means that the majority of new users find some of Flowkeeper features confusing. The project will 
 benefit greatly from articles, how-to guides, FAQs, video tutorials, etc. -- anything that makes it easier to use.
-Examples includes:
+Examples include:
 
-1. Updating and polishing the built-in tutorial (see `src/fk/desktop/tutorial.py`),
-2. Creating a "how-to" section built directly into Flowkeeper main menu (see [this GitHub issue](https://github.com/flowkeeper-org/fk-desktop/issues/100)),
-3. Recording how-to videos and updating flowkeeper.org website (a "Pomodoro Academy" of sorts). The website is also [hosted on
-GitHub](https://github.com/flowkeeper-org/website), and you can open PRs against it, too.
+1. Updating and polishing the built-in tutorial (see [src/fk/desktop/tutorial.py](https://github.com/flowkeeper-org/fk-desktop/blob/main/src/fk/desktop/tutorial.py)),
+2. Creating a "how-to" section integrated directly into Flowkeeper main menu (see [this GitHub issue](https://github.com/flowkeeper-org/fk-desktop/issues/100)),
+3. Recording how-to videos and updating [flowkeeper.org](https://flowkeeper.org/) website (a "Pomodoro Academy" of sorts). The website is also [hosted on
+GitHub](https://github.com/flowkeeper-org/website), so you can fork it and open pull requests against it, too.
 
 ## Spreading the word
 
-Finally, with all technical work, I have very little time to promote Flowkeeper. I'm doing some release announcements on
-Reddit and LinkedIn, but that's pretty much it. You will help the project grow by submitting reviews and articles to 
+With all technical work, I have very little time to promote Flowkeeper. I'm doing some release announcements on
+[Reddit](https://www.reddit.com/r/Flowkeeper/) and [LinkedIn](https://www.linkedin.com/company/flowkeeper-org), but that's pretty much it. 
+You can help the project grow by spreading the word about it, or submitting reviews and articles to 
 online platforms like [AlternativeTo](https://alternativeto.net/software/flowkeeper/), [Product Hunt](https://www.producthunt.com/products/flowkeeper), etc.
 
 ## Recognition
 
 All contributors are mentioned in [CREDITS.txt](https://github.com/flowkeeper-org/fk-desktop/blob/main/res/CREDITS.txt),
-also displayed in Flowkeeper > About > Credits.
+also displayed in Flowkeeper > About > Credits:
+
+![About > Credits](doc/credits.png "About > Credits")
 
 Thanks!
 
