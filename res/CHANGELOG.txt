@@ -18,6 +18,9 @@
 - Fixed a bunch of code quality issues reported by SonarQube
 
 - Added CONTRIBUTING.md
+- Published a snap for snapcraft.io
+- Switched to Nuitka 4.x to compile the binaries
+- Upgraded to Qt 6.11
 
 TODO: Drag-n-drop events cause breaking of categories. Need to implement category events and listed to them
  in the tableviews
