@@ -34,8 +34,8 @@ from fk.desktop.application import Application
 from fk.e2e.screenshot import Screenshot
 from fk.qt.actions import Actions
 
-INSTANT_DURATION = 0.5  # seconds
-STARTUP_DURATION = 3  # seconds
+INSTANT_DURATION = 0.1  # seconds
+STARTUP_DURATION = 1  # seconds
 WINDOW_GALLERY_FILENAME = 'test-results/screenshots-window.html'
 WINDOW_BORDER_GALLERY_FILENAME = 'test-results/screenshots-window-border.html'
 FULLSCREEN_GALLERY_FILENAME = 'test-results/screenshots-full.html'

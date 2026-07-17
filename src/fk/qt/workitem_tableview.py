@@ -226,7 +226,8 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
     # Actions
 
     def get_category_for_new_item(self) -> str | None:
-        if self._source.get_settings().get(S.APPLICATION_DEFAULT_WORKITEM_CATEGORY) == 'ask':
+        default_category: str = self._source.get_settings().get(S.APPLICATION_DEFAULT_WORKITEM_CATEGORY)
+        if default_category == 'ask':
             parent_category: Category|None = self.model().get_selected_category()
             if parent_category is not None:
                 context_menu = QMenu(self)
@@ -242,8 +243,10 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                 selected: QAction = context_menu.exec(self.parent().mapToGlobal(my_center))
                 if selected is not None:
                     return selected.data()
-
-        return None
+        elif default_category == 'none':
+            return None
+        else:
+            return default_category
 
     def create_workitem(self) -> None:
         model = self.model()

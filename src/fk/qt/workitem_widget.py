@@ -70,6 +70,7 @@ class WorkitemWidget(QWidget):
         cm = QToolButton(self)
         self._category_selector = cm
         cm.setDefaultAction(QAction(parent=self))
+        cm.setObjectName('categories_tool_button')
         cm.setMenu(QMenu(cm))     # Stub for lazy loading
         def trigger(action):
             if len(cm.menu().actions()) == 0:

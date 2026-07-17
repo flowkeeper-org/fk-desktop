@@ -307,6 +307,9 @@ class Application(QApplication, AbstractEventEmitter):
     def is_screenshot_mode(self):
         return '--screenshots' in self.arguments()
 
+    def is_fast_screenshot_mode(self):
+        return False
+
     def is_testing_mode(self):
         return '--testing' in self.arguments()
 

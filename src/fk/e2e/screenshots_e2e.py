@@ -92,6 +92,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
     async def _wait_mid_pomodoro(self) -> None:
         await asyncio.sleep(POMODORO_WORK_DURATION * 0.75)
 
+    async def _wait_end_of_work(self) -> None:
+        await asyncio.sleep(POMODORO_WORK_DURATION * 1.1)
+
     async def _wait_long_pomodoro(self) -> None:
         await asyncio.sleep(15)
 
@@ -122,7 +125,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Minus, True)  # self.execute_action('workitems_table.removePomodoro')
         await self.instant_pause()
 
-    async def _new_workitem(self, name: str, pomodoros: int = 0) -> None:
+    async def _new_workitem(self, name: str, pomodoros: int = 0, category = None) -> None:
+        if category is not None:
+            self.get_application().get_settings().set({S.APPLICATION_DEFAULT_WORKITEM_CATEGORY: category})
+            await self.instant_pause()
         self.keypress(Qt.Key.Key_Insert)   # self.execute_action('workitems_table.newItem')
         await self.instant_pause()
         self.type_text(name)
@@ -130,6 +136,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.instant_pause()
         for p in range(pomodoros):
             await self._add_pomodoro()
+        if category is not None:
+            self.get_application().get_settings().set({S.APPLICATION_DEFAULT_WORKITEM_CATEGORY: 'ask'})
+            await self.instant_pause()
 
     async def _find_workitem(self, name: str) -> None:
         self.keypress(Qt.Key.Key_F, True)   # self.execute_action('window.showSearch')
@@ -164,6 +173,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
             return True
         else:
             return False
+
+    async def _select_category(self, uid: str = '') -> bool:
+        self.get_application().get_settings().set({S.APPLICATION_SELECTED_CATEGORY: uid})
+        return True
 
     async def test_01_screenshots(self):
         await self.instant_pause()
@@ -271,12 +284,19 @@ class ScreenshotE2eTest(AbstractE2eTest):
         })
         await self.instant_pause()
 
-        await self._new_workitem('Generate new screenshots for #Flowkeeper', 2)
-        await self._new_workitem('Reply to Peter', 1)
-        await self._new_workitem('Slides for #Flowkeeper demo', 3)
-        await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2)
-        await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2)
-        await self._new_workitem('#Followup: Call Alex in the afternoon')
+        # Select a category
+        await self._select_category('#wg_123')
+        await self.instant_pause()
+
+        await self._new_workitem('Generate new screenshots for #Flowkeeper', 2, '#wg_123_1')
+        await self._new_workitem('Reply to Peter', 1, '#wg_123_3')
+        await self._new_workitem('Slides for #Flowkeeper demo', 3, '#wg_123_2')
+        await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2, '#wg_123_2')
+        await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2, '#wg_123_3')
+        await self._new_workitem('#Followup: Call Alex in the afternoon', 0, '#wg_123_3')
+
+        await self._select_category()
+        await self.instant_pause()
 
         ####################################
         # Complete pomodoros and workitems #
@@ -302,7 +322,8 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._wait_pomodoro_complete()
         await self._add_pomodoro()
         await self._start_pomodoro()
-        await self._wait_mid_pomodoro()
+        await self._wait_end_of_work()
+        self.take_screenshot('28-fullscreen-break')
         await self._void_pomodoro('Reply to Peter')
         await self._complete_workitem('Reply to Peter')
         await self.longer_pause()
@@ -323,6 +344,24 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._start_pomodoro()
         await self._wait_mid_pomodoro()
         await self._void_pomodoro('Slides for #Flowkeeper demo')
+
+        # Select a category
+        await self._select_category('#wg_123')
+        await self.instant_pause()
+        self.take_screenshot('29-category-selected')
+        await self.instant_pause()
+        await self._select_category()
+        await self.instant_pause()
+
+        # Category list
+        self.keypress(Qt.Key.Key_F5)
+        await self.instant_pause()
+        self.center_window()
+        await self.instant_pause()
+        self.take_screenshot('30-categories')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
 
         # Tags
         await self._select_tag('Flowkeeper')
