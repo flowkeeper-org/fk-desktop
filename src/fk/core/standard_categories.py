@@ -261,34 +261,38 @@ Tasks that are neither urgent nor important get whatever time is left over.
 
 # Pareto: Pareto Principle
 
-> *"If we double our time on our top 20 percent of activities, we can work a two-day week and achieve 60 percent more 
-than now."*
+Split your work in two simple groups and focus on the 20 percent of activities that generate 80 percent of your 
+successes:
 
-- Focus on the 20 percent of activities that generate 80 percent of your successes.
-
-- The 80/20 principle allows you to work less, live more, and be more effective.
-
-- A shocking 80 percent of our activities at work are probably a waste of our energy and time.
+1. 20% Effort, 80% Outcomes
+2. 80% Effort, 20% Outcomes
 
 {h3('When to use it')}
 
-TODO
+- If you work hard but don't progress towards your goal,
+- if you want the simplest method,
+- for any backlogs.
 
 {h3('In practice')}
 
-When we act less, we think more. And we think better. Most valuable creative ideas come to us when we are not hyper-busy 
-or stressed, but in a calmer, more contemplative and receptive frame of mind.
+- When we act less, we think more. And we think better. Most valuable creative ideas come to us when we are not 
+hyper-busy or stressed, but in a calmer, more contemplative and receptive frame of mind.
 
-The time we save by applying the 80/20 principle to our work tasks should NOT be reinvested in work. The point of this 
-exercise is precisely to work less but smarter. The point is to free ourselves up to take breaks, to relax, to think, 
-to just be, to connect with others, and to do more nourishing, energising, soul-soothing things – all the things that 
-makes us feel alive and connected to our deeper purpose.
+- The time we save by applying the 80/20 principle to our work tasks should NOT be reinvested in work. The point of 
+this exercise is precisely to work less but smarter. The point is to free ourselves up to take breaks, to relax, to 
+think, to just be, to connect with others, and to do more nourishing, energising, soul-soothing things – all the things 
+that makes us feel alive and connected to our deeper purpose.
 
 {h3('See also')}
 
 [How to Work Less, Live More, and Be More Effective](https://www.psychologytoday.com/gb/blog/the-art-of-self-improvement/202312/work-less-live-more-and-be-more-effective)
+by Anna Katharina Schaffner Ph.D:
 
-(C) Anna Katharina Schaffner Ph.D.
+> *"If we double our time on our top 20 percent of activities, we can work a two-day week and achieve 60 percent more 
+than now."*
+
+[Warren Buffett's 5/25 Rule](https://jamesclear.com/buffett-focus) - a similar method which prescribes the number of 
+tasks. It works best for strategic planning, monthly and weekly backlogs.
 
 ## 20: 20% Effort, 80% Outcomes
 
@@ -300,84 +304,9 @@ Which of the non-generative activities can I minimize? Which activities can I sa
 
 -----------------------------------------------------------------------------------------------------------------------
 
-# Buffett: Warren Buffett's 5/25 Rule
-
-- TO DO
-
-{h3('When to use it')}
-
-This is similar to the Pareto Principle, but prescribes the number of tasks. It works best for strategic planning, 
-monthly and weekly backlogs, etc.
-
-{h3('In practice')}
-
-- TO DO
-
-{h3('See also')}
-
-TO DO
-
-## 5: Top-5 Tasks (focus)
-
-## 20: Remaining 20 Tasks (eliminate)
-
------------------------------------------------------------------------------------------------------------------------
-
-# MSCW: MoSCoW Method
-
-This method works well for prioritizing tasks within a project. You'd use it for organizing bigger backlogs.
-
-{h3('When to use it')}
-
-TODO
-
-{h3('In practice')}
-
-- Relative priorities within "should have" and "could have" classes affect decisions on trade-in and trade-out.
-
-- It is important to distinguish between the "Must haves" and the rest, but less important to distinguish between 
-"Should haves" and "Could haves". It is important to order tasks in the two middle sections.
-
-- Should re-evaluate the items regularly.
-
-{h3('See also')}
-
-[MoSCoW method (Wikipedia)](https://en.wikipedia.org/wiki/MoSCoW_method)
-
-[Fast-track: a RAD approach](https://archive.org/details/fasttrackradappr0000cleg/mode/2up)
-
-(C) Dai Clegg
-
-## M: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-
-Requirements labelled as Must have are critical to the current delivery timebox in order for it to be a success. If even 
-one Must have requirement is not included, the project delivery should be considered a failure (note: requirements can 
-be downgraded from Must have, by agreement with all relevant stakeholders; for example, when new requirements are deemed 
-more important). MUST can also be considered an acronym for the Minimum Usable Subset.
-
-## S: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-
-Requirements labelled as Should have are important but not necessary for delivery in the current delivery timebox. While 
-Should have requirements can be as important as Must have, they are often not as time-critical or there may be another 
-way to satisfy the requirement so that it can be held back until a future delivery timebox.
-
-## C: C - Could have (desirable but not necessary / if time allows some of thest may be delivered)
-
-Requirements labelled as Could have are desirable but not necessary and could improve the user experience or customer 
-satisfaction for a little development cost. These will typically be included if time and resources permit.
-
-## W: W - Won't have (least-critical or not appropriate / the project will not deliver these)
-
-Requirements labelled as Won't have, have been agreed by stakeholders as the least-critical, lowest-payback items, or 
-not appropriate at that time. As a result, Won't have requirements are not planned into the schedule for the next 
-delivery timebox. Won't have requirements are either dropped or reconsidered for inclusion in a later timebox. (Note: 
-occasionally the term Would like to have is used; however, that usage is incorrect, as this last priority is clearly 
-stating something is outside the scope of delivery). (The BCS in edition 3 & 4 of the Business Analysis Book describe 
-'W' as 'Want to have but not this time around')
-
------------------------------------------------------------------------------------------------------------------------
-
 # MSW: Must, Should, Want
+
+TODO: Describe
 
 {h3('When to use it')}
 
@@ -389,6 +318,13 @@ evaluate in practice.
 - It doesn't tell you what to do once you categorized the tasks.
 
 {h3('In practice')}
+
+- Relative priorities within "should have" and "could have" classes affect decisions on trade-in and trade-out.
+
+- It is important to distinguish between the "Must haves" and the rest, but less important to distinguish between 
+"Should haves" and "Could haves". It is important to order tasks in the two middle sections.
+
+- Should re-evaluate the items regularly.
 
 This method is the easiest to categorize your tasks in practice.
 
@@ -402,8 +338,12 @@ Try with only one task in each category -- the results might surprise you.
 {h3('See also')}
 
 [Get the Best Start](https://web.archive.org/web/20140507073715/http://www.jayshirley.com/blog/2014/3/31/best-start-of-the-day)
+by Jay Shirley.
 
-(C) Jay Shirley
+[MoSCoW Method](https://en.wikipedia.org/wiki/MoSCoW_method) - a slightly more formal and sophisticated *project* 
+prioritization technique. You'd use it for organizing bigger backlogs.
+
+[Fast-track: a RAD approach](https://archive.org/details/fasttrackradappr0000cleg/mode/2up) by Dai Clegg.
 
 ## M: I must...
 
@@ -430,35 +370,6 @@ when the day fills up.
 
 It's too easy to ignore this, especially when you work under stress. This leads to overfocus, which reduces productivity
 in the long term.
-
------------------------------------------------------------------------------------------------------------------------
-
-# Jar: Pickle Jar Theory
-
-> *There’s something about a nice crunchy pickle, isn’t there?*
-
-{h3('When to use it')}
-
-It's a fun view on the same technique as 1-2-3. The analogy works well for some people. If you find it silly -- choose
-another prioritization technique.
-
-{h3('In practice')}
-
-TO DO
-
-{h3('See also')}
-
-[Time Management: The Pickle Jar Theory](https://alistapart.com/article/pickle/)
-
-(C) Jeremy Wright
-
-## Rocks: Rocks (big, important goals or tasks)
-
-## Pebbles: Pebbles (urgent but non-essential tasks)
-
-## Sand: Sand (small distractions and busywork)
-
-## Water: Water (private life, downtime, or hobbies)
 
 -----------------------------------------------------------------------------------------------------------------------
 """
