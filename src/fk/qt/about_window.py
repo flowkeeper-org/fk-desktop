@@ -31,12 +31,14 @@ class AboutWindow(QObject):
     _timer_display: MinimalTimerRenderer
     _timer: AbstractTimer
     _tick: int
+    _software_versions: str
 
-    def __init__(self, parent: QWidget | None):
+    def __init__(self, parent: QWidget | None, software_versions: str):
         super().__init__(parent)
         self._timer_display = None
         self._timer = QtTimer('About window', self)
         self._tick = 299
+        self._software_versions = software_versions
 
         file = QFile(":/about.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
@@ -69,6 +71,10 @@ class AboutWindow(QObject):
         file.open(QFile.OpenModeFlag.ReadOnly)
         about_license.setMarkdown(file.readAll().toStdString())
         file.close()
+
+        # noinspection PyTypeChecker
+        about_system_info: QTextEdit = self._about_window.findChild(QTextEdit, "system_info")
+        about_system_info.setMarkdown(f'# Software versions\n\n{self._software_versions}')
 
         # noinspection PyTypeChecker
         about_icon: QLabel = self._about_window.findChild(QLabel, "icon")

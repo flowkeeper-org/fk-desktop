@@ -209,7 +209,7 @@ class Application(QApplication, AbstractEventEmitter):
                 f'- Python: {sys.version}\n'
                 f'- Platform: {platform.system()} {platform.release()} {platform.version()}\n'
                 f'- Sandbox: {get_sandbox_type()}\n'
-                f'- Kernel: {platform.platform()}\n')
+                f'- Kernel: {platform.platform()}\n').replace('#', '# ')
 
     def _initialize_logger(self):
         debug = '--debug' in self.arguments()
@@ -426,7 +426,7 @@ class Application(QApplication, AbstractEventEmitter):
                                    QMessageBox.StandardButton.Ok,
                                    QMessageBox.StandardButton.Open)
                 == QMessageBox.StandardButton.Open):
-            versions = self._get_versions().replace('#', '# ')
+            versions = self._get_versions()
             params = urllib.parse.urlencode({
                 'labels': 'exception',
                 'title': f'Unhandled {exc_type.__name__}',
@@ -695,7 +695,7 @@ class Application(QApplication, AbstractEventEmitter):
                      self.activeWindow()).show()
 
     def show_about(self):
-        AboutWindow(self.activeWindow()).show()
+        AboutWindow(self.activeWindow(), self._get_versions()).show()
 
     def toggle_toolbar(self, _, state: bool):
         self._settings.set({ S.APPLICATION_SHOW_TOOLBAR: str(state) })
