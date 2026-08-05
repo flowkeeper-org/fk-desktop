@@ -168,6 +168,20 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tab_system_info">
+      <attribute name="title">
+       <string>System info</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QTextEdit" name="system_info">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
