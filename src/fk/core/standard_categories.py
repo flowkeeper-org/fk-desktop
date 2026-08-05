@@ -10,22 +10,18 @@ def h3(text: str) -> str:
 STANDARD_WORKITEM_CATEGORIES = f"""
 # 123: 1-2-3 Rule
 
-> *"Forcing yourself to choose a 1-3-5 list means the things you get done will be the things you chose to do—rather than 
-what just happened to get done."*
-
-{h3('Main idea')}
-
 Split your work into three categories: 
 
-1. A **single** complex task (see advice below), 
+1. A **single** complex task, 
 2. two secondary tasks for stuff like calls, meetings and helping your colleagues, 
 3. and three little "maintenance" things like cleaning your desk, responding to emails, or filling time sheets.
 
-Use it
+{h3('When to use it')}
 
 - For daily backlogs,
+- if you tend to postpone large complex tasks till the deadline,
 - if you can free your entire morning from calls, meetings, etc.,
-- when you don't like breaking your complex work into subtasks.
+- when you don't like breaking your complex work into subtasks and prefer keeping things as simple as possible.
 
 {h3('In practice')}
 
@@ -51,20 +47,6 @@ day.
 5. Before leaving work, take a few minutes to define your 1-2-3 for the next day, so you're ready to hit the ground 
 running in the morning.
 
-{h3('Compared to other methods')}
-
-The 1-2-3, 3-3-3 and ABCD methods are very similar and focus on completing complex and unpleasant work first. They 
-assume that *everything* that is planned needs to be done. This class of techniques should work best for the likes of 
-software developers.
-
-- 1-2-3 Rule only defines the number of tasks (just six for a day!) and is the simplest of the three.
-- 3-3-3 Method prescribes the duration for the first task and has seven of them in total. It's a good choice if you 
-tend to underestimate your work.
-- ABCDE Method is the least prescriptive of the three, and helps you identify work that you can delegate to others or 
-not do at all.
-
-Other methods value simplicity, prioritize importance VS urgency, or focus on removing unnecessary work.
-
 {h3('See also')}
 
 [Follow the 1-3-5 Rule](https://www.themuse.com/advice/why-you-never-finish-your-todo-lists-at-work-and-how-to-change-that)
@@ -87,11 +69,8 @@ Other methods value simplicity, prioritize importance VS urgency, or focus on re
 
 # ABCDE: ABCDE Method
 
-This method helps you prioritize work items. It doesn't care about tasks count, duration or complexity.
-
-{h3('Main idea')}
-
-Split your work into five categories: 
+This method helps you prioritize work items. It doesn't care about tasks count, duration or complexity. Split your work 
+into five categories: 
 
 1. A: The most important, critical tasks, 
 2. B: Tasks with only minor consequences if not completed, 
@@ -99,7 +78,7 @@ Split your work into five categories:
 4. D: Work that you can delegate to others,
 5. E: Activities you should eliminate altogether.
 
-Use it
+{h3('When to use it')}
 
 - For large and high-level backlogs (weekly TODOs, project plans, etc.),
 - if you don't want to estimate each task at this stage,
@@ -221,13 +200,17 @@ After all, you can only get your time under control if you stop doing things tha
 > *"I have two kinds of problems: the urgent and the important. The urgent are not important, and the important are never 
 urgent."* - Dwight D. Eisenhower
 
-{h3('Key points')}
+TODO: Describe
 
 - People instinctively tend to prioritize urgent items, which is rarely the right thing to do
 
 - Eisenhower Matrix aims at distinguishing between the two
 
 - Try it if you feel that you do too much fire fighting
+
+{h3('When to use it')}
+
+TODO
 
 {h3('In practice')}
 
@@ -283,13 +266,15 @@ Tasks that are neither urgent nor important get whatever time is left over.
 > *"If we double our time on our top 20 percent of activities, we can work a two-day week and achieve 60 percent more 
 than now."*
 
-{h3('Key points')}
-
 - Focus on the 20 percent of activities that generate 80 percent of your successes.
 
 - The 80/20 principle allows you to work less, live more, and be more effective.
 
 - A shocking 80 percent of our activities at work are probably a waste of our energy and time.
+
+{h3('When to use it')}
+
+TODO
 
 {h3('In practice')}
 
@@ -319,12 +304,12 @@ Which of the non-generative activities can I minimize? Which activities can I sa
 
 # Buffett: Warren Buffett's 5/25 Rule
 
+- TO DO
+
+{h3('When to use it')}
+
 This is similar to the Pareto Principle, but prescribes the number of tasks. It works best for strategic planning, 
 monthly and weekly backlogs, etc.
-
-{h3('Key points')}
-
-- TO DO
 
 {h3('In practice')}
 
@@ -345,16 +330,18 @@ TO DO
 > *"You almost certainly can't consistently do the kind of work that demands serious mental focus for more than about 
 three or four hours a day."*
 
-{h3('Key points')}
+TODO
+
+{h3('When to use it')}
+
+- It works best if you can allocate 3 -- 4 hours of uninterrupted focused time in your day, ideally in the morning.
+
+{h3('In practice')}
 
 - It creates a structure for your workday and helps you decide when to do what. In the morning, spend 3 hours working 
 on your most important task. Then in the afternoon, do the shorter tasks and the maintenance tasks. 
 
 - It keeps us from falling behind on maintenance tasks.
-
-- It works best if you can allocate 3 -- 4 hours of uninterrupted focused time in your day, ideally in the morning.
-
-{h3('In practice')}
 
 This is not just a prioritization technique, but a method to structure your day.
 
@@ -374,7 +361,11 @@ This is not just a prioritization technique, but a method to structure your day.
 
 This method works well for prioritizing tasks within a project. You'd use it for organizing bigger backlogs.
 
-{h3('Key points')}
+{h3('When to use it')}
+
+TODO
+
+{h3('In practice')}
 
 - Relative priorities within "should have" and "could have" classes affect decisions on trade-in and trade-out.
 
@@ -382,10 +373,6 @@ This method works well for prioritizing tasks within a project. You'd use it for
 "Should haves" and "Could haves". It is important to order tasks in the two middle sections.
 
 - Should re-evaluate the items regularly.
-
-{h3('In practice')}
-
-TO DO
 
 {h3('See also')}
 
@@ -426,9 +413,9 @@ stating something is outside the scope of delivery). (The BCS in edition 3 & 4 o
 
 # MSW: Must, Should, Want
 
-It's a simplified version of the MoSCoW method, which works brilliantly for personal backlogs.
+{h3('When to use it')}
 
-{h3('Key points')}
+It's a simplified version of the MoSCoW method, which works brilliantly for personal backlogs.
 
 - Unlike techniques focused on sizing the tasks, this one focuses on perceived importance, which might be easier to 
 evaluate in practice.
@@ -484,12 +471,10 @@ in the long term.
 
 > *There’s something about a nice crunchy pickle, isn’t there?*
 
+{h3('When to use it')}
+
 It's a fun view on the same technique as 1-2-3. The analogy works well for some people. If you find it silly -- choose
 another prioritization technique.
-
-{h3('Key points')}
-
-- TO DO
 
 {h3('In practice')}
 
