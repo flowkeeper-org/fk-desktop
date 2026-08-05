@@ -74,7 +74,7 @@ class AboutWindow(QObject):
 
         # noinspection PyTypeChecker
         about_system_info: QTextEdit = self._about_window.findChild(QTextEdit, "system_info")
-        about_system_info.setMarkdown(f'# Software versions\n\n{self._software_versions}')
+        about_system_info.setText(f'# Software versions\n\n{self._software_versions}')
 
         # noinspection PyTypeChecker
         about_icon: QLabel = self._about_window.findChild(QLabel, "icon")

@@ -55,9 +55,12 @@ form ([example 1](https://github.com/flowkeeper-org/fk-desktop/issues/119), [exa
 Describing your specific use case will help us prioritize it.
 
 If Flowkeeper crashes due to some error, there's a button to report it on GitHub -- please use it. Otherwise, you can
-use [this bug report](https://github.com/flowkeeper-org/fk-desktop/issues/199) as an example / template.
+use [this bug report](https://github.com/flowkeeper-org/fk-desktop/issues/199) as an example / template. It will help if you attach software versions info to the issue, 
+see About > System info.
+
 To troubleshoot complex cases, you can enable debug logs in Settings (F10) > General > Log level, or use `--debug`
-command-line flag when you launch Flowkeeper.
+command-line flag when you launch Flowkeeper. Its output will also contain software versions info, just in case your 
+Flowkeeper can't get you to About window.
 
 Testing Flowkeeper in a dev environment is straightforward, see
 the [README](https://github.com/flowkeeper-org/fk-desktop/blob/main/README.md#testing-flowkeeper).

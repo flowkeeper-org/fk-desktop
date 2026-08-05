@@ -145,8 +145,8 @@ InfoOverlay #overlay_text, #prev_button {
     padding: 10px 10px 10px 10px;
 }
 
-#work_summary_results {
-    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
+#work_summary_results, #system_info {
+    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Sans Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
 }
 
 #trayDark {
