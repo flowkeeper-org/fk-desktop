@@ -14,18 +14,18 @@ Split your work into three categories:
 
 1. A **single** complex task, 
 2. two secondary tasks for stuff like calls, meetings and helping your colleagues, 
-3. and three little "maintenance" things like cleaning your desk, responding to emails, or filling time sheets.
+3. and three "maintenance" things like cleaning your desk, responding to emails, or filling time sheets.
 
 {h3('When to use it')}
 
 - For daily backlogs,
 - if you tend to postpone large complex tasks till the deadline,
-- if you can free your entire morning from calls, meetings, etc.,
+- if you can free your entire morning from calls and meetings,
 - when you don't like breaking your complex work into subtasks and prefer keeping things as simple as possible.
 
 {h3('In practice')}
 
-1. Decline calls and meetings in the first half of the day. Close your messenger, email, turn off the phone, etc. Your
+1. Decline calls and meetings in the first half of the day. Close your messenger, email, and turn off the phone. Your
 productivity in the morning defines whether the rest of the day will succeed or fail. Doing the "complex task" in the 
 afternoon is much, MUCH less efficient.
 
@@ -33,7 +33,7 @@ afternoon is much, MUCH less efficient.
  * You aim at extracting maximum productivity from the morning session. The "big" item thus doesn't have to be specific 
  -- "Work on the bugs in Jira" would be a valid target, as long as you focus on it. 
  * Be realistic with the estimate for this session. On Monday you might be able to do 7 pomodoros, and on Friday -- 
- only 5. Don't overestimate it, since you still want to complete the remaining things on your list.
+ 5 or even 4. Don't overestimate it, since you still want to complete the remaining things on your list.
  * It is important that you don't plan anything else in between. Do not start working on other tasks before you 
  completed the first one. Protect your Pomodoro twice as hard in the morning.
 
@@ -47,11 +47,24 @@ day.
 5. Before leaving work, take a few minutes to define your 1-2-3 for the next day, so you're ready to hit the ground 
 running in the morning.
 
+{h3('Compared to other methods')}
+
+The 1-2-3 and ABCDE are very similar and focus on completing complex and unpleasant work first. They both assume that 
+*everything* you planned needs to be done.
+
+- 1-2-3 Rule defines the number of tasks (just six for a day!) and is slightly easier to use.
+
+- ABCDE Method is less prescriptive and helps you identify work that you can delegate to others or just skip.
+
+Other methods value simplicity, prioritize importance VS urgency, or focus on removing unnecessary work.
+
 {h3('See also')}
 
-[Follow the 1-3-5 Rule](https://www.themuse.com/advice/why-you-never-finish-your-todo-lists-at-work-and-how-to-change-that)
+[Why You Never Finish Your To-Do Lists at Work (And How to Change That)](https://www.themuse.com/advice/why-you-never-finish-your-todo-lists-at-work-and-how-to-change-that)
+by Alex Cavoulacos / The Muse. 1-3-5 is a common variant of 1-2-3, which only differs in the number of tasks.
 
-(C) Alex Cavoulacos / The Muse
+[The 3-3-3 Method: A Smarter Way to Work (and Live)](https://thinksmarter.substack.com/p/the-3-3-3-method-a-smarter-way-to)
+by Emily M Austen. 3-3-3 is a similar technique, which prescribes three hours for the most complex task.
 
 ## 1: One large task (important, big-win task you must complete)
 
@@ -69,76 +82,48 @@ running in the morning.
 
 # ABCDE: ABCDE Method
 
-This method helps you prioritize work items. It doesn't care about tasks count, duration or complexity. Split your work 
-into five categories: 
+This method helps you prioritize work items. It doesn't care about tasks count, duration or complexity. Assign your work 
+to one of the five groups: 
 
-1. A: The most important, critical tasks, 
-2. B: Tasks with only minor consequences if not completed, 
-3. C: Nice-to-do items with no significant consequence whether done or not,
-4. D: Work that you can delegate to others,
-5. E: Activities you should eliminate altogether.
+1. The task you **A**bsolutely have to complete, 
+2. Tasks you should **B**etter complete, 
+3. Nice-to-dos with no consequence if you **C**ancel them,
+4. Work that you can **D**elegate to others,
+5. Activities you should **E**liminate altogether.
 
 {h3('When to use it')}
 
-- For large and high-level backlogs (weekly TODOs, project plans, etc.),
-- if you don't want to estimate each task at this stage,
+- For large and high-level backlogs (weekly TODOs, project plans),
+- if you don't want to estimate all your tasks at this stage,
 - if you work in a team.
 
 {h3('In practice')}
 
-1. Decline calls and meetings in the first half of the day. Close your messenger, email, turn off the phone, etc. Your
-productivity in the morning defines whether the rest of the day will succeed or fail. Doing the "complex task" in the 
-afternoon is much, MUCH less efficient.
+1. To categorize a task as A, B or C, think about it in terms of *consequences*. A will have major, B -- minor, and 
+C -- no consequence if not done.
 
-2. Your first and most important work item will take about three hours or 6 pomodoros. 
- * You aim at extracting maximum productivity from the morning session. The "big" item thus doesn't have to be specific 
- -- "Work on the bugs in Jira" would be a valid target, as long as you focus on it. 
- * Be realistic with the estimate for this session. On Monday you might be able to do 7 pomodoros, and on Friday -- 
- only 5. Don't overestimate it, since you still want to complete the remaining things on your list.
- * It is important that you don't plan anything else in between. Do not start working on other tasks before you 
- completed the first one. Protect your Pomodoro twice as hard in the morning.
+2. The key to making this method work is for you to discipline yourself to start immediately on your A task. Try to do 
+it in the morning, or as early as possible. Use your willpower to eat the whole frog and don’t stop until it’s finished 
+completely.
 
-3. The second group is a good place for your calls, meetings and overall less important tasks. Create two of such items 
-and allocate 1 -- 2 pomodoros to each one of them.
-
-4. Everything else goes into the third group. It doesn't deserve more than one, maximum two pomodoros *in total*. This 
-way you'll do about 6 + 3 + 1 = 10 pomodoros, which is a comfortable and realistic estimate for an average productive 
-day.
-
-5. Before leaving work, take a few minutes to define your 1-2-3 for the next day, so you're ready to hit the ground 
-running in the morning.
+3. You can categorize a task using several methods. For example, you can use ABCDE in your Project backlog, and then 
+drag tasks from there into your daily Pomodoro backlog, where you group them using 1-2-3 method.
 
 {h3('Compared to other methods')}
 
-The 1-2-3, 3-3-3 and ABCD methods are very similar and focus on completing complex and unpleasant work first. They 
-assume that *everything* that is planned needs to be done. This class of techniques should work best for the likes of 
-software developers.
+The 1-2-3 and ABCDE are very similar and focus on completing complex and unpleasant work first. They both assume that 
+*everything* you planned needs to be done.
 
-- 1-2-3 Rule only defines the number of tasks (just six for a day!) and is the simplest of the three.
-- 3-3-3 Method prescribes the duration for the first task and has seven of them in total. It's a good choice if you 
-tend to underestimate your work.
-- ABCDE Method is the least prescriptive of the three, and helps you identify work that you can delegate to others or 
-not do at all.
+- 1-2-3 Rule defines the number of tasks (just six for a day!) and is slightly easier to use.
+
+- ABCDE Method is less prescriptive and helps you identify work that you can delegate to others or just skip.
 
 Other methods value simplicity, prioritize importance VS urgency, or focus on removing unnecessary work.
 
-{h3('Key points')}
-
-The key to making this ABCDE Method work is for you to now discipline yourself to start immediately on your "A" task. 
-Stay at it until it is complete. Use your willpower to get going on this one job, the single most important task you 
-could possibly be doing.
-
-Eat the whole frog and don’t stop until it’s finished completely.
-
-{h3('In practice')}
-
-TO DO
-
 {h3('See also')}
 
-Details: [The ABCD List Technique for Setting Priorities](https://www.briantracy.com/blog/time-management/the-abcde-list-technique-for-setting-priorities/)
-
-(C) Brian Tracy.
+[The ABCD List Technique for Setting Priorities](https://www.briantracy.com/blog/time-management/the-abcde-list-technique-for-setting-priorities/)
+by Brian Tracy.
 
 ## A: A - Most important (significant consequences if not completed)
 
@@ -322,38 +307,6 @@ TO DO
 ## 5: Top-5 Tasks (focus)
 
 ## 20: Remaining 20 Tasks (eliminate)
-
------------------------------------------------------------------------------------------------------------------------
-
-# 333: 3-3-3 Method
-
-> *"You almost certainly can't consistently do the kind of work that demands serious mental focus for more than about 
-three or four hours a day."*
-
-TODO
-
-{h3('When to use it')}
-
-- It works best if you can allocate 3 -- 4 hours of uninterrupted focused time in your day, ideally in the morning.
-
-{h3('In practice')}
-
-- It creates a structure for your workday and helps you decide when to do what. In the morning, spend 3 hours working 
-on your most important task. Then in the afternoon, do the shorter tasks and the maintenance tasks. 
-
-- It keeps us from falling behind on maintenance tasks.
-
-This is not just a prioritization technique, but a method to structure your day.
-
-{h3('See also')}
-
-[The three-or-four-hours rule for getting creative work done](https://www.oliverburkeman.com/fourhours)
-
-## 1: Most Important Thing (spend 3 hours on this)
-
-## 2: Short Tasks (maximum 3)
-
-## 3: Maintenance Activities (maximum 3)
 
 -----------------------------------------------------------------------------------------------------------------------
 
