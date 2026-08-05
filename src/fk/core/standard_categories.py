@@ -182,37 +182,50 @@ After all, you can only get your time under control if you stop doing things tha
 
 # Eisenhower: Eisenhower Matrix
 
-> *"I have two kinds of problems: the urgent and the important. The urgent are not important, and the important are never 
-urgent."* - Dwight D. Eisenhower
+> *"I have two kinds of problems: the urgent and the important. The urgent are not important, and the important are 
+never urgent."* - Dwight D. Eisenhower
 
-TODO: Describe
+Split your tasks into four quadrants:
 
-- People instinctively tend to prioritize urgent items, which is rarely the right thing to do
+1. Urgent and Important (with deadlines or consequences),
 
-- Eisenhower Matrix aims at distinguishing between the two
+2. Important but Not Urgent (with unclear deadlines that contribute to long-term success),
 
-- Try it if you feel that you do too much fire fighting
+3. Urgent but Not Important (require your attention, but do not have deadlines or consequences),
+
+4. Not Urgent and Not Important (unnecessary, distractions, and time-wasters).
 
 {h3('When to use it')}
 
-TODO
+- If you have more than one -- two unplanned items every day,
+- if you feel that you do too much fire fighting,
+- if you work hard but don't progress towards your goal,
+- for daily backlogs.
 
 {h3('In practice')}
 
-We tend to give our attention to urgent tasks at the expense of important tasks. Urgent tasks come in hot into our 
-inboxes and scream loudly for resolution. They are almost always someone else's problem, given to us on a short time 
-frame that amplifies their volume. It becomes a serious problem when we are *only* dealing with the urgent and not 
-giving adequate time to the important things that sit there, quietly and patiently.
+- When an unplanned / urgent task arrives, do not start working on it immediately. Record and classify it quickly. 
+Most importantly, protect your current Pomodoro!
 
-Being at the mercy of the latest-and-loudest is no way to live --- you're constantly putting out fires but never 
-building anything, constantly dealing with other people's problems but never developing your professional self, slowly 
-burning out from all the stress and never doing the things you know will be fulfilling.
+- Postpone Urgent and Not Important tasks at least till next day. Try to find someone else to work on it.
+
+- Every Friday move Not Urgent and Not Important tasks from daily backlogs to a "Trash" backlog, cleaning it up first.
+
+{h3('Compared to other methods')}
+
+Eisenhower matrix distinguishes between importance and urgency, prioritizing the former. It implies that a bunch of 
+tasks in your backlog will stay incomplete, and that's OK. In this sense it is similar to Pareto principle and 
+Must-Should-Want.
+
+The matrix doesn't say how many tasks you should have, or how much time you must spend on each one.
+
+Other methods like 1-2-3 and ABCDE are more prescriptive and focus on the execution, assuming that you need to complete
+*everything* in your daily backlog.
 
 {h3('See also')}
 
 [The urgent and the important](https://www.rtalbert.org/blog-archive/index.php/2019/10/14/the-urgent-and-the-important)
-
-(C) Robert Talbert, Ph.D.
+by Robert Talbert, Ph.D.
 
 ## UI: Urgent and Important (with deadlines or consequences)
 
@@ -223,14 +236,14 @@ Example: The professor's unit recommendation for Promotion happens to be due on 
 important --- that's an MIT on my list for tomorrow and has a two-hour block in my calendar tomorrow morning all by 
 itself.
 
-## NUI: Not Urgent and Important (with unclear deadlines that contribute to long-term success)
+## NUI: Important but Not Urgent (with unclear deadlines that contribute to long-term success)
 
 Tasks that are important but not urgent come second. These need to be done; schedule time during the week to do them.
 
 Example: Reading the article about the course redesign is important, but not urgent --- schedule one pomodoro during the 
 week to read and take notes on it, and get it done this week.
 
-## UNI: Urgent and Not Important (require your attention, but do not have deadlines or consequences)
+## UNI: Urgent but Not Important (require your attention, but do not have deadlines or consequences)
 
 Tasks that are urgent but not important are third. Delegate these if possible. Otherwise schedule time for them, but 
 not at the expense of the important stuff.
