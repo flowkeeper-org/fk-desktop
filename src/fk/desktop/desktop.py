@@ -253,6 +253,18 @@ class MainWindow:
             wizard.show()
 
     @staticmethod
+    def on_another_instance():
+        if window.isVisible():
+            window.activateWindow()
+            logger.debug("Another instance triggered: Activated main window")
+        elif focus_window.isVisible():
+            focus_window.activateWindow()
+            logger.debug("Another instance triggered: Activated focus window")
+        else:
+            MainWindow.toggle_main_window(None)
+            logger.debug("Another instance triggered: Toggled main window")
+
+    @staticmethod
     def toggle_backlogs(_, enabled):
         settings.set({S.APPLICATION_BACKLOGS_VISIBLE: str(enabled)})
 
@@ -546,6 +558,7 @@ if __name__ == "__main__":
 
         main_window = MainWindow()
         app.upgraded.connect(main_window.on_upgrade)
+        app.another_instance_launched.connect(main_window.on_another_instance)
 
         # Bind action domains to widget instances
         actions.bind('application', app)

@@ -1,42 +1,29 @@
 ### v1.1.0 (xx October 2025)
 
+New features:
+
 - Full-screen rest notifications (#67).
 - Mute button for the focus mode (#151).
 - Undo item completion (#55).
 - Notification about approaching rest.
-
-- Configurable sections in the task list (#112, #177).
-- Sections for some of the popular productivity methods.
-- Main window is showed when another instance is launched (#89).
-- Another tutorial for first-time installations (#168).
+- Configurable categories in the task list (#112, #177).
+- Built-in support and documentation for some of the popular productivity methods.
+- Main window is activated when another instance is launched (#89).
 - New branding (new icon, description).
 
-- RPM builds and Fedora repos
-- Fixed a few issues when launching Flowkeeper during a long break
+Technical improvements:
 
-- Fixed a few bugs with import/export handling of reordering
 - Fixed a bunch of code quality issues reported by SonarQube
-
-- Added CONTRIBUTING.md
-- Published a snap for snapcraft.io
-- Switched to Nuitka 4.x to compile the binaries
+- RPM builds and Fedora repos in OBS (#127)
+- Snapcraft.io manifest
 - Upgraded to Qt 6.11
+- Added CONTRIBUTING.md
+- Switched to Nuitka 4.x to compile the binaries
 
-TODO: Drag-n-drop events cause breaking of categories. Need to implement category events and listed to them
- in the tableviews
+Bug fixes:
 
-Integrations:
-
-- Import from Microsoft To Do (#150).
-- Import and export for todo.txt format (#86).
-- Preview for import (#155).
-
-Installer improvements:
-
-- WinGet manifest (#76).
-- "Fat" and "minimal" RPM packages (#127).
-- Flowkeeper is added to startup on openSUSE (#184).
-- Debian, Ubuntu and Fedora repos in OBS (#124).
+- Fixed a few issues when launching Flowkeeper during a long break
+- Fixed a few bugs with import/export handling of reordering
 
 ### v1.0.2 (26 September 2025)
 

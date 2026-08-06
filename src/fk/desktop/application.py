@@ -30,7 +30,7 @@ from PySide6.QtCore import QFile, Signal, QStandardPaths
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontMetrics, QGradient, QIcon, QColor
 from PySide6.QtGui import QFontDatabase
-from PySide6.QtNetwork import QNetworkProxyFactory
+from PySide6.QtNetwork import QNetworkProxyFactory, QTcpSocket
 from PySide6.QtNetwork import QTcpServer, QHostAddress
 from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog, QCheckBox
 from semantic_version import Version
@@ -97,6 +97,7 @@ class Application(QApplication, AbstractEventEmitter):
     _current_version: Version
 
     upgraded = Signal(Version)
+    another_instance_launched = Signal()
 
     def __init__(self, args: list[str]):
         super().__init__(args,
@@ -503,11 +504,22 @@ class Application(QApplication, AbstractEventEmitter):
 
     def is_another_instance_running(self) -> bool:
         server = QTcpServer(self)
-        server.setMaxPendingConnections(0)
+        server.setMaxPendingConnections(1)
+
+        def on_connection():
+            conn = server.nextPendingConnection()
+            if conn:
+                conn.close()
+            self.another_instance_launched.emit()
+
+        server.newConnection.connect(on_connection)
         if server.listen(QHostAddress.SpecialAddress.Any, 11501):
             logger.debug(f'Could create a TCP listener on port {server.serverPort()}')
             return False
         else:
+            # Couldn't create a TCP listener, try to connect instead
+            QTcpSocket(self).connectToHost(QHostAddress.SpecialAddress.LocalHost, 11501)
+            # We don't need to wait here, as the server will disconnect
             return True
 
     def show_settings_dialog(self):
