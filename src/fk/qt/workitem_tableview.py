@@ -231,6 +231,9 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
             parent_category: Category|None = self.model().get_selected_category()
             if parent_category is not None:
                 context_menu = QMenu(self)
+                action = QAction(f'&0 Uncategorized', self)
+                action.setData(None)
+                context_menu.addAction(action)
                 for i, child in enumerate(parent_category.values()):
                     action = QAction(f'&{i + 1} {child.get_short_name()}', self)
                     action.setData(child.get_uid())

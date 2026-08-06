@@ -17,6 +17,7 @@ import datetime
 import logging
 
 from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
@@ -214,12 +215,12 @@ class CategoryTableView(AbstractTableView[User, Category]):
                     CategoryTableView.dump_selected_category)
         actions.add('categories_table.openSubCategory',
                     "Open",
-                    'Right',
+                    None,
                     "tool-forward",
                     CategoryTableView.open_selected_category)
         actions.add('categories_table.openParentCategory',
                     "Back",
-                    'Left',
+                    None,
                     "tool-back",
                     CategoryTableView.open_parent_category)
 

@@ -13,8 +13,8 @@ STANDARD_WORKITEM_CATEGORIES = f"""
 Split your work into three categories: 
 
 1. A **single** complex task, 
-2. two secondary tasks for stuff like calls, meetings and helping your colleagues, 
-3. and three "maintenance" things like cleaning your desk, responding to emails, or filling time sheets.
+2. **two** secondary tasks for stuff like calls, meetings and helping your colleagues, 
+3. and **three** "maintenance" things like cleaning your desk, responding to emails, or filling time sheets.
 
 {h3('When to use it')}
 
@@ -49,10 +49,10 @@ running in the morning.
 
 {h3('Compared to other methods')}
 
-The 1-2-3 and ABCDE are very similar and focus on completing complex and unpleasant work first. They both assume that 
+The 1-2-3 and ABCDE are very similar and focus on completing important and unpleasant work first. They both assume that 
 *everything* you planned needs to be done.
 
-- 1-2-3 Rule defines the number of tasks (just six for a day!) and is slightly easier to use.
+- 1-2-3 Rule defines the number of tasks (just six for a day!) and their "size". It is slightly easier to use.
 
 - ABCDE Method is less prescriptive and helps you identify work that you can delegate to others or just skip.
 
@@ -82,8 +82,7 @@ by Emily M Austen. 3-3-3 is a similar technique, which prescribes three hours fo
 
 # ABCDE: ABCDE Method
 
-This method helps you prioritize work items. It doesn't care about tasks count, duration or complexity. Assign your work 
-to one of the five groups: 
+Assign each work item to one of the five groups: 
 
 1. The task you **A**bsolutely have to complete, 
 2. Tasks you should **B**etter complete, 
@@ -109,12 +108,14 @@ completely.
 3. You can categorize a task using several methods. For example, you can use ABCDE in your Project backlog, and then 
 drag tasks from there into your daily Pomodoro backlog, where you group them using 1-2-3 method.
 
+4. Every Friday move "D" and "E" tasks from daily backlogs to a "Trash" backlog, cleaning it up first.
+
 {h3('Compared to other methods')}
 
-The 1-2-3 and ABCDE are very similar and focus on completing complex and unpleasant work first. They both assume that 
+The 1-2-3 and ABCDE are very similar and focus on completing important and unpleasant work first. They both assume that 
 *everything* you planned needs to be done.
 
-- 1-2-3 Rule defines the number of tasks (just six for a day!) and is slightly easier to use.
+- 1-2-3 Rule defines the number of tasks (just six for a day!) and their "size". It is slightly easier to use.
 
 - ABCDE Method is less prescriptive and helps you identify work that you can delegate to others or just skip.
 
@@ -187,17 +188,17 @@ never urgent."* - Dwight D. Eisenhower
 
 Split your tasks into four quadrants:
 
-1. Urgent and Important (with deadlines or consequences),
+1. **Urgent and Important** (with deadlines or consequences),
 
-2. Important but Not Urgent (with unclear deadlines that contribute to long-term success),
+2. **Important** but Not Urgent (with unclear deadlines that contribute to long-term success),
 
-3. Urgent but Not Important (require your attention, but do not have deadlines or consequences),
+3. **Urgent** but Not Important (require your attention, but do not have deadlines or consequences),
 
 4. Not Urgent and Not Important (unnecessary, distractions, and time-wasters).
 
 {h3('When to use it')}
 
-- If you have more than one -- two unplanned items every day,
+- If you have more than a couple of unplanned items every day,
 - if you feel that you do too much fire fighting,
 - if you work hard but don't progress towards your goal,
 - for daily backlogs.
@@ -207,9 +208,9 @@ Split your tasks into four quadrants:
 - When an unplanned / urgent task arrives, do not start working on it immediately. Record and classify it quickly. 
 Most importantly, protect your current Pomodoro!
 
-- Postpone Urgent and Not Important tasks at least till next day. Try to find someone else to work on it.
+- Postpone new Urgent and Not Important tasks at least till next day. Try to find someone else to work on it.
 
-- Every Friday move Not Urgent and Not Important tasks from daily backlogs to a "Trash" backlog, cleaning it up first.
+- Every Friday move *Not Urgent and Not Important* tasks from daily backlogs to a "Trash" backlog, cleaning it up first.
 
 {h3('Compared to other methods')}
 
@@ -261,8 +262,7 @@ Tasks that are neither urgent nor important get whatever time is left over.
 
 # Pareto: Pareto Principle
 
-Split your work in two simple groups and focus on the 20 percent of activities that generate 80 percent of your 
-successes:
+Use two simple categories and focus on completing work items from the first group:
 
 1. 20% Effort, 80% Outcomes
 2. 80% Effort, 20% Outcomes
@@ -275,13 +275,19 @@ successes:
 
 {h3('In practice')}
 
-- When we act less, we think more. And we think better. Most valuable creative ideas come to us when we are not 
-hyper-busy or stressed, but in a calmer, more contemplative and receptive frame of mind.
+- In reality most of the tasks will fall into a ~50:50 gray zone. Consider them as "80% effort" by default. Aim at 1:5
+ratio between the first and second groups.
 
-- The time we save by applying the 80/20 principle to our work tasks should NOT be reinvested in work. The point of 
-this exercise is precisely to work less but smarter. The point is to free ourselves up to take breaks, to relax, to 
-think, to just be, to connect with others, and to do more nourishing, energising, soul-soothing things – all the things 
-that makes us feel alive and connected to our deeper purpose.
+- Automatically postpone new tasks from the second group at least till next day.
+
+- Every Friday move *80% Effort, 20% Outcome* tasks from daily backlogs to a "Trash" backlog, cleaning it up first.
+
+- When we act less, we think more and better. Do not reinvest the saved time in work. Use it to reflect, relax and 
+self-improve.
+
+{h3('Compared to other methods')}
+
+With just two categories, Pareto principle is the simplest categorization method possible.
 
 {h3('See also')}
 
@@ -306,42 +312,45 @@ Which of the non-generative activities can I minimize? Which activities can I sa
 
 # MSW: Must, Should, Want
 
-TODO: Describe
+Fill your backlog for the day by asking yourself three questions:
+
+- What **must** I do to create the most impact today?
+- What **should** I do to build a better future?
+- What do I **want** to do so that I may enjoy today and life more completely?
 
 {h3('When to use it')}
 
-It's a simplified version of the MoSCoW method, which works brilliantly for personal backlogs.
-
-- Unlike techniques focused on sizing the tasks, this one focuses on perceived importance, which might be easier to 
-evaluate in practice.
-
-- It doesn't tell you what to do once you categorized the tasks.
+- If you are dissatisfied with the results of your work,
+- if other techniques seem annoyingly prescriptive,
+- for daily and weekly backlogs,
+- for personal projects,
+- for budgeting and organizing your shopping lists.
 
 {h3('In practice')}
 
-- Relative priorities within "should have" and "could have" classes affect decisions on trade-in and trade-out.
+- Relative priorities within "should do" and "want" classes affect decisions on trade-in and trade-out.
 
-- It is important to distinguish between the "Must haves" and the rest, but less important to distinguish between 
-"Should haves" and "Could haves". It is important to order tasks in the two middle sections.
+- It is important to distinguish between the "Must do" and the rest, but less important to distinguish between "Should 
+do" and "Want". 
 
-- Should re-evaluate the items regularly.
+- You can get an extra prioritization dimension by ordering tasks within each category.
 
-This method is the easiest to categorize your tasks in practice.
+- Re-evaluate the items regularly, as your priorities change. Do NOT discard your "wants" automatically.
 
-It’s also helpful for budgeting. Before you get paid or go shopping, make a list of what you must buy, what you should 
-buy, and what you want to buy. Even seeing it written out like that will help you make better purchasing decisions.
+- Try to start with only one task in each category, the results might surprise you.
 
-Spend a few minutes to review your previous day before planning the new one.
+{h3('Compared to other methods')}
 
-Try with only one task in each category -- the results might surprise you.
+This method must be the easiest to categorize your tasks in practice. It gives you maximum freedom and doesn't tell
+you what to do with the tasks once you grouped them.
 
 {h3('See also')}
 
 [Get the Best Start](https://web.archive.org/web/20140507073715/http://www.jayshirley.com/blog/2014/3/31/best-start-of-the-day)
 by Jay Shirley.
 
-[MoSCoW Method](https://en.wikipedia.org/wiki/MoSCoW_method) - a slightly more formal and sophisticated *project* 
-prioritization technique. You'd use it for organizing bigger backlogs.
+[MoSCoW Method](https://en.wikipedia.org/wiki/MoSCoW_method) - a more formal and sophisticated *project* prioritization 
+technique. You can use it for organizing bigger backlogs.
 
 [Fast-track: a RAD approach](https://archive.org/details/fasttrackradappr0000cleg/mode/2up) by Dai Clegg.
 

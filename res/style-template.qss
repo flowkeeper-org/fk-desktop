@@ -81,7 +81,7 @@ QMainWindow, #StatsWindow, #FocusBackground {
 }
 
 #categories_info {
-    font-family: "EB Garamond", "Crimson Text", "Georgia", "IBM Plex Serif", "Plex Serif", "Times New Roman", Serif;
+    font-family: "EB Garamond", "Crimson Text", "Georgia", "IBM Plex Serif", "Plex Serif", "Times New Roman", "Noto Serif", "Serif";
 }
 
 #workitems_table {
