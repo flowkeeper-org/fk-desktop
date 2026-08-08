@@ -185,11 +185,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             w = self._create_button("focus.muteAudio")
             self._added.append(w)
             layout.addWidget(w)
+            self._update_mute_action_state()
+
             if "window.pinWindow" in self._actions:
                 w = self._create_button("window.pinWindow")
                 self._added.append(w)
                 layout.addWidget(w)
-
 
         elif flavor == 'minimal':
             w = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding)
@@ -234,7 +235,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
-        actions.add('focus.muteAudio', "Audio", None, ("tool-unmute", "tool-mute"), FocusWidget._mute_audio, is_toggle=True, is_checked=True)
+        actions.add('focus.muteAudio', "Mute", None, ("tool-no-sound", "tool-no-sound"), FocusWidget._mute_audio, is_toggle=True, is_checked=False)
 
     def _create_button(self,
                        name: str,
@@ -259,10 +260,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._actions['focus.voidPomodoro'].setDisabled(True)
             self._actions['focus.interruption'].setVisible(False)
             self._actions['focus.interruption'].setDisabled(True)
-            self._actions['focus.muteAudio'].setVisible(False)
-            self._actions['focus.muteAudio'].setDisabled(True)
             self._actions['focus.finishTracking'].setVisible(False)
             self._actions['focus.finishTracking'].setDisabled(True)
+        self._actions['focus.muteAudio'].setVisible(False)
+        self._actions['focus.muteAudio'].setDisabled(True)
         self._timer_widget.reset()
 
     def eye_candy(self):
@@ -307,30 +308,36 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         if S.APPLICATION_THEME in new_values:
             self._update_colors()
+
         if S.APPLICATION_EYECANDY_TYPE in new_values or \
                 S.APPLICATION_EYECANDY_GRADIENT in new_values or \
                 S.APPLICATION_EYECANDY_IMAGE in new_values:
             self.eye_candy()
+
         if self._hint_label is not None and S.APPLICATION_SHOW_CLICK_HERE_HINT in new_values:
             self._hint_label.hide()
+
         if S.APPLICATION_PLAY_ALARM_SOUND in new_values or \
                 S.APPLICATION_PLAY_REST_SOUND in new_values or \
                 S.APPLICATION_PLAY_TICK_SOUND in new_values:
+            play_alarm = new_values.get(S.APPLICATION_PLAY_ALARM_SOUND, None)
+            play_rest = new_values.get(S.APPLICATION_PLAY_REST_SOUND, None)
+            play_tick = new_values.get(S.APPLICATION_PLAY_TICK_SOUND, None)
+            self._update_mute_action_state(play_alarm, play_rest, play_tick)
 
-            play_alarm = new_values.get(S.APPLICATION_PLAY_ALARM_SOUND,
-                                        self._settings.get(S.APPLICATION_PLAY_ALARM_SOUND)) == 'True'
-            play_rest = new_values.get(S.APPLICATION_PLAY_REST_SOUND,
-                                       self._settings.get(S.APPLICATION_PLAY_REST_SOUND)) == 'True'
-            play_tick = new_values.get(S.APPLICATION_PLAY_TICK_SOUND,
-                                       self._settings.get(S.APPLICATION_PLAY_TICK_SOUND)) == 'True'
-
-            is_checked = play_alarm or play_rest or play_tick
-
-            action = self._actions._actions.get('focus.muteAudio')
-            if action is not None:
-                action.blockSignals(True)
-                action.setChecked(is_checked)
-                action.blockSignals(False)
+    def _update_mute_action_state(self, play_alarm: str = None, play_rest: str = None, play_tick: str = None) -> None:
+        if play_alarm is None:
+            play_alarm = self._settings.get(S.APPLICATION_PLAY_ALARM_SOUND)
+        if play_rest is None:
+            play_rest = self._settings.get(S.APPLICATION_PLAY_REST_SOUND)
+        if play_tick is None:
+            play_tick = self._settings.get(S.APPLICATION_PLAY_TICK_SOUND)
+        audio_enabled = play_alarm == 'True' or play_rest == 'True' or play_tick == 'True'
+        mute_action = self._actions['focus.muteAudio']
+        if mute_action is not None:
+            mute_action.blockSignals(True)
+            mute_action.setChecked(not audio_enabled)
+            mute_action.blockSignals(False)
 
     def _on_fonts_changed(self, event, header_font, **kwargs):
         self._header_text.setFont(header_font)
@@ -393,11 +400,11 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         start_workitem(self._continue_workitem, self._source_holder.get_source())
 
     def _mute_audio(self, state) -> None:
-        is_checked = self._actions['focus.muteAudio'].isChecked()
+        audio_enabled = not self._actions['focus.muteAudio'].isChecked()
         self._settings.set({
-            S.APPLICATION_PLAY_ALARM_SOUND: str(is_checked),
-            S.APPLICATION_PLAY_REST_SOUND: str(is_checked),
-            S.APPLICATION_PLAY_TICK_SOUND: str(is_checked),
+            S.APPLICATION_PLAY_ALARM_SOUND: str(audio_enabled),
+            S.APPLICATION_PLAY_REST_SOUND: str(audio_enabled),
+            S.APPLICATION_PLAY_TICK_SOUND: str(audio_enabled),
         })
 
     def _complete_item(self) -> None:
@@ -425,14 +432,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
                 pomodoro: Pomodoro = self.timer.get_running_pomodoro()
-                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
+                is_long_break = pomodoro.is_long_break()
+                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or is_long_break:
                     self._actions['focus.voidPomodoro'].setVisible(False)
                     self._actions['focus.voidPomodoro'].setDisabled(True)
                     self._actions['focus.interruption'].setVisible(False)
                     self._actions['focus.interruption'].setDisabled(True)
-                    self._actions['focus.muteAudio'].setVisible(False)
-                    self._actions['focus.muteAudio'].setDisabled(True)
-
                     self._actions['focus.finishTracking'].setVisible(True)
                     self._actions['focus.finishTracking'].setDisabled(False)
                 else:
@@ -440,10 +445,12 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._actions['focus.voidPomodoro'].setDisabled(False)
                     self._actions['focus.interruption'].setVisible(True)
                     self._actions['focus.interruption'].setDisabled(False)
-                    self._actions['focus.muteAudio'].setVisible(True)
-                    self._actions['focus.muteAudio'].setDisabled(False)
                     self._actions['focus.finishTracking'].setVisible(False)
                     self._actions['focus.finishTracking'].setDisabled(True)
+
+                self._actions['focus.muteAudio'].setVisible(not is_long_break)
+                self._actions['focus.muteAudio'].setDisabled(is_long_break)
+
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
                 self._actions['focus.completeItem'].setDisabled(False)

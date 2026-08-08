@@ -377,7 +377,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         old_value_rest = settings.get(S.POMODORO_DEFAULT_REST_DURATION)
         old_value_style = settings.get(S.APPLICATION_TIMER_UI_MODE)
         old_value_theme = settings.get(S.APPLICATION_THEME)
+        old_focus_flavor = settings.get(S.APPLICATION_FOCUS_FLAVOR)
         old_gradient = settings.get(S.APPLICATION_EYECANDY_GRADIENT)
+        old_eyecandy_type = settings.get(S.APPLICATION_EYECANDY_TYPE)
         settings.set({
             S.POMODORO_DEFAULT_WORK_DURATION: '1500',
             S.POMODORO_DEFAULT_REST_DURATION: '300',
@@ -385,6 +387,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
             S.APPLICATION_THEME: 'light',
             S.APPLICATION_EYECANDY_GRADIENT: 'OverSun',
         })
+
+        # Re-enable categories
+        await self._select_category('#wg_123')
+        await self.instant_pause()
 
         # Start a Pomodoro in the past
         source = self.get_application().get_source_holder().get_source()
@@ -412,6 +418,14 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.longer_pause()
         self.take_screenshot('19-main-dark')
 
+        settings.set({
+            S.APPLICATION_FOCUS_FLAVOR: 'classic',
+            S.APPLICATION_EYECANDY_TYPE: 'default',
+            S.APPLICATION_THEME: 'desert',
+        })
+        await self.longer_pause()
+        self.take_screenshot('31-classic-focus-flavor')
+
         await self._void_pomodoro('Slides for #Flowkeeper demo')
         await self._complete_workitem('Slides for #Flowkeeper demo')
 
@@ -420,7 +434,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
             S.POMODORO_DEFAULT_REST_DURATION: old_value_rest,
             S.APPLICATION_TIMER_UI_MODE: old_value_style,
             S.APPLICATION_THEME: old_value_theme,
+            S.APPLICATION_EYECANDY_TYPE: old_eyecandy_type,
             S.APPLICATION_EYECANDY_GRADIENT: old_gradient,
+            S.APPLICATION_FOCUS_FLAVOR: old_focus_flavor,
         })
         await self.longer_pause()
 
