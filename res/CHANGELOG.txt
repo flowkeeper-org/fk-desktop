@@ -2,28 +2,27 @@
 
 New features:
 
-- Full-screen rest notifications (#67).
-- Mute button for the focus mode (#151).
-- Undo item completion (#55).
-- Notification about approaching rest.
-- Configurable categories in the task list (#112, #177).
-- Built-in support and documentation for some of the popular productivity methods.
+- Full-screen rest notifications with a sound warning about approaching rest (#67).
+- Mute button in the focus mode (#151).
+- You can now undo task completion by pressing Ctrl+P again (#55).
+- Configurable (F5) task categories / groups to help prioritize your work (#112, #177).
+- Presets for some popular productivity methods (1-2-3 Rule, ABCDE Method, Eisenhower Matrix and more).
 - Main window is activated when another instance is launched (#89).
-- New branding (new icon, description).
+- New "FK" branding (new icon, description).
 
 Technical improvements:
 
-- Fixed a bunch of code quality issues reported by SonarQube
-- RPM builds and Fedora repos in OBS (#127)
-- Snapcraft.io manifest
-- Upgraded to Qt 6.11
-- Added CONTRIBUTING.md
-- Switched to Nuitka 4.x to compile the binaries
+- Fixed a bunch of code quality issues reported by SonarQube.
+- Switched to Nuitka 4.x to compile the binaries.
+- RPM builds and Fedora repos in OBS (#127).
+- Snapcraft.io manifest.
+- Upgraded to Qt 6.11.
+- Added CONTRIBUTING.md and About > System info tab to help reporting issues.
 
 Bug fixes:
 
-- Fixed a few issues when launching Flowkeeper during a long break
-- Fixed a few bugs with import/export handling of reordering
+- Fixed a few issues when launching Flowkeeper during a long break.
+- Fixed two bugs with import/export handling of reordering.
 
 ### v1.0.2 (26 September 2025)
 

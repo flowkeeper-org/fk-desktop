@@ -66,15 +66,15 @@ by Alex Cavoulacos / The Muse. 1-3-5 is a common variant of 1-2-3, which only di
 [The 3-3-3 Method: A Smarter Way to Work (and Live)](https://thinksmarter.substack.com/p/the-3-3-3-method-a-smarter-way-to)
 by Emily M Austen. 3-3-3 is a similar technique, which prescribes three hours for the most complex task.
 
-## 1: One large task (important, big-win task you must complete)
+## 1: One large task
 
 5 -- 7 pomodoros
 
-## 2: Two medium tasks (relatively important tasks you need to complete)
+## 2: Two medium tasks
 
 1 pomodoro each
 
-## 3: Three small tasks (tasks you’d like to complete)
+## 3: Three small tasks
 
 1 -- 2 pomodoros for all three
 
@@ -126,7 +126,7 @@ Other methods value simplicity, prioritize importance VS urgency, or focus on re
 [The ABCD List Technique for Setting Priorities](https://www.briantracy.com/blog/time-management/the-abcde-list-technique-for-setting-priorities/)
 by Brian Tracy.
 
-## A: A - Most important (significant consequences if not completed)
+## A: A - Most important
 
 **"A" Items Are Most Important**
 
@@ -137,7 +137,7 @@ customer or not finishing a report for your boss that she needs for an upcoming 
 
 These are the frogs of your life.
 
-## B: B - Important (moderate consequences if not completed)
+## B: B - Important
 
 **"B" Items Only Have Minor Consequences**
 
@@ -150,7 +150,7 @@ a B task.
 The rule is that you should never do a B task when there is an A task left undone. You should never be distracted by a 
 tadpole when there is a big frog sitting there waiting to be eaten.
 
-## C: C - Nice to do (no significant consequence whether done or not)
+## C: C - Nice to do
 
 **"C" Tasks Have No Consequences**
 
@@ -162,7 +162,7 @@ work hours. This sort of activity has no effect at all on your work life.
 
 As a rule, you can never complete a C task when there are B or A tasks left undone.
 
-## D: D - Delegate (need to be done but not necessarily by you)
+## D: D - Delegate
 
 **"D" for Delegate**
 
@@ -171,7 +171,7 @@ A D activity is something that you can delegate to someone else.
 The rule is that you should delegate everything that you possibly can to other people. This frees up more time for you 
 to engage in your A activities. Your A tasks and their completion, largely determine the entire course of your career.
 
-## E: E - Eliminate (offer no real value and can be removed)
+## E: E - Eliminate
 
 **"E" for Eliminate**
 
@@ -228,7 +228,7 @@ Other methods like 1-2-3 and ABCDE are more prescriptive and focus on the execut
 [The urgent and the important](https://www.rtalbert.org/blog-archive/index.php/2019/10/14/the-urgent-and-the-important)
 by Robert Talbert, Ph.D.
 
-## UI: Urgent and Important (with deadlines or consequences)
+## UI: Urgent and Important
 
 Tasks that are urgent and important are the highest priority and should be done ASAP. They are automatic candidates for 
 the Most Important Thing (MIT) list for a given day.
@@ -237,14 +237,14 @@ Example: The professor's unit recommendation for Promotion happens to be due on 
 important --- that's an MIT on my list for tomorrow and has a two-hour block in my calendar tomorrow morning all by 
 itself.
 
-## NUI: Important but Not Urgent (with unclear deadlines that contribute to long-term success)
+## NUI: Important but Not Urgent
 
 Tasks that are important but not urgent come second. These need to be done; schedule time during the week to do them.
 
 Example: Reading the article about the course redesign is important, but not urgent --- schedule one pomodoro during the 
 week to read and take notes on it, and get it done this week.
 
-## UNI: Urgent but Not Important (require your attention, but do not have deadlines or consequences)
+## UNI: Urgent but Not Important
 
 Tasks that are urgent but not important are third. Delegate these if possible. Otherwise schedule time for them, but 
 not at the expense of the important stuff.
@@ -254,7 +254,7 @@ this week. I need to act on this, but it is not something I would categorize as 
 serving a long-term goal. So it's "urgent but not important". I'll probably delegate this by telling the student to set 
 up an appointment with me through our office staff.
 
-## NUNI: Not Urgent and Not Important (unnecessary, distractions, and time-wasters)
+## NUNI: Not Urgent and Not Important
 
 Tasks that are neither urgent nor important get whatever time is left over. 
 

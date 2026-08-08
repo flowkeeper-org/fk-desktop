@@ -56,12 +56,14 @@ class WorkitemStateDelegate(AbstractItemDelegate):
             painter.save()
 
             txt = index.data(503)
-            txt = txt.replace('(', '</strong><span style="color: gray;">(').replace(')', ')</span><strong>')
+            # If you uncomment this, the text in parentheses will be light and gray. But the columns won't resize
+            # correctly anymore, as Qt treats all text as bold when it computes its width.
+            # txt = txt.replace('(', '</strong><span style="color: gray;">(').replace(')', ')</span><strong>')
             st = QStaticText(f'<span style="color: {self._text_color};"><strong>{txt}</strong></span>')
             st.setTextOption(Qt.AlignmentFlag.AlignLeft)
-
             st.setTextWidth(option.rect.width())
             painter.drawStaticText(option.rect.left(),
                                    option.rect.top() + get_padding(option),
                                    st)
+
             painter.restore()

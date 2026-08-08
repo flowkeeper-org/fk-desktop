@@ -219,7 +219,7 @@ class WorkitemModel(AbstractDropModel):
         self._font_sealed.setStrikeOut(True)
         self._font_category = QtGui.QFont()
         self._font_category.setBold(True)
-        self._font_category.setUnderline(True)
+        # self._font_category.setUnderline(True)
         self._backlog_or_tag = None
         settings = source_holder.get_settings()
         self._hide_completed = (settings.get(S.APPLICATION_HIDE_COMPLETED) == 'True')
