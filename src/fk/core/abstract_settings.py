@@ -314,6 +314,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.POMODORO_START_NEXT_AUTOMATICALLY, 'bool', 'Work in series', 'False', [], _always_show),
                 (S.POMODORO_SERIES_EXPLANATION, 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
                                                               'planned pomodoro in the same work item automatically.', [], _always_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_FULL_SCREEN_NOTIFICATIONS, 'bool', 'Full-screen rest notifications', 'True', [],
+                 _always_show),
             ],
             'Connection': [
                 (S.SOURCE_FULLNAME, 'str', 'User full name', 'Local User', [], _never_show),
@@ -408,7 +411,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_LAST_SELECTED_BACKLOG, 'str', 'Last selected backlog', '', [], _never_show),
                 (S.APPLICATION_TABLE_ROW_HEIGHT, 'int', 'Table row height', '30', [0, 5000], _never_show),
                 (S.APPLICATION_SHOW_CLICK_HERE_HINT, 'bool', 'Show "Click here" hint', 'True', [], _never_show),
-                (S.APPLICATION_FULL_SCREEN_NOTIFICATIONS, 'bool', 'Full-screen rest notifications', 'True', [], _always_show),
             ],
             'Fonts': [
                 (S.APPLICATION_FONT_MAIN_FAMILY, 'font', 'Main font family', 'Noto Sans', [], _always_show),
