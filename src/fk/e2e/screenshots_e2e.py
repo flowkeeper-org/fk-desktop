@@ -199,6 +199,13 @@ class ScreenshotE2eTest(AbstractE2eTest):
         backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
 
+        # About popup
+        self.execute_action('application.about')
+        await self.instant_pause()
+        self.take_screenshot('32-about')
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
+
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
         ################################################################
