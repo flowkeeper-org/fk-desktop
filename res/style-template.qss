@@ -167,17 +167,20 @@ InfoOverlay #overlay_text, #prev_button {
     color: #000000;
 }
 
+#restFullscreenWidget, #fullscreenHintText, #fullscreenHeaderText, #fullscreenDoNotShowAgain {
+    color: #ffffff;
+}
+
+#fullscreenHeaderText {
+    font-family: $FONT_HEADER_FAMILY;
+    font-size: $FONT_HEADER_SIZE;
+}
+
 #restFullscreenWidget {
     background-color: #2b2b2b;
-    color: #ffffff;
 }
 
-#restFullscreenWidget #hintText {
-    color: #ffffff;
-}
-
-#restFullscreenWidget #doNotShowAgainButton {
-    color: #ffffff;
+#fullscreenDoNotShowAgain {
     background-color: #1a1a1a;
 }
 

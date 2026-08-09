@@ -23,6 +23,7 @@ Bug fixes:
 
 - Fixed a few issues when launching Flowkeeper during a long break.
 - Fixed two bugs with import/export handling of reordering.
+- Fixed drag-and-drop in Wayland (#223).
 
 ### v1.0.2 (26 September 2025)
 

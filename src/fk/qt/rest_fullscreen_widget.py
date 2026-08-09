@@ -75,15 +75,15 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         self.set_flavor(flavor)
 
         self._header_text = QLabel(self)
-        self._header_text.setObjectName("headerText")
+        self._header_text.setObjectName("fullscreenHeaderText")
         self._header_text.setText("")
 
         self._hint_text = QLabel(self)
-        self._hint_text.setObjectName("hintText")
+        self._hint_text.setObjectName("fullscreenHintText")
         self._hint_text.setText("Click to dismiss")
 
         self._do_not_show_again_button = QPushButton("Do not show this screen again", self)
-        self._do_not_show_again_button.setObjectName("doNotShowAgainButton")
+        self._do_not_show_again_button.setObjectName("fullscreenDoNotShowAgain")
         self._do_not_show_again_button.clicked.connect(self._disable_rest_screen)
 
         application.on(AfterFontsChanged, self._on_fonts_changed)
