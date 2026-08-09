@@ -421,7 +421,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
                 (S.APPLICATION_PLAY_ALARM_SOUND, 'bool', 'Play alarm sound', 'True', [], _always_show),
-                (S.APPLICATION_ALARM_SOUND_FILE, 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
+                (S.APPLICATION_ALARM_SOUND_FILE, 'file', 'Alarm sound file', 'qrc:/sound/bell.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
                 (S.APPLICATION_ALARM_SOUND_VOLUME, 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
                 (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_PLAY_REST_SOUND, 'bool', 'Play "rest" sound', 'True', [], _always_show),
@@ -430,11 +430,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_REST_SOUND_VOLUME, 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
                 (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_PLAY_TICK_SOUND, 'bool', 'Play ticking sound', 'True', [], _always_show),
-                (S.APPLICATION_TICK_SOUND_FILE, 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
+                (S.APPLICATION_TICK_SOUND_FILE, 'file', 'Ticking sound file', 'qrc:/sound/tick.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
                 (S.APPLICATION_TICK_SOUND_VOLUME, 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
                 (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_PLAY_NOTIFICATION_SOUND, 'bool', 'Play notification sound', 'True', [], _always_show),
-                (S.APPLICATION_NOTIFICATION_SOUND_FILE, 'file', 'Notification sound file', 'qrc:/sound/wood_knock.mp3', ['*.wav;*.mp3;*.m4a'], _show_if_play_notification_enabled),
+                (S.APPLICATION_NOTIFICATION_SOUND_FILE, 'file', 'Notification sound file', 'qrc:/sound/knock.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_notification_enabled),
                 (S.APPLICATION_NOTIFICATION_SOUND_VOLUME, 'int', 'Notification volume %', '100', [0, 100], _show_if_play_notification_enabled),
                 (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_AUDIO_OUTPUT, 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),

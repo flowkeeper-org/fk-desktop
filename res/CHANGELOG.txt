@@ -18,6 +18,7 @@ Technical improvements:
 - Snapcraft.io manifest.
 - Upgraded to Qt 6.11.
 - Added CONTRIBUTING.md and About > System info tab to help reporting issues.
+- Converted all audio resources to m4a format.
 
 Bug fixes:
 

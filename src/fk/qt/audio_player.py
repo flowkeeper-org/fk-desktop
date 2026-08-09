@@ -120,7 +120,7 @@ class AudioPlayer(QObject):
                 and pomodoro.get_rest_duration() > 0    # Normal break
                 and self._settings.get(S.APPLICATION_PLAY_NOTIFICATION_SOUND) == 'True'):
 
-            self._audio_player.stop()  # don't overlap tick sound and wood knock sound
+            self._audio_player.stop()  # don't overlap tick sound and knock sound
             self._reset()
 
             self._set_volume(S.APPLICATION_NOTIFICATION_SOUND_VOLUME)
