@@ -80,7 +80,7 @@
         Parent UID: #wg_ABCDE
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: D - Delegate (need to be done but not necessarily by you)
+        Name: D - Delegate
         Children:
         - <Empty>
         System: True
@@ -261,7 +261,7 @@
         Parent UID: #wg_ABCDE
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: C - Nice to do (no significant consequence whether done or not)
+        Name: C - Nice to do
         Children:
         - <Empty>
         System: True
@@ -1056,7 +1056,7 @@
         Parent UID: #wg_ABCDE
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: E - Eliminate (offer no real value and can be removed)
+        Name: E - Eliminate
         Children:
         - <Empty>
         System: True
@@ -1106,7 +1106,7 @@
         Parent UID: #wg_ABCDE
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: E - Eliminate (offer no real value and can be removed)
+        Name: E - Eliminate
         Children:
         - <Empty>
         System: True
@@ -1383,18 +1383,7 @@
         Rest started: None
         Completed: 2025-12-26 19:34:18.060000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-26 19:22:02.060000+00:00 to 2025-12-26 19:34:18.060000+00:00 [0 / 0]']
       State: finished
       Work started: 2025-12-26 19:22:02.060000+00:00
@@ -1571,18 +1560,7 @@
         Rest started: 2025-12-26 14:42:03.030000+00:00
         Completed: 2025-12-26 14:47:03.030000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2025-12-26 14:17:03.030000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-26 14:17:03.030000+00:00
@@ -1647,18 +1625,7 @@
         Rest started: None
         Completed: 2025-12-26 14:16:15.030000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2025-12-26 13:43:00.010000+00:00 to 2025-12-26 13:54:12.010000+00:00 [0 / 0]', 'From 2025-12-26 13:55:26.020000+00:00 to 2025-12-26 14:05:30.020000+00:00 [0 / 0]', 'From 2025-12-26 14:06:32.030000+00:00 to 2025-12-26 14:16:15.030000+00:00 [0 / 0]']
       State: running
       Work started: 2025-12-26 13:43:00.010000+00:00
@@ -2030,18 +1997,7 @@
         Rest started: None
         Completed: 2025-12-05 20:55:18.090000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-05 20:12:26.060000+00:00 to 2025-12-05 20:24:02.060000+00:00 [0 / 0]', 'From 2025-12-05 20:25:02.070000+00:00 to 2025-12-05 20:33:50.070000+00:00 [0 / 0]', 'From 2025-12-05 20:34:34.080000+00:00 to 2025-12-05 20:42:16.080000+00:00 [0 / 0]', 'From 2025-12-05 20:43:47.090000+00:00 to 2025-12-05 20:55:18.090000+00:00 [0 / 0]']
       State: running
       Work started: 2025-12-05 20:12:26.060000+00:00
@@ -2145,18 +2101,7 @@
         Rest started: None
         Completed: 2025-12-05 20:11:24.050000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-05 19:52:58.040000+00:00 to 2025-12-05 20:03:06.040000+00:00 [0 / 0]', 'From 2025-12-05 20:04:20.050000+00:00 to 2025-12-05 20:11:24.050000+00:00 [0 / 0]']
       State: running
       Work started: 2025-12-05 19:52:58.040000+00:00
@@ -2392,18 +2337,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-05 13:12:42+00:00 to None [1500.0 / 300.0]', 'From 2025-12-05 14:01:48+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-05 13:12:42+00:00
@@ -2476,18 +2410,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-09 18:46:40.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 19:17:37.010000+00:00 to 2025-12-09 19:25:43.010000+00:00 [1500.0 / 300.0]', 'From 2025-12-09 19:26:22.010000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-09 18:46:40.010000+00:00
@@ -2858,18 +2781,7 @@
         Rest started: None
         Completed: 2025-12-08 14:06:15.050000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_333_1
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Most Important Thing (spend 3 hours on this)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2025-12-08 13:39:50.030000+00:00 to 2025-12-08 13:46:00.030000+00:00 [0 / 0]', 'From 2025-12-08 13:46:50.040000+00:00 to 2025-12-08 13:53:06.040000+00:00 [0 / 0]', 'From 2025-12-08 13:54:28.050000+00:00 to 2025-12-08 14:06:15.050000+00:00 [0 / 0]']
       State: finished
       Work started: 2025-12-08 13:39:50.030000+00:00
@@ -2982,18 +2894,7 @@
         Rest started: 2025-12-09 14:34:07.010000+00:00
         Completed: 2025-12-09 15:02:59.010000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Water
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Water (private life, downtime, or hobbies)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <1>
+      - <Empty>
       Intervals: ['From 2025-12-09 13:06:54.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 13:38:18.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 14:09:07.010000+00:00 to 2025-12-09 15:02:59.010000+00:00 [1500.0 / 0.0]']
       State: running
       Work started: 2025-12-09 13:06:54.010000+00:00
@@ -3024,18 +2925,7 @@
         Rest started: 2025-12-19 13:18:11+00:00
         Completed: 2025-12-19 13:23:11+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2025-12-19 12:53:11+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-19 12:53:11+00:00
@@ -3124,18 +3014,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-09 17:52:22.010000+00:00 to 2025-12-09 18:06:00.010000+00:00 [1500.0 / 300.0]', 'From 2025-12-09 18:07:09.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 18:38:18.010000+00:00 to 2025-12-09 18:45:29.010000+00:00 [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-09 17:52:22.010000+00:00
@@ -3273,18 +3152,7 @@
         Rest started: 2025-12-09 16:31:22.010000+00:00
         Completed: 2025-12-09 16:36:22.010000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Pebbles
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Pebbles (urgent but non-essential tasks)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <1>
+      - <Empty>
       Intervals: ['From 2025-12-09 15:04:09.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 15:35:12.010000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-09 16:06:22.010000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-09 15:04:09.010000+00:00
@@ -3476,18 +3344,7 @@
         Rest started: None
         Completed: 2025-12-11 15:12:33.100000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2025-12-11 14:31:37.070000+00:00 to 2025-12-11 14:42:28.070000+00:00 [0 / 0]', 'From 2025-12-11 14:44:10.080000+00:00 to 2025-12-11 14:56:37.080000+00:00 [0 / 0]', 'From 2025-12-11 14:57:28.090000+00:00 to 2025-12-11 15:04:03.090000+00:00 [0 / 0]', 'From 2025-12-11 15:04:41.100000+00:00 to 2025-12-11 15:12:33.100000+00:00 [0 / 0]']
       State: finished
       Work started: 2025-12-11 14:31:37.070000+00:00
@@ -3526,18 +3383,7 @@
         Rest started: 2025-12-30 16:26:10.040000+00:00
         Completed: 2025-12-30 16:31:10.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-30 16:01:10.040000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-30 16:01:10.040000+00:00
@@ -3939,18 +3785,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-12 19:09:12.080000+00:00 to 2025-12-12 19:27:01.080000+00:00 [1500.0 / 300.0]', 'From 2025-12-12 19:28:18.080000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-12 19:09:12.080000+00:00
@@ -4023,18 +3858,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2025-12-12 17:48:47.080000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-12 18:20:05.080000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-12 17:48:47.080000+00:00
@@ -4090,18 +3914,7 @@
         Rest started: 2025-12-12 17:30:24.080000+00:00
         Completed: 2025-12-12 17:48:24.080000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-12 16:23:29.080000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-12 17:05:24.080000+00:00 to 2025-12-12 17:48:24.080000+00:00 [1500.0 / 0.0]']
       State: running
       Work started: 2025-12-12 16:23:29.080000+00:00
@@ -4157,18 +3970,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-12 14:49:34.080000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-12 15:20:54.080000+00:00 to 2025-12-12 15:35:11.080000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-12 14:49:34.080000+00:00
@@ -4250,18 +4052,7 @@
         Rest started: None
         Completed: 2025-12-12 14:48:23.080000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2025-12-12 14:02:22.050000+00:00 to 2025-12-12 14:09:59.050000+00:00 [0 / 0]', 'From 2025-12-12 14:11:35.060000+00:00 to 2025-12-12 14:22:26.060000+00:00 [0 / 0]', 'From 2025-12-12 14:23:18.070000+00:00 to 2025-12-12 14:32:50.070000+00:00 [0 / 0]', 'From 2025-12-12 14:34:07.080000+00:00 to 2025-12-12 14:48:23.080000+00:00 [0 / 0]']
       State: running
       Work started: 2025-12-12 14:02:22.050000+00:00
@@ -4407,18 +4198,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_C
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: C - Could have (desirable but not necessary / if time allows some of thest may be delivered)
-        Children:
-        - <Empty>
-        System: True
-        Info: <224> characters
-        Uses: <3>
+      - <Empty>
       Intervals: ['From 2025-12-22 12:57:53.090000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-22 13:39:17.090000+00:00 to 2025-12-22 13:41:42.090000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-22 12:57:53.090000+00:00
@@ -4641,18 +4421,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_333_1
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Most Important Thing (spend 3 hours on this)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2025-12-15 17:28:29+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-15 17:28:29+00:00
@@ -4829,18 +4598,7 @@
         Rest started: 2025-12-15 15:19:30+00:00
         Completed: 2025-12-15 15:24:30+00:00
       Categories:
-      - Class: Category
-        UID: #wg_333_2
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Short Tasks (maximum 3)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <3>
+      - <Empty>
       Intervals: ['From 2025-12-15 14:23:33+00:00 to None [1500.0 / 300.0]', 'From 2025-12-15 14:54:30+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-15 14:23:33+00:00
@@ -4850,23 +4608,12 @@
       Owner: user@local.host
       Parent UID: d3b951bf-379e-41d1-a4c2-1eb5054ce693
       Create date: 2025-12-15 14:22:01+00:00
-      Last modified: 2025-12-15 14:22:07+00:00
+      Last modified: 2025-12-15 14:22:01+00:00
       Name: Send idea for #Beta
       Children:
       - <Empty>
       Categories:
-      - Class: Category
-        UID: #wg_333_1
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Most Important Thing (spend 3 hours on this)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <4>
+      - <Empty>
       Intervals: []
       State: new
       Work started: None
@@ -4947,18 +4694,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2026-01-09 19:38:33.100000+00:00 to 2026-01-09 19:59:21.100000+00:00 [1500.0 / 300.0]', 'From 2026-01-09 20:00:24.100000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-09 20:32:03.100000+00:00 to 2026-01-09 21:05:21.100000+00:00 [1500.0 / 0.0]']
       State: running
       Work started: 2026-01-09 19:38:33.100000+00:00
@@ -5355,18 +5091,7 @@
         Rest started: None
         Completed: 2025-12-22 12:56:26.090000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_M
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-        Children:
-        - <Empty>
-        System: True
-        Info: <447> characters
-        Uses: <5>
+      - <Empty>
       Intervals: ['From 2025-12-22 12:20:59.060000+00:00 to 2025-12-22 12:28:37.060000+00:00 [0 / 0]', 'From 2025-12-22 12:29:37.070000+00:00 to 2025-12-22 12:37:55.070000+00:00 [0 / 0]', 'From 2025-12-22 12:38:58.080000+00:00 to 2025-12-22 12:50:04.080000+00:00 [0 / 0]', 'From 2025-12-22 12:51:06.090000+00:00 to 2025-12-22 12:56:26.090000+00:00 [0 / 0]']
       State: finished
       Work started: 2025-12-22 12:20:59.060000+00:00
@@ -5422,18 +5147,7 @@
         Rest started: 2025-12-30 17:45:46.040000+00:00
         Completed: 2025-12-30 17:50:46.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2025-12-30 16:49:02.040000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-30 17:20:46.040000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-30 16:49:02.040000+00:00
@@ -5669,18 +5383,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_W
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: W - Won't have (least-critical or not appropriate / the project will not deliver these)
-        Children:
-        - <Empty>
-        System: True
-        Info: <632> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2025-12-19 12:04:20+00:00 to None [1500.0 / 300.0]', 'From 2025-12-19 12:35:19+00:00 to 2025-12-19 12:52:16+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-19 12:04:20+00:00
@@ -5801,18 +5504,7 @@
         Rest started: 2025-12-22 11:33:25.010000+00:00
         Completed: 2025-12-22 11:38:25.010000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2025-12-22 11:08:25.010000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-22 11:08:25.010000+00:00
@@ -6381,7 +6073,7 @@
         Parent UID: #wg_Eisenhower
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: Not Urgent and Important (with unclear deadlines that contribute to long-term success)
+        Name: Important but Not Urgent
         Children:
         - <Empty>
         System: True
@@ -6689,7 +6381,7 @@
         Parent UID: #wg_Eisenhower
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: Urgent and Not Important (require your attention, but do not have deadlines or consequences)
+        Name: Urgent but Not Important
         Children:
         - <Empty>
         System: True
@@ -6773,7 +6465,7 @@
         Parent UID: #wg_Eisenhower
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: Urgent and Important (with deadlines or consequences)
+        Name: Urgent and Important
         Children:
         - <Empty>
         System: True
@@ -6840,7 +6532,7 @@
         Parent UID: #wg_Eisenhower
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: Not Urgent and Important (with unclear deadlines that contribute to long-term success)
+        Name: Important but Not Urgent
         Children:
         - <Empty>
         System: True
@@ -6882,7 +6574,7 @@
         Parent UID: #wg_Eisenhower
         Create date: 2000-01-02 23:00:00+00:00
         Last modified: 2000-01-02 23:00:00+00:00
-        Name: Not Urgent and Important (with unclear deadlines that contribute to long-term success)
+        Name: Important but Not Urgent
         Children:
         - <Empty>
         System: True
@@ -6969,18 +6661,7 @@
         Rest started: None
         Completed: 2026-01-02 15:13:01.070000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-02 14:34:53.040000+00:00 to 2026-01-02 14:41:24.040000+00:00 [0 / 0]', 'From 2026-01-02 14:42:11.050000+00:00 to 2026-01-02 14:52:27.050000+00:00 [0 / 0]', 'From 2026-01-02 14:53:29.060000+00:00 to 2026-01-02 15:02:11.060000+00:00 [0 / 0]', 'From 2026-01-02 15:03:14.070000+00:00 to 2026-01-02 15:13:01.070000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-02 14:34:53.040000+00:00
@@ -7053,18 +6734,7 @@
         Rest started: 2025-12-30 19:46:31.040000+00:00
         Completed: 2025-12-30 19:51:31.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-30 18:05:47.040000+00:00 to 2025-12-30 18:49:00.040000+00:00 [1500.0 / 0.0]', 'From 2025-12-30 18:50:22.040000+00:00 to None [1500.0 / 300.0]', 'From 2025-12-30 19:21:31.040000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2025-12-30 18:05:47.040000+00:00
@@ -7225,18 +6895,7 @@
         Rest started: None
         Completed: 2025-12-30 15:59:52.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2025-12-30 15:19:41.010000+00:00 to 2025-12-30 15:31:26.010000+00:00 [0 / 0]', 'From 2025-12-30 15:32:42.020000+00:00 to 2025-12-30 15:37:35.020000+00:00 [0 / 0]', 'From 2025-12-30 15:38:45.030000+00:00 to 2025-12-30 15:47:58.030000+00:00 [0 / 0]', 'From 2025-12-30 15:49:50.040000+00:00 to 2025-12-30 15:59:52.040000+00:00 [0 / 0]']
       State: finished
       Work started: 2025-12-30 15:19:41.010000+00:00
@@ -7517,18 +7176,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_333_2
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Short Tasks (maximum 3)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <3>
+      - <Empty>
       Intervals: ['From 2025-12-31 12:53:02+00:00 to 2025-12-31 13:11:44+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-31 12:53:02+00:00
@@ -7559,18 +7207,7 @@
         Rest started: 2025-12-31 12:46:22+00:00
         Completed: 2025-12-31 12:51:22+00:00
       Categories:
-      - Class: Category
-        UID: #wg_333_1
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Most Important Thing (spend 3 hours on this)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2025-12-31 12:21:22+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2025-12-31 12:21:22+00:00
@@ -7716,18 +7353,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-01 20:26:10.030000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-01 21:16:13.030000+00:00 to 2026-01-01 21:32:38.030000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-01 20:26:10.030000+00:00
@@ -7792,18 +7418,7 @@
         Rest started: None
         Completed: 2026-01-01 20:25:24.030000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-01 19:54:42.010000+00:00 to 2026-01-01 20:02:30.010000+00:00 [0 / 0]', 'From 2026-01-01 20:03:21.020000+00:00 to 2026-01-01 20:13:19.020000+00:00 [0 / 0]', 'From 2026-01-01 20:14:01.030000+00:00 to 2026-01-01 20:25:24.030000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-01 19:54:42.010000+00:00
@@ -7851,18 +7466,7 @@
         Rest started: 2026-01-01 19:30:29+00:00
         Completed: 2026-01-01 19:53:50+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-01 18:34:22+00:00 to None [1500.0 / 300.0]', 'From 2026-01-01 19:05:29+00:00 to 2026-01-01 19:53:50+00:00 [1500.0 / 0.0]']
       State: running
       Work started: 2026-01-01 18:34:22+00:00
@@ -7901,18 +7505,7 @@
         Rest started: 2026-01-01 18:17:44+00:00
         Completed: 2026-01-01 18:22:44+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-01 17:52:44+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-01 17:52:44+00:00
@@ -8132,18 +7725,7 @@
         Rest started: None
         Completed: 2026-01-02 17:08:22.180000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-02 16:13:40.140000+00:00 to 2026-01-02 16:25:06.140000+00:00 [0 / 0]', 'From 2026-01-02 16:25:58.150000+00:00 to 2026-01-02 16:34:24.150000+00:00 [0 / 0]', 'From 2026-01-02 16:35:50.160000+00:00 to 2026-01-02 16:45:34.160000+00:00 [0 / 0]', 'From 2026-01-02 16:47:22.170000+00:00 to 2026-01-02 16:54:36.170000+00:00 [0 / 0]', 'From 2026-01-02 16:56:00.180000+00:00 to 2026-01-02 17:08:22.180000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-02 16:13:40.140000+00:00
@@ -8225,18 +7807,7 @@
         Rest started: None
         Completed: 2026-01-02 16:12:26.130000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Rocks
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Rocks (big, important goals or tasks)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <2>
+      - <Empty>
       Intervals: ['From 2026-01-02 15:33:27.100000+00:00 to 2026-01-02 15:40:59.100000+00:00 [0 / 0]', 'From 2026-01-02 15:42:25.110000+00:00 to 2026-01-02 15:52:14.110000+00:00 [0 / 0]', 'From 2026-01-02 15:53:03.120000+00:00 to 2026-01-02 16:03:32.120000+00:00 [0 / 0]', 'From 2026-01-02 16:04:02.130000+00:00 to 2026-01-02 16:12:26.130000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-02 15:33:27.100000+00:00
@@ -8357,18 +7928,7 @@
         Rest started: None
         Completed: 2026-01-02 13:13:11.030000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-02 12:43:49.010000+00:00 to 2026-01-02 12:53:25.010000+00:00 [0 / 0]', 'From 2026-01-02 12:54:45.020000+00:00 to 2026-01-02 13:01:31.020000+00:00 [0 / 0]', 'From 2026-01-02 13:02:25.030000+00:00 to 2026-01-02 13:13:11.030000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-02 12:43:49.010000+00:00
@@ -8399,18 +7959,7 @@
         Rest started: 2026-01-02 12:37:32+00:00
         Completed: 2026-01-02 12:42:32+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-02 12:12:32+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-02 12:12:32+00:00
@@ -8533,18 +8082,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-06 16:15:05.070000+00:00 to 2026-01-06 17:14:30.070000+00:00 [1500.0 / 0.0]', 'From 2026-01-06 17:15:19.070000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-06 18:04:15.070000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-06 18:35:42.070000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-06 16:15:05.070000+00:00
@@ -8626,18 +8164,7 @@
         Rest started: None
         Completed: 2026-01-06 14:52:01.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-06 14:11:09.010000+00:00 to 2026-01-06 14:18:15.010000+00:00 [0 / 0]', 'From 2026-01-06 14:19:32.020000+00:00 to 2026-01-06 14:32:47.020000+00:00 [0 / 0]', 'From 2026-01-06 14:33:58.030000+00:00 to 2026-01-06 14:42:43.030000+00:00 [0 / 0]', 'From 2026-01-06 14:43:38.040000+00:00 to 2026-01-06 14:52:01.040000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-06 14:11:09.010000+00:00
@@ -8910,18 +8437,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-07 18:55:15.030000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-07 18:55:15.030000+00:00
@@ -9118,18 +8634,7 @@
         Rest started: None
         Completed: 2026-01-08 19:01:41.090000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-08 18:27:24.070000+00:00 to 2026-01-08 18:42:19.070000+00:00 [0 / 0]', 'From 2026-01-08 18:43:41.080000+00:00 to 2026-01-08 18:52:01.080000+00:00 [0 / 0]', 'From 2026-01-08 18:53:20.090000+00:00 to 2026-01-08 19:01:41.090000+00:00 [0 / 0]']
       State: finished
       Work started: 2026-01-08 18:27:24.070000+00:00
@@ -9323,18 +8828,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-08 15:02:48.020000+00:00 to 2026-01-08 15:23:35.020000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-08 15:02:48.020000+00:00
@@ -9471,18 +8965,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2026-01-09 21:44:45.100000+00:00 to 2026-01-09 22:00:03.100000+00:00 [1500.0 / 300.0]', 'From 2026-01-09 22:00:41.100000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-09 22:32:32.100000+00:00 to 2026-01-09 23:00:22.100000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-09 21:44:45.100000+00:00
@@ -9586,18 +9069,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2026-01-09 21:06:35.100000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-09 21:38:45.100000+00:00 to 2026-01-09 21:43:32.100000+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-09 21:06:35.100000+00:00
@@ -9803,18 +9275,7 @@
         Rest started: None
         Completed: 2026-01-09 17:45:52.100000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_M
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-        Children:
-        - <Empty>
-        System: True
-        Info: <447> characters
-        Uses: <5>
+      - <Empty>
       Intervals: ['From 2026-01-09 16:29:32.050000+00:00 to 2026-01-09 16:43:20.050000+00:00 [0 / 0]', 'From 2026-01-09 16:44:56.060000+00:00 to 2026-01-09 16:53:06.060000+00:00 [0 / 0]', 'From 2026-01-09 16:54:17.070000+00:00 to 2026-01-09 17:11:28.070000+00:00 [0 / 0]', 'From 2026-01-09 17:12:23.080000+00:00 to 2026-01-09 17:24:36.080000+00:00 [0 / 0]', 'From 2026-01-09 17:25:21.090000+00:00 to 2026-01-09 17:33:20.090000+00:00 [0 / 0]', 'From 2026-01-09 17:34:15.100000+00:00 to 2026-01-09 17:45:52.100000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-09 16:29:32.050000+00:00
@@ -9887,18 +9348,7 @@
         Rest started: 2026-01-09 15:17:40+00:00
         Completed: 2026-01-09 15:22:40+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2026-01-09 13:50:01+00:00 to None [1500.0 / 300.0]', 'From 2026-01-09 14:21:24+00:00 to None [1500.0 / 300.0]', 'From 2026-01-09 14:52:40+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-09 13:50:01+00:00
@@ -9962,18 +9412,7 @@
         Rest started: 2026-01-12 18:46:10.060000+00:00
         Completed: 2026-01-12 18:51:10.060000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_W
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: W - Won't have (least-critical or not appropriate / the project will not deliver these)
-        Children:
-        - <Empty>
-        System: True
-        Info: <632> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2026-01-12 17:36:49.060000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-12 18:21:10.060000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-12 17:36:49.060000+00:00
@@ -10055,18 +9494,7 @@
         Rest started: None
         Completed: 2026-01-12 17:35:44.060000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_M
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-        Children:
-        - <Empty>
-        System: True
-        Info: <447> characters
-        Uses: <5>
+      - <Empty>
       Intervals: ['From 2026-01-12 16:46:06.030000+00:00 to 2026-01-12 16:58:42.030000+00:00 [0 / 0]', 'From 2026-01-12 16:59:51.040000+00:00 to 2026-01-12 17:09:16.040000+00:00 [0 / 0]', 'From 2026-01-12 17:10:35.050000+00:00 to 2026-01-12 17:22:33.050000+00:00 [0 / 0]', 'From 2026-01-12 17:23:31.060000+00:00 to 2026-01-12 17:35:44.060000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-12 16:46:06.030000+00:00
@@ -10131,18 +9559,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_W
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: W - Won't have (least-critical or not appropriate / the project will not deliver these)
-        Children:
-        - <Empty>
-        System: True
-        Info: <632> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2026-01-12 15:04:07.020000+00:00 to 2026-01-12 16:13:34.020000+00:00 [1500.0 / 0.0]', 'From 2026-01-12 16:15:00.020000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-12 15:04:07.020000+00:00
@@ -10263,18 +9680,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_S
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: S - Should have (important but not necessary / it is currently intended to deliver those as well)
-        Children:
-        - <Empty>
-        System: True
-        Info: <331> characters
-        Uses: <7>
+      - <Empty>
       Intervals: ['From 2026-01-12 13:25:37+00:00 to None [1500.0 / 300.0]', 'From 2026-01-12 13:56:41+00:00 to 2026-01-12 14:09:21+00:00 [1500.0 / 300.0]', 'From 2026-01-12 14:10:51+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-12 13:25:37+00:00
@@ -10330,18 +9736,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_M
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-        Children:
-        - <Empty>
-        System: True
-        Info: <447> characters
-        Uses: <5>
+      - <Empty>
       Intervals: ['From 2026-01-12 12:37:54+00:00 to None [1500.0 / 300.0]', 'From 2026-01-12 13:08:39+00:00 to 2026-01-12 13:24:26+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-12 12:37:54+00:00
@@ -10690,18 +10085,7 @@
         Rest started: None
         Completed: 2026-01-14 15:25:14.090000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_333_2
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Short Tasks (maximum 3)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <3>
+      - <Empty>
       Intervals: ['From 2026-01-14 14:26:34.050000+00:00 to 2026-01-14 14:36:06.050000+00:00 [0 / 0]', 'From 2026-01-14 14:37:11.060000+00:00 to 2026-01-14 14:49:12.060000+00:00 [0 / 0]', 'From 2026-01-14 14:51:04.070000+00:00 to 2026-01-14 14:57:46.070000+00:00 [0 / 0]', 'From 2026-01-14 14:58:23.080000+00:00 to 2026-01-14 15:10:07.080000+00:00 [0 / 0]', 'From 2026-01-14 15:11:23.090000+00:00 to 2026-01-14 15:25:14.090000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-14 14:26:34.050000+00:00
@@ -10774,18 +10158,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_333_3
-        Owner: N/A
-        Parent UID: #wg_333
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Maintenance Activities (maximum 3)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <1>
+      - <Empty>
       Intervals: ['From 2026-01-14 13:05:30.040000+00:00 to None [1500.0 / 300.0]', 'From 2026-01-14 13:37:29.040000+00:00 to 2026-01-14 13:54:39.040000+00:00 [1500.0 / 300.0]', 'From 2026-01-14 13:55:41.040000+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-14 13:05:30.040000+00:00
@@ -10850,18 +10223,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-28 16:11:46+00:00 to 2026-01-28 16:29:13+00:00 [1500.0 / 300.0]', 'From 2026-01-28 16:29:57+00:00 to 2026-01-28 16:48:38+00:00 [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-28 16:11:46+00:00
@@ -10917,18 +10279,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_C
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: C - Could have (desirable but not necessary / if time allows some of thest may be delivered)
-        Children:
-        - <Empty>
-        System: True
-        Info: <224> characters
-        Uses: <3>
+      - <Empty>
       Intervals: []
       State: finished
       Work started: None
@@ -11010,18 +10361,7 @@
         Rest started: None
         Completed: 2026-01-15 17:00:00.040000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_W
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: W - Won't have (least-critical or not appropriate / the project will not deliver these)
-        Children:
-        - <Empty>
-        System: True
-        Info: <632> characters
-        Uses: <4>
+      - <Empty>
       Intervals: ['From 2026-01-15 16:25:05.010000+00:00 to 2026-01-15 16:36:33.010000+00:00 [0 / 0]', 'From 2026-01-15 16:38:07.020000+00:00 to 2026-01-15 16:44:20.020000+00:00 [0 / 0]', 'From 2026-01-15 16:45:04.030000+00:00 to 2026-01-15 16:47:46.030000+00:00 [0 / 0]', 'From 2026-01-15 16:49:01.040000+00:00 to 2026-01-15 17:00:00.040000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-15 16:25:05.010000+00:00
@@ -11094,18 +10434,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_M
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: M - Must have (failure if at least one is not done / without these, it is not worth delivering the project)
-        Children:
-        - <Empty>
-        System: True
-        Info: <447> characters
-        Uses: <5>
+      - <Empty>
       Intervals: ['From 2026-01-15 14:39:57+00:00 to 2026-01-15 15:55:16+00:00 [1500.0 / 0.0]', 'From 2026-01-15 15:56:16+00:00 to 2026-01-15 16:23:49+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-15 14:39:57+00:00
@@ -11285,18 +10614,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_20
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Remaining 20 Tasks (eliminate)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <11>
+      - <Empty>
       Intervals: ['From 2026-01-28 12:56:36+00:00 to None [1500.0 / 300.0]', 'From 2026-01-28 13:28:07+00:00 to 2026-01-28 13:34:38+00:00 [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-28 12:56:36+00:00
@@ -12342,18 +11660,7 @@
         Rest started: 2026-01-27 14:28:55.070000+00:00
         Completed: 2026-01-27 14:33:55.070000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-27 14:03:55.070000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-27 14:03:55.070000+00:00
@@ -12418,18 +11725,7 @@
         Rest started: None
         Completed: 2026-01-27 14:02:43.070000+00:00
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Rocks
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Rocks (big, important goals or tasks)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <2>
+      - <Empty>
       Intervals: ['From 2026-01-27 13:30:21.050000+00:00 to 2026-01-27 13:39:04.050000+00:00 [0 / 0]', 'From 2026-01-27 13:39:48.060000+00:00 to 2026-01-27 13:48:44.060000+00:00 [0 / 0]', 'From 2026-01-27 13:50:43.070000+00:00 to 2026-01-27 14:02:43.070000+00:00 [0 / 0]']
       State: running
       Work started: 2026-01-27 13:30:21.050000+00:00
@@ -12477,18 +11773,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Jar_Sand
-        Owner: N/A
-        Parent UID: #wg_Jar
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Sand (small distractions and busywork)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <12>
+      - <Empty>
       Intervals: ['From 2026-01-27 12:58:23.040000+00:00 to None [1500.0 / 300.0]']
       State: running
       Work started: 2026-01-27 12:58:23.040000+00:00
@@ -12674,18 +11959,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_Buffett_5
-        Owner: N/A
-        Parent UID: #wg_Buffett
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: Top-5 Tasks (focus)
-        Children:
-        - <Empty>
-        System: True
-        Info: <0> characters
-        Uses: <13>
+      - <Empty>
       Intervals: ['From 2026-01-28 13:35:36+00:00 to 2026-01-28 13:47:31+00:00 [1500.0 / 300.0]', 'From 2026-01-28 13:49:30+00:00 to None [1500.0 / 300.0]', 'From 2026-01-28 14:31:22+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-28 13:35:36+00:00
@@ -12797,18 +12071,7 @@
         Rest started: None
         Completed: None
       Categories:
-      - Class: Category
-        UID: #wg_MSCW_C
-        Owner: N/A
-        Parent UID: #wg_MSCW
-        Create date: 2000-01-02 23:00:00+00:00
-        Last modified: 2000-01-02 23:00:00+00:00
-        Name: C - Could have (desirable but not necessary / if time allows some of thest may be delivered)
-        Children:
-        - <Empty>
-        System: True
-        Info: <224> characters
-        Uses: <3>
+      - <Empty>
       Intervals: ['From 2026-01-29 12:53:05+00:00 to None [1500.0 / 300.0]']
       State: finished
       Work started: 2026-01-29 12:53:05+00:00
