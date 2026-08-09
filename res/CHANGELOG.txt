@@ -1,30 +1,32 @@
-### v1.1.0 (xx October 2025)
+### v1.1.0 (14 August 2026)
 
 New features:
 
-- Full-screen rest notifications with a sound warning about approaching rest (#67).
+- Full-screen rest notifications (#67).
+- Knocking sound to remind about approaching break (#67).
+- Configurable (F5) task categories / groups to help prioritize your work (#177).
+- Presets for some of the popular productivity methods: 1-2-3 Rule, ABCDE Method, Eisenhower Matrix, and more.
 - Mute button in the focus mode (#151).
-- You can now undo task completion by pressing Ctrl+P again (#55).
-- Configurable (F5) task categories / groups to help prioritize your work (#112, #177).
-- Presets for some popular productivity methods (1-2-3 Rule, ABCDE Method, Eisenhower Matrix and more).
+- You can now undo task completion by pressing Ctrl+P again (#55, #198).
 - Main window is activated when another instance is launched (#89).
 - New "FK" branding (new icon, description).
 
 Technical improvements:
 
+- Upgraded to Qt 6.11.
 - Fixed a bunch of code quality issues reported by SonarQube.
 - Switched to Nuitka 4.x to compile the binaries.
 - RPM builds and Fedora repos in OBS (#127).
-- Snapcraft.io manifest.
-- Upgraded to Qt 6.11.
-- Added CONTRIBUTING.md and About > System info tab to help reporting issues.
 - Converted all audio resources to m4a format.
+- Metadata on workitems and backlogs (#112).
+- Snapcraft.io manifest.
+- "About > System info" tab to help reporting issues.
 
 Bug fixes:
 
-- Fixed a few issues when launching Flowkeeper during a long break.
-- Fixed two bugs with import/export handling of reordering.
-- Fixed drag-and-drop in Wayland (#223).
+- An issue when launching Flowkeeper during a long break.
+- Two bugs with import/export handling of reordering.
+- Drag-and-drop in Wayland (#223).
 
 ### v1.0.2 (26 September 2025)
 
