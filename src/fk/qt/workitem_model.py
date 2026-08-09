@@ -329,10 +329,22 @@ class WorkitemModel(AbstractDropModel):
                 return i
         return -1
 
+    # Qt.DropAction.MoveAction leaves a "ghost" row after the move
+    # None of our QStandardItems have None as 501
+    def _find_ghost_workitem(self) -> int:
+        for i in range(self.rowCount()):
+            if self.item(i).data(500) is None and self.item(i).data(501) is None:
+                return i
+        return -1
+
     def _remove_if_found(self, workitem: Workitem) -> None:
         i = self._find_workitem(workitem)
         if i >= 0:
             self.removeRow(i)
+        else:
+            i = self._find_ghost_workitem()
+            if i >= 0:
+                self.removeRow(i)
 
     def _workitem_created(self, workitem: Workitem, **kwargs) -> None:
         if self._workitem_belongs_here(workitem):
@@ -449,9 +461,6 @@ class WorkitemModel(AbstractDropModel):
         elif self._workitem_belongs_here(workitem):   # We can only drop workitems on backlogs, not tags
             # Moved in here
             self._add_workitem(workitem)
-        # We need to do this because when dragging and dropping a work item onto a backlog, the
-        # drag and drop succeeds but leaves a blank row in WorkItemTableView
-        self.load(self._backlog_or_tag)
 
     def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):
