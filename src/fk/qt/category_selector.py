@@ -78,5 +78,4 @@ class CategorySelector(QMenu):
             self.addAction(action)
 
         self.addSeparator()
-        self.addAction(Actions.ALL['application.helpChooseCategories'])
         self.addAction(Actions.ALL['application.manageCategories'])
