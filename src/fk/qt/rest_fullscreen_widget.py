@@ -93,7 +93,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
         # Subscribe to settings changes
         self._settings.on(AfterSettingsChanged, self._on_setting_changed)
 
-        self.setObjectName("restFullscreenWidget")
+        self.setObjectName("fullscreenWidget")
 
     def _show(self):
         if self._window is None:
@@ -142,7 +142,7 @@ class RestFullscreenWidget(QWidget, AbstractTimerDisplay):
 
         # Create the timer widget
         self._timer_widget = TimerWidget(self,
-                                         'timer',
+                                         'fullscreenTimer',
                                          flavor,
                                          center_button,
                                          256)

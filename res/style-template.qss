@@ -167,7 +167,7 @@ InfoOverlay #overlay_text, #prev_button {
     color: #000000;
 }
 
-#restFullscreenWidget, #fullscreenHintText, #fullscreenHeaderText, #fullscreenDoNotShowAgain {
+#fullscreenWidget, #fullscreenHintText, #fullscreenHeaderText, #fullscreenDoNotShowAgain {
     color: #ffffff;
 }
 
@@ -176,7 +176,12 @@ InfoOverlay #overlay_text, #prev_button {
     font-size: $FONT_HEADER_SIZE;
 }
 
-#restFullscreenWidget {
+#fullscreenTimer {
+    qproperty-fg_color: #ffffff;
+    qproperty-bg_color: #2b2b2b;
+}
+
+#fullscreenWidget {
     background-color: #2b2b2b;
 }
 
