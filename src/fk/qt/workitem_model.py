@@ -449,6 +449,9 @@ class WorkitemModel(AbstractDropModel):
         elif self._workitem_belongs_here(workitem):   # We can only drop workitems on backlogs, not tags
             # Moved in here
             self._add_workitem(workitem)
+        # We need to do this because when dragging and dropping a work item onto a backlog, the
+        # drag and drop succeeds but leaves a blank row in WorkItemTableView
+        self.load(self._backlog_or_tag)
 
     def _workitem_changed(self, workitem: Workitem, **kwargs) -> None:
         for i in range(self.rowCount()):

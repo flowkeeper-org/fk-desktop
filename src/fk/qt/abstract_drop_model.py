@@ -65,10 +65,10 @@ class AbstractDropModel(QStandardItemModel):
         self.dragging = None
 
     def supportedDropActions(self) -> Qt.DropAction:
-        return Qt.DropAction.LinkAction
+        return Qt.DropAction.MoveAction
 
     def supportedDragActions(self) -> Qt.DropAction:
-        return Qt.DropAction.LinkAction
+        return Qt.DropAction.MoveAction
 
     def move_drop_placeholder(self, index: QModelIndex | None):
         if index is None:
