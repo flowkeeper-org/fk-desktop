@@ -331,7 +331,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._start_pomodoro()
         await self._wait_end_of_work()
         self.take_screenshot('28-fullscreen-break')
-        await self._void_pomodoro('Reply to Peter')
+        await self._wait_end_of_work()
         await self._complete_workitem('Reply to Peter')
         await self.longer_pause()
 
