@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+import platform
 from abc import abstractmethod
 
 from PySide6 import QtCore
@@ -65,10 +66,13 @@ class AbstractDropModel(QStandardItemModel):
         self.dragging = None
 
     def supportedDropActions(self) -> Qt.DropAction:
-        return Qt.DropAction.MoveAction
+        # MoveAction works differently on macOS. Seems like it fires dropMimeData, and *then* creates a "ghost"
+        # row. On Linux and Windows it creates a ghost first, and we can remove it in the corresponding action
+        # handler. LinkAction and CopyAction do not create ghosts on macOS, so we use it.
+        return Qt.DropAction.LinkAction if platform.system() == 'Darwin' else Qt.DropAction.MoveAction
 
     def supportedDragActions(self) -> Qt.DropAction:
-        return Qt.DropAction.MoveAction
+        return self.supportedDropActions()
 
     def move_drop_placeholder(self, index: QModelIndex | None):
         if index is None:
