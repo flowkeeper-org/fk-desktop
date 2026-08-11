@@ -9,13 +9,15 @@ on:
         default: 'ubuntu-24.04'
         type: choice
         options:
+          - ubuntu-26.04
           - ubuntu-24.04
           - ubuntu-22.04
+          - ubuntu-26.04-arm
           - ubuntu-24.04-arm
           - ubuntu-22.04-arm
+          - macos-26
           - macos-15
           - macos-14
-          - macos-13
           - windows-2025
           - windows-2022
       compiler:

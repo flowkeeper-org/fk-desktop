@@ -12,12 +12,11 @@ source-code:
     - https://github.com/flowkeeper-org/fk-desktop
 website:
     - https://flowkeeper.org/
-summary: Flowkeeper is a free Pomodoro Technique desktop timer for power users.
+summary: Pomodoro timer for power users
 description: |
-    Flowkeeper is a Pomodoro backlog and timer with a "classic" desktop-first UI paradigm.
-    With its keyboard shortcuts and advanced settings, it is optimized for power users.
-    It stays as close as possible to the Pomodoro Technique definition and format from
-    the original book by Francesco Cirillo.
+    Flowkeeper is a Pomodoro timer, which stays as close as possible to Pomodoro Technique description found in 
+    the original book by Francesco Cirillo. Featuring classic UI paradigm (desktop-first, no Electron), keyboard 
+    shortcuts and advanced settings, Flowkeeper is optimized for power users.
 
 grade: stable
 confinement: classic

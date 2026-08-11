@@ -2,4 +2,5 @@ Package: flowkeeper
 Version: $FK_VERSION
 Maintainer: Constantine Kulak
 Architecture: amd64
-Description: Flowkeeper is a free Pomodoro Technique desktop timer for power users.
+Description: Pomodoro timer for power users
+Depends: libxcb-cursor0

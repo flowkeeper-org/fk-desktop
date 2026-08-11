@@ -6,8 +6,9 @@
 [![OBS Build Result](https://build.opensuse.org/projects/home:flowkeeper/packages/flowkeeper/badge.svg?type=default)](https://build.opensuse.org/package/show/home:flowkeeper/flowkeeper)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9269/badge)](https://www.bestpractices.dev/projects/9269)
 
-Flowkeeper is an independent Pomodoro Technique desktop timer for power users. It is a 
-simple tool, which focuses on doing one thing well. It is Free Software with open source. 
+Flowkeeper is a Pomodoro timer, which stays as close as possible to Pomodoro Technique description found in
+the original book by Francesco Cirillo. Featuring classic UI paradigm (desktop-first, no Electron), keyboard
+shortcuts and advanced settings, Flowkeeper is optimized for power users.
 
 Visit [flowkeeper.org](https://flowkeeper.org) for screenshots, downloads and FAQ.
 
@@ -19,14 +20,12 @@ Your constructive criticism is welcome!
 
 ## Building
 
-Flowkeeper has a single major dependency -- Qt 6.7.0, which in turn requires Python 3.9 or later. To create 
-installers and binary packages we build Flowkeeper on Ubuntu 22.04 using Python 3.11 and 6.7.0. We also
-test Flowkeeper with the latest Qt 6.8.x on OpenSUSE Tumbleweed.
+Flowkeeper has a single major dependency -- Qt 6.11, which in turn requires Python 3.10 or later.
 
 ### Building for Linux and macOS
 
-On some lean distributions like a minimal installation of Debian 12, you 
-might need to install `libxcb-cursor0` first, e.g.
+On some lean distributions like a minimal installation of Debian 12, you might need to install `libxcb-cursor0` 
+first, e.g.
 
 ```shell
 sudo apt install libxcb-cursor0
@@ -57,7 +56,7 @@ From here you can start coding. If you want to build an installer, refer to the 
 `.github/workflows/build.yml`. For example, if you want to build a DEB file, you'd need to execute 
 `pyinstaller installer/normal-build.spec` and then `./package-deb.sh`. 
 
-If you see this error on openSUSE with Qt 6.7.x:
+If you see this error:
 
 ```
 No QtMultimedia backends found. Only QMediaDevices, QAudioDevice, QSoundEffect, QAudioSink, and QAudioSource are available.
@@ -129,7 +128,7 @@ PYTHONPATH=src python -m fk.desktop.desktop --e2e
 
 ## Copyright
 
-Copyright (c) 2023 - 2024 Constantine Kulak.
+Copyright (c) 2023 - 2026 Constantine Kulak.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

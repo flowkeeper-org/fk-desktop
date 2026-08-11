@@ -4,7 +4,7 @@ Marco Sarti <marco@elogiclab.com>: AUR package maintainer.
 
 faveoled <https://github.com/faveoled>: Created the first Flatpak package for Flowkeeper, which we adopted.
 
-Bishwa Saha <https://github.com/kun-codes>: Implemented full-screen rest notifications and contributed a few minor improvements.
+Bishwa Saha <https://github.com/kun-codes>: Implemented full-screen rest notifications and contributed several minor improvements.
 
 Flowkeeper is built using Qt Community Edition by The Qt Company <https://www.qt.io/licensing>.
 
