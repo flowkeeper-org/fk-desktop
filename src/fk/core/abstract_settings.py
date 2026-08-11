@@ -376,8 +376,13 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_THEME, 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
+                    "very-light:Very light",
+                    "very-light-dark-focus:Very light w/dark focus",
                     "dark:Dark",
+                    "very-dark:Very dark",
                     "mixed:Mixed dark & light",
+                    "reddit:Reddit light",
+                    "reddit-dark-focus:Reddit light w/dark focus",
                     "desert:Desert",
                     "beach:Beach volley",
                     "terra:Terra",
@@ -399,7 +404,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "gradient:Gradient",
                 ], _always_show),
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
-                (S.APPLICATION_EYECANDY_IMAGE, 'file', 'Background image', ':/img/bg.svg', ['*.png;*.jpg;*.svg'], _show_for_image_eyecandy),
+                (S.APPLICATION_EYECANDY_IMAGE, 'file', 'Background image', ':/img/bg.jpg', ['*.png;*.jpg;*.svg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
                 (S.APPLICATION_EYECANDY_GRADIENT, 'choice', 'Color scheme', 'StarWine', ['StarWine:StarWine'], _show_for_gradient_eyecandy),
                 (S.APPLICATION_EYECANDY_GRADIENT_GENERATE, 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),

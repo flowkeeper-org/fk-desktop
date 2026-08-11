@@ -9,6 +9,7 @@ New features:
 - Mute button in the focus mode (#151).
 - You can now undo task completion by pressing Ctrl+P again (#55, #198).
 - Main window is activated when another instance is launched (#89).
+- New themes, including Very Dark, Very Light and Reddit Light.
 - New "FK" branding (new icon, description).
 
 Technical improvements:
