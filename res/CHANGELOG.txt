@@ -10,7 +10,7 @@ New features:
 - You can now undo task completion by pressing Ctrl+P again (#55, #198).
 - Main window is activated when another instance is launched (#89).
 - New themes, including Very Dark, Very Light and Reddit Light.
-- New "FK" branding (new icon, description).
+- New KDE-friendly "FK" logo and tray icon.
 
 Technical improvements:
 

@@ -32,6 +32,7 @@ class S:
     POMODORO_DEFAULT_REST_DURATION: Final[str] = 'Pomodoro.default_rest_duration'
     POMODORO_END_OF_WORK_NOTIFICATIONS: Final[str] = 'Pomodoro.end_of_work_notifications'
     POMODORO_END_OF_WORK_NOTIFICATION_DURATION: Final[str] = 'Pomodoro.end_of_work_notification_duration'
+    POMODORO_END_OF_WORK_NOTIFICATION_EXPLANATION: Final[str] = 'Pomodoro.end_of_work_explanation'
     APPLICATION_HIDE_COMPLETED: Final[str] = 'Application.hide_completed'
     APPLICATION_FEATURE_TAGS: Final[str] = 'Application.feature_tags'
     APPLICATION_DEFAULT_WORKITEM_CATEGORY: Final[str] = 'Application.default_workitem_category'
@@ -269,8 +270,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
             'General': [
                 (S.POMODORO_DEFAULT_WORK_DURATION, 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
                 (S.POMODORO_DEFAULT_REST_DURATION, 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                (S.POMODORO_END_OF_WORK_NOTIFICATIONS, 'bool', 'Notify about end of work', 'True', [], _always_show),
-                (S.POMODORO_END_OF_WORK_NOTIFICATION_DURATION, 'duration', 'Notification lead time', str(1 * 60), [1, 120 * 60], _show_if_end_of_work_notifications_are_enabled),
                 (S.APPLICATION_HIDE_COMPLETED, 'bool', 'Hide completed items', 'False', [], _never_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_FEATURE_TAGS, 'bool', 'Display #tags', 'True', [], _always_show),
@@ -312,11 +311,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.POMODORO_LONG_BREAK_WITHIN, 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
                 ('', S.SEPARATOR, '', '', [], _always_show),
                 (S.POMODORO_START_NEXT_AUTOMATICALLY, 'bool', 'Work in series', 'False', [], _always_show),
-                (S.POMODORO_SERIES_EXPLANATION, 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
-                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
+                (S.POMODORO_SERIES_EXPLANATION, 'label', ' ', 'In the series mode Flowkeeper will start next planned\n'
+                                                              'pomodoro in the same work item automatically.', [], _always_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
-                (S.APPLICATION_FULL_SCREEN_NOTIFICATIONS, 'bool', 'Full-screen rest notifications', 'True', [],
-                 _always_show),
+                (S.APPLICATION_FULL_SCREEN_NOTIFICATIONS, 'bool', 'Fullscreen breaks', 'True', [], _always_show),
+                (S.POMODORO_END_OF_WORK_NOTIFICATIONS, 'bool', 'Notify before break', 'True', [], _always_show),
+                (S.POMODORO_END_OF_WORK_NOTIFICATION_DURATION, 'duration', 'Notification lead time', str(1 * 60), [1, 120 * 60], _show_if_end_of_work_notifications_are_enabled),
+                (S.POMODORO_END_OF_WORK_NOTIFICATION_EXPLANATION, 'label', ' ', 'Get notified to wrap up your work. This is especially\n'
+                                                                                'handy when fullscreen breaks are enabled.', [], _always_show),
             ],
             'Connection': [
                 (S.SOURCE_FULLNAME, 'str', 'User full name', 'Local User', [], _never_show),
