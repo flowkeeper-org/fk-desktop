@@ -29,6 +29,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Fix OpenSSL on Windows 11 ARM
+        if: inputs.os == 'windows-11-arm'
+        run: | 
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+          vcpkg install openssl:arm64-windows-static-md
+
       - name: Install dependencies
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
