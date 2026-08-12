@@ -15,16 +15,19 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtGui import Qt, QAction, QIcon
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QToolButton, QMenu
 
+from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import S
 from fk.core.backlog import Backlog
-from fk.core.event_source_holder import EventSourceHolder
+from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterSettingsChanged
 from fk.core.tag import Tag
 from fk.core.timer import PomodoroTimer
 from fk.desktop.application import Application
 from fk.qt.actions import Actions
+from fk.qt.category_selector import CategorySelector
 from fk.qt.configurable_toolbar import ConfigurableToolBar
 from fk.qt.workitem_tableview import WorkitemTableView
 
@@ -34,6 +37,7 @@ logger = logging.getLogger(__name__)
 class WorkitemWidget(QWidget):
     _workitems_table: WorkitemTableView
     _source_holder: EventSourceHolder
+    _category_selector: QToolButton
 
     def __init__(self,
                  parent: QWidget,
@@ -60,6 +64,22 @@ class WorkitemWidget(QWidget):
         tb.addAction(actions['workitems_table.removePomodoro'])
         tb.addAction(actions['workitems_table.hideCompleted'])
         tb.addAction(actions['workitems_table.completeItem'])
+        tb.addAction(actions['workitems_table.restoreItem'])
+
+        # Category menu -- see how to implement it via our actions framework
+        cm = QToolButton(self)
+        self._category_selector = cm
+        cm.setDefaultAction(QAction(parent=self))
+        cm.setObjectName('categories_tool_button')
+        cm.setMenu(QMenu(cm))     # Stub for lazy loading
+        def trigger(action):
+            if len(cm.menu().actions()) == 0:
+                cm.setMenu(CategorySelector(self, source_holder))
+            if action == cm.defaultAction():
+                cm.showMenu()
+        cm.triggered.connect(trigger)
+        tb.addWidget(cm)
+
         layout.addWidget(tb)
 
         self._workitems_table = WorkitemTableView(self,
@@ -77,7 +97,24 @@ class WorkitemWidget(QWidget):
     def upstream_selected(self, backlog_or_tag: Backlog | Tag | None) -> None:
         self._workitems_table.upstream_selected(backlog_or_tag)
 
+    def update_category_name_in_selector(self):
+        self._update_category_name_in_selector(
+            self._source_holder.get_settings().get(S.APPLICATION_SELECTED_CATEGORY))
+
+    def _update_category_name_in_selector(self, uid):
+        if uid == '':
+            self._category_selector.setText('No Grouping   ')
+        else:
+            category = self._source_holder.get_source().find_category(uid)
+            if category is None:
+                logger.warning(f'Category {uid} not found')
+                self._source_holder.get_settings().set({S.APPLICATION_SELECTED_CATEGORY: ''})
+            else:
+                self._category_selector.setText(category.get_name() + '   ')
+
     def on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.show_toolbar' in new_values:
-            show = new_values['Application.show_toolbar'] == 'True'
+        if S.APPLICATION_SHOW_TOOLBAR in new_values:
+            show = new_values[S.APPLICATION_SHOW_TOOLBAR] == 'True'
             logger.debug(f'Show workitem toolbar: {show}')
+        if S.APPLICATION_SELECTED_CATEGORY in new_values:
+            self._update_category_name_in_selector(new_values[S.APPLICATION_SELECTED_CATEGORY])

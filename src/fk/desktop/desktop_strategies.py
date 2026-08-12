@@ -21,7 +21,7 @@ from typing import Callable
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
@@ -153,14 +153,14 @@ class ErrorStrategy(AbstractStrategy):
                 # TODO: Recreate the source. This will trigger re-authentication, this time with
                 #  "true" parameter, meaning that the user has already given their consent.
                 self._settings.set({
-                    'WebsocketEventSource.consent': 'True',
+                    S.WEBSOCKETEVENTSOURCE_CONSENT: 'True',
                 })
         elif self._error_message == 'Deleted':
             self._settings.set({
-                'WebsocketEventSource.auth_type': 'google',
-                'WebsocketEventSource.username': 'user@local.host',
-                'WebsocketEventSource.consent': 'False',
-                'WebsocketEventSource.refresh_token!': '',
+                S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'google',
+                S.WEBSOCKETEVENTSOURCE_USERNAME: 'user@local.host',
+                S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',
+                S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: '',
             })
             QMessageBox().warning(None,
                                   'Deleted',

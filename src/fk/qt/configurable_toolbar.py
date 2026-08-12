@@ -17,6 +17,7 @@ from PySide6.QtCore import QEvent, QPoint, QRect
 from PySide6.QtGui import Qt, QMouseEvent, QAction
 from PySide6.QtWidgets import QWidget, QToolBar, QMenu, QStyleFactory
 
+from fk.core.abstract_settings import S
 from fk.core.events import AfterSettingsChanged
 from fk.qt.actions import Actions
 from fk.qt.info_overlay import show_info_overlay
@@ -31,17 +32,17 @@ class ConfigurableToolBar(QToolBar):
         self.setStyle(QStyleFactory.create("windows"))
         settings = actions.get_settings()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
-        self.setVisible(settings.get('Application.show_toolbar') == 'True')
+        self.setVisible(settings.get(S.APPLICATION_SHOW_TOOLBAR) == 'True')
         self.setObjectName(name)
         settings.on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.show_toolbar' in new_values:
-            self.setVisible(new_values['Application.show_toolbar'] == 'True')
+        if S.APPLICATION_SHOW_TOOLBAR in new_values:
+            self.setVisible(new_values[S.APPLICATION_SHOW_TOOLBAR] == 'True')
 
     def _hide(self, pos: QPoint):
         self._actions.get_settings().set({
-            'Application.show_toolbar': 'False'
+            S.APPLICATION_SHOW_TOOLBAR: 'False'
         })
         show_info_overlay(self,
                           "You can re-enable toolbar in Settings > Appearance",

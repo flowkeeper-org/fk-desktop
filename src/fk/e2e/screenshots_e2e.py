@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QPoint, QSize
 from PySide6.QtWidgets import QTabWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QTableWidget
 
 from fk.core.abstract_data_item import generate_uid
+from fk.core.abstract_settings import S
 from fk.core.interruption import Interruption
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddInterruptionStrategy
@@ -39,32 +40,33 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
     def custom_settings(self) -> dict[str, str]:
         custom = {
-            'FileEventSource.filename': TEMP_FILENAME,
-            'Application.show_tutorial': 'False',
-            'Application.show_window_title': 'False',
-            'Application.check_updates': 'False',
-            'Pomodoro.long_break_algorithm': 'never',
-            'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
-            'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
-            'Application.play_alarm_sound': 'False',
-            'Application.play_rest_sound': 'False',
-            'Application.play_tick_sound': 'False',
-            'Logger.filename': 'backlog-e2e.log',
-            'Logger.level': 'DEBUG',
-            'Application.window_height': '680',
-            'Application.window_splitter_width': '260',
-            'Application.window_width': '820',
-            'Application.theme': 'mixed',
-            'Application.tray_icon_flavor': 'thin-dark',
-            #'Application.last_version': self.get_application()._current_version,
-            'Application.last_version': '0.0.1',
-            'Integration.callbacks': '{"FileEventSource.AfterBacklogCreate": '
+            S.FILEEVENTSOURCE_FILENAME: TEMP_FILENAME,
+            S.APPLICATION_SHOW_TUTORIAL: 'False',
+            S.APPLICATION_SHOW_WINDOW_TITLE: 'False',
+            S.APPLICATION_CHECK_UPDATES: 'False',
+            S.POMODORO_LONG_BREAK_ALGORITHM: 'never',
+            S.POMODORO_DEFAULT_WORK_DURATION: str(POMODORO_WORK_DURATION),
+            S.POMODORO_DEFAULT_REST_DURATION: str(POMODORO_REST_DURATION),
+            S.APPLICATION_PLAY_ALARM_SOUND: 'False',
+            S.APPLICATION_PLAY_REST_SOUND: 'False',
+            S.APPLICATION_PLAY_TICK_SOUND: 'False',
+            S.APPLICATION_PLAY_NOTIFICATION_SOUND: 'False',
+            S.LOGGER_FILENAME: 'backlog-e2e.log',
+            S.LOGGER_LEVEL: 'DEBUG',
+            S.APPLICATION_WINDOW_HEIGHT: '680',
+            S.APPLICATION_WINDOW_SPLITTER_WIDTH: '260',
+            S.APPLICATION_WINDOW_WIDTH: '820',
+            S.APPLICATION_THEME: 'mixed',
+            S.APPLICATION_TRAY_ICON_FLAVOR: 'thin-dark',
+            # S.APPLICATION_LAST_VERSION: self.get_application()._current_version,
+            S.APPLICATION_LAST_VERSION: '0.0.1',
+            S.INTEGRATION_CALLBACKS: '{"FileEventSource.AfterBacklogCreate": '
                                      '"echo \\"Created backlog {backlog.get_uid()}\\""}',
-            'Application.show_click_here_hint': 'True',
+            S.APPLICATION_SHOW_CLICK_HERE_HINT: 'True',
         }
         if os.name == 'nt':
-            custom['Application.font_main_size'] = '10'
-            custom['Application.font_header_family'] = 'Segoe UI Light'
+            custom[S.APPLICATION_FONT_MAIN_SIZE] = '10'
+            custom[S.APPLICATION_FONT_HEADER_FAMILY] = 'Segoe UI Light'
         return custom
 
     def teardown(self) -> None:
@@ -89,6 +91,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
     async def _wait_mid_pomodoro(self) -> None:
         await asyncio.sleep(POMODORO_WORK_DURATION * 0.75)
+
+    async def _wait_end_of_work(self) -> None:
+        await asyncio.sleep(POMODORO_WORK_DURATION * 1.1)
 
     async def _wait_long_pomodoro(self) -> None:
         await asyncio.sleep(15)
@@ -120,7 +125,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Minus, True)  # self.execute_action('workitems_table.removePomodoro')
         await self.instant_pause()
 
-    async def _new_workitem(self, name: str, pomodoros: int = 0) -> None:
+    async def _new_workitem(self, name: str, pomodoros: int = 0, category = None) -> None:
+        if category is not None:
+            self.get_application().get_settings().set({S.APPLICATION_DEFAULT_WORKITEM_CATEGORY: category})
+            await self.instant_pause()
         self.keypress(Qt.Key.Key_Insert)   # self.execute_action('workitems_table.newItem')
         await self.instant_pause()
         self.type_text(name)
@@ -128,6 +136,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.instant_pause()
         for p in range(pomodoros):
             await self._add_pomodoro()
+        if category is not None:
+            self.get_application().get_settings().set({S.APPLICATION_DEFAULT_WORKITEM_CATEGORY: 'ask'})
+            await self.instant_pause()
 
     async def _find_workitem(self, name: str) -> None:
         self.keypress(Qt.Key.Key_F, True)   # self.execute_action('window.showSearch')
@@ -163,6 +174,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
         else:
             return False
 
+    async def _select_category(self, uid: str = '') -> bool:
+        self.get_application().get_settings().set({S.APPLICATION_SELECTED_CATEGORY: uid})
+        return True
+
     async def test_01_screenshots(self):
         await self.instant_pause()
         await self._wait_mid_pomodoro()
@@ -176,13 +191,20 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.click_button(name='qt_wizard_finish')
         await self.instant_pause()
 
-        self.get_application().get_settings().set({'Application.show_click_here_hint': 'False'})
+        self.get_application().get_settings().set({S.APPLICATION_SHOW_CLICK_HERE_HINT: 'False'})
         await self.instant_pause()
 
         main_window = self.window()
         self.center_window()
         backlogs_table: BacklogTableView = main_window.findChild(BacklogTableView, "backlogs_table")
         workitems_table: WorkitemTableView = main_window.findChild(WorkitemTableView, "workitems_table")
+
+        # About popup
+        self.execute_action('application.about')
+        await self.instant_pause()
+        self.take_screenshot('32-about')
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
 
         ################################################################
         # Create a bunch of test backlogs and fill them with workitems #
@@ -211,7 +233,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
-        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'simple', 'Pomodoro.start_next_automatically': 'True'})
+        self.get_application().get_settings().set({S.POMODORO_LONG_BREAK_ALGORITHM: 'simple', S.POMODORO_START_NEXT_AUTOMATICALLY: 'True'})
         await self.instant_pause()
 
         self.keypress(Qt.Key.Key_F10)
@@ -228,7 +250,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         settings_tabs.setCurrentIndex(1)
         await self.instant_pause()
-        series_check: QCheckBox = self.window().findChild(QCheckBox, "Pomodoro.start_next_automatically")
+        series_check: QCheckBox = self.window().findChild(QCheckBox, S.POMODORO_START_NEXT_AUTOMATICALLY)
         series_check.setChecked(True)
         await self.instant_pause()
         self.take_screenshot('04-settings-long-breaks')
@@ -237,10 +259,10 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         settings_tabs.setCurrentIndex(5)
         await self.instant_pause()
-        sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_alarm_sound")
+        sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, S.APPLICATION_PLAY_ALARM_SOUND)
         sound_alarm_check.setChecked(True)
         await self.instant_pause()
-        sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, "Application.play_rest_sound")
+        sound_alarm_check: QCheckBox = self.window().findChild(QCheckBox, S.APPLICATION_PLAY_REST_SOUND)
         sound_alarm_check.setChecked(True)
         await self.instant_pause()
         sound_file_edit: QLineEdit = self.window().findChild(QLineEdit, "Application.alarm_sound_file-edit")
@@ -255,7 +277,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self.instant_pause()
         self.center_window()
         await self.instant_pause()
-        integration_callbacks: QTableWidget = self.window().findChild(QTableWidget, "Integration.callbacks")
+        integration_callbacks: QTableWidget = self.window().findChild(QTableWidget, S.INTEGRATION_CALLBACKS)
         integration_callbacks.selectRow(6)
         await self.instant_pause()
         self.take_screenshot('21-settings-integration')
@@ -263,15 +285,25 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.keypress(Qt.Key.Key_Escape)
         await self.instant_pause()
 
-        self.get_application().get_settings().set({'Pomodoro.long_break_algorithm': 'never', 'Pomodoro.start_next_automatically': 'False'})
+        self.get_application().get_settings().set({
+            S.POMODORO_LONG_BREAK_ALGORITHM: 'never',
+            S.POMODORO_START_NEXT_AUTOMATICALLY: 'False',
+        })
         await self.instant_pause()
 
-        await self._new_workitem('Generate new screenshots for #Flowkeeper', 2)
-        await self._new_workitem('Reply to Peter', 1)
-        await self._new_workitem('Slides for #Flowkeeper demo', 3)
-        await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2)
-        await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2)
-        await self._new_workitem('#Followup: Call Alex in the afternoon')
+        # Select a category
+        await self._select_category('#wg_123')
+        await self.instant_pause()
+
+        await self._new_workitem('Generate new screenshots for #Flowkeeper', 2, '#wg_123_1')
+        await self._new_workitem('Reply to Peter', 1, '#wg_123_3')
+        await self._new_workitem('Slides for #Flowkeeper demo', 3, '#wg_123_2')
+        await self._new_workitem('#Flowkeeper: Deprecate StartRest strategy', 2, '#wg_123_2')
+        await self._new_workitem('#Flowkeeper: Auto-seal in the web frontend', 2, '#wg_123_3')
+        await self._new_workitem('#Followup: Call Alex in the afternoon', 0, '#wg_123_3')
+
+        await self._select_category()
+        await self.instant_pause()
 
         ####################################
         # Complete pomodoros and workitems #
@@ -297,8 +329,9 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._wait_pomodoro_complete()
         await self._add_pomodoro()
         await self._start_pomodoro()
-        await self._wait_mid_pomodoro()
-        await self._void_pomodoro('Reply to Peter')
+        await self._wait_end_of_work()
+        self.take_screenshot('28-fullscreen-break')
+        await self._wait_end_of_work()
         await self._complete_workitem('Reply to Peter')
         await self.longer_pause()
 
@@ -319,6 +352,24 @@ class ScreenshotE2eTest(AbstractE2eTest):
         await self._wait_mid_pomodoro()
         await self._void_pomodoro('Slides for #Flowkeeper demo')
 
+        # Select a category
+        await self._select_category('#wg_123')
+        await self.instant_pause()
+        self.take_screenshot('29-category-selected')
+        await self.instant_pause()
+        await self._select_category()
+        await self.instant_pause()
+
+        # Category list
+        self.keypress(Qt.Key.Key_F5)
+        await self.instant_pause()
+        self.center_window()
+        await self.instant_pause()
+        self.take_screenshot('30-categories')
+        await self.instant_pause()
+        self.keypress(Qt.Key.Key_Escape)
+        await self.instant_pause()
+
         # Tags
         await self._select_tag('Flowkeeper')
         await self.instant_pause()
@@ -329,18 +380,24 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         # Take two "main" screenshots right in the middle of this pomodoro
         settings = self.get_application().get_settings()
-        old_value_work = settings.get('Pomodoro.default_work_duration')
-        old_value_rest = settings.get('Pomodoro.default_rest_duration')
-        old_value_style = settings.get('Application.timer_ui_mode')
-        old_value_theme = settings.get('Application.theme')
-        old_gradient = settings.get('Application.eyecandy_gradient')
+        old_value_work = settings.get(S.POMODORO_DEFAULT_WORK_DURATION)
+        old_value_rest = settings.get(S.POMODORO_DEFAULT_REST_DURATION)
+        old_value_style = settings.get(S.APPLICATION_TIMER_UI_MODE)
+        old_value_theme = settings.get(S.APPLICATION_THEME)
+        old_focus_flavor = settings.get(S.APPLICATION_FOCUS_FLAVOR)
+        old_gradient = settings.get(S.APPLICATION_EYECANDY_GRADIENT)
+        old_eyecandy_type = settings.get(S.APPLICATION_EYECANDY_TYPE)
         settings.set({
-            'Pomodoro.default_work_duration': '1500',
-            'Pomodoro.default_rest_duration': '300',
-            'Application.timer_ui_mode': 'keep',
-            'Application.theme': 'light',
-            'Application.eyecandy_gradient': 'OverSun',
+            S.POMODORO_DEFAULT_WORK_DURATION: '1500',
+            S.POMODORO_DEFAULT_REST_DURATION: '300',
+            S.APPLICATION_TIMER_UI_MODE: 'keep',
+            S.APPLICATION_THEME: 'light',
+            S.APPLICATION_EYECANDY_GRADIENT: 'OverSun',
         })
+
+        # Re-enable categories
+        await self._select_category('#wg_123')
+        await self.instant_pause()
 
         # Start a Pomodoro in the past
         source = self.get_application().get_source_holder().get_source()
@@ -362,21 +419,31 @@ class ScreenshotE2eTest(AbstractE2eTest):
         self.take_screenshot('18-main-light')
 
         settings.set({
-            'Application.theme': 'dark',
-            'Application.eyecandy_gradient': old_gradient,
+            S.APPLICATION_THEME: 'dark',
+            S.APPLICATION_EYECANDY_GRADIENT: old_gradient,
         })
         await self.longer_pause()
         self.take_screenshot('19-main-dark')
+
+        settings.set({
+            S.APPLICATION_FOCUS_FLAVOR: 'classic',
+            S.APPLICATION_EYECANDY_TYPE: 'default',
+            S.APPLICATION_THEME: 'desert',
+        })
+        await self.longer_pause()
+        self.take_screenshot('31-classic-focus-flavor')
 
         await self._void_pomodoro('Slides for #Flowkeeper demo')
         await self._complete_workitem('Slides for #Flowkeeper demo')
 
         settings.set({
-            'Pomodoro.default_work_duration': old_value_work,
-            'Pomodoro.default_rest_duration': old_value_rest,
-            'Application.timer_ui_mode': old_value_style,
-            'Application.theme': old_value_theme,
-            'Application.eyecandy_gradient': old_gradient,
+            S.POMODORO_DEFAULT_WORK_DURATION: old_value_work,
+            S.POMODORO_DEFAULT_REST_DURATION: old_value_rest,
+            S.APPLICATION_TIMER_UI_MODE: old_value_style,
+            S.APPLICATION_THEME: old_value_theme,
+            S.APPLICATION_EYECANDY_TYPE: old_eyecandy_type,
+            S.APPLICATION_EYECANDY_GRADIENT: old_gradient,
+            S.APPLICATION_FOCUS_FLAVOR: old_focus_flavor,
         })
         await self.longer_pause()
 
@@ -446,28 +513,29 @@ class ScreenshotE2eTest(AbstractE2eTest):
 
         # Themes
         self.get_application().get_settings().set({
-            'Application.theme': 'dark',
-            'Application.eyecandy_type': 'default',
+            S.APPLICATION_THEME: 'dark',
+            S.APPLICATION_EYECANDY_TYPE: 'default',
         })
         await self.longer_pause()
         self.take_screenshot('08-dark-theme')
 
         self.get_application().get_settings().set({
-            'Application.theme': 'light',
+            S.APPLICATION_THEME: 'light',
         })
         await self.longer_pause()
         self.take_screenshot('09-light-theme')
 
         self.get_application().get_settings().set({
-            'Application.theme': 'dark',
-            'Application.eyecandy_type': 'image',
-            'Application.eyecandy_image': ':/img/bg.jpg',
-            'Application.font_header_family': 'Quicksand Light',
-            'Application.font_header_size': '28',
-            'Application.font_main_family': 'Quicksand',
-            'Application.font_main_size': '10',
-            'Application.show_toolbar': 'True',
-            'Application.show_left_toolbar': 'False',
+            S.APPLICATION_THEME: 'dark',
+            S.APPLICATION_EYECANDY_TYPE: 'image',
+            S.APPLICATION_EYECANDY_IMAGE: ':/img/bg.jpg',
+            # S.APPLICATION_FONT_HEADER_FAMILY: 'Quicksand Light',
+            # S.APPLICATION_FONT_HEADER_SIZE: '28',
+            # S.APPLICATION_FONT_MAIN_FAMILY: 'Quicksand',
+            # S.APPLICATION_FONT_MAIN_SIZE: '10',
+            S.APPLICATION_SHOW_TOOLBAR: 'True',
+            S.APPLICATION_FULL_SCREEN_NOTIFICATIONS: 'False',
+            S.APPLICATION_SHOW_LEFT_TOOLBAR: 'False',
         })
         await self.longer_pause()
         self.keypress(Qt.Key.Key_B, True)
@@ -484,7 +552,7 @@ class ScreenshotE2eTest(AbstractE2eTest):
             if b.get_name() == '2024-03-13, Wednesday':
                 now = datetime.datetime.now(datetime.timezone.utc)
                 uid = generate_uid()
-                workitem = Workitem('Huge', uid, b, now)
+                workitem = Workitem('Huge', uid, b, now, [])
                 b[uid] = workitem
                 self._emulate_year(workitem, now - datetime.timedelta(days=365))
 

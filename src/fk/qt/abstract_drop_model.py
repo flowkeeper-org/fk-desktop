@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+import platform
 from abc import abstractmethod
 
 from PySide6 import QtCore
@@ -45,6 +46,13 @@ class DropPlaceholderItem(QStandardItem):
                       Qt.ItemFlag.ItemIsDropEnabled)
 
 
+class StubItem(QStandardItem):
+    def __init__(self):
+        super().__init__()
+        self.setData('stub', 501)
+        self.setFlags(Qt.ItemFlag.NoItemFlags)
+
+
 class AbstractDropModel(QStandardItemModel):
     _source_holder: EventSourceHolder
     dragging: QModelIndex | None
@@ -58,10 +66,13 @@ class AbstractDropModel(QStandardItemModel):
         self.dragging = None
 
     def supportedDropActions(self) -> Qt.DropAction:
-        return Qt.DropAction.LinkAction
+        # MoveAction works differently on macOS. Seems like it fires dropMimeData, and *then* creates a "ghost"
+        # row. On Linux and Windows it creates a ghost first, and we can remove it in the corresponding action
+        # handler. LinkAction and CopyAction do not create ghosts on macOS, so we use it.
+        return Qt.DropAction.LinkAction if platform.system() == 'Darwin' else Qt.DropAction.MoveAction
 
     def supportedDragActions(self) -> Qt.DropAction:
-        return Qt.DropAction.LinkAction
+        return self.supportedDropActions()
 
     def move_drop_placeholder(self, index: QModelIndex | None):
         if index is None:
@@ -108,6 +119,7 @@ class AbstractDropModel(QStandardItemModel):
                 return False
             else:
                 self.reorder(to_index if to_index < from_index else to_index + 1,
+                             to_index,
                              data.data(self.get_primary_type()).toStdString())
                 return True
         elif self.get_secondary_type() is not None and data.hasFormat(self.get_secondary_type()) and where.isValid():
@@ -128,7 +140,7 @@ class AbstractDropModel(QStandardItemModel):
         return None
 
     @abstractmethod
-    def reorder(self, to_index: int, uid: str):
+    def reorder(self, to_index: int, raw_index: int, uid: str):
         pass
 
     def adopt_foreign_item(self, target: AbstractDataItem, uid: str) -> bool:

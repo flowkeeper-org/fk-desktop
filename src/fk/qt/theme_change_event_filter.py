@@ -19,7 +19,7 @@ from PySide6.QtCore import QObject, QEvent
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QMainWindow, QApplication
 
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +42,12 @@ class ThemeChangeEventFilter(QMainWindow):
 
     def eventFilter(self, widget: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.ThemeChange and widget == self._window:
-            if self._settings.get('Application.theme') == 'auto':
+            if self._settings.get(S.APPLICATION_THEME) == 'auto':
                 new_theme = QApplication.styleHints().colorScheme()
                 logger.debug(f'Theme changed from {self._last_value} to {new_theme}')
                 if new_theme != self._last_value:
                     self._settings.set({
-                        'Application.theme': 'auto'
+                        S.APPLICATION_THEME: 'auto'
                     }, force_fire=True)
                     self._last_value = new_theme
         return False

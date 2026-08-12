@@ -29,11 +29,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Fix OpenSSL on Windows 11 ARM
+        if: inputs.os == 'windows-11-arm'
+        run: | 
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+          vcpkg install openssl:arm64-windows-static-md
+
       - name: Install dependencies
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_SIGN_CERT }}
           P12_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+          INPUT_COMPILER: ${{ inputs.compiler }}
         shell: bash
         run: |
           export FK_VERSION=$(scripts/common/get-version.sh)
@@ -44,7 +51,7 @@ jobs:
             scripts/macos/install-certificates.sh
             export BINARY_EXTENSION=""
             echo "BINARY_EXTENSION=" >> $GITHUB_ENV
-          elif [[ "$OSTYPE" == "msys" ]]; then
+          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             # Disable Defender for the workspace directory
             echo "Will disable Defender"
             echo "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath $(cmd //c cd)"
@@ -59,7 +66,7 @@ jobs:
           fi
           pip install -r requirements.txt
 
-          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
+          if [[ "$INPUT_COMPILER" == "nuitka" ]]; then
             pip install nuitka
           else
             pip install pyinstaller
@@ -89,9 +96,9 @@ jobs:
 
       - name: Package builds (Nuitka)
         if: ${{ inputs.compiler == 'nuitka' }}
-        uses: Nuitka/Nuitka-Action@main
+        uses: Nuitka/Nuitka-Action@v1.4
         with:
-          nuitka-version: "2.6.8"
+          nuitka-version: "4.1.3"
           script-name: src/fk/desktop/desktop.py
           mode: ${{ startsWith(inputs.os, 'macOS') && 'app' || 'onefile' }}
           enable-plugins: pyside6
@@ -104,7 +111,6 @@ jobs:
           macos-app-name: Flowkeeper
           macos-sign-identity: "Developer ID Application: Constantine Kulak (ELWZ9S676C)"
           macos-sign-notarization: true 
-          macos-app-protected-resource: "com.apple.security.cs.allow-unsigned-executable-memory:true"
           macos-app-version: "${{ env.FK_VERSION }}"
           product-name: Flowkeeper
           product-version: "${{ env.FK_VERSION }}"
@@ -121,14 +127,16 @@ jobs:
           NOTARIZATION_PASSWORD: ${{ secrets.MAC_NOTARIZATION_PASSWORD }}
           NOTARIZATION_ID: ${{ secrets.MAC_NOTARIZATION_ID }}
           NOTARIZATION_TEAM: ${{ secrets.MAC_NOTARIZATION_TEAM }}
+          INPUT_OS: ${{ inputs.os }}
+          INPUT_COMPILER: ${{ inputs.compiler }}
         shell: bash
         run: |
           echo "Prepare dist directory"
           mkdir -p dist/standalone
-          PREFIX="dist/flowkeeper-${FK_VERSION}-${{ inputs.os }}-${{ inputs.compiler }}"
+          PREFIX="dist/flowkeeper-${FK_VERSION}-${INPUT_OS}-${INPUT_COMPILER}"
           echo "Will create artifacts with $PREFIX prefix"
 
-          if [[ "${{ inputs.compiler}}" == "nuitka" ]]; then
+          if [[ "$INPUT_COMPILER" == "nuitka" ]]; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
               echo "macOS doesn't support portable binaries"
               mv build/desktop.app dist/standalone/Flowkeeper.app
@@ -148,7 +156,7 @@ jobs:
               mv build/flowkeeper/* dist/standalone
             fi
           fi
-          echo "Moved ${{ inputs.compiler }} binaries to dist/standalone"
+          echo "Moved $INPUT_COMPILER binaries to dist/standalone"
           find dist/
 
           if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -156,7 +164,7 @@ jobs:
             scripts/macos/create-dmg.sh
             scripts/macos/notarize-dmg.sh
             mv dist/Flowkeeper.dmg "$PREFIX-installer.dmg"
-          elif [[ "$OSTYPE" == "msys" ]]; then
+          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             echo "Building Windows setup.exe installer"
             scripts/windows/package-installer.sh
             mv dist/setup.exe "$PREFIX-installer.exe"
@@ -177,7 +185,7 @@ jobs:
 
           echo "Zipping the standalone directory"
           cd dist/standalone
-          if [[ "$OSTYPE" == "msys" ]]; then
+          if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
             echo "No zip on Windows"
             powershell Compress-Archive "./*" "../../$PREFIX-standalone.zip"
           else

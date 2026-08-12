@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDi
 from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import S
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -31,7 +32,7 @@ from fk.core.pomodoro import POMODORO_TYPE_NORMAL
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.user import User
 from fk.core.workitem import Workitem
-from fk.core.workitem_strategies import CreateWorkitemStrategy
+from fk.core.workitem_strategies import CreateWorkitemStrategy, UpdateWorkitemCategoriesStrategy
 from fk.desktop.application import Application
 from fk.qt.abstract_tableview import AbstractTableView, AfterSelectionChanged
 from fk.qt.actions import Actions
@@ -61,10 +62,11 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._menu = self._init_menu(actions)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.on(AfterSelectionChanged, lambda event, before, after: self._application.get_settings().set({
-            'Application.last_selected_backlog': after.get_uid() if after is not None else ''
+            S.APPLICATION_LAST_SELECTED_BACKLOG: after.get_uid() if after is not None else ''
         }))
         self._application = application
         self.update_actions(None)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
         self.update_actions(self.get_current())
@@ -109,7 +111,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def upstream_selected(self, user: User) -> None:
         super().upstream_selected(user)
         self._actions['backlogs_table.newBacklog'].setEnabled(user is not None)
-        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _update_actions_if_needed(self, workitem: Workitem):
         if workitem is not None:
@@ -153,7 +154,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
     def _on_messages(self, event: str, source: AbstractEventSource) -> None:
         user = source.get_data().get_current_user()
         self.upstream_selected(user)
-        last_selected_oid = self._application.get_settings().get('Application.last_selected_backlog')
+        last_selected_oid = self._application.get_settings().get(S.APPLICATION_LAST_SELECTED_BACKLOG)
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
             self.select(user[last_selected_oid])
 
@@ -209,6 +210,10 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             self._source.execute(CreateWorkitemStrategy,
                                  [new_workitem_uid, new_backlog_uid, workitem.get_name()],
                                  carry="")  # Note that we don't carry "edit" in this case
+            if len(workitem.get_categories()) > 0:
+                categories = ';'. join([c.get_uid() for c in workitem.get_categories()])
+                self._source.execute(UpdateWorkitemCategoriesStrategy,
+                                     [new_workitem_uid, "", categories])
             added_workitems += 1
             incomplete_pomodoros = list(workitem.get_incomplete_pomodoros())
             pomodoros_to_add = len(incomplete_pomodoros)

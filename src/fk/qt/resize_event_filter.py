@@ -17,7 +17,7 @@ from PySide6.QtCore import QObject, QEvent, QSize
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QWidget, QMainWindow, QSplitter
 
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.qt.qt_timer import QtTimer
 
 
@@ -54,34 +54,33 @@ class ResizeEventFilter(QMainWindow):
         # We'll check against the old value to avoid resize loops and spurious setting change events
         new_width = self._window.size().width()
         new_height = self._window.size().height()
-        old_width = int(self._settings.get('Application.window_width'))
-        old_height = int(self._settings.get('Application.window_height'))
+        old_width = int(self._settings.get(S.APPLICATION_WINDOW_WIDTH))
+        old_height = int(self._settings.get(S.APPLICATION_WINDOW_HEIGHT))
         if old_width != new_width or old_height != new_height:
             self._settings.set({
-                'Application.window_width': str(new_width),
-                'Application.window_height': str(new_height),
+                S.APPLICATION_WINDOW_WIDTH: str(new_width),
+                S.APPLICATION_WINDOW_HEIGHT: str(new_height),
             })
 
-    def eventFilter(self, widget: QObject, event: QEvent) -> bool:
+    def eventFilter(self, widget: QObject, event: QEvent):
         if event.type() == QEvent.Type.Resize and isinstance(event, QResizeEvent):
             if widget == self._window:
-                if self._is_resizing:   # Don't fire those events too frequently
-                    return False
-                self._timer.schedule(1000,
-                                     lambda _1, _2: self.resize_completed(),
-                                     None,
-                                     True)
-                self._is_resizing = True
+                if not self._is_resizing:   # Don't fire those events too frequently
+                    self._timer.schedule(1000,
+                                         lambda _1, _2: self.resize_completed(),
+                                         None,
+                                         True)
+                    self._is_resizing = True
         return False
 
     def restore_size(self) -> None:
-        w = int(self._settings.get('Application.window_width'))
-        h = int(self._settings.get('Application.window_height'))
-        splitter_width = int(self._settings.get('Application.window_splitter_width'))
+        w = int(self._settings.get(S.APPLICATION_WINDOW_WIDTH))
+        h = int(self._settings.get(S.APPLICATION_WINDOW_HEIGHT))
+        splitter_width = int(self._settings.get(S.APPLICATION_WINDOW_SPLITTER_WIDTH))
         self._splitter.setSizes([splitter_width, w - splitter_width])
         self._window.resize(QSize(w, h))
 
     def save_splitter_size(self, new_width: int, index: int) -> None:
-        old_width = int(self._settings.get('Application.window_splitter_width'))
+        old_width = int(self._settings.get(S.APPLICATION_WINDOW_SPLITTER_WIDTH))
         if old_width != new_width:
-            self._settings.set({'Application.window_splitter_width': str(new_width)})
+            self._settings.set({S.APPLICATION_WINDOW_SPLITTER_WIDTH: str(new_width)})

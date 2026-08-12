@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QMessag
 
 from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.abstract_serializer import sanitize_user_input
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
@@ -48,12 +48,11 @@ def complete_item(item: Workitem, parent: QWidget, source: AbstractEventSource) 
             or item.is_tracker()
             or item.get_running_pomodoro().is_long_break()
             or QMessageBox().warning(
-            parent,
-            "Confirmation",
-            f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
-            QMessageBox.StandardButton.Ok,
-            QMessageBox.StandardButton.Cancel
-    ) == QMessageBox.StandardButton.Ok):
+                parent,
+                "Confirmation",
+                f"Are you sure you want to complete workitem '{item.get_display_name()}'? This will void current pomodoro.",
+                QMessageBox.StandardButton.Ok,
+                QMessageBox.StandardButton.Cancel) == QMessageBox.StandardButton.Ok):
         source.execute(CompleteWorkitemStrategy, [item.get_uid(), "finished"])
 
 
@@ -69,7 +68,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     _timer_widget: TimerWidget
     _moving_around: QPoint | None
     _hint_label: QLabel | None
-    _added: [QWidget]
+    _added: [QWidget] # type: ignore
     _readonly: bool
 
     def __init__(self,
@@ -84,7 +83,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         super().__init__(parent, timer=timer, source_holder=source_holder)
 
         self._apply_size_policy()
-
         self._settings = settings
         self._actions = actions
         self._application = application
@@ -136,7 +134,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def set_flavor(self, flavor):
         layout = self.layout()
         last_values = None
-
         if self._timer_widget is not None:
             # Delete all widgets from the layout
             for w in self._added:
@@ -147,7 +144,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     w.deleteLater()
             self._added = []
             last_values = self._timer_widget.get_last_values()
-
         center_button = None
         if flavor == 'classic':
             # We add both buttons, but one of them will always be hidden
@@ -163,7 +159,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             finish_tracking_button = self._create_button("focus.finishTracking")
             center_button_layout.addWidget(finish_tracking_button)
             self._added.append(finish_tracking_button)
-
         self._timer_widget = TimerWidget(self,
                                          'timer',
                                          flavor,
@@ -183,8 +178,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             layout.addWidget(w)
 
             w = self._create_button("focus.completeItem")
+
             self._added.append(w)
             layout.addWidget(w)
+
+            w = self._create_button("focus.muteAudio")
+            self._added.append(w)
+            layout.addWidget(w)
+            self._update_mute_action_state()
 
             if "window.pinWindow" in self._actions:
                 w = self._create_button("window.pinWindow")
@@ -196,7 +197,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._added.append(w)
             layout.addSpacerItem(w)
 
-            if self._settings.get('Application.show_click_here_hint') == 'True':
+            if self._settings.get(S.APPLICATION_SHOW_CLICK_HERE_HINT) == 'True':
                 self._hint_label = self._initialize_hint_label()
                 w = self._hint_label
                 self._added.append(w)
@@ -234,11 +235,13 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         actions.add('focus.finishTracking', "Stop Tracking Time", 'Ctrl+S', "tool-finish-tracking", FocusWidget._finish_tracking)
         actions.add('focus.nextPomodoro', "Next Pomodoro", None, "tool-focus-next", FocusWidget._next_pomodoro)
         actions.add('focus.completeItem', "Complete Item", None, "tool-focus-complete", FocusWidget._complete_item)
+        actions.add('focus.muteAudio', "Mute", None, ("tool-no-sound", "tool-no-sound"), FocusWidget._mute_audio, is_toggle=True, is_checked=False)
 
     def _create_button(self,
                        name: str,
                        parent: QWidget = None):
         action = self._actions[name]
+        icon_path = action.icon()
         btn = QToolButton(self if parent is None else parent)
         btn.setObjectName(name)
         btn.setIcon(QIcon(action.icon()))
@@ -259,12 +262,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             self._actions['focus.interruption'].setDisabled(True)
             self._actions['focus.finishTracking'].setVisible(False)
             self._actions['focus.finishTracking'].setDisabled(True)
+        self._actions['focus.muteAudio'].setVisible(False)
+        self._actions['focus.muteAudio'].setDisabled(True)
         self._timer_widget.reset()
 
     def eye_candy(self):
-        eyecandy_type = self._settings.get('Application.eyecandy_type')
+        eyecandy_type = self._settings.get(S.APPLICATION_EYECANDY_TYPE)
         if eyecandy_type == 'image':
-            header_bg = self._settings.get('Application.eyecandy_image')
+            header_bg = self._settings.get(S.APPLICATION_EYECANDY_IMAGE)
             if header_bg:
                 self._pixmap = QPixmap(header_bg)
             else:
@@ -275,7 +280,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         super().paintEvent(event)
         rect = self.rect()
         painter = QPainter(self)
-        eyecandy_type = self._settings.get('Application.eyecandy_type')
+        eyecandy_type = self._settings.get(S.APPLICATION_EYECANDY_TYPE)
         if eyecandy_type == 'image':
             if self._pixmap is not None and self._pixmap.width() > 0:
                 painter.drawPixmap(
@@ -284,7 +289,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                         QSize(self.width(), int(self.width() * self._pixmap.height() / self._pixmap.width())),
                         mode=Qt.TransformationMode.SmoothTransformation))
         elif eyecandy_type == 'gradient':
-            gradient = self._settings.get('Application.eyecandy_gradient')
+            gradient = self._settings.get(S.APPLICATION_EYECANDY_GRADIENT)
             try:
                 painter.fillRect(rect, QGradient.Preset[gradient])
             except Exception as e:
@@ -301,14 +306,38 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self._timer_widget.bg_color = QColor(variables['FOCUS_BG_COLOR'])
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.theme' in new_values:
+        if S.APPLICATION_THEME in new_values:
             self._update_colors()
-        if 'Application.eyecandy_type' in new_values or \
-                'Application.eyecandy_gradient' in new_values or \
-                'Application.eyecandy_image' in new_values:
+
+        if S.APPLICATION_EYECANDY_TYPE in new_values or \
+                S.APPLICATION_EYECANDY_GRADIENT in new_values or \
+                S.APPLICATION_EYECANDY_IMAGE in new_values:
             self.eye_candy()
-        if self._hint_label is not None and 'Application.show_click_here_hint' in new_values:
+
+        if self._hint_label is not None and S.APPLICATION_SHOW_CLICK_HERE_HINT in new_values:
             self._hint_label.hide()
+
+        if S.APPLICATION_PLAY_ALARM_SOUND in new_values or \
+                S.APPLICATION_PLAY_REST_SOUND in new_values or \
+                S.APPLICATION_PLAY_TICK_SOUND in new_values:
+            play_alarm = new_values.get(S.APPLICATION_PLAY_ALARM_SOUND, None)
+            play_rest = new_values.get(S.APPLICATION_PLAY_REST_SOUND, None)
+            play_tick = new_values.get(S.APPLICATION_PLAY_TICK_SOUND, None)
+            self._update_mute_action_state(play_alarm, play_rest, play_tick)
+
+    def _update_mute_action_state(self, play_alarm: str = None, play_rest: str = None, play_tick: str = None) -> None:
+        if play_alarm is None:
+            play_alarm = self._settings.get(S.APPLICATION_PLAY_ALARM_SOUND)
+        if play_rest is None:
+            play_rest = self._settings.get(S.APPLICATION_PLAY_REST_SOUND)
+        if play_tick is None:
+            play_tick = self._settings.get(S.APPLICATION_PLAY_TICK_SOUND)
+        audio_enabled = play_alarm == 'True' or play_rest == 'True' or play_tick == 'True'
+        mute_action = self._actions['focus.muteAudio']
+        if mute_action is not None:
+            mute_action.blockSignals(True)
+            mute_action.setChecked(not audio_enabled)
+            mute_action.blockSignals(False)
 
     def _on_fonts_changed(self, event, header_font, **kwargs):
         self._header_text.setFont(header_font)
@@ -326,7 +355,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     'Are you sure you want to void current pomodoro?',
                     'Reason (optional)')
 
-                def ok():
+                def ok(w):
                     reason = f': {sanitize_user_input(dlg.get_reason())}' if dlg.get_reason() else ''
                     self._source_holder.get_source().execute(
                         AddInterruptionStrategy, [
@@ -335,7 +364,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._source_holder.get_source().execute(
                         StopTimerStrategy,
                         [])
-                dlg.accepted.connect(ok)
+                dlg.accepted.connect(lambda: ok(workitem))
                 dlg.open()
 
     def _interruption(self) -> None:
@@ -370,6 +399,14 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
             raise Exception('Cannot start next pomodoro on non-existent work item')
         start_workitem(self._continue_workitem, self._source_holder.get_source())
 
+    def _mute_audio(self, state) -> None:
+        audio_enabled = not self._actions['focus.muteAudio'].isChecked()
+        self._settings.set({
+            S.APPLICATION_PLAY_ALARM_SOUND: str(audio_enabled),
+            S.APPLICATION_PLAY_REST_SOUND: str(audio_enabled),
+            S.APPLICATION_PLAY_TICK_SOUND: str(audio_enabled),
+        })
+
     def _complete_item(self) -> None:
         item = self.timer.get_running_workitem()
         complete_item(item, self, self._source_holder.get_source())
@@ -395,7 +432,8 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._header_subtext.setText(running_item.get_display_name())
             if not self._readonly:
                 pomodoro: Pomodoro = self.timer.get_running_pomodoro()
-                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
+                is_long_break = pomodoro.is_long_break()
+                if pomodoro.get_type() == POMODORO_TYPE_TRACKER or is_long_break:
                     self._actions['focus.voidPomodoro'].setVisible(False)
                     self._actions['focus.voidPomodoro'].setDisabled(True)
                     self._actions['focus.interruption'].setVisible(False)
@@ -409,6 +447,10 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                     self._actions['focus.interruption'].setDisabled(False)
                     self._actions['focus.finishTracking'].setVisible(False)
                     self._actions['focus.finishTracking'].setDisabled(True)
+
+                self._actions['focus.muteAudio'].setVisible(not is_long_break)
+                self._actions['focus.muteAudio'].setDisabled(is_long_break)
+
                 self._actions['focus.nextPomodoro'].setDisabled(True)
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({running_item.get_short_display_name()})')
                 self._actions['focus.completeItem'].setDisabled(False)
@@ -420,7 +462,7 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
                 self._actions['focus.nextPomodoro'].setText(f'Next Pomodoro ({self._continue_workitem.get_short_display_name()})')
 
             # Continue the series automaticallysss
-            work_in_series = self._settings.get('Pomodoro.start_next_automatically') == 'True'
+            work_in_series = self._settings.get(S.POMODORO_START_NEXT_AUTOMATICALLY) == 'True'
             after_long_break = self.timer.get_pomodoro_in_series() == 0
             last_voided = self._last_pomodoro is not None and self._last_pomodoro.is_startable()
             if work_in_series and not after_long_break and not last_voided:
@@ -435,23 +477,27 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
         self.setMaximumHeight(DISPLAY_HEIGHT)
 
     def _timer_clicked(self, pos: QPoint) -> None:
-        self._settings.set({'Application.show_click_here_hint': 'False'})
+        self._settings.set({S.APPLICATION_SHOW_CLICK_HERE_HINT: 'False'})
         context_menu = QMenu(self)
-        context_menu.addAction(self._actions['focus.nextPomodoro'])
         timer = self.timer
         if timer.is_working() or timer.is_resting():
             pomodoro = timer.get_running_pomodoro()
             if pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
                 context_menu.addAction(self._actions['focus.finishTracking'])
+
             else:
                 context_menu.addAction(self._actions['focus.interruption'])
                 context_menu.addAction(self._actions['focus.voidPomodoro'])
+
         context_menu.addSeparator()
         context_menu.addAction(self._actions['window.focusMode'])
         if 'window.pinWindow' in self._actions:
             context_menu.addAction(self._actions['window.pinWindow'])
         context_menu.addSeparator()
+        context_menu.addAction(self._actions['focus.muteAudio'])
+        context_menu.addSeparator()
         context_menu.addAction(self._actions['focus.completeItem'])
+
         context_menu.exec(self._timer_widget.mapToGlobal(pos))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -467,4 +513,6 @@ class FocusWidget(QWidget, AbstractTimerDisplay):
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         if not self._readonly:
             self._actions['window.focusMode'].toggle()
+
+
 

@@ -26,7 +26,7 @@ from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import QMessageBox, QApplication
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings, _is_gnome
+from fk.core.abstract_settings import AbstractSettings, _is_gnome, S
 from fk.core.sandbox import get_sandbox_type
 from fk.qt.qt_invoker import invoke_in_main_thread
 
@@ -53,7 +53,7 @@ class QtSettings(AbstractSettings):
                          self._is_wayland)
         self._settings = QtCore.QSettings("flowkeeper", app_name)
 
-        keyring_feature_enabled = self.get('Application.feature_keyring') == 'True'
+        keyring_feature_enabled = self.get(S.APPLICATION_FEATURE_KEYRING) == 'True'
         self._keyring_enabled = keyring_feature_enabled and _check_keyring()
 
         if keyring_feature_enabled and not self._keyring_enabled:
@@ -64,7 +64,7 @@ class QtSettings(AbstractSettings):
             self._disable_connected_sources()  # Disable and hide forbidden source types
             self._disable_secrets()  # Disable and hide forbidden encryption settings
 
-        connect_feature_enabled = self.get('Application.feature_connect') == 'True'
+        connect_feature_enabled = self.get(S.APPLICATION_FEATURE_CONNECT) == 'True'
         if not connect_feature_enabled:
             self._disable_connected_sources()
 
@@ -75,7 +75,7 @@ class QtSettings(AbstractSettings):
         self.init_network_access()
 
     def _display_warning_if_needed(self) -> None:
-        if self.get('Application.ignore_keyring_errors') == 'False':
+        if self.get(S.APPLICATION_IGNORE_KEYRING_ERRORS) == 'False':
             if QMessageBox().warning(
                     None,
                     "No keyring",
@@ -89,30 +89,30 @@ class QtSettings(AbstractSettings):
             ) == QMessageBox.StandardButton.Ignore:
                 logger.debug('Compatible keyring is not found and the user chose to ignore it. '
                              'Encryption and websockets will be disabled.')
-                self.set({'Application.ignore_keyring_errors': 'True'})
+                self.set({S.APPLICATION_IGNORE_KEYRING_ERRORS: 'True'})
             else:
                 logger.error('Compatible keyring is not found and the user chose not to ignore it. Exiting.')
                 sys.exit(1)
 
     def _disable_connected_sources(self) -> None:
         if self.is_remote_source():
-            self.set({'Source.type': 'local'})
+            self.set({S.SOURCE_TYPE: 'local'})
 
-        original = self.get_configuration('Source.type')
+        original = self.get_configuration(S.SOURCE_TYPE)
         for option in list(original):
             key = option.split(':')[0]
             if key in ['flowkeeper.org', 'flowkeeper.pro', 'websocket']:
                 original.remove(option)
 
     def _disable_secrets(self) -> None:
-        if self.get('Source.encryption_enabled') == 'True':
-            self.set({'Source.encryption_enabled': 'False'})
+        if self.get(S.SOURCE_ENCRYPTION_ENABLED) == 'True':
+            self.set({S.SOURCE_ENCRYPTION_ENABLED: 'False'})
 
         # TODO: Reimplement this via some bool variable on the AbstractSettings class, e.g. "is_encryption_disabled"
         #  and updating the corresponding visibility checks. This would be a more elegant solution.
-        self.hide('Source.encryption_enabled')
-        self.hide('Source.encryption_key!')
-        self.hide('Source.encryption_separator')
+        self.hide(S.SOURCE_ENCRYPTION_ENABLED)
+        self.hide(S.SOURCE_ENCRYPTION_KEY)
+        self.hide(S.SOURCE_ENCRYPTION_SEPARATOR)
 
     def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()
@@ -203,23 +203,23 @@ class QtSettings(AbstractSettings):
     def init_audio_outputs(self):
         choice = []
         for d in self._definitions['Audio']:
-            if d[0] == 'Application.audio_output':
+            if d[0] == S.APPLICATION_AUDIO_OUTPUT:
                 choice = d[4]
                 choice.clear()
                 for output in QMediaDevices.audioOutputs():
                     name = output.id().toStdString().replace(':', '$$')
                     choice.append(f'{name}:{output.description().replace(":", "$$")}')
                     if output.isDefault():
-                        self.update_default('Application.audio_output', name)
+                        self.update_default(S.APPLICATION_AUDIO_OUTPUT, name)
                 break
         if len(choice) == 0:
             choice.append('#none:No audio outputs detected')
-            self.update_default('Application.audio_output', '#none')
+            self.update_default(S.APPLICATION_AUDIO_OUTPUT, '#none')
 
     def init_gradients(self):
         regex = re.compile('([A-Z][a-z]+)([A-Z].+)?')
         for d in self._definitions['Appearance']:
-            if d[0] == 'Application.eyecandy_gradient':
+            if d[0] == S.APPLICATION_EYECANDY_GRADIENT:
                 choice = d[4]
                 choice.clear()
                 for preset in QGradient.Preset:
@@ -237,27 +237,27 @@ class QtSettings(AbstractSettings):
 
     def init_fonts(self):
         default_font = QFont()
-        self.update_default('Application.font_main_family', default_font.family())
-        self.update_default('Application.font_main_size', str(default_font.pointSize()))
-        self.update_default('Application.font_header_family', default_font.family())
-        self.update_default('Application.font_header_size', str(int(8.0 / 3 * default_font.pointSize())))
+        self.update_default(S.APPLICATION_FONT_MAIN_FAMILY, default_font.family())
+        self.update_default(S.APPLICATION_FONT_MAIN_SIZE, str(default_font.pointSize()))
+        self.update_default(S.APPLICATION_FONT_HEADER_FAMILY, default_font.family())
+        self.update_default(S.APPLICATION_FONT_HEADER_SIZE, str(int(8.0 / 3 * default_font.pointSize())))
 
     def init_appearance(self):
         if _is_gnome():
             self.set({
-                'Application.show_window_title': 'True',
-                'Application.quit_on_close': 'True',
+                S.APPLICATION_SHOW_WINDOW_TITLE: 'True',
+                S.APPLICATION_QUIT_ON_CLOSE: 'True',
             })
         if self._is_wayland:
             self.set({
-                'Application.show_window_title': 'True',
-                'Application.always_on_top': 'False',
-                'Application.show_window_title': 'True',
+                S.APPLICATION_SHOW_WINDOW_TITLE: 'True',
+                S.APPLICATION_ALWAYS_ON_TOP: 'False',
+                S.APPLICATION_SHOW_WINDOW_TITLE: 'True',
             })
 
     def init_network_access(self):
         if get_sandbox_type() is not None:
             self.set({
-                'Application.singleton': 'False',
-                'Application.check_updates': 'False',
+                S.APPLICATION_SINGLETON: 'False',
+                S.APPLICATION_CHECK_UPDATES: 'False',
             })

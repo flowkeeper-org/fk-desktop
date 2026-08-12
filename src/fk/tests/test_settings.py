@@ -17,7 +17,7 @@ import logging
 from unittest import TestCase
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.mock_settings import MockSettings
@@ -43,9 +43,9 @@ class TestSettings(TestCase):
         self.source.dump()
 
     def test_defaults(self):
-        val1 = self.settings.get('Pomodoro.default_work_duration')
+        val1 = self.settings.get(S.POMODORO_DEFAULT_WORK_DURATION)
         self.assertEqual(val1, str(25 * 60))
-        val2 = self.settings.get('Application.timer_ui_mode')
+        val2 = self.settings.get(S.APPLICATION_TIMER_UI_MODE)
         self.assertEqual(val2, 'focus')
 
     def test_invalid_setting(self):
@@ -57,12 +57,12 @@ class TestSettings(TestCase):
         self.assertEqual(len(categories), 7)
         self.assertIn('General', categories)
         self.settings.set({
-            'Pomodoro.default_work_duration': '10',
+            S.POMODORO_DEFAULT_WORK_DURATION: '10',
         })
         general = self.settings.get_settings('General')
         found = False
         for s in general:
-            if s[0] == 'Pomodoro.default_work_duration':
+            if s[0] == S.POMODORO_DEFAULT_WORK_DURATION:
                 found = True
                 self.assertEqual(s[1], 'duration')
                 self.assertEqual(s[3], '10')
@@ -70,34 +70,34 @@ class TestSettings(TestCase):
 
     def test_get_set(self):
         self.settings.set({
-            'Pomodoro.default_work_duration': '11',
+            S.POMODORO_DEFAULT_WORK_DURATION: '11',
         })
-        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), '11')
+        self.assertEqual(self.settings.get(S.POMODORO_DEFAULT_WORK_DURATION), '11')
 
     def test_clear(self):
         # What's the difference between this and reset_to_defaults()?
         self.settings.set({
-            'Pomodoro.default_work_duration': '12',
+            S.POMODORO_DEFAULT_WORK_DURATION: '12',
         })
         self.settings.clear()
-        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
+        self.assertEqual(self.settings.get(S.POMODORO_DEFAULT_WORK_DURATION), str(25 * 60))
 
     def test_reset(self):
         self.settings.set({
-            'Pomodoro.default_work_duration': '13',
+            S.POMODORO_DEFAULT_WORK_DURATION: '13',
         })
         self.settings.reset_to_defaults()
-        self.assertEqual(self.settings.get('Pomodoro.default_work_duration'), str(25 * 60))
+        self.assertEqual(self.settings.get(S.POMODORO_DEFAULT_WORK_DURATION), str(25 * 60))
 
     def test_location(self):
         self.assertEqual(self.settings.location(), 'N/A')
 
     def test_shortcuts(self):
         self.settings.set({
-            'Source.type': 'local',
-            'Pomodoro.default_work_duration': '14',
-            'Pomodoro.default_rest_duration': '15',
-            'Source.fullname': 'John Doe',
+            S.SOURCE_TYPE: 'local',
+            S.POMODORO_DEFAULT_WORK_DURATION: '14',
+            S.POMODORO_DEFAULT_REST_DURATION: '15',
+            S.SOURCE_FULLNAME: 'John Doe',
         })
         self.assertEqual(self.settings.get_username(), 'user@local.host')
         self.assertEqual(self.settings.get_work_duration(), 14)
@@ -105,9 +105,9 @@ class TestSettings(TestCase):
         self.assertEqual(self.settings.get_fullname(), 'John Doe')
         self.assertFalse(self.settings.is_team_supported(), False)
         self.settings.set({
-            'Source.type': 'flowkeeper.org',
-            'WebsocketEventSource.username': 'alice@example.org',
-            'Application.enable_teams': 'True',
+            S.SOURCE_TYPE: 'flowkeeper.org',
+            S.WEBSOCKETEVENTSOURCE_USERNAME: 'alice@example.org',
+            S.APPLICATION_ENABLE_TEAMS: 'True',
         })
         self.assertEqual(self.settings.get_username(), 'alice@example.org')
         self.assertTrue(self.settings.is_team_supported())
@@ -116,34 +116,34 @@ class TestSettings(TestCase):
         self.settings.reset_to_defaults()
         visible = self.settings.get_displayed_settings()
         # Always
-        self.assertIn('Source.type', visible)
-        self.assertIn('Application.eyecandy_type', visible)
-        self.assertIn('Pomodoro.default_work_duration', visible)
-        self.assertIn('Application.play_tick_sound', visible)
+        self.assertIn(S.SOURCE_TYPE, visible)
+        self.assertIn(S.APPLICATION_EYECANDY_TYPE, visible)
+        self.assertIn(S.POMODORO_DEFAULT_WORK_DURATION, visible)
+        self.assertIn(S.APPLICATION_PLAY_TICK_SOUND, visible)
         # Never
-        self.assertNotIn('Application.window_width', visible)
-        self.assertNotIn('Application.show_status_bar', visible)
-        self.assertNotIn('WebsocketEventSource.refresh_token!', visible)
-        self.assertNotIn('Source.fullname', visible)
-        self.assertNotIn('Application.hide_completed', visible)
+        self.assertNotIn(S.APPLICATION_WINDOW_WIDTH, visible)
+        self.assertNotIn(S.APPLICATION_SHOW_STATUS_BAR, visible)
+        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, visible)
+        self.assertNotIn(S.SOURCE_FULLNAME, visible)
+        self.assertNotIn(S.APPLICATION_HIDE_COMPLETED, visible)
         # For file event source
-        self.assertIn('FileEventSource.filename', visible)
-        self.assertNotIn('WebsocketEventSource.auth_type', visible)
-        self.assertNotIn('WebsocketEventSource.url', visible)
+        self.assertIn(S.FILEEVENTSOURCE_FILENAME, visible)
+        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, visible)
+        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_URL, visible)
         # For Flowkeeper.org event source
         self.settings.set({
-            'Source.type': 'flowkeeper.org',
+            S.SOURCE_TYPE: 'flowkeeper.org',
         })
         visible = self.settings.get_displayed_settings()
-        self.assertNotIn('FileEventSource.filename', visible)
-        self.assertIn('WebsocketEventSource.auth_type', visible)
-        self.assertNotIn('WebsocketEventSource.username', visible)
-        self.assertNotIn('WebsocketEventSource.url', visible)
+        self.assertNotIn(S.FILEEVENTSOURCE_FILENAME, visible)
+        self.assertIn(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, visible)
+        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_USERNAME, visible)
+        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_URL, visible)
         # For custom WS event source
         self.settings.set({
-            'Source.type': 'websocket',
-            'WebsocketEventSource.auth_type': 'basic',
+            S.SOURCE_TYPE: 'websocket',
+            S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'basic',
         })
         visible = self.settings.get_displayed_settings()
-        self.assertIn('WebsocketEventSource.username', visible)
-        self.assertIn('WebsocketEventSource.url', visible)
+        self.assertIn(S.WEBSOCKETEVENTSOURCE_USERNAME, visible)
+        self.assertIn(S.WEBSOCKETEVENTSOURCE_URL, visible)

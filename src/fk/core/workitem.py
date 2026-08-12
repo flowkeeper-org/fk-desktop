@@ -18,11 +18,11 @@ from __future__ import annotations
 import datetime
 import re
 import textwrap
-from collections.abc import Set
 from typing import Iterable
 
-from fk.core.abstract_data_container import AbstractDataContainer
+from fk.core.abstract_categorized_data_container import AbstractCategorizedDataContainer
 from fk.core.abstract_data_item import generate_uid
+from fk.core.category import Category
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 
 TAG_REGEX = re.compile('#(\\w+)')
@@ -68,7 +68,7 @@ class Interval:
                 and self._rest_duration == other._rest_duration)
 
 
-class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
+class Workitem(AbstractCategorizedDataContainer[Pomodoro, 'Backlog']):
     # State is one of the following: new, running, finished, canceled
     _state: str
     _date_work_started: datetime.datetime | None
@@ -79,8 +79,9 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
                  name: str,
                  uid: str,
                  backlog: 'Backlog',
-                 create_date: datetime.datetime):
-        super().__init__(name=name, parent=backlog, uid=uid, create_date=create_date)
+                 create_date: datetime.datetime,
+                 initial_categories: set[Category]):
+        super().__init__(name=name, parent=backlog, uid=uid, create_date=create_date, initial_categories=initial_categories)
         self._state = 'new'
         self._date_work_started = None
         self._date_work_ended = None
@@ -106,6 +107,13 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
             self._date_work_ended = when
         else:
             raise Exception(f'Invalid workitem state: {target_state}')
+
+    def restore(self) -> None:
+        if self.is_sealed():
+            self._state = 'running' if len(self._intervals) > 0 else 'new'
+            self._date_work_ended = None
+        else:
+            raise Exception(f'Invalid workitem state: {self._state}')
 
     def add_pomodoro(self,
                      num_pomodoros: int,
@@ -185,12 +193,15 @@ class Workitem(AbstractDataContainer[Pomodoro, 'Backlog']):
     def get_work_start_date(self) -> datetime.datetime:
         return self._date_work_started
 
+    def get_work_end_date(self) -> datetime.datetime:
+        return self._date_work_ended
+
     def get_incomplete_pomodoros(self) -> Iterable[Pomodoro]:
         for pomodoro in self.values():
             if pomodoro.is_startable():
                 yield pomodoro
 
-    def get_tags(self) -> Set[str]:
+    def get_tags(self) -> set[str]:
         res = set[str]()
         for t in TAG_REGEX.finditer(self._name):
             res.add(t.group(1).lower())

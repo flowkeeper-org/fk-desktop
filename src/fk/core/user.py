@@ -19,7 +19,9 @@ import datetime
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.backlog import Backlog
+from fk.core.category import Category
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
+from fk.core.standard_categories import create_system_categories
 from fk.core.tags import Tags
 from fk.core.timer_data import TimerData
 
@@ -27,6 +29,7 @@ from fk.core.timer_data import TimerData
 class User(AbstractDataContainer[Backlog, 'Tenant']):
     _is_system_user: bool
     _tags: Tags
+    _root_category: Category
     _timer: TimerData
 
     def __init__(self,
@@ -38,6 +41,8 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
         super().__init__(name, data, identity, create_date)
         self._is_system_user = is_system_user
         self._tags = Tags(self)
+        self._root_category = Category('Root category', '#root', True, "Info", self, create_date)
+        create_system_categories(self._root_category, create_date)
         self._timer = TimerData(self, create_date)
 
     def __str__(self):
@@ -64,13 +69,31 @@ class User(AbstractDataContainer[Backlog, 'Tenant']):
     def get_tags(self) -> Tags:
         return self._tags
 
+    def get_root_category(self) -> Category:
+        return self._root_category
+
+    def find_category_by_id(self, category_id, parent_category: Category = None, raise_if_not_found: bool = False) -> Category|None:
+        if parent_category is None:
+            parent_category = self._root_category
+        if parent_category is not None:
+            if parent_category.get_uid() == category_id:
+                return parent_category
+            for child_category in parent_category.values():
+                found = self.find_category_by_id(category_id, child_category)
+                if found is not None:
+                    return found
+        if raise_if_not_found:
+            raise KeyError(f'No category with id {category_id} found')
+        else:
+            return None
+
     def get_timer(self) -> TimerData:
         return self._timer
 
     def dump(self, indent: str = '', mask_uid: bool = False, mask_last_modified: bool = False) -> str:
         return f'{super().dump(indent, mask_uid, mask_last_modified)}\n' \
                f'{indent}  System user: {self._is_system_user}'
-        # TODO: Dump tags and timer
+        # Shall we dump tags and timer? They are all generated on the fly...
 
     def to_dict(self) -> dict:
         d = super().to_dict()

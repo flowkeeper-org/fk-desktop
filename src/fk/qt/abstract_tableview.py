@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import S
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.qt.abstract_drop_model import AbstractDropModel
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 BeforeSelectionChanged = "BeforeSelectionChanged"
 AfterSelectionChanged = "AfterSelectionChanged"
+AfterUpstreamSelected = "AfterUpstreamSelected"
 
 TUpstream = TypeVar('TUpstream', bound=AbstractDataItem)
 TDownstream = TypeVar('TDownstream', bound=AbstractDataItem)
@@ -63,6 +65,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
                          allowed_events=[
                              BeforeSelectionChanged,
                              AfterSelectionChanged,
+                             AfterUpstreamSelected,
                          ],
                          callback_invoker=source_holder.get_settings().invoke_callback)
         self._source = None
@@ -89,7 +92,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self.setAcceptDrops(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
 
-        self._update_row_height(int(self._actions.get_settings().get('Application.table_row_height')))
+        self._update_row_height(int(self._actions.get_settings().get(S.APPLICATION_TABLE_ROW_HEIGHT)))
 
         self.selectionModel().currentRowChanged.connect(self._on_current_changed)
 
@@ -98,8 +101,8 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         source_holder.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.table_row_height' in new_values:
-            self._update_row_height(int(new_values["Application.table_row_height"]))
+        if S.APPLICATION_TABLE_ROW_HEIGHT in new_values:
+            self._update_row_height(int(new_values[S.APPLICATION_TABLE_ROW_HEIGHT]))
 
     def _update_row_height(self, new_height: int):
         self._row_height = new_height
@@ -128,6 +131,7 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
             self._is_upstream_item_selected = True
         model: AbstractDropModel = self.model()
         model.load(upstream)  # Should handle None correctly
+        self._emit(AfterUpstreamSelected, {'upstream': upstream})
 
     def get_current(self) -> TDownstream | None:
         index = self.currentIndex()

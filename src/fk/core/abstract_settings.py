@@ -17,7 +17,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Final
 
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
@@ -25,6 +25,110 @@ from fk.core.events import get_all_events
 from fk.core.sandbox import get_sandbox_type
 
 logger = logging.getLogger(__name__)
+
+
+class S:
+    POMODORO_DEFAULT_WORK_DURATION: Final[str] = 'Pomodoro.default_work_duration'
+    POMODORO_DEFAULT_REST_DURATION: Final[str] = 'Pomodoro.default_rest_duration'
+    POMODORO_END_OF_WORK_NOTIFICATIONS: Final[str] = 'Pomodoro.end_of_work_notifications'
+    POMODORO_END_OF_WORK_NOTIFICATION_DURATION: Final[str] = 'Pomodoro.end_of_work_notification_duration'
+    POMODORO_END_OF_WORK_NOTIFICATION_EXPLANATION: Final[str] = 'Pomodoro.end_of_work_explanation'
+    APPLICATION_HIDE_COMPLETED: Final[str] = 'Application.hide_completed'
+    APPLICATION_FEATURE_TAGS: Final[str] = 'Application.feature_tags'
+    APPLICATION_DEFAULT_WORKITEM_CATEGORY: Final[str] = 'Application.default_workitem_category'
+    APPLICATION_DEFAULT_BACKLOG_CATEGORY: Final[str] = 'Application.default_backlog_category'
+    APPLICATION_CHECK_UPDATES: Final[str] = 'Application.check_updates'
+    APPLICATION_IGNORED_UPDATES: Final[str] = 'Application.ignored_updates'
+    APPLICATION_SINGLETON: Final[str] = 'Application.singleton'
+    APPLICATION_HIDE_ON_AUTOSTART: Final[str] = 'Application.hide_on_autostart'
+    APPLICATION_SHORTCUTS: Final[str] = 'Application.shortcuts'
+    APPLICATION_ENABLE_TEAMS: Final[str] = 'Application.enable_teams'
+    APPLICATION_SHOW_TUTORIAL: Final[str] = 'Application.show_tutorial'
+    APPLICATION_COMPLETED_TUTORIAL_STEPS: Final[str] = 'Application.completed_tutorial_steps'
+    LOGGER_LEVEL: Final[str] = 'Logger.level'
+    LOGGER_FILENAME: Final[str] = 'Logger.filename'
+    APPLICATION_IGNORE_KEYRING_ERRORS: Final[str] = 'Application.ignore_keyring_errors'
+    APPLICATION_FEATURE_CONNECT: Final[str] = 'Application.feature_connect'
+    APPLICATION_FEATURE_KEYRING: Final[str] = 'Application.feature_keyring'
+    APPLICATION_WORK_SUMMARY_SETTINGS: Final[str] = 'Application.work_summary_settings'
+    APPLICATION_LAST_VERSION: Final[str] = 'Application.last_version'
+    APPLICATION_SELECTED_CATEGORY: Final[str] = 'Application.selected_category'
+    POMODORO_LONG_BREAK_ALGORITHM: Final[str] = 'Pomodoro.long_break_algorithm'
+    POMODORO_LONG_BREAK_EACH: Final[str] = 'Pomodoro.long_break_each'
+    POMODORO_LONG_BREAK_FOCUS: Final[str] = 'Pomodoro.long_break_focus'
+    POMODORO_LONG_BREAK_WITHIN: Final[str] = 'Pomodoro.long_break_within'
+    POMODORO_START_NEXT_AUTOMATICALLY: Final[str] = 'Pomodoro.start_next_automatically'
+    POMODORO_SERIES_EXPLANATION: Final[str] = 'Pomodoro.series_explanation'
+    SOURCE_FULLNAME: Final[str] = 'Source.fullname'
+    SOURCE_TYPE: Final[str] = 'Source.type'
+    SOURCE_IGNORE_ERRORS: Final[str] = 'Source.ignore_errors'
+    SOURCE_IGNORE_INVALID_SEQUENCE: Final[str] = 'Source.ignore_invalid_sequence'
+    FILEEVENTSOURCE_FILENAME: Final[str] = 'FileEventSource.filename'
+    FILEEVENTSOURCE_WATCH_CHANGES: Final[str] = 'FileEventSource.watch_changes'
+    FILEEVENTSOURCE_REPAIR: Final[str] = 'FileEventSource.repair'
+    FILEEVENTSOURCE_COMPRESS: Final[str] = 'FileEventSource.compress'
+    WEBSOCKETEVENTSOURCE_URL: Final[str] = 'WebsocketEventSource.url'
+    WEBSOCKETEVENTSOURCE_AUTH_TYPE: Final[str] = 'WebsocketEventSource.auth_type'
+    WEBSOCKETEVENTSOURCE_USERNAME: Final[str] = 'WebsocketEventSource.username'
+    WEBSOCKETEVENTSOURCE_CONSENT: Final[str] = 'WebsocketEventSource.consent'
+    WEBSOCKETEVENTSOURCE_PASSWORD: Final[str] = 'WebsocketEventSource.password!'
+    WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: Final[str] = 'WebsocketEventSource.refresh_token!'
+    WEBSOCKETEVENTSOURCE_AUTHENTICATE: Final[str] = 'WebsocketEventSource.authenticate'
+    WEBSOCKETEVENTSOURCE_LOGOUT: Final[str] = 'WebsocketEventSource.logout'
+    WEBSOCKETEVENTSOURCE_DELETE_ACCOUNT: Final[str] = 'WebsocketEventSource.delete_account'
+    SOURCE_ENCRYPTION_SEPARATOR: Final[str] = 'Source.encryption_separator'
+    SOURCE_ENCRYPTION_ENABLED: Final[str] = 'Source.encryption_enabled'
+    SOURCE_ENCRYPTION_KEY: Final[str] = 'Source.encryption_key!'
+    SOURCE_ENCRYPTION_KEY_CACHE: Final[str] = 'Source.encryption_key_cache!'
+    APPLICATION_TIMER_UI_MODE: Final[str] = 'Application.timer_ui_mode'
+    APPLICATION_ALWAYS_ON_TOP: Final[str] = 'Application.always_on_top'
+    APPLICATION_FOCUS_FLAVOR: Final[str] = 'Application.focus_flavor'
+    APPLICATION_TRAY_ICON_FLAVOR: Final[str] = 'Application.tray_icon_flavor'
+    APPLICATION_SHOW_WINDOW_TITLE: Final[str] = 'Application.show_window_title'
+    APPLICATION_THEME: Final[str] = 'Application.theme'
+    APPLICATION_QUIT_ON_CLOSE: Final[str] = 'Application.quit_on_close'
+    APPLICATION_SHOW_MAIN_MENU: Final[str] = 'Application.show_main_menu'
+    APPLICATION_SHOW_STATUS_BAR: Final[str] = 'Application.show_status_bar'
+    APPLICATION_SHOW_TOOLBAR: Final[str] = 'Application.show_toolbar'
+    APPLICATION_SHOW_LEFT_TOOLBAR: Final[str] = 'Application.show_left_toolbar'
+    APPLICATION_SHOW_TRAY_ICON: Final[str] = 'Application.show_tray_icon'
+    APPLICATION_EYECANDY_TYPE: Final[str] = 'Application.eyecandy_type'
+    APPLICATION_EYECANDY_IMAGE: Final[str] = 'Application.eyecandy_image'
+    APPLICATION_EYECANDY_GRADIENT: Final[str] = 'Application.eyecandy_gradient'
+    APPLICATION_EYECANDY_GRADIENT_GENERATE: Final[str] = 'Application.eyecandy_gradient_generate'
+    APPLICATION_WINDOW_WIDTH: Final[str] = 'Application.window_width'
+    APPLICATION_WINDOW_HEIGHT: Final[str] = 'Application.window_height'
+    APPLICATION_WINDOW_SPLITTER_WIDTH: Final[str] = 'Application.window_splitter_width'
+    APPLICATION_BACKLOGS_VISIBLE: Final[str] = 'Application.backlogs_visible'
+    APPLICATION_USERS_VISIBLE: Final[str] = 'Application.users_visible'
+    APPLICATION_LAST_SELECTED_BACKLOG: Final[str] = 'Application.last_selected_backlog'
+    APPLICATION_TABLE_ROW_HEIGHT: Final[str] = 'Application.table_row_height'
+    APPLICATION_SHOW_CLICK_HERE_HINT: Final[str] = 'Application.show_click_here_hint'
+    APPLICATION_FULL_SCREEN_NOTIFICATIONS: Final[str] = 'Application.full_screen_notifications'
+    APPLICATION_FONT_MAIN_FAMILY: Final[str] = 'Application.font_main_family'
+    APPLICATION_FONT_MAIN_SIZE: Final[str] = 'Application.font_main_size'
+    APPLICATION_FONT_HEADER_FAMILY: Final[str] = 'Application.font_header_family'
+    APPLICATION_FONT_HEADER_SIZE: Final[str] = 'Application.font_header_size'
+    APPLICATION_PLAY_ALARM_SOUND: Final[str] = 'Application.play_alarm_sound'
+    APPLICATION_ALARM_SOUND_FILE: Final[str] = 'Application.alarm_sound_file'
+    APPLICATION_ALARM_SOUND_VOLUME: Final[str] = 'Application.alarm_sound_volume'
+    SEPARATOR: Final[str] = 'separator'
+    APPLICATION_PLAY_REST_SOUND: Final[str] = 'Application.play_rest_sound'
+    APPLICATION_REST_SOUND_FILE: Final[str] = 'Application.rest_sound_file'
+    APPLICATION_REST_SOUND_COPYRIGHT: Final[str] = 'Application.rest_sound_copyright'
+    APPLICATION_REST_SOUND_VOLUME: Final[str] = 'Application.rest_sound_volume'
+    APPLICATION_PLAY_TICK_SOUND: Final[str] = 'Application.play_tick_sound'
+    APPLICATION_TICK_SOUND_FILE: Final[str] = 'Application.tick_sound_file'
+    APPLICATION_TICK_SOUND_VOLUME: Final[str] = 'Application.tick_sound_volume'
+    APPLICATION_PLAY_NOTIFICATION_SOUND: Final[str] = 'Application.play_notification_sound'
+    APPLICATION_NOTIFICATION_SOUND_FILE: Final[str] = 'Application.notification_sound_file'
+    APPLICATION_NOTIFICATION_SOUND_VOLUME: Final[str] = 'Application.notification_sound_volume'
+    APPLICATION_AUDIO_OUTPUT: Final[str] = 'Application.audio_output'
+    INTEGRATION_CALLBACKS_LABEL: Final[str] = 'Integration.callbacks_label'
+    INTEGRATION_FLATPAK_SPAWN: Final[str] = 'Integration.flatpak_spawn'
+    INTEGRATION_FLATPAK_SPAWN_LABEL: Final[str] = 'Integration.flatpak_spawn_label'
+    INTEGRATION_FLATPAK_COMMAND_LABEL: Final[str] = 'Integration.flatpak_command_label'
+    INTEGRATION_CALLBACKS: Final[str] = 'Integration.callbacks'
 
 
 def _get_desktop() -> [str]:
@@ -44,76 +148,84 @@ def _never_show(_) -> bool:
 
 
 def _show_for_simple_long_breaks(values: dict[str, str]) -> bool:
-    return values['Pomodoro.long_break_algorithm'] == 'simple'
+    return values[S.POMODORO_LONG_BREAK_ALGORITHM] == 'simple'
 
 
 def _show_for_smart_long_breaks(values: dict[str, str]) -> bool:
-    return values['Pomodoro.long_break_algorithm'] == 'smart'
+    return values[S.POMODORO_LONG_BREAK_ALGORITHM] == 'smart'
 
 
 def _show_for_gradient_eyecandy(values: dict[str, str]) -> bool:
-    return values['Application.eyecandy_type'] == 'gradient'
+    return values[S.APPLICATION_EYECANDY_TYPE] == 'gradient'
 
 
 def _show_for_image_eyecandy(values: dict[str, str]) -> bool:
-    return values['Application.eyecandy_type'] == 'image'
+    return values[S.APPLICATION_EYECANDY_TYPE] == 'image'
 
 
 def _show_for_file_source(values: dict[str, str]) -> bool:
-    return values['Source.type'] == 'local'
+    return values[S.SOURCE_TYPE] == 'local'
 
 
 def _hide_for_ephemeral_source(values: dict[str, str]) -> bool:
-    return values['Source.type'] != 'ephemeral'
+    return values[S.SOURCE_TYPE] != 'ephemeral'
 
 
 def _show_for_websocket_source(values: dict[str, str]) -> bool:
-    return values['Source.type'] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
+    return values[S.SOURCE_TYPE] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
 
 
 def _show_when_encryption_is_enabled(values: dict[str, str]) -> bool:
-    return values['Source.type'] in ('flowkeeper.org', 'flowkeeper.pro') \
-        or values['Source.encryption_enabled'] == 'True'
+    return values[S.SOURCE_TYPE] in ('flowkeeper.org', 'flowkeeper.pro') \
+        or values[S.SOURCE_ENCRYPTION_ENABLED] == 'True'
 
 
 def _show_when_encryption_is_optional(values: dict[str, str]) -> bool:
-    return values['Source.type'] in ('websocket', 'local', 'ephemeral')
+    return values[S.SOURCE_TYPE] in ('websocket', 'local', 'ephemeral')
 
 
 def _show_for_custom_websocket_source(values: dict[str, str]) -> bool:
-    return values['Source.type'] == 'websocket'
+    return values[S.SOURCE_TYPE] == 'websocket'
 
 
 def _show_for_basic_auth(values: dict[str, str]) -> bool:
-    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'basic'
+    return _show_for_websocket_source(values) and values[S.WEBSOCKETEVENTSOURCE_AUTH_TYPE] == 'basic'
 
 
 def _show_for_google_auth(values: dict[str, str]) -> bool:
-    return _show_for_websocket_source(values) and values['WebsocketEventSource.auth_type'] == 'google'
+    return _show_for_websocket_source(values) and values[S.WEBSOCKETEVENTSOURCE_AUTH_TYPE] == 'google'
 
 
 def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
-    return values['Application.play_alarm_sound'] == 'True'
+    return values[S.APPLICATION_PLAY_ALARM_SOUND] == 'True'
+
+
+def _show_if_end_of_work_notifications_are_enabled(values: dict[str, str]) -> bool:
+    return values[S.POMODORO_END_OF_WORK_NOTIFICATIONS] == 'True'
 
 
 def _show_if_signed_in(values: dict[str, str]) -> bool:
-    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] != 'user@local.host'
+    return _show_for_google_auth(values) and values[S.WEBSOCKETEVENTSOURCE_USERNAME] != 'user@local.host'
 
 
 def _show_if_signed_out(values: dict[str, str]) -> bool:
-    return _show_for_google_auth(values) and values['WebsocketEventSource.username'] == 'user@local.host'
+    return _show_for_google_auth(values) and values[S.WEBSOCKETEVENTSOURCE_USERNAME] == 'user@local.host'
 
 
 def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
-    return values['Application.play_rest_sound'] == 'True'
+    return values[S.APPLICATION_PLAY_REST_SOUND] == 'True'
 
 
 def _show_if_madelene(values: dict[str, str]) -> bool:
-    return _show_if_play_rest_enabled(values) and values['Application.rest_sound_file'] == 'qrc:/sound/Madelene.m4a'
+    return _show_if_play_rest_enabled(values) and values[S.APPLICATION_REST_SOUND_FILE] == 'qrc:/sound/Madelene.m4a'
 
 
 def _show_if_play_tick_enabled(values: dict[str, str]) -> bool:
-    return values['Application.play_tick_sound'] == 'True'
+    return values[S.APPLICATION_PLAY_TICK_SOUND] == 'True'
+
+
+def _show_if_play_notification_enabled(values: dict[str, str]) -> bool:
+    return values[S.APPLICATION_PLAY_NOTIFICATION_SOUND] == 'True'
 
 
 def _show_for_flatpak(values: dict[str, str]) -> bool:
@@ -156,109 +268,123 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self._defaults = dict()
         self._definitions = {
             'General': [
-                ('Pomodoro.default_work_duration', 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
-                ('Pomodoro.default_rest_duration', 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
-                ('Application.hide_completed', 'bool', 'Hide completed items', 'False', [], _never_show),
-                ('', 'separator', '', '', [], _always_show),
-                ('Application.feature_tags', 'bool', 'Display #tags', 'True', [], _always_show),
-                ('', 'separator', '', '', [], _always_show),
-                ('Application.check_updates', 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
-                ('Application.ignored_updates', 'str', 'Ignored updates', '', [], _never_show),
-                ('Application.singleton', 'bool', 'Single Flowkeeper instance', 'False', [], _hide_for_sandbox),
-                ('Application.hide_on_autostart', 'bool', 'Hide on autostart', 'True', [], _always_show),
-                ('', 'separator', '', '', [], _always_show),
-                ('Application.shortcuts', 'shortcuts', 'Shortcuts', '{}', [], _always_show),
-                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _never_show),
-                ('Application.show_tutorial', 'bool', 'Show tutorial on start', 'True', [], _never_show),
-                ('Application.completed_tutorial_steps', 'str', 'Completed tutrial steps', '', [], _never_show),
-                ('', 'separator', '', '', [], _always_show),
-                ('Logger.level', 'choice', 'Log level', 'WARNING', [
+                (S.POMODORO_DEFAULT_WORK_DURATION, 'duration', 'Default work duration', str(25 * 60), [1, 120 * 60], _always_show),
+                (S.POMODORO_DEFAULT_REST_DURATION, 'duration', 'Default rest duration', str(5 * 60), [1, 60 * 60], _always_show),
+                (S.APPLICATION_HIDE_COMPLETED, 'bool', 'Hide completed items', 'False', [], _never_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_FEATURE_TAGS, 'bool', 'Display #tags', 'True', [], _always_show),
+                (S.APPLICATION_DEFAULT_WORKITEM_CATEGORY, 'choice', 'For new work items', 'ask', ['ask:Ask for a group', 'none:Create as uncategorized'], _always_show),
+                (S.APPLICATION_DEFAULT_BACKLOG_CATEGORY, 'choice', 'For new backlogs', 'last', ['last:Use the last grouping method', 'none:Do not use grouping'], _always_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_CHECK_UPDATES, 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
+                (S.APPLICATION_IGNORED_UPDATES, 'str', 'Ignored updates', '', [], _never_show),
+                (S.APPLICATION_SINGLETON, 'bool', 'Single Flowkeeper instance', 'True', [], _hide_for_sandbox),
+                (S.APPLICATION_HIDE_ON_AUTOSTART, 'bool', 'Hide on autostart', 'True', [], _always_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_SHORTCUTS, 'shortcuts', 'Shortcuts', '{}', [], _always_show),
+                (S.APPLICATION_ENABLE_TEAMS, 'bool', 'Enable teams functionality', 'False', [], _never_show),
+                (S.APPLICATION_SHOW_TUTORIAL, 'bool', 'Show tutorial on start', 'True', [], _never_show),
+                (S.APPLICATION_COMPLETED_TUTORIAL_STEPS, 'str', 'Completed tutrial steps', '', [], _never_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.LOGGER_LEVEL, 'choice', 'Log level', 'WARNING', [
                     "ERROR:Errors only",
                     "WARNING:Errors and warnings",
                     "DEBUG:Verbose (use it for troubleshooting)",
                 ], _always_show),
-                ('Logger.filename', 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
-                ('Application.ignore_keyring_errors', 'bool', 'Ignore keyring errors', 'False', [], _never_show),
-                ('Application.feature_connect', 'bool', 'Enable Connect feature', 'False', [], _never_show),
-                ('Application.feature_keyring', 'bool', 'Enable Keyring feature', 'False', [], _never_show),
-                ('Application.work_summary_settings', 'str', 'Work Summary UI settings', '{}', [], _never_show),
-                ('Application.last_version', 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
+                (S.LOGGER_FILENAME, 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
+                (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _never_show),
+                (S.APPLICATION_FEATURE_CONNECT, 'bool', 'Enable Connect feature', 'False', [], _never_show),
+                (S.APPLICATION_FEATURE_KEYRING, 'bool', 'Enable Keyring feature', 'False', [], _never_show),
+                (S.APPLICATION_WORK_SUMMARY_SETTINGS, 'str', 'Work Summary UI settings', '{}', [], _never_show),
+                (S.APPLICATION_LAST_VERSION, 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
+                (S.APPLICATION_SELECTED_CATEGORY, 'str', 'Selected workitem group category', '', [], _never_show),
             ],
             'Series and breaks': [
-                ('Pomodoro.long_break_algorithm', 'choice', 'Take a long break', 'simple', [
+                (S.POMODORO_LONG_BREAK_ALGORITHM, 'choice', 'Take a long break', 'simple', [
                     'simple:After [N] completed pomodoros',
                     # 'smart:After focusing for [X] time within the last [Y] hours',
                     # 'done:After completing a series of pomodoros',
                     'never:Never (let me decide)',
                 ], _always_show),
-                ('Pomodoro.long_break_each', 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
-                ('Pomodoro.long_break_focus', 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
-                ('Pomodoro.long_break_within', 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
-                ('', 'separator', '', '', [], _always_show),
-                ('Pomodoro.start_next_automatically', 'bool', 'Work in series', 'False', [], _always_show),
-                ('Pomodoro.series_explanation', 'label', ' ', 'In the series mode Flowkeeper will start the next\n'
-                                                              'planned pomodoro in the same work item automatically.', [], _always_show),
+                (S.POMODORO_LONG_BREAK_EACH, 'int', 'N = ', '4', [1, 100], _show_for_simple_long_breaks),
+                (S.POMODORO_LONG_BREAK_FOCUS, 'duration', 'X = ', str(3 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                (S.POMODORO_LONG_BREAK_WITHIN, 'duration', 'Y = ', str(4 * 30 * 60), [1, 24 * 60 * 60], _show_for_smart_long_breaks),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.POMODORO_START_NEXT_AUTOMATICALLY, 'bool', 'Work in series', 'False', [], _always_show),
+                (S.POMODORO_SERIES_EXPLANATION, 'label', ' ', 'In the series mode Flowkeeper will start next planned\n'
+                                                              'pomodoro in the same work item automatically.', [], _always_show),
+                ('', S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_FULL_SCREEN_NOTIFICATIONS, 'bool', 'Fullscreen breaks', 'True', [], _always_show),
+                (S.POMODORO_END_OF_WORK_NOTIFICATIONS, 'bool', 'Notify before break', 'True', [], _always_show),
+                (S.POMODORO_END_OF_WORK_NOTIFICATION_DURATION, 'duration', 'Notification lead time', str(1 * 60), [1, 120 * 60], _show_if_end_of_work_notifications_are_enabled),
+                (S.POMODORO_END_OF_WORK_NOTIFICATION_EXPLANATION, 'label', ' ', 'Get notified to wrap up your work. This is especially\n'
+                                                                                'handy when fullscreen breaks are enabled.', [], _always_show),
             ],
             'Connection': [
-                ('Source.fullname', 'str', 'User full name', 'Local User', [], _never_show),
-                ('Source.type', 'choice', 'Data source', 'local', [
+                (S.SOURCE_FULLNAME, 'str', 'User full name', 'Local User', [], _never_show),
+                (S.SOURCE_TYPE, 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
                     #"flowkeeper.pro:Flowkeeper.pro",
                     "websocket:Self-hosted server (EXPERIMENTAL)",
                     "ephemeral:Ephemeral (in-memory, for testing purposes)",
                 ], _always_show),
-                ('Source.ignore_errors', 'bool', 'Ignore errors', 'True', [], _always_show),
-                ('Source.ignore_invalid_sequence', 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
-                ('', 'separator', '', '', [], _hide_for_ephemeral_source),
-                ('FileEventSource.filename', 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
-                ('FileEventSource.watch_changes', 'bool', 'Watch changes', 'False', [], _show_for_file_source),
-                ('FileEventSource.repair', 'button', 'Repair', '', [], _show_for_file_source),
-                ('FileEventSource.compress', 'button', 'Compress', '', [], _show_for_file_source),
+                (S.SOURCE_IGNORE_ERRORS, 'bool', 'Ignore errors', 'True', [], _always_show),
+                (S.SOURCE_IGNORE_INVALID_SEQUENCE, 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
+                ('', S.SEPARATOR, '', '', [], _hide_for_ephemeral_source),
+                (S.FILEEVENTSOURCE_FILENAME, 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
+                (S.FILEEVENTSOURCE_WATCH_CHANGES, 'bool', 'Watch changes', 'False', [], _show_for_file_source),
+                (S.FILEEVENTSOURCE_REPAIR, 'button', 'Repair', '', [], _show_for_file_source),
+                (S.FILEEVENTSOURCE_COMPRESS, 'button', 'Compress', '', [], _show_for_file_source),
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
-                ('WebsocketEventSource.url', 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
+                (S.WEBSOCKETEVENTSOURCE_URL, 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
-                ('WebsocketEventSource.auth_type', 'choice', 'Authentication', 'google', [
+                (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'google', [
                     "basic:Simple username and password",
                     "google:Google account (more secure)",
                 ], _show_for_websocket_source),
                 # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
-                ('WebsocketEventSource.username', 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
-                ('WebsocketEventSource.consent', 'bool', 'Consent for this username', 'False', [], _never_show),
+                (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
+                (S.WEBSOCKETEVENTSOURCE_CONSENT, 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
-                ('WebsocketEventSource.password!', 'secret', 'Password', '', [], _show_for_basic_auth),
-                ('WebsocketEventSource.refresh_token!', 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'secret', 'Password', '', [], _show_for_basic_auth),
+                (S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, 'secret', 'OAuth Refresh Token', '', [], _never_show),
                 # UC-2: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
-                ('WebsocketEventSource.authenticate', 'button', 'Sign in', '', [], _show_if_signed_out),
-                ('WebsocketEventSource.logout', 'button', 'Sign out', '', [], _show_if_signed_in),
+                (S.WEBSOCKETEVENTSOURCE_AUTHENTICATE, 'button', 'Sign in', '', [], _show_if_signed_out),
+                (S.WEBSOCKETEVENTSOURCE_LOGOUT, 'button', 'Sign out', '', [], _show_if_signed_in),
                 # UC-2: Button "Delete my account" is only shown if the user is signed in
-                ('WebsocketEventSource.delete_account', 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
-                ('Source.encryption_separator', 'separator', '', '', [], _always_show),
+                (S.WEBSOCKETEVENTSOURCE_DELETE_ACCOUNT, 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
+                (S.SOURCE_ENCRYPTION_SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
                 # UC-2: Setting "End-to-end encryption" is only shown if the data source is "Local file", "Self-hosted server" or "Ephemeral"
-                ('Source.encryption_enabled', 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
+                (S.SOURCE_ENCRYPTION_ENABLED, 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
-                ('Source.encryption_key!', 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
-                ('Source.encryption_key_cache!', 'secret', 'Encryption key cache', '', [], _never_show),
+                (S.SOURCE_ENCRYPTION_KEY, 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
+                (S.SOURCE_ENCRYPTION_KEY_CACHE, 'secret', 'Encryption key cache', '', [], _never_show),
             ],
             'Appearance': [
-                ('Application.timer_ui_mode', 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
+                (S.APPLICATION_TIMER_UI_MODE, 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
                     "keep:Keep application window as-is",
                     "focus:Switch to focus mode",
                     "minimize:Hide application window",
                 ], _always_show),
-                ('Application.always_on_top', 'bool', 'Always on top', 'False', [], _never_show if is_wayland else _always_show),
-                ('Application.focus_flavor', 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
+                (S.APPLICATION_ALWAYS_ON_TOP, 'bool', 'Always on top', 'False', [], _never_show if is_wayland else _always_show),
+                (S.APPLICATION_FOCUS_FLAVOR, 'choice', 'Focus bar flavor', 'minimal', ['classic:Classic (with buttons)',
                                                                                        'minimal:Minimalistic (with context menu)'], _always_show),
-                ('Application.tray_icon_flavor', 'choice', 'Tray icon flavor', 'classic-dark', ['thin-light:Thin, light background',
+                (S.APPLICATION_TRAY_ICON_FLAVOR, 'choice', 'Tray icon flavor', 'classic-dark', ['thin-light:Thin, light background',
                                                                                                 'thin-dark:Thin, dark background',
                                                                                                 'classic-light:Classic, light background',
                                                                                                 'classic-dark:Classic, dark background'], _always_show),
-                ('Application.show_window_title', 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _never_show if is_wayland else _always_show),
-                ('Application.theme', 'choice', 'Theme', 'auto', [
+                (S.APPLICATION_SHOW_WINDOW_TITLE, 'bool', 'Focus window title', str(_is_gnome() or is_wayland), [], _never_show if is_wayland else _always_show),
+                (S.APPLICATION_THEME, 'choice', 'Theme', 'auto', [
                     "auto:Detect automatically (Default)",
                     "light:Light",
+                    "very-light:Very light",
+                    "very-light-dark-focus:Very light w/dark focus",
                     "dark:Dark",
+                    "very-dark:Very dark",
                     "mixed:Mixed dark & light",
+                    "reddit:Reddit light",
+                    "reddit-dark-focus:Reddit light w/dark focus",
                     "desert:Desert",
                     "beach:Beach volley",
                     "terra:Terra",
@@ -268,66 +394,70 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "purple:Purple rain",
                     "highlight:Highlight",
                 ], _always_show),
-                ('Application.quit_on_close', 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
-                ('Application.show_main_menu', 'bool', 'Show main menu', 'False', [], _always_show),
-                ('Application.show_status_bar', 'bool', 'Show status bar', 'False', [], _never_show),
-                ('Application.show_toolbar', 'bool', 'Show toolbar', 'True', [], _always_show),
-                ('Application.show_left_toolbar', 'bool', 'Show left toolbar', 'True', [], _always_show),
-                ('Application.show_tray_icon', 'bool', 'Show tray icon', 'True', [], _always_show),
-                ('Application.eyecandy_type', 'choice', 'Header background', 'gradient', [
+                (S.APPLICATION_QUIT_ON_CLOSE, 'bool', 'Quit on close', str(_is_gnome()), [], _always_show),
+                (S.APPLICATION_SHOW_MAIN_MENU, 'bool', 'Show main menu', 'False', [], _always_show),
+                (S.APPLICATION_SHOW_STATUS_BAR, 'bool', 'Show status bar', 'False', [], _never_show),
+                (S.APPLICATION_SHOW_TOOLBAR, 'bool', 'Show toolbar', 'True', [], _always_show),
+                (S.APPLICATION_SHOW_LEFT_TOOLBAR, 'bool', 'Show left toolbar', 'True', [], _always_show),
+                (S.APPLICATION_SHOW_TRAY_ICON, 'bool', 'Show tray icon', 'True', [], _always_show),
+                (S.APPLICATION_EYECANDY_TYPE, 'choice', 'Header background', 'gradient', [
                     "default:Default",
                     "image:Image",
                     "gradient:Gradient",
                 ], _always_show),
                 # UC-3: Setting "Background image" is only shown if "Header background" = "Image"
-                ('Application.eyecandy_image', 'file', 'Background image', ':/img/bg.jpg', ['*.png;*.jpg'], _show_for_image_eyecandy),
+                (S.APPLICATION_EYECANDY_IMAGE, 'file', 'Background image', ':/img/bg.jpg', ['*.png;*.jpg;*.svg'], _show_for_image_eyecandy),
                 # UC-3: Setting "Color scheme" and button "Surprise me!" are only shown if "Header background" = "Gradient"
-                ('Application.eyecandy_gradient', 'choice', 'Color scheme', 'NorseBeauty', ['NorseBeauty:NorseBeauty'], _show_for_gradient_eyecandy),
-                ('Application.eyecandy_gradient_generate', 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
-                ('Application.window_width', 'int', 'Main window width', '700', [5, 5000], _never_show),
-                ('Application.window_height', 'int', 'Main window height', '500', [5, 5000], _never_show),
-                ('Application.window_splitter_width', 'int', 'Splitter width', '200', [0, 5000], _never_show),
-                ('Application.backlogs_visible', 'bool', 'Show backlogs', 'True', [], _never_show),
-                ('Application.users_visible', 'bool', 'Show users', 'False', [], _never_show),
-                ('Application.last_selected_backlog', 'str', 'Last selected backlog', '', [], _never_show),
-                ('Application.table_row_height', 'int', 'Table row height', '30', [0, 5000], _never_show),
-                ('Application.show_click_here_hint', 'bool', 'Show "Click here" hint', 'True', [], _never_show),
+                (S.APPLICATION_EYECANDY_GRADIENT, 'choice', 'Color scheme', 'StarWine', ['StarWine:StarWine'], _show_for_gradient_eyecandy),
+                (S.APPLICATION_EYECANDY_GRADIENT_GENERATE, 'button', 'Surprise me!', '', [], _show_for_gradient_eyecandy),
+                (S.APPLICATION_WINDOW_WIDTH, 'int', 'Main window width', '700', [5, 5000], _never_show),
+                (S.APPLICATION_WINDOW_HEIGHT, 'int', 'Main window height', '500', [5, 5000], _never_show),
+                (S.APPLICATION_WINDOW_SPLITTER_WIDTH, 'int', 'Splitter width', '200', [0, 5000], _never_show),
+                (S.APPLICATION_BACKLOGS_VISIBLE, 'bool', 'Show backlogs', 'True', [], _never_show),
+                (S.APPLICATION_USERS_VISIBLE, 'bool', 'Show users', 'False', [], _never_show),
+                (S.APPLICATION_LAST_SELECTED_BACKLOG, 'str', 'Last selected backlog', '', [], _never_show),
+                (S.APPLICATION_TABLE_ROW_HEIGHT, 'int', 'Table row height', '30', [0, 5000], _never_show),
+                (S.APPLICATION_SHOW_CLICK_HERE_HINT, 'bool', 'Show "Click here" hint', 'True', [], _never_show),
             ],
             'Fonts': [
-                ('Application.font_main_family', 'font', 'Main font family', 'Noto Sans', [], _always_show),
-                ('Application.font_main_size', 'int', 'Main font size', '10', [3, 48], _always_show),
-                ('Application.font_header_family', 'font', 'Title font family', 'Noto Sans', [], _always_show),
-                ('Application.font_header_size', 'int', 'Title font size', '24', [3, 72], _always_show),
+                (S.APPLICATION_FONT_MAIN_FAMILY, 'font', 'Main font family', 'Noto Sans', [], _always_show),
+                (S.APPLICATION_FONT_MAIN_SIZE, 'int', 'Main font size', '10', [3, 48], _always_show),
+                (S.APPLICATION_FONT_HEADER_FAMILY, 'font', 'Title font family', 'Noto Sans', [], _always_show),
+                (S.APPLICATION_FONT_HEADER_SIZE, 'int', 'Title font size', '24', [3, 72], _always_show),
             ],
             'Audio': [
                 # UC-3: Settings "sound file" and "volume %" are only shown when the corresponding "Play ... sound" settings are checked
-                ('Application.play_alarm_sound', 'bool', 'Play alarm sound', 'True', [], _always_show),
-                ('Application.alarm_sound_file', 'file', 'Alarm sound file', 'qrc:/sound/bell.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
-                ('Application.alarm_sound_volume', 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
-                ('separator', 'separator', '', '', [], _always_show),
-                ('Application.play_rest_sound', 'bool', 'Play "rest" sound', 'True', [], _always_show),
-                ('Application.rest_sound_file', 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
-                ('Application.rest_sound_copyright', 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)", (C) Lobo Loco\n<https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
-                ('Application.rest_sound_volume', 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
-                ('separator', 'separator', '', '', [], _always_show),
-                ('Application.play_tick_sound', 'bool', 'Play ticking sound', 'True', [], _always_show),
-                ('Application.tick_sound_file', 'file', 'Ticking sound file', 'qrc:/sound/tick.wav', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
-                ('Application.tick_sound_volume', 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
-                ('separator', 'separator', '', '', [], _always_show),
-                ('Application.audio_output', 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
+                (S.APPLICATION_PLAY_ALARM_SOUND, 'bool', 'Play alarm sound', 'True', [], _always_show),
+                (S.APPLICATION_ALARM_SOUND_FILE, 'file', 'Alarm sound file', 'qrc:/sound/bell.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_alarm_enabled),
+                (S.APPLICATION_ALARM_SOUND_VOLUME, 'int', 'Alarm volume %', '100', [0, 100], _show_if_play_alarm_enabled),
+                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_PLAY_REST_SOUND, 'bool', 'Play "rest" sound', 'True', [], _always_show),
+                (S.APPLICATION_REST_SOUND_FILE, 'file', '"Rest" sound file', 'qrc:/sound/Madelene.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_rest_enabled),
+                (S.APPLICATION_REST_SOUND_COPYRIGHT, 'label', 'Copyright', 'Embedded music - "Madelene (ID 1315)", (C) Lobo Loco\n<https://www.musikbrause.de>, CC-BY-NC-ND', [], _show_if_madelene),
+                (S.APPLICATION_REST_SOUND_VOLUME, 'int', 'Rest volume %', '66', [0, 100], _show_if_play_rest_enabled),
+                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_PLAY_TICK_SOUND, 'bool', 'Play ticking sound', 'True', [], _always_show),
+                (S.APPLICATION_TICK_SOUND_FILE, 'file', 'Ticking sound file', 'qrc:/sound/tick.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_tick_enabled),
+                (S.APPLICATION_TICK_SOUND_VOLUME, 'int', 'Ticking volume %', '50', [0, 100], _show_if_play_tick_enabled),
+                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_PLAY_NOTIFICATION_SOUND, 'bool', 'Play notification sound', 'True', [], _always_show),
+                (S.APPLICATION_NOTIFICATION_SOUND_FILE, 'file', 'Notification sound file', 'qrc:/sound/knock.m4a', ['*.wav;*.mp3;*.m4a'], _show_if_play_notification_enabled),
+                (S.APPLICATION_NOTIFICATION_SOUND_VOLUME, 'int', 'Notification volume %', '100', [0, 100], _show_if_play_notification_enabled),
+                (S.SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
+                (S.APPLICATION_AUDIO_OUTPUT, 'choice', 'Output device', '#none', ['#none:No audio outputs detected'], _always_show),
             ],
             'Integration': [
-                ('Integration.callbacks_label', 'label', '', 'You can run a program for every event in the system. You can use Python f{}\n'
+                (S.INTEGRATION_CALLBACKS_LABEL, 'label', '', 'You can run a program for every event in the system. You can use Python f{}\n'
                                                              'syntax for variable substitution:\n'
                                                              '$ espeak "Deleted work item {workitem.get_name()}"\n'
                                                              '$ echo "Received {event}. Available variables: {dir()}"\n'
                                                              'WARNING: Placeholders are substituted as-is, without any sanitization.', [], _always_show),
-                ('Integration.flatpak_spawn', 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
-                ('Integration.flatpak_spawn_label', 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to check\n'
+                (S.INTEGRATION_FLATPAK_SPAWN, 'bool', 'Prefix commands with flatpak-spawn --host', 'True', [], _show_for_flatpak),
+                (S.INTEGRATION_FLATPAK_SPAWN_LABEL, 'label', '', 'IMPORTANT: To run commands on the host (outside of Flatpak sandbox) you have to check\n'
                                                                  'the above checkbox and then grant Flowkeeper access to dbus. This has a major impact\n'
-                                                                 'on the sandbox security, so do this only when strictly necessary:\n'
-                                                                 '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', [], _show_for_flatpak),
-                ('Integration.callbacks', 'keyvalue', '', '{}', get_all_events(), _always_show),
+                                                                 'on the sandbox security, so do this only when strictly necessary.', [], _show_for_flatpak),
+                (S.INTEGRATION_FLATPAK_COMMAND_LABEL, 'label', '', '$ flatpak override --user --talk-name=org.freedesktop.Flatpak org.flowkeeper.Flowkeeper', ['copyable'], _show_for_flatpak),
+                (S.INTEGRATION_CALLBACKS, 'keyvalue', '', '{}', get_all_events(), _always_show),
             ],
         }
         for lst in self._definitions.values():
@@ -362,25 +492,25 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     def get_username(self) -> str:
         # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.
-        if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
+        if self.get(S.SOURCE_TYPE) == 'local' or self.get(S.SOURCE_TYPE) == 'ephemeral':
             return 'user@local.host'
         else:
-            return self.get('WebsocketEventSource.username')
+            return self.get(S.WEBSOCKETEVENTSOURCE_USERNAME)
 
     def is_team_supported(self) -> bool:
-        return self.get('Source.type') != 'local' and self.get('Application.enable_teams') == 'True'
+        return self.get(S.SOURCE_TYPE) != 'local' and self.get(S.APPLICATION_ENABLE_TEAMS) == 'True'
 
     def is_remote_source(self) -> bool:
-        return self.get('Source.type') in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
+        return self.get(S.SOURCE_TYPE) in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
 
     def get_fullname(self) -> str:
-        return self.get('Source.fullname')
+        return self.get(S.SOURCE_FULLNAME)
 
     def get_work_duration(self) -> float:
-        return float(self.get('Pomodoro.default_work_duration'))
+        return float(self.get(S.POMODORO_DEFAULT_WORK_DURATION))
 
     def get_rest_duration(self) -> float:
-        return float(self.get('Pomodoro.default_rest_duration'))
+        return float(self.get(S.POMODORO_DEFAULT_REST_DURATION))
 
     def get_categories(self) -> Iterable[str]:
         return self._definitions.keys()
@@ -391,7 +521,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 option_id,
                 option_type,
                 option_display,
-                self.get(option_id) if option_type != 'separator' else '',
+                self.get(option_id) if option_type != S.SEPARATOR else '',
                 option_options,
                 option_visible
             )
@@ -438,8 +568,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
 
     def is_e2e_encryption_enabled(self) -> bool:
         return _show_when_encryption_is_enabled({
-            'Source.encryption_enabled': self.get('Source.encryption_enabled'),
-            'Source.type': self.get('Source.type')
+            S.SOURCE_ENCRYPTION_ENABLED: self.get(S.SOURCE_ENCRYPTION_ENABLED),
+            S.SOURCE_TYPE: self.get(S.SOURCE_TYPE)
         })
 
     @abstractmethod
@@ -451,7 +581,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         pass
 
     def get_theme(self) -> str:
-        raw = self.get('Application.theme')
+        raw = self.get(S.APPLICATION_THEME)
         return self.get_auto_theme() if raw == 'auto' else raw
 
     def update_default(self, name: str, value: str) -> None:

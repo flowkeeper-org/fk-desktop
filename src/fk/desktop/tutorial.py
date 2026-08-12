@@ -20,7 +20,7 @@ from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QWidget, QAbstractItemView
 
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged, BeforeSourceChanged
 from fk.core.events import AfterSettingsChanged, SourceMessagesProcessed, AfterBacklogCreate, \
     AfterBacklogRename, AfterWorkitemCreate, AfterWorkitemRename, AfterPomodoroAdd, AfterPomodoroRemove, \
@@ -78,7 +78,7 @@ class Tutorial:
         }
 
         settings.on(AfterSettingsChanged, self._on_setting_changed)
-        if settings.get('Application.show_tutorial') == 'True':
+        if settings.get(S.APPLICATION_SHOW_TUTORIAL) == 'True':
             self._subscribe()
             source = source_holder.get_source()
             if source is not None:
@@ -102,35 +102,35 @@ class Tutorial:
     def _on_event(self, event: str, **kwargs):
         if self._is_to_complete(event):
             self._steps[event](lambda: self._mark_completed(event),
-                               lambda: self._settings.set({'Application.show_tutorial': 'False'}),
+                               lambda: self._settings.set({S.APPLICATION_SHOW_TUTORIAL: 'False'}),
                                **kwargs)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.show_tutorial' in new_values:
-            show = new_values['Application.show_tutorial'] == 'True'
+        if S.APPLICATION_SHOW_TUTORIAL in new_values:
+            show = new_values[S.APPLICATION_SHOW_TUTORIAL] == 'True'
             self._subscribe() if show else self._unsubscribe()
 
     def _mark_completed(self, step: str) -> None:
-        setting = self._settings.get('Application.completed_tutorial_steps')
+        setting = self._settings.get(S.APPLICATION_COMPLETED_TUTORIAL_STEPS)
         steps: list[str] = [] if setting == '' else setting.split(',')
         if step not in steps:
             steps.append(step)
-        self._settings.set({'Application.completed_tutorial_steps': ','.join(steps)})
+        self._settings.set({S.APPLICATION_COMPLETED_TUTORIAL_STEPS: ','.join(steps)})
         # Disable tutorial if we completed everything
         logger.debug(f'Marking tutorial step {step} complete. All completed steps: {steps}')
         if len(steps) == len(self._steps):
             logger.debug(f'Disabling the tutorial')
-            self._settings.set({'Application.show_tutorial': 'False'})
+            self._settings.set({S.APPLICATION_SHOW_TUTORIAL: 'False'})
 
     def _is_to_complete(self, step: str) -> bool:
-        return step not in self._settings.get('Application.completed_tutorial_steps').split(',')
+        return step not in self._settings.get(S.APPLICATION_COMPLETED_TUTORIAL_STEPS).split(',')
 
     def _before_source_changed(self, event: str, source: AbstractEventSource) -> None:
         # Here we are dealing with the OLD source, from which we want to unsubscribe
         if source is not None:
             logger.debug(f'Unsubscribing tutorial from old source events')
-            for event in self._steps:
-                source.on(event, self._on_event)
+            for e in self._steps:
+                source.on(e, self._on_event)
 
     def _after_source_changed(self, event: str, source: AbstractEventSource) -> None:
         logger.debug(f'Subscribing tutorial to new source events')
@@ -235,7 +235,7 @@ class Tutorial:
     def _on_pomodoro_work_start(self, complete: Callable, skip: Callable, **kwargs) -> None:
         def do(_1, _2):
             window: QWidget = self._main_window if self._main_window.isVisible() else self._focus_window
-            is_classic: bool = self._settings.get('Application.focus_flavor') == 'classic'
+            is_classic: bool = self._settings.get(S.APPLICATION_FOCUS_FLAVOR) == 'classic'
             timer: TimerWidget = window.findChild(TimerWidget, "timer")
             pt: QPoint = timer.rect().center()
             pt.setY(timer.rect().bottom() + 10)

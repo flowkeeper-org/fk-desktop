@@ -17,7 +17,7 @@ import datetime
 
 from PySide6 import QtUiTools
 from PySide6.QtCore import QFile, QObject
-from PySide6.QtGui import QPalette
+from PySide6.QtGui import QPalette, QPixmap
 from PySide6.QtWidgets import QWidget, QLabel, QTextEdit, QDialog
 
 from fk.core.abstract_timer import AbstractTimer
@@ -31,12 +31,14 @@ class AboutWindow(QObject):
     _timer_display: MinimalTimerRenderer
     _timer: AbstractTimer
     _tick: int
+    _software_versions: str
 
-    def __init__(self, parent: QWidget | None):
+    def __init__(self, parent: QWidget | None, software_versions: str):
         super().__init__(parent)
         self._timer_display = None
         self._timer = QtTimer('About window', self)
         self._tick = 299
+        self._software_versions = software_versions
 
         file = QFile(":/about.ui")
         file.open(QFile.OpenModeFlag.ReadOnly)
@@ -71,21 +73,31 @@ class AboutWindow(QObject):
         file.close()
 
         # noinspection PyTypeChecker
+        about_system_info: QTextEdit = self._about_window.findChild(QTextEdit, "system_info")
+        about_system_info.setText(f'# Software versions\n\n{self._software_versions}')
+
+        # noinspection PyTypeChecker
         about_icon: QLabel = self._about_window.findChild(QLabel, "icon")
         about_icon.setFixedWidth(150)
         about_icon.setFixedHeight(150)
-        bg_color = about_icon.palette().color(QPalette.ColorRole.Base)
-        fg_color = about_icon.palette().color(QPalette.ColorRole.Text)
-        self._timer_display = MinimalTimerRenderer(about_icon,
-                                                   bg_color,
-                                                   fg_color)
-        about_icon.installEventFilter(self._timer_display)
-        self._timer_display.setObjectName('AboutWindowRenderer')
-        self._timer_display.reset()
-        self._timer.schedule(100, self._handle_tick, None)
-        self._handle_tick(None, None)
 
-        self._about_window.rejected.connect(lambda: self._timer.cancel())
+        # Display animated timer VS Flowkeeper logo
+        if False:
+            bg_color = about_icon.palette().color(QPalette.ColorRole.Base)
+            fg_color = about_icon.palette().color(QPalette.ColorRole.Text)
+            self._timer_display = MinimalTimerRenderer(about_icon,
+                                                       bg_color,
+                                                       fg_color)
+            about_icon.installEventFilter(self._timer_display)
+            self._timer_display.setObjectName('AboutWindowRenderer')
+            self._timer_display.reset()
+            self._timer.schedule(100, self._handle_tick, None)
+            self._handle_tick(None, None)
+
+            self._about_window.rejected.connect(lambda: self._timer.cancel())
+        else:
+            about_icon.setPixmap(QPixmap(':/flowkeeper.png'))
+            about_icon.setScaledContents(True)
 
         self._about_window.show()
 

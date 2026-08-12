@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Flowkeeper
-Comment=Pomodoro Technique desktop timer for power users
+Comment=Pomodoro timer for power users
 Exec=/usr/bin/flowkeeper $FK_AUTOSTART_ARGS
 Icon=org.flowkeeper.Flowkeeper
 Terminal=false

@@ -19,7 +19,7 @@ import logging
 from fk.core import events
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 class PomodoroTimer(AbstractEventEmitter):
     _tick_timer: AbstractTimer
     _transition_timer: AbstractTimer
+    _notification_timer: AbstractTimer
     _source_holder: EventSourceHolder
     _tick_counter: int
 
@@ -41,17 +42,20 @@ class PomodoroTimer(AbstractEventEmitter):
 
     # Emitted events
     TimerTick = "TimerTick"
+    TimerNotification = "TimerNotification"
 
     def __init__(self,
                  tick_timer: AbstractTimer,
                  transition_timer: AbstractTimer,
+                 notification_timer: AbstractTimer,
                  settings: AbstractSettings,
                  source_holder: EventSourceHolder):
-        super().__init__([self.TimerTick],
+        super().__init__([self.TimerTick, self.TimerNotification],
                          settings.invoke_callback)
         logger.debug('PomodoroTimer: Initializing')
         self._tick_timer = tick_timer
         self._transition_timer = transition_timer
+        self._notification_timer = notification_timer
         self._source_holder = source_holder
         self._tick_counter = 0
         source_holder.on(AfterSourceChanged, self._on_source_changed)
@@ -73,32 +77,34 @@ class PomodoroTimer(AbstractEventEmitter):
             logger.debug('PomodoroTimer: Currently idle')
             self._transition_timer.cancel()
             self._tick_timer.cancel()
+            self._notification_timer.cancel()
         elif pomodoro is not None:
             self._transition_timer.cancel()
-            if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
+            if pomodoro.is_long_break() or pomodoro.get_type() == POMODORO_TYPE_TRACKER:
+                self._schedule_tick()
+            elif pomodoro.get_type() == POMODORO_TYPE_NORMAL:
                 timer.update_remaining_duration(None)
                 if timer.get_remaining_duration() > 0:
                     self._schedule_tick()
                     if pomodoro.is_working():
                         logger.debug(f'PomodoroTimer: Is working')
-                        self._schedule_transition(
+                        self._schedule_notification_and_transition(
                             timer.get_remaining_duration() * 1000,
                             pomodoro,
                             'rest')
                     elif pomodoro.is_resting():
                         logger.debug(f'PomodoroTimer: Is resting')
-                        self._schedule_transition(
+                        self._schedule_notification_and_transition(
                             timer.get_remaining_duration() * 1000,
                             pomodoro,
                             'finished')
                     else:
                         raise Exception(f'Unexpected running state: {pomodoro.get_state()}')
-            elif pomodoro.get_type() == POMODORO_TYPE_TRACKER or pomodoro.is_long_break():
-                self._schedule_tick()
+
 
     def _schedule_tick(self) -> None:
         self._tick_counter = 0
-        self._tick_timer.schedule(990, self._handle_tick, None)
+        self._tick_timer.schedule(1000, self._handle_tick, None)
 
     def _handle_tick(self, params: dict | None, when: datetime.datetime | None = None) -> None:
         timer = self.timer
@@ -111,16 +117,35 @@ class PomodoroTimer(AbstractEventEmitter):
         else:
             logger.warning('Pomodoro timer is ticking while the data suggests that it should not')
 
-    def _schedule_transition(self,
-                             ms: float,
-                             target_pomodoro: Pomodoro,
-                             target_state: str) -> None:
+    def _schedule_notification_and_transition(self,
+                                              ms: float,
+                                              target_pomodoro: Pomodoro,
+                                              target_state: str) -> None:
         logger.debug(f'PomodoroTimer: Scheduled transition to {target_state} in {ms / 1000} seconds')
         self._transition_timer.schedule(ms, self._handle_transition, {
             'target_pomodoro': target_pomodoro,
             'target_state': target_state,
         }, True)
         logger.debug(f'PomodoroTimer: Done - Scheduled transition to {target_state} in {ms / 1000} seconds')
+
+        if target_state == 'rest':
+            settings = self._source_holder.get_settings()
+            if settings.get(S.POMODORO_END_OF_WORK_NOTIFICATIONS) == 'True':
+                notify_ms = float(settings.get(S.POMODORO_END_OF_WORK_NOTIFICATION_DURATION)) * 1000
+                if ms > notify_ms + 1000:
+                    self._notification_timer.schedule(ms - notify_ms,
+                                                      self._handle_notification,
+                                                      None,
+                                                      True)
+                    logger.debug(f'PomodoroTimer: Scheduled notification timer in {round((ms - notify_ms) / 1000)}s')
+                else:
+                    logger.debug(f'PomodoroTimer: Did not schedule notification timer at {notify_ms}s, because there is only {round(ms / 1000)}s left')
+
+    def _handle_notification(self, params: dict | None, when: datetime.datetime | None) -> None:
+        self._emit(PomodoroTimer.TimerNotification, {
+            'timer': self,
+        }, None)
+        logger.debug(f"PomodoroTimer: Emitted TimerNotification")
 
     def _handle_transition(self, params: dict | None, when: datetime.datetime | None) -> None:
         timer = self.timer
@@ -154,7 +179,7 @@ class PomodoroTimer(AbstractEventEmitter):
         logger.debug(f'Handling work start')
         if pomodoro.get_type() == POMODORO_TYPE_NORMAL:
             duration = pomodoro.remaining_time_in_current_state(None)
-            self._schedule_transition(duration * 1000, pomodoro, 'rest')
+            self._schedule_notification_and_transition(duration * 1000, pomodoro, 'rest')
         self._schedule_tick()
         logger.debug(f'PomodoroTimer: Done - Handling work start')
 
@@ -165,7 +190,7 @@ class PomodoroTimer(AbstractEventEmitter):
         logger.debug(f'PomodoroTimer: Handling rest start')
         if rest_duration > 0:
             duration = pomodoro.remaining_time_in_current_state(None)
-            self._schedule_transition(duration * 1000, pomodoro, 'finished')
+            self._schedule_notification_and_transition(duration * 1000, pomodoro, 'finished')
         else:
             logger.debug(f'PomodoroTimer: Long break - did not schedule automatic transition to finished')
         logger.debug(f'PomodoroTimer: Done - Handling rest start')
@@ -183,4 +208,7 @@ class PomodoroTimer(AbstractEventEmitter):
         self._transition_timer.cancel()
         logger.debug('PomodoroTimer: Canceled transition timer')
         self._tick_timer.cancel()
+        logger.debug('PomodoroTimer: Canceled tick timer')
+        self._notification_timer.cancel()
+        logger.debug('PomodoroTimer: Canceled notification timer')
         logger.debug(f'PomodoroTimer: Done - Handling pomodoro complete or void')

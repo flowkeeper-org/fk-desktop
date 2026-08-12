@@ -16,6 +16,7 @@
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
+from fk.core.abstract_settings import S
 from fk.core.backlog import Backlog
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.events import AfterSettingsChanged
@@ -67,12 +68,12 @@ class BacklogWidget(QWidget):
         self._backlogs_table.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
         self._tags.on(AfterSelectionChanged, lambda event, before, after: self._on_selection(after))
 
-        self._tags.update_visibility(application.get_settings().get('Application.feature_tags') == 'True')
+        self._tags.update_visibility(application.get_settings().get(S.APPLICATION_FEATURE_TAGS) == 'True')
         application.get_settings().on(AfterSettingsChanged, self._on_setting_changed)
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        if 'Application.feature_tags' in new_values:
-            self._tags.update_visibility(new_values['Application.feature_tags'] == 'True')
+        if S.APPLICATION_FEATURE_TAGS in new_values:
+            self._tags.update_visibility(new_values[S.APPLICATION_FEATURE_TAGS] == 'True')
 
     def _on_selection(self, backlog_or_tag: Backlog | Tag):
         if type(backlog_or_tag) is Backlog and type(self._last_selection) is Tag:

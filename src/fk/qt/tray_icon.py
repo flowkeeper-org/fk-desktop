@@ -20,6 +20,7 @@ from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import start_workitem
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
@@ -37,6 +38,7 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
     _timer_renderer: AbstractTimerRenderer | None
     _continue_workitem: Workitem | None
     _size: int
+    _settings: AbstractSettings
 
     def __init__(self,
                  parent: QWidget,
@@ -45,9 +47,11 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
                  actions: Actions,
                  size: int,
                  cls: Type[AbstractTimerRenderer],
-                 is_dark: bool):
+                 is_dark: bool,
+                 settings: AbstractSettings):
         super().__init__(parent, timer=timer, source_holder=source_holder)
         self._size = size
+        self._settings = settings
         self._default_icon = QIcon(":/flowkeeper.png")
         if is_dark:
             # We don't use QIcon.fromTheme() here because we can't predict the tray background color
@@ -101,8 +105,6 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self.timer.is_idling():
-            if self._continue_workitem is None:
-                raise Exception('Cannot start next pomodoro on non-existent work item')
             start_workitem(self._continue_workitem, self._source_holder.get_source())
         else:
             if 'window.showMainWindow' in self._actions:
@@ -121,6 +123,15 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
         self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
+
+    def work_ending(self, pomodoro: Pomodoro) -> None:
+        if pomodoro.is_working() and self._settings.get(S.POMODORO_END_OF_WORK_NOTIFICATIONS) == 'True':
+            remaining = pomodoro.get_timer().format_remaining_duration()
+            self.showMessage(
+                "Time to wrap up",
+                f"You have {remaining} to finish this pomodoro",
+                self._default_icon
+            )
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':

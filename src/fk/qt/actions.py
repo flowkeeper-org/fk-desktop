@@ -21,7 +21,7 @@ from typing import Callable, Iterable
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QWidget
 
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.events import AfterSettingsChanged
 
 
@@ -45,7 +45,7 @@ class Actions:
         self._domains = dict()
         self._actions = dict()
         self._settings = settings
-        self.update_from_settings(settings.get('Application.shortcuts'))
+        self.update_from_settings(settings.get(S.APPLICATION_SHORTCUTS))
         Actions.ALL = self
 
     def update_from_settings(self, serialized: str):
@@ -85,7 +85,7 @@ class Actions:
                     AfterSettingsChanged,
                     lambda new_values, **_:
                         update_toggle_action_icon(icon[0], icon[1], res)
-                            if 'Application.theme' in new_values else None)
+                            if S.APPLICATION_THEME in new_values else None)
         if is_toggle:
             res.setCheckable(True)
             res.setChecked(is_checked)
@@ -131,11 +131,11 @@ class Actions:
         return self._settings
 
     def all_actions_defined(self) -> None:
-        if self._settings.get('Application.shortcuts') == '{}':
+        if self._settings.get(S.APPLICATION_SHORTCUTS) == '{}':
             shortcuts = dict()
             for a in self._actions:
                 shortcuts[a] = self._actions[a].shortcut().toString()
-            self._settings.set({'Application.shortcuts': json.dumps(shortcuts)})
+            self._settings.set({S.APPLICATION_SHORTCUTS: json.dumps(shortcuts)})
 
     def _on_theme_change(self, icon1: str, icon2: str, action: QAction):
         pass

@@ -35,6 +35,7 @@ class UserModel(QtGui.QStandardItemModel):
         self._font_busy = QtGui.QFont()
         # self._font_busy.setBold(True)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
+        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))
 
     def _on_source_changed(self, event: str, source: AbstractEventSource):
         source.on(events.AfterUserCreate, self._user_added)
@@ -84,7 +85,7 @@ class UserModel(QtGui.QStandardItemModel):
         self.setItem(i, 0, col1)
 
     def load(self, app: Tenant) -> None:
-        self.clear()
+        self.removeRows(0, self.rowCount())
         if app is not None:
             i = 0
             for user in app.values():
@@ -94,4 +95,3 @@ class UserModel(QtGui.QStandardItemModel):
                 self.appendRow(item)
                 self.set_row(i, user)
                 i += 1
-        self.setHorizontalHeaderItem(0, QtGui.QStandardItem(''))

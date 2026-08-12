@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,12 @@ class MockSettings(AbstractSettings):
         # UC-3: Mock settings used for testing predefine a fixed encryption key
         # UC-3: Mock settings do not persist between application / test restarts
         self._settings = {
-            'Source.type': source_type,
-            'FileEventSource.filename': filename,
-            'WebsocketEventSource.username': username,
-            'Source.encryption_enabled': 'False',
-            'Source.encryption_key!': 'oBokryM75NwBXkKVa3bY',
-            'Source.encryption_key_cache!': '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
+            S.SOURCE_TYPE: source_type,
+            S.FILEEVENTSOURCE_FILENAME: filename,
+            S.WEBSOCKETEVENTSOURCE_USERNAME: username,
+            S.SOURCE_ENCRYPTION_ENABLED: 'False',
+            S.SOURCE_ENCRYPTION_KEY: 'oBokryM75NwBXkKVa3bY',
+            S.SOURCE_ENCRYPTION_KEY_CACHE: '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
         }
 
     def get(self, name: str) -> str:
@@ -84,7 +84,7 @@ class MockSettings(AbstractSettings):
             for s in settings:
                 values[s[0]] = s[3]
             for option_id, option_type, option_display, option_value, option_options, option_visible in settings:
-                if option_visible(values) and option_type not in ('separator', 'button'):
+                if option_visible(values) and option_type not in (S.SEPARATOR, 'button'):
                     logger.debug(f' - {option_display}: {option_value}')
                     res.append(option_id)
         return res

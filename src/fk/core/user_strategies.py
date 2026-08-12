@@ -147,12 +147,17 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
             raise Exception(f'User "{self._target_user_identity}" not found')
         if data[self._target_user_identity].is_system_user():
             raise Exception(f'Not allowed to rename System user')
-        if not is_system_user(self._user_identity):
+        if not is_system_user(self._user_identity) and self._user_identity != self._target_user_identity:
             raise Exception(f'A non-System user "{self._user_identity}" '
                             f'tries to rename user "{self._target_user_identity}"')
 
         user: User = data[self._target_user_identity]
         old_name = user.get_name()
+
+        if self._new_user_name == old_name:
+            # Nothing to do here
+            return
+
         params = {
             'user': user,
             'old_name': old_name,

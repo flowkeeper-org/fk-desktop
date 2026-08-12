@@ -16,7 +16,7 @@
 import re
 from html import escape
 
-from PySide6.QtCore import QSize, QObject, QModelIndex
+from PySide6.QtCore import QSize, QObject, QModelIndex, Qt
 from PySide6.QtGui import QStaticText, QPainter
 from PySide6.QtWidgets import QStyleOptionViewItem
 
@@ -48,19 +48,20 @@ class WorkitemTextDelegate(AbstractItemDelegate):
                 f'">{text}</span>')
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+        if index.data(501) == 'stub':
+            return
+
         is_placeholder = index.data(501) == 'drop'
         painter.save()
 
         workitem: Workitem = index.data(500)
         self.paint_background(painter, option, workitem.is_sealed())
-
         st = QStaticText(self._format_html(workitem, is_placeholder))
-        st.setTextWidth(option.rect.width())
 
+        st.setTextWidth(option.rect.width())
         painter.drawStaticText(option.rect.left(),
                                option.rect.top() + get_padding(option),
                                st)
-
         painter.restore()
 
     def sizeHint(self, option, index) -> QSize:

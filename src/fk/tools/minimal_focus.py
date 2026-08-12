@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from fk.core.abstract_settings import S
 from fk.core.timer import PomodoroTimer
 from fk.qt.focus_widget import FocusWidget
 from fk.qt.qt_timer import QtTimer
@@ -20,7 +21,11 @@ from fk.tools.minimal_common import MinimalCommon
 
 mc = MinimalCommon()
 
-pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), mc.get_app().get_source_holder())
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"),
+                               QtTimer("Pomodoro Transition"),
+                               QtTimer("Pomodoro Notification"),
+                               mc.get_settings(),
+                               mc.get_app().get_source_holder())
 FocusWidget.define_actions(mc.get_actions())
 focus = FocusWidget(mc.get_window(),
                     mc.get_app(),
@@ -28,7 +33,7 @@ focus = FocusWidget(mc.get_window(),
                     mc.get_app().get_source_holder(),
                     mc.get_settings(),
                     mc.get_actions(),
-                    mc.get_settings().get('Application.focus_flavor'))
+                    mc.get_settings().get(S.APPLICATION_FOCUS_FLAVOR))
 mc.get_actions().bind('focus', focus)
 mc.get_window().setCentralWidget(focus)
 

@@ -10,6 +10,7 @@ on:
 
 permissions:
   checks: write
+  contents: write
 
 jobs:
   run-tests:
@@ -47,14 +48,58 @@ jobs:
         run: |
           curl --version
 
-  remote-pipeline:
+  run-e2e-tests:
     runs-on: ubuntu-22.04
     needs: run-tests
     steps:
-      - name: Trigger remote job
+      - name: Launch e2e tests
         env:
           REMOTE_URL: ${{ secrets.REMOTE_URL }}
           REMOTE_USER_TOKEN: ${{ secrets.REMOTE_USER_TOKEN }}
           REMOTE_JOB_TOKEN: ${{ secrets.REMOTE_MAIN_JOB_TOKEN }}
         run: |
           curl -I -u "github-trigger:$REMOTE_USER_TOKEN" "$REMOTE_URL/job/gh-main/build?token=$REMOTE_JOB_TOKEN" 2>/dev/null > /dev/null
+
+  call-build:
+    needs: run-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, macos-26, windows-2025]
+        compiler: [nuitka]
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.1.0
+    with:
+      os: ${{ matrix.os }}
+      compiler: ${{ matrix.compiler }}
+    secrets: inherit
+
+  update-tag:
+    needs: call-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update RC tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: rc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-release:
+    needs: update-tag
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, macos-26, windows-2025]
+        compiler: [nuitka]
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.compiler }}-all
+          path: .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: rc
+          files: "./*"

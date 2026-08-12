@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import QModelIndex, QObject
-from PySide6.QtGui import Qt, QPainter
+from PySide6.QtGui import Qt, QPainter, QStaticText
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QStyleOptionViewItem
 
@@ -24,28 +24,46 @@ from fk.qt.abstract_item_delegate import AbstractItemDelegate, get_padding
 
 class WorkitemStateDelegate(AbstractItemDelegate):
     _svg_renderer: QSvgRenderer
+    _text_color: str
 
     def __init__(self,
                  parent: QObject = None,
                  theme: str = 'mixed',
+                 text_color: str = '#000',
                  selection_color: str = '#555',
                  crossout_color: str = '#777'):
         AbstractItemDelegate.__init__(self, parent, theme, selection_color, crossout_color)
         self._svg_renderer = QSvgRenderer(
             f':/icons/{self._theme}/24x24/workitem-unplanned.svg',
             aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio)
+        self._text_color = text_color
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         if index.data(501) == 'planned':  # We can also get a drop placeholder here, which we don't want to paint
-            workitem = index.data(500)
             painter.save()
 
+            workitem = index.data(500)
             self.paint_background(painter, option, workitem.is_sealed())
 
             if not workitem.is_planned():
                 padding = get_padding(option)
-                rect = option.rect.adjusted(2, padding, -2, -padding)
+                rect = option.rect.adjusted(-2, padding, -2, -padding)
                 rect.setHeight(option.fontMetrics.height())
                 self._svg_renderer.render(painter, rect)
+
+            painter.restore()
+        elif index.data(501) == 'category':
+            painter.save()
+
+            txt = index.data(503)
+            # If you uncomment this, the text in parentheses will be light and gray. But the columns won't resize
+            # correctly anymore, as Qt treats all text as bold when it computes its width.
+            # txt = txt.replace('(', '</strong><span style="color: gray;">(').replace(')', ')</span><strong>')
+            st = QStaticText(f'<span style="color: {self._text_color};"><strong>{txt}</strong></span>')
+            st.setTextOption(Qt.AlignmentFlag.AlignLeft)
+            st.setTextWidth(option.rect.width())
+            painter.drawStaticText(option.rect.left(),
+                                   option.rect.top() + get_padding(option),
+                                   st)
 
             painter.restore()

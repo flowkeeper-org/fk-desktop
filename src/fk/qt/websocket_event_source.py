@@ -28,7 +28,7 @@ from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
@@ -93,9 +93,9 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def connect(self) -> None:
         self._connection_attempt += 1
-        source_type = self.get_config_parameter('Source.type')
+        source_type = self.get_config_parameter(S.SOURCE_TYPE)
         if source_type == 'websocket':
-            url = self.get_config_parameter('WebsocketEventSource.url')
+            url = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_URL)
         elif source_type == 'flowkeeper.org':
             url = 'wss://app.flowkeeper.org/ws'
         elif source_type == 'flowkeeper.pro':
@@ -157,13 +157,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             self._emit(events.SourceMessagesProcessed, {'source': self})
 
     def _authenticate_with_google_and_replay(self) -> None:
-        refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
+        refresh_token = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN)
         get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         logger.debug(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
-        consent_given = 'true' if self.get_config_parameter('WebsocketEventSource.consent') == 'True' else 'false'
+        consent_given = 'true' if self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_CONSENT) == 'True' else 'false'
         auth_strategy = AuthenticateStrategy(1,
                                              now,
                                              ADMIN_USER,
@@ -191,14 +191,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._connection_attempt = 0    # This will allow us to reconnect quickly
         self._received_error = False
 
-        auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
+        auth_type = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE)
         logger.debug(f'Connected. Authenticating with {auth_type}')
 
         if auth_type == 'basic':
             auth = AuthenticationRecord()
-            auth.email = self.get_config_parameter('WebsocketEventSource.username')
+            auth.email = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_USERNAME)
             auth.type = auth_type
-            auth.id_token = self.get_config_parameter('WebsocketEventSource.password!')
+            auth.id_token = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_PASSWORD)
             self._replay_after_auth(auth)
         elif auth_type == 'google':
             self._authenticate_with_google_and_replay()

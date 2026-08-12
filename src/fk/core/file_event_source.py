@@ -27,7 +27,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_filesystem_watcher import AbstractFilesystemWatcher
-from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing
+from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy, RenameBacklogStrategy
 from fk.core.import_export import compressed_strategies
@@ -37,7 +37,8 @@ from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
-    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy
+    CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy, RestoreWorkitemStrategy, \
+    UpdateWorkitemCategoriesStrategy
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -106,10 +107,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         self._auto_seal_at_the_end(last_executed)
 
     def _get_filename(self) -> str:
-        return self.get_config_parameter("FileEventSource.filename")
+        return self.get_config_parameter(S.FILEEVENTSOURCE_FILENAME)
 
     def _is_watch_changes(self) -> bool:
-        return self.get_config_parameter("FileEventSource.watch_changes") == "True"
+        return self.get_config_parameter(S.FILEEVENTSOURCE_WATCH_CHANGES) == "True"
 
     def start(self, mute_events: bool = True, fail_early: bool = False) -> None:
         if self._existing_strategies is None:
@@ -334,7 +335,8 @@ class FileEventSource(AbstractEventSource[TRoot]):
                         all_workitems.remove(workitem_uid)
                 del all_backlogs[uid]
 
-            elif t is RenameBacklogStrategy or t is CreateWorkitemStrategy:
+            elif t is RenameBacklogStrategy or \
+                    t is CreateWorkitemStrategy:
                 cast: RenameBacklogStrategy | CreateWorkitemStrategy = s
                 uid = cast.get_backlog_uid()
                 if uid not in all_backlogs:
@@ -369,8 +371,10 @@ class FileEventSource(AbstractEventSource[TRoot]):
             # Create workitems on the first reference. All those strategies assume an existing workitem.
             elif t is RenameWorkitemStrategy or \
                     t is CompleteWorkitemStrategy or \
+                    t is RestoreWorkitemStrategy or \
                     t is MoveWorkitemStrategy or \
                     t is ReorderWorkitemStrategy or \
+                    t is UpdateWorkitemCategoriesStrategy or \
                     t is StartWorkStrategy or \
                     t is StartTimerStrategy or \
                     t is AddInterruptionStrategy or \

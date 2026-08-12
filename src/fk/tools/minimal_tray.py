@@ -29,12 +29,16 @@ app = mc.get_app()
 window = mc.get_window()
 actions = mc.get_actions()
 
-pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"), QtTimer("Pomodoro Transition"), mc.get_settings(), app.get_source_holder())
-tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, MinimalTimerRenderer, True)   # TODO: Detect automatically
+pomodoro_timer = PomodoroTimer(QtTimer("Pomodoro Tick"),
+                               QtTimer("Pomodoro Transition"),
+                               QtTimer("Pomodoro Notification"),
+                               mc.get_settings(),
+                               mc.get_app().get_source_holder())
+tray = TrayIcon(window, pomodoro_timer, app.get_source_holder(), actions, 48, MinimalTimerRenderer, True, mc.get_settings())   # TODO: Detect automatically
 
 tray.setVisible(True)
 tray.mode_changed('idle', 'working')
-wi = Workitem('Test', '123', None, None)
+wi = Workitem('Test', '123', None, None, [])
 
 value = 0
 pomodoro_timer._state = 'work'

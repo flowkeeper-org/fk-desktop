@@ -50,16 +50,20 @@ QMainWindow, #StatsWindow, #FocusBackground {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget {
+#workitems_table, #users_table, #backlogs_table, #backlogs_widget, #workitems_widget, #categories_table, #categories_widget, #categories_breadcrumbs, #categories_info {
     color: $TABLE_TEXT_COLOR;
     border: none;
     padding: 10px;
 }
 
-#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #workitems_table QLineEdit {
+#workitems_table::item:selected, #users_table::item:selected, #backlogs_table::item:selected, #categories_table::item:selected, #workitems_table QLineEdit {
     color: $TABLE_TEXT_COLOR;
     background-color: $SELECTION_BG_COLOR;
     border: none;
+}
+
+#categories_breadcrumbs {
+    padding-bottom: 0px;
 }
 
 #users_table, #tags_table {
@@ -67,13 +71,17 @@ QMainWindow, #StatsWindow, #FocusBackground {
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#backlogs_table, #users_table, #tags_table, #backlogs_widget {
+#backlogs_table, #users_table, #tags_table, #backlogs_widget, #categories_table, #categories_widget {
     background-color: $SECONDARY_BG_COLOR;
     border-right: 1px solid $BORDER_COLOR;
 }
 
-#workitems_widget, #statsView, #statsMain {
+#workitems_widget, #statsView, #statsMain, #categories_info {
     background-color: $PRIMARY_BG_COLOR;
+}
+
+#categories_info {
+    font-family: "EB Garamond", "Crimson Text", "Georgia", "IBM Plex Serif", "Plex Serif", "Times New Roman", "Noto Serif", "Serif";
 }
 
 #workitems_table {
@@ -137,8 +145,8 @@ InfoOverlay #overlay_text, #prev_button {
     padding: 10px 10px 10px 10px;
 }
 
-#work_summary_results {
-    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
+#work_summary_results, #system_info {
+    font-family: "Source Code Pro", Hack, "Ubuntu Mono", "Noto Sans Mono", "Noto Mono", "Roboto Mono", "Droid Sans Mono", "Monaco", Consolas, "Lucida Console", "Courier New", Monospace;
 }
 
 #trayDark {
@@ -151,6 +159,36 @@ InfoOverlay #overlay_text, #prev_button {
     border: 1px solid #555555;
 }
 
-#warning {
+#fakeClockDark {
+    color: #ffffff;
+}
+
+#fakeClockLight {
+    color: #000000;
+}
+
+#fullscreenWidget, #fullscreenHintText, #fullscreenHeaderText, #fullscreenDoNotShowAgain {
+    color: #ffffff;
+}
+
+#fullscreenHeaderText {
+    font-family: $FONT_HEADER_FAMILY;
+    font-size: $FONT_HEADER_SIZE;
+}
+
+#fullscreenTimer {
+    qproperty-fg_color: #ffffff;
+    qproperty-bg_color: #2b2b2b;
+}
+
+#fullscreenWidget {
+    background-color: #2b2b2b;
+}
+
+#fullscreenDoNotShowAgain {
+    background-color: #1a1a1a;
+}
+
+warning {
     color: red;
 }

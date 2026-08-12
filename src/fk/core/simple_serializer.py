@@ -35,6 +35,7 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
                        r'([a-zA-Z]+)\s*\(\s*'
                        r'"((?:[^"\\]|\\"|\\\\)*)?"\s*(?:,\s*'
                        r'"((?:[^"\\]|\\"|\\\\)*)")?\s*(?:,\s*'
+                       r'"((?:[^"\\]|\\"|\\\\)*)")?\s*(?:,\s*'
                        r'"((?:[^"\\]|\\"|\\\\)*)"\s*)*\)')
 
     def __init__(self, settings: AbstractSettings, cryptograph: AbstractCryptograph):

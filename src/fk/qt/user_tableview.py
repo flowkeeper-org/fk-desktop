@@ -43,23 +43,13 @@ class UserTableView(AbstractTableView[Tenant, User]):
                          0)
         source_holder.on(AfterSourceChanged, self._on_source_changed)
         self.update_actions(None)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         self.selectionModel().clear()
         self.upstream_selected(None)
         self._source.on(SourceMessagesProcessed, self._on_messages)
-
-    def update_actions(self, selected: User) -> None:
-        pass
-
-    @staticmethod
-    def define_actions(actions: Actions):
-        pass
-
-    def upstream_selected(self, upstream: Tenant) -> None:
-        super().upstream_selected(upstream)
-        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _on_messages(self, event: str, source: AbstractEventSource) -> None:
         self.upstream_selected(source.get_data())
