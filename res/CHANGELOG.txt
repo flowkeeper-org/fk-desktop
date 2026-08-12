@@ -21,6 +21,7 @@ Technical improvements:
 - Converted all audio resources to m4a format.
 - Metadata on workitems and backlogs (#112).
 - Snapcraft.io manifest.
+- New build configurations: Ubuntu 26.04, macOS 26 and Windows 11 ARM.
 - "About > System info" tab to help reporting issues.
 
 Bug fixes:
