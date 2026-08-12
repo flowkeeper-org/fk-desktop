@@ -278,7 +278,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('', S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_CHECK_UPDATES, 'bool', 'Check for updates', 'True', [], _hide_for_sandbox),
                 (S.APPLICATION_IGNORED_UPDATES, 'str', 'Ignored updates', '', [], _never_show),
-                (S.APPLICATION_SINGLETON, 'bool', 'Single Flowkeeper instance', 'False', [], _hide_for_sandbox),
+                (S.APPLICATION_SINGLETON, 'bool', 'Single Flowkeeper instance', 'True', [], _hide_for_sandbox),
                 (S.APPLICATION_HIDE_ON_AUTOSTART, 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_SHORTCUTS, 'shortcuts', 'Shortcuts', '{}', [], _always_show),
