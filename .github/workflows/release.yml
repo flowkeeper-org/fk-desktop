@@ -19,7 +19,7 @@ jobs:
         exclude:
           - os: windows-11-arm
             compiler: nuitka
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.1.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@main
     with:
       os: ${{ matrix.os }}
       compiler: ${{ matrix.compiler }}

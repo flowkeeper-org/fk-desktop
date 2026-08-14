@@ -131,6 +131,11 @@ jobs:
           INPUT_COMPILER: ${{ inputs.compiler }}
         shell: bash
         run: |
+          if [[ "$INPUT_COMPILER" == "nuitka" ]]; then
+            echo "Built Nuitka"
+            ls -al build/
+          fi
+
           echo "Prepare dist directory"
           mkdir -p dist/standalone
           PREFIX="dist/flowkeeper-${FK_VERSION}-${INPUT_OS}-${INPUT_COMPILER}"

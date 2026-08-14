@@ -67,7 +67,7 @@ jobs:
       matrix:
         os: [ubuntu-26.04, macos-26, windows-2025]
         compiler: [nuitka]
-    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@rc-1.1.0
+    uses: flowkeeper-org/fk-desktop/.github/workflows/build.yml@main
     with:
       os: ${{ matrix.os }}
       compiler: ${{ matrix.compiler }}
