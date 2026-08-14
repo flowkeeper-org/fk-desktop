@@ -134,6 +134,12 @@ jobs:
           if [[ "$INPUT_COMPILER" == "nuitka" ]]; then
             echo "Built Nuitka"
             ls -al build/
+            echo "Listing desktop.build:"
+            ls -al build/desktop.build/
+            echo "Listing desktop.dist:"
+            ls -al build/desktop.dist/
+            echo "Listing desktop.onefile-build:"
+            ls -al build/desktop.onefile-build/
           fi
 
           echo "Prepare dist directory"
