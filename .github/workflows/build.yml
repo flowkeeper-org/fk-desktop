@@ -180,7 +180,7 @@ jobs:
               mv build/Flowkeeper* $PREFIX-portable${BINARY_EXTENSION}
               mv build/desktop.dist/* dist/standalone
             fi
-            if [[ "$OSTYPE" == "linux"* ]]; then
+            if [[ "$OSTYPE" == "linux"* && -f dist/standalone/Flowkeeper.bin ]]; then
               mv dist/standalone/Flowkeeper.bin dist/standalone/Flowkeeper
             fi
           else
