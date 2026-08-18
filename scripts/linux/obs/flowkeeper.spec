@@ -19,9 +19,9 @@
 
 
 Name:           flowkeeper
-Version:        1.0.2
+Version:        1.1.0
 Release:        0
-Summary:        Pomodoro timer for power users
+Summary:        Pomodoro backlog and timer for power users
 License:        GPL-3.0-only
 Group:          Productivity/Text/Utilities
 URL:            https://flowkeeper.org/
@@ -37,7 +37,7 @@ Requires:       python3-keyring
 BuildArch:      noarch
 
 %description
-Flowkeeper is a Pomodoro timer, which stays as close as possible to Pomodoro Technique description found in the original book by Francesco Cirillo. Featuring classic UI paradigm (desktop-first, no Electron), keyboard shortcuts and advanced settings, Flowkeeper is optimized for power users.
+Flowkeeper is a Pomodoro backlog and timer with a "classic" desktop-first UI paradigm. With its keyboard shortcuts and advanced settings, it is optimized for power users. It stays as close as possible to the Pomodoro Technique definition and format from the original book by Francesco Cirillo.
 
 %prep
 %setup -q -n "fk-desktop-%{version}"
