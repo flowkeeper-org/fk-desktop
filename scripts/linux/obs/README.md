@@ -1,8 +1,8 @@
 # Updating OBS build
 
-Step 1: Download the latest tar.gz
+Step 1: Download the latest tar.gz, calculate its sha using `sha256sum`
 
-Step 2: Update `flowkeeper.spec` if needed
+Step 2: Update `flowkeeper.spec`
 
 Step 3: Update the changelog
 

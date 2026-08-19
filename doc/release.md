@@ -5,7 +5,7 @@
 - Collect screenshots from all supported environments, upload them to website repo.
 - Prepare the release page for the website. Record screenshots and GIFs for new features.
 - Prepare a release announcement for LinkedIn, Reddit, Discord, Telegram, and mailing list.
-- Review CHANGELOG.txt and update the date.
+- Review [CHANGELOG.txt](../res/CHANGELOG.txt) and update the date.
 - Review and merge the rc PR into main.
 - Create a new tag + release in GitHub, mark it as a draft.
 - Wait for the release pipeline to complete.
@@ -14,8 +14,10 @@
 - Remove the "draft" flag from GitHub release.
 - Check website -- it should pick up changes automatically.
 - Update download links on the website, if needed.
-- Update OBS repo.
-- Update Flatpak repo.
+- Update [metainfo.xml](../scripts/linux/common/org.flowkeeper.Flowkeeper.metainfo.xml).
+- Update OBS repo (see [README.md](../scripts/linux/obs/README.md)).
+- Update Snapcraft repo (see [README.md](../scripts/linux/snap/README.md)).
+- Update Flatpak repo (see [README.md](../scripts/linux/flatpak/README.md)).
 - Reply and close related GitHub issues.
 - Distribute the release announcement on LinkedIn, Reddit, Discord, Telegram, and mailing list.
 - Write about new Flowkeeper features in r/kde, r/opensource, r/Windows10, r/Windows11, r/windows, 

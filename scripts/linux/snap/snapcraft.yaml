@@ -19,7 +19,7 @@ description: |
     shortcuts and advanced settings, Flowkeeper is optimized for power users.
 
 grade: stable
-confinement: classic
+confinement: strict
 
 platforms:
     amd64:

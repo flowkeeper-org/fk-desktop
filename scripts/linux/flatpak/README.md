@@ -4,6 +4,11 @@
 - Fork repo: https://github.com/flowkeeper-org/org.flowkeeper.Flowkeeper
 - Upstream repo: https://github.com/flathub/org.flowkeeper.Flowkeeper
 
+## Prerequisites
+
+- Update [metadata.xml](../common/org.flowkeeper.Flowkeeper.metainfo.xml)
+- Sync the fork repo
+
 ## Build locally
 
 ```shell
