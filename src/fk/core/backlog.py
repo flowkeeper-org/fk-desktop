@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Iterable
+from typing import Iterable, Tuple
 
 from fk.core.abstract_data_container import AbstractDataContainer
 from fk.core.pomodoro import Pomodoro
@@ -38,7 +38,7 @@ class Backlog(AbstractDataContainer[Workitem, 'User']):
     def __str__(self):
         return f'Backlog "{self._name}"'
 
-    def get_running_workitem(self) -> (Workitem, Pomodoro):
+    def get_running_workitem(self) -> Tuple[Workitem, Pomodoro] | Tuple[None, None]:
         for workitem in self.values():
             for pomodoro in workitem.values():
                 if pomodoro.is_running():

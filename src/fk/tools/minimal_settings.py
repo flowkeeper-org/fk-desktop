@@ -18,7 +18,7 @@ from fk.tools.minimal_common import MinimalCommon
 
 mc = MinimalCommon()
 
-dialog = SettingsDialog(mc.get_settings())
+dialog = SettingsDialog(None, mc.get_settings())
 mc.get_window().setCentralWidget(dialog)
 
 mc.main_loop()

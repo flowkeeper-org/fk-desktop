@@ -23,7 +23,7 @@ def get_sandbox_type() -> str | None:
         if os.environ.get('container') is not None:
             return 'Flatpak'
         elif os.environ.get('SNAP') is not None:
-            return 'Snap'
+            return None
         elif os.environ.get('APPIMAGE') is not None:
             return 'AppImage'
     return None

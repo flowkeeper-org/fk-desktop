@@ -17,7 +17,7 @@ import datetime
 from typing import Callable
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL, POMODORO_TYPE_TRACKER, POMODORO_TYPE_COUNTER
 from fk.core.strategy_factory import strategy
@@ -80,8 +80,8 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
         emit(events.BeforePomodoroAdd, params, self._carry)
         workitem.add_pomodoro(
             self._num_pomodoros,
-            float(self._settings.get('Pomodoro.default_work_duration')) if self._type == POMODORO_TYPE_NORMAL else 0,
-            float(self._settings.get('Pomodoro.default_rest_duration')) if self._type == POMODORO_TYPE_NORMAL else 0,
+            float(self._settings.get(S.POMODORO_DEFAULT_WORK_DURATION)) if self._type == POMODORO_TYPE_NORMAL else 0,
+            float(self._settings.get(S.POMODORO_DEFAULT_REST_DURATION)) if self._type == POMODORO_TYPE_NORMAL else 0,
             self._type,
             self._when)
         workitem.item_updated(self._when)

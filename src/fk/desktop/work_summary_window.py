@@ -30,6 +30,7 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QTextEdit, \
     QCheckBox, QComboBox, QDialogButtonBox, QMessageBox, QPushButton
 
 from fk.core.abstract_event_source import AbstractEventSource
+from fk.core.abstract_settings import S
 from fk.core.pomodoro import Pomodoro
 from fk.desktop.settings import SettingsDialog
 from fk.qt.oauth import open_url
@@ -347,7 +348,7 @@ class WorkSummaryWindow(QObject):
 
     def _save_settings(self):
         self._source.get_settings().set({
-            "Application.work_summary_settings": json.dumps({
+            S.APPLICATION_WORK_SUMMARY_SETTINGS: json.dumps({
                 "format": self._format.currentIndex(),
                 "period": self._period.currentIndex(),
                 "durations": self._view_durations.isChecked(),
@@ -356,7 +357,7 @@ class WorkSummaryWindow(QObject):
         })
 
     def _load_settings(self):
-        s = json.loads(self._source.get_settings().get("Application.work_summary_settings"))
+        s = json.loads(self._source.get_settings().get(S.APPLICATION_WORK_SUMMARY_SETTINGS))
 
         self._format.blockSignals(True)
         self._format.setCurrentIndex(s.get('format', 0))

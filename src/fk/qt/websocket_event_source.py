@@ -29,7 +29,7 @@ from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.abstract_timer import AbstractTimer
 from fk.core.simple_serializer import SimpleSerializer
@@ -191,13 +191,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             self._emit(events.SourceMessagesProcessed, {'source': self}, carry=None)
 
     def _authenticate_with_oauth_and_replay(self) -> None:
-        refresh_token = self.get_config_parameter('WebsocketEventSource.refresh_token!')
+        refresh_token = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN)
         Authenticator(self.get_settings()).get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
         logger.debug(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
-        consent_given = 'true' if self.get_config_parameter('WebsocketEventSource.consent') == 'True' else 'false'
+        consent_given = 'true' if self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_CONSENT) == 'True' else 'false'
         auth_strategy = AuthenticateStrategy(1,
                                              now,
                                              ADMIN_USER,
@@ -225,14 +225,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._connection_attempt = 0    # This will allow us to reconnect quickly
         self._received_error = False
 
-        auth_type = self.get_config_parameter('WebsocketEventSource.auth_type')
+        auth_type = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE)
         logger.debug(f'Connected. Authenticating with {auth_type}')
 
         if auth_type == 'basic':
             auth = AuthenticationRecord()
-            auth.email = self.get_config_parameter('WebsocketEventSource.username')
+            auth.email = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_USERNAME)
             auth.type = auth_type
-            auth.id_token = self.get_config_parameter('WebsocketEventSource.password!')
+            auth.id_token = self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_PASSWORD)
             self._replay_after_auth(auth)
         elif auth_type == 'oauth':
             self._authenticate_with_oauth_and_replay()

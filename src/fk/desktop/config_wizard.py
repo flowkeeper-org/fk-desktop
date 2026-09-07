@@ -22,7 +22,7 @@ from PySide6.QtGui import QPixmap, QIcon, QHideEvent, Qt
 from PySide6.QtWidgets import QWizardPage, QLabel, QVBoxLayout, QWizard, QWidget, QRadioButton, QMenu, \
     QHBoxLayout, QSpacerItem, QSizePolicy
 
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_NORMAL
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
@@ -59,7 +59,7 @@ class PageConfigFocus(QWizardPage):
     def __init__(self, application: Application, actions: Actions):
         super().__init__()
         self._tick = 10
-        flavor = application.get_settings().get('Application.focus_flavor')
+        flavor = application.get_settings().get(S.APPLICATION_FOCUS_FLAVOR)
 
         layout_v = QVBoxLayout()
 
@@ -181,7 +181,7 @@ class PageConfigIcons(QWizardPage):
         super().__init__()
         self._actions = actions
         self._application = application
-        flavor = self._application.get_settings().get('Application.tray_icon_flavor')
+        flavor = self._application.get_settings().get(S.APPLICATION_TRAY_ICON_FLAVOR)
 
         layout_v = QVBoxLayout()
         label = QLabel("Now choose how you prefer your icons:")
@@ -232,7 +232,8 @@ class PageConfigIcons(QWizardPage):
         workitem = Workitem('N/A',
                             '1',
                             None,
-                            datetime.datetime.now())
+                            datetime.datetime.now(),
+                            [])
         pomodoro = Pomodoro(1,
                             True,
                             'new',
@@ -309,8 +310,8 @@ class ConfigWizard(QWizard):
 
     def _on_finish(self):
         self._settings.set({
-            'Application.focus_flavor': self._page_focus.get_setting(),
-            'Application.tray_icon_flavor': self._page_icons.get_setting(),
+            S.APPLICATION_FOCUS_FLAVOR: self._page_focus.get_setting(),
+            S.APPLICATION_TRAY_ICON_FLAVOR: self._page_icons.get_setting(),
         })
 
     def unsubscribe(self):

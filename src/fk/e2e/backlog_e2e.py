@@ -4,6 +4,7 @@ import os
 from PySide6.QtCore import Qt
 from assertpy import assert_that
 
+from fk.core.abstract_settings import S
 from fk.core.workitem import Workitem
 from fk.desktop.application import Application
 from fk.e2e.abstract_e2e_test import AbstractE2eTest
@@ -22,18 +23,19 @@ class BacklogE2eTest(AbstractE2eTest):
 
     def custom_settings(self) -> dict[str, str]:
         return {
-            'FileEventSource.filename': TEMP_FILENAME,
-            'Application.show_tutorial': 'False',
-            'Application.check_updates': 'False',
-            'Application.show_window_title': 'True',
-            'Pomodoro.default_work_duration': str(POMODORO_WORK_DURATION),
-            'Pomodoro.default_rest_duration': str(POMODORO_REST_DURATION),
-            'Application.play_alarm_sound': 'False',
-            'Application.play_rest_sound': 'False',
-            'Application.play_tick_sound': 'False',
-            'Logger.filename': 'backlog-e2e.log',
-            'Logger.level': 'DEBUG',
-            'Application.last_version': self.get_application()._current_version,
+            S.FILEEVENTSOURCE_FILENAME: TEMP_FILENAME,
+            S.APPLICATION_SHOW_TUTORIAL: 'False',
+            S.APPLICATION_CHECK_UPDATES: 'False',
+            S.APPLICATION_SHOW_WINDOW_TITLE: 'True',
+            S.POMODORO_DEFAULT_WORK_DURATION: str(POMODORO_WORK_DURATION),
+            S.POMODORO_DEFAULT_REST_DURATION: str(POMODORO_REST_DURATION),
+            S.APPLICATION_PLAY_ALARM_SOUND: 'False',
+            S.APPLICATION_PLAY_REST_SOUND: 'False',
+            S.APPLICATION_PLAY_TICK_SOUND: 'False',
+            S.APPLICATION_PLAY_NOTIFICATION_SOUND: 'False',
+            S.LOGGER_FILENAME: 'backlog-e2e.log',
+            S.LOGGER_LEVEL: 'DEBUG',
+            S.APPLICATION_LAST_VERSION: self.get_application()._current_version,
         }
 
     def teardown(self) -> None:

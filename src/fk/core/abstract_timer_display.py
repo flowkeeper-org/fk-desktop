@@ -52,6 +52,7 @@ class AbstractTimerDisplay:
 
         if timer is not None:
             timer.on(PomodoroTimer.TimerTick, self._on_tick)
+            timer.on(PomodoroTimer.TimerNotification, self._on_notification)
 
         if source_holder is not None:
             source_holder.on(AfterSourceChanged, self._on_source_changed)
@@ -101,6 +102,9 @@ class AbstractTimerDisplay:
         else:
             self._continue_workitem = None
             self._set_mode('idle')
+
+    def _on_notification(self, **kwargs) -> None:
+        self.work_ending(self.timer.get_running_pomodoro())
 
     def _on_tick(self, **kwargs) -> None:
         timer = self.timer
@@ -166,6 +170,9 @@ class AbstractTimerDisplay:
     # Override those in the child widgets
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
+        pass
+
+    def work_ending(self, pomodoro: Pomodoro) -> None:
         pass
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:

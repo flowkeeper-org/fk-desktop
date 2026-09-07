@@ -20,7 +20,7 @@ from PySide6.QtGui import QIcon, Qt, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QWidget, QMainWindow, QSystemTrayIcon, QMenu
 
 from fk.core.abstract_event_source import start_workitem
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_timer_display import AbstractTimerDisplay
 from fk.core.event_source_holder import EventSourceHolder
 from fk.core.pomodoro import Pomodoro
@@ -105,8 +105,6 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
 
     def _tray_clicked(self) -> None:
         if self._continue_workitem is not None and self._continue_workitem.is_startable() and self.timer.is_idling():
-            if self._continue_workitem is None:
-                raise Exception('Cannot start next pomodoro on non-existent work item')
             start_workitem(self._continue_workitem, self._source_holder.get_source())
         else:
             if 'window.showMainWindow' in self._actions:
@@ -122,19 +120,18 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
         self.setIcon(pixmap)
 
     def tick(self, pomodoro: Pomodoro, state_text: str, my_value: float, my_max: float, mode: str) -> None:
-        if pomodoro.get_state() == 'work':
-            state_text_split = state_text.split(' ')
-            time_left = state_text_split[1]
-            if time_left.strip() == '01:00' and self._settings.get('RestScreen.enabled') == 'True':
-                self.showMessage(
-                    "60 seconds left to finish this pomodoro",
-                    "Time to wrap up.",
-                    self._default_icon
-                )
-
         self.setToolTip(f"{state_text} ({pomodoro.get_parent().get_name()})")
         self._timer_renderer.set_values(my_value, my_max, None, None, mode)
         self.paint()
+
+    def work_ending(self, pomodoro: Pomodoro) -> None:
+        if pomodoro.is_working() and self._settings.get(S.POMODORO_END_OF_WORK_NOTIFICATIONS) == 'True':
+            remaining = pomodoro.get_timer().format_remaining_duration()
+            self.showMessage(
+                "Time to wrap up",
+                f"You have {remaining} to finish this pomodoro",
+                self._default_icon
+            )
 
     def mode_changed(self, old_mode: str, new_mode: str) -> None:
         if new_mode == 'undefined' or new_mode == 'idle':
@@ -147,8 +144,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             self.showMessage("A series is done", "Enjoy a long rest", self._default_icon)
         elif new_mode == 'ready':
             if self._continue_workitem is not None:
-                self.setToolTip(f'Start another Pomodoro? ({self._continue_workitem.get_name()})')
-            self.showMessage("Ready", "Start another pomodoro?", self._next_icon)
+                self.setToolTip(f'Continue? ({self._continue_workitem.get_name()})')
+            self.showMessage("Ready", "Continue?", self._next_icon)
             self._timer_renderer.set_values(0, 1, None, None, 'ready')
             if self._timer_renderer.has_next_display():
                 self.paint()

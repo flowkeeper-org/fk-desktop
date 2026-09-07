@@ -25,12 +25,19 @@ from PySide6.QtWidgets import QLabel, QApplication, QTabWidget, QWidget, QDialog
     QSpinBox, QCheckBox, QFrame, QHBoxLayout, QPushButton, QComboBox, QDialogButtonBox, QFileDialog, QFontComboBox, \
     QMessageBox, QVBoxLayout, QKeySequenceEdit, QTimeEdit, QTableWidget, QTableWidgetItem, QSizePolicy
 
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.sandbox import get_sandbox_type
 from fk.qt.actions import Actions
 from fk.qt.qt_settings import QtSettings
 
 logger = logging.getLogger(__name__)
+
+
+def _from_total_seconds(total_seconds: int) -> QTime:
+    hours = int(total_seconds / 60 / 60)
+    minutes = int(total_seconds / 60) - hours * 60
+    seconds = total_seconds - hours * 60 * 60 - minutes * 60
+    return QTime(hours, minutes, seconds, 0)
 
 
 class SettingsDialog(QDialog):
@@ -94,7 +101,7 @@ class SettingsDialog(QDialog):
     def _init_sign_out_button(self):
         lst = self._data._definitions['Connection']
         for i, d in enumerate(lst):
-            if d[0] == 'WebsocketEventSource.logout':
+            if d[0] == S.WEBSOCKETEVENTSOURCE_LOGOUT:
                 t = list(d)
                 t[2] = f'Sign out <{self._data.get_username()}>'
                 lst[i] = tuple(t)
@@ -392,15 +399,13 @@ class SettingsDialog(QDialog):
             ed9 = QTimeEdit(parent)
             ed9.setDisplayFormat('HH:mm:ss')
             ed9.setCurrentSection(QTimeEdit.Section.SecondSection)
+            ed9.setMinimumTime(_from_total_seconds(option_options[0]))
+            ed9.setMaximumTime(_from_total_seconds(option_options[1]))
             ed9.userTimeChanged.connect(lambda v: self._on_value_changed(
                 option_id,
                 str(int(v.msecsSinceStartOfDay() / 1000))
             ))
-            total_seconds = int(float(option_value))
-            hours = int(total_seconds / 60 / 60)
-            minutes = int(total_seconds / 60) - hours * 60
-            seconds = total_seconds - hours * 60 * 60 - minutes * 60
-            ed9.setTime(QTime(hours, minutes, seconds, 0))
+            ed9.setTime(_from_total_seconds(int(float(option_value))))
             self._widgets_get_value[option_id] = lambda: str(int(ed9.time().msecsSinceStartOfDay() / 1000))
             self._widgets_set_value[option_id] = lambda txt: logger.error('Changing durations programmatically is not implemented yet')
             return [ed9]
@@ -435,6 +440,10 @@ class SettingsDialog(QDialog):
             sp = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             ed11.setSizePolicy(sp)
             ed11.setText(option_value)
+
+            if 'copyable' in option_options:
+                ed11.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+
             return [ed11]
         elif option_type == 'keyvalue':
             ed13 = QTableWidget(parent)

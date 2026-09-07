@@ -20,7 +20,7 @@ from typing import Callable
 from PySide6.QtWidgets import QMessageBox
 
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
@@ -149,16 +149,16 @@ class ErrorStrategy(AbstractStrategy):
             ) == QMessageBox.StandardButton.Yes:
                 logger.debug('Obtained consent for Flowkeeper Server, will re-authenticate')
                 self._settings.set({
-                    'WebsocketEventSource.consent': 'True',
+                    S.WEBSOCKETEVENTSOURCE_CONSENT: 'True',
                 })
         elif self._error_message == 'Deleted':
             self._settings.set({
                 'Source.fullname': '',
-                'WebsocketEventSource.auth_type': 'oauth',
-                'WebsocketEventSource.username': 'user@local.host',
+                S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'google',
+                S.WEBSOCKETEVENTSOURCE_USERNAME: 'user@local.host',
                 'WebsocketEventSource.userpic': '',
-                'WebsocketEventSource.consent': 'False',
-                'WebsocketEventSource.refresh_token!': '',
+                S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',
+                S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: '',
             })
             QMessageBox().warning(None,
                                   'Deleted',

@@ -22,7 +22,7 @@ source venv/bin/activate
 
 set -e
 
-if [[ "$OSTYPE" == "msys" ]]; then
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win" ]]; then
   alias "pyside6-rcc=$(pwd)/venv/Lib/site-packages/PySide6/rcc"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   scripts/macos/create-icons.sh

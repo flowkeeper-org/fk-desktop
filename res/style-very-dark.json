@@ -1,0 +1,18 @@
+{
+  "ICON_THEME": "dark",
+
+  "FOCUS_TEXT_COLOR": "#bbbbbb",
+  "FOCUS_BG_COLOR": "#1c1d23",
+  "FOCUS_BORDER_COLOR": "#1c1d23",
+
+  "BORDER_COLOR": "#1c1d23",
+
+  "TABLE_TEXT_COLOR": "#bbbbbb",
+  "TABLE_CROSSOUT_COLOR": "#555555",
+  "PRIMARY_BG_COLOR": "#1c1d23",
+  "SECONDARY_BG_COLOR": "#1c1d23",
+  "SELECTION_BG_COLOR": "#43454a",
+
+  "TOOLBAR_BG_COLOR": "#1c1d23",
+  "TOOLBAR_CHECKED_BG_COLOR": "#43454a"
+}

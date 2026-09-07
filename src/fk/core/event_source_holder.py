@@ -19,7 +19,7 @@ from typing import TypeVar, Generic
 from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.tenant import Tenant
 
@@ -50,7 +50,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
             self._source.disconnect()
 
     def request_new_source(self) -> AbstractEventSource[TRoot]:
-        source_type = self._settings.get('Source.type')
+        source_type = self._settings.get(S.SOURCE_TYPE)
         logger.debug(f'EventSourceHolder: Recreating event source of type {source_type}')
         if not EventSourceFactory.get_event_source_factory().is_valid(source_type):
             # We want to check it earlier, before we unsubscribe the old source

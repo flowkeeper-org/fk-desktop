@@ -19,16 +19,21 @@ from typing import Iterable
 
 from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy
+from fk.core.backlog_strategies import CreateBacklogStrategy, RenameBacklogStrategy, DeleteBacklogStrategy, \
+    ReorderBacklogStrategy
+from fk.core.category_strategies import CreateCategoryStrategy, DeleteCategoryStrategy, RenameCategoryStrategy, \
+    ReorderCategoryStrategy
 from fk.core.mock_settings import MockSettings
 from fk.core.no_cryptograph import NoCryptograph
 from fk.core.pomodoro_strategies import AddPomodoroStrategy, AddInterruptionStrategy, RemovePomodoroStrategy
 from fk.core.simple_serializer import SimpleSerializer
+from fk.core.standard_categories import get_standard_workitem_categories
 from fk.core.tenant import ADMIN_USER
 from fk.core.timer_strategies import StopTimerStrategy, StartTimerStrategy
-from fk.core.user_strategies import CreateUserStrategy
+from fk.core.user_strategies import CreateUserStrategy, RenameUserStrategy
 from fk.core.workitem_strategies import CreateWorkitemStrategy, CompleteWorkitemStrategy, DeleteWorkitemStrategy, \
-    RenameWorkitemStrategy
+    RenameWorkitemStrategy, RestoreWorkitemStrategy, MoveWorkitemStrategy, UpdateWorkitemCategoriesStrategy, \
+    ReorderWorkitemStrategy
 from fk.tests.test_utils import one_of, shuffle, randint, rand_normal, random
 
 PROJECTS = ['#Alpha', '#Beta', '#Gamma', '#Delta', '#Omega']
@@ -53,6 +58,12 @@ def lorem_ipsum_backlog() -> str:
 def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
     seq = 1
     day = days + 1
+    previous_backlogs = list[str]()
+
+    categories = list(get_standard_workitem_categories(None, None).values())
+    created_categories = list[str]()
+    created_backlogs = list[str]()
+
     while day > 0:
         day -= 1
         now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=day)
@@ -65,9 +76,9 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
 
         if seq == 1:
             yield CreateUserStrategy(seq,
-                                     now,
+                                     datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                                      ADMIN_USER,
-                                     [user, user],
+                                     [user, 'Local User'],
                                      settings)
 
         seq += 1
@@ -79,9 +90,38 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                     user,
                                     [backlog_uid, backlog_name],
                                     settings)
+        created_backlogs.append(backlog_uid)
+
+        if randint(0, 10) < 2:
+            seq += 1
+            now += datetime.timedelta(seconds=rand_normal(1, 5))
+            category_uid = generate_uid()
+            category_name = now.strftime('%Y-%m-%d, %A')
+            yield CreateCategoryStrategy(seq,
+                                         now,
+                                         user,
+                                         [category_uid, '#workitem_groups', category_name],
+                                         settings)
+            created_categories.append(category_uid)
+
+            top_level_cat = list[str]()
+            for sc in range(rand_normal(1, 10)):
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 5))
+                subcategory_uid = generate_uid()
+                subcategory_name = f'Subcategory {sc}'
+                yield CreateCategoryStrategy(seq,
+                                             now,
+                                             user,
+                                             [subcategory_uid, category_uid, subcategory_name],
+                                             settings)
+                top_level_cat.append(subcategory_uid)
+        else:
+            top_level_cat = list(one_of(categories).keys())
 
         pomodoros = list[tuple[str, str]]()
         incomplete_workitems = set[str]()
+        all_workitems = set[str]()
 
         for w in range(rand_normal(1, 10)):
             seq += 1
@@ -93,6 +133,25 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                          [workitem_uid, backlog_uid, lorem_ipsum()],
                                          settings)
             incomplete_workitems.add(workitem_uid)
+            all_workitems.add(workitem_uid)
+
+            if randint(0, 10) < 7:
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 10))
+                cat = one_of(top_level_cat)
+                yield UpdateWorkitemCategoriesStrategy(seq,
+                                                       now,
+                                                       user,
+                                                       [workitem_uid, '', cat],
+                                                       settings)
+                if randint(0, 10) < 2:
+                    seq += 1
+                    now += datetime.timedelta(seconds=rand_normal(1, 10))
+                    yield UpdateWorkitemCategoriesStrategy(seq,
+                                                           now,
+                                                           user,
+                                                           [workitem_uid, cat, ''],
+                                                           settings)
 
             if randint(0, 10) > 6:
                 # This *will be* a tracker pomodoro. AddPomodoro will be called later.
@@ -150,6 +209,16 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                             [backlog_uid, lorem_ipsum_backlog()],
                                             settings)
 
+            if random() < 0.001:
+                # Rename user
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                yield RenameUserStrategy(seq,
+                                         now,
+                                         user,
+                                         [user, f'{user}-{seq}'],
+                                         settings)
+
             if random() < 0.01:
                 # Delete backlog
                 seq += 1
@@ -159,8 +228,64 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                             user,
                                             [backlog_uid],
                                             settings)
-                incomplete_workitems.clear()
+                incomplete_workitems.clear()  # There will be nothing to complete after that
+                all_workitems.clear()
+                created_backlogs.remove(backlog_uid)
+                backlog_uid = None
                 break
+
+            if random() < 0.01:
+                # Pull a random backlog to the top
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 10))
+                yield ReorderBacklogStrategy(seq,
+                                             now,
+                                             user,
+                                             [one_of(created_backlogs), "0"],
+                                             settings)
+
+            if random() < 0.01:
+                # Pull a random workitem to the top of the current backlog
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 10))
+                yield ReorderWorkitemStrategy(seq,
+                                              now,
+                                              user,
+                                              [one_of(list(all_workitems)), "0"],
+                                              settings)
+
+            if random() < 0.01 and len(created_categories) > 0:
+                # Pull a random category to the top
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 10))
+                yield ReorderCategoryStrategy(seq,
+                                              now,
+                                              user,
+                                              [one_of(created_categories), "0"],
+                                              settings)
+
+            if random() < 0.01 and len(created_categories) > 0:
+                # Delete a random category
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                cat = one_of(created_categories)
+                yield DeleteCategoryStrategy(seq,
+                                             now,
+                                             user,
+                                             [cat],
+                                             settings)
+                created_categories.remove(cat)
+
+            if random() < 0.02 and len(created_categories) > 0:
+                # Rename a random category
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 60))
+                cat = one_of(created_categories)
+                yield RenameCategoryStrategy(seq,
+                                             now,
+                                             user,
+                                             [cat, cat],
+                                             settings)
 
             # Else, start it and...
             seq += 1
@@ -191,13 +316,14 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                                    settings)
                     incomplete_workitems.remove(workitem_uid)
                     pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
-                elif random() < 0.05:
+                elif random() < 0.06:
                     yield DeleteWorkitemStrategy(seq,
                                                 now,
                                                 user,
                                                 [workitem_uid],
                                                 settings)
                     incomplete_workitems.remove(workitem_uid)
+                    all_workitems.remove(workitem_uid)
                     pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
                 else:
                     yield StopTimerStrategy(seq,
@@ -260,7 +386,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                                        settings)
                         incomplete_workitems.remove(workitem_uid)
                         pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
-                    elif random() < 0.05:
+                    elif random() < 0.06:
                         now += datetime.timedelta(seconds=randint(1, pomodoro_duration - 1))
                         seq += 1
                         yield DeleteWorkitemStrategy(seq,
@@ -269,6 +395,7 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                                      [workitem_uid],
                                                      settings)
                         incomplete_workitems.remove(workitem_uid)
+                        all_workitems.remove(workitem_uid)
                         pomodoros = list(filter(lambda p: p[0] != workitem_uid, pomodoros))
                     else:
                         # Complete it -- just increment the timer, let it "finish"
@@ -294,6 +421,24 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                                       settings)
                             pomodoros.append((workitem_uid, 'normal'))
 
+        if len(previous_backlogs) > 0:
+            for w in all_workitems:
+                choice = randint(1, 10)
+                if choice < 10:  # Ignore it
+                    continue
+
+                # Else move it to one of the previous backlogs
+                seq += 1
+                now += datetime.timedelta(seconds=rand_normal(1, 120))
+                yield MoveWorkitemStrategy(seq,
+                                           now,
+                                           user,
+                                           [w, one_of(previous_backlogs)],
+                                           settings)
+
+        if backlog_uid is not None:
+            previous_backlogs.append(backlog_uid)
+
         for w in incomplete_workitems:
             choice = randint(1, 10)
             if choice < 4:  # Ignore it
@@ -307,6 +452,19 @@ def emulate(days: int, user: str) -> Iterable[AbstractStrategy]:
                                            user,
                                            [w, 'finished'],
                                            settings)
+
+            choice = randint(1, 10)
+            if choice < 8:  # Ignore it
+                continue
+
+            # Else restore it
+            seq += 1
+            now += datetime.timedelta(seconds=rand_normal(1, 120))
+            yield RestoreWorkitemStrategy(seq,
+                                          now,
+                                          user,
+                                          [w],
+                                          settings)
 
 
 if __name__ == '__main__':

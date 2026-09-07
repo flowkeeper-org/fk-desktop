@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from fk.core.abstract_cryptograph import AbstractCryptograph
-from fk.core.abstract_settings import AbstractSettings
+from fk.core.abstract_settings import AbstractSettings, S
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class FernetCryptograph(AbstractCryptograph):
     def __init__(self, settings: AbstractSettings):
         super().__init__(settings)
         # UC-2: The "final" e2e encryption key is cached in the keychain
-        cached_key = self._settings.get('Source.encryption_key_cache!')
+        cached_key = self._settings.get(S.SOURCE_ENCRYPTION_KEY_CACHE)
         self._fernet = self._create_fernet(cached_key)
 
     def _create_fernet(self, cached_key) -> Fernet:
@@ -46,7 +46,7 @@ class FernetCryptograph(AbstractCryptograph):
                 iterations=480000,
             )
             key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
-            self._settings.set({'Source.encryption_key_cache!': key.decode('utf-8')})
+            self._settings.set({S.SOURCE_ENCRYPTION_KEY_CACHE: key.decode('utf-8')})
         else:
             key = cached_key.encode('utf-8')
         # TODO: This doesn't look safe -- check other occurrences to ensure we don't log credentials,

@@ -8,6 +8,7 @@
   "BORDER_COLOR": "#d7d8da",
 
   "TABLE_TEXT_COLOR": "#000000",
+  "TABLE_CROSSOUT_COLOR": "#777777",
   "PRIMARY_BG_COLOR": "#ffffff",
   "SECONDARY_BG_COLOR": "#f7f8fa",
   "SELECTION_BG_COLOR": "#cfdefc",
