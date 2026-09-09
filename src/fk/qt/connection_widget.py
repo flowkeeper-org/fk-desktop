@@ -16,7 +16,7 @@
 import base64
 import logging
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QPoint, QPointF
 from PySide6.QtGui import QPixmap, QPainter, QBrush, QColor
 from PySide6.QtWidgets import QWidget, QToolButton
 
@@ -84,8 +84,9 @@ class ConnectionWidget(QToolButton):
         if self._userpic is not None:
             # This may happen if we draw faster than getting new event source
             painter.setBrush(QBrush(self._userpic))
-        painter.drawEllipse(2, 2, self.width() - 3, self.height() - 3)
+            painter.setBrushOrigin(QPointF(1.5, 1))
+        painter.drawEllipse(2, 2, self.width() - 4, self.height() - 4)
 
-        dot_size = 12
+        dot_size = 8
         painter.setBrush(QBrush(QColor('#AAFF00' if self._is_connected else '#EE4B2B')))
-        painter.drawEllipse(self.width() - dot_size, self.height() - dot_size, dot_size, dot_size)
+        painter.drawEllipse(self.width() - dot_size - 3, self.height() - dot_size - 3, dot_size, dot_size)
