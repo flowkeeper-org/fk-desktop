@@ -61,7 +61,7 @@ class UserTableView(AbstractTableView[Tenant, User]):
         super().upstream_selected(upstream)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
-    def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource, carry: str = None) -> None:
         self.upstream_selected(source.get_data())
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):

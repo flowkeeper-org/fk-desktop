@@ -144,14 +144,14 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self._actions['backlogs_table.dumpBacklog'].setEnabled(is_backlog_selected)
         # TODO: Double-clicking the backlog name doesn't use those
 
-    def _on_new_backlog(self, backlog: Backlog, carry: any = None, **kwargs):
+    def _on_new_backlog(self, backlog: Backlog, carry: str = None, **kwargs):
         if carry == 'edit':
             index: QModelIndex = self.select(backlog)
             self.edit(index)
         elif carry == 'select':
             self.select(backlog)
 
-    def _on_messages(self, event: str, source: AbstractEventSource, carry: any = None) -> None:
+    def _on_messages(self, event: str, source: AbstractEventSource, carry: str = None) -> None:
         user = source.get_data().get_current_user()
         self.upstream_selected(user)
         last_selected_oid = self._application.get_settings().get(S.APPLICATION_LAST_SELECTED_BACKLOG)

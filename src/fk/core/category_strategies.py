@@ -57,7 +57,7 @@ class CreateCategoryStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._category_uid = params[0]
         self._parent_uid = params[1]
@@ -100,7 +100,7 @@ class DeleteCategoryStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._category_uid = params[0]
 
@@ -151,7 +151,7 @@ class RenameCategoryStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._category_uid = params[0]
         self._category_new_name = params[1]
@@ -194,7 +194,7 @@ class ReorderCategoryStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._category_uid = params[0]
         self._new_index = int(params[1])

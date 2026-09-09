@@ -40,7 +40,7 @@ class AuthenticateStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._username = params[0]
         self._token = params[1]
@@ -66,7 +66,7 @@ class ReplayStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._since_seq = int(params[0])
 
@@ -89,7 +89,7 @@ class ReplayCompletedStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
     def encryptable(self) -> bool:
@@ -117,7 +117,7 @@ class ErrorStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._error_code = int(params[0])
         self._error_message = params[1]
@@ -187,7 +187,7 @@ class PongStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
 
@@ -215,7 +215,7 @@ class PingStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._uid = params[0]
 
@@ -241,7 +241,7 @@ class DeleteAccountStrategy(AbstractStrategy):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._reason = params[0]
         if len(params) > 1 and params[1] != '':

@@ -34,7 +34,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
     _params: list[str]
     _settings: AbstractSettings
     _user_identity: str
-    _carry: any
+    _carry: str
 
     def __init__(self,
                  seq: int,
@@ -42,7 +42,7 @@ class AbstractStrategy(ABC, Generic[TRoot]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         self._seq = seq
         self._when = when
         self._user_identity = user_identity

@@ -51,7 +51,7 @@ class CreateWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
@@ -119,7 +119,7 @@ class DeleteWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
@@ -186,7 +186,7 @@ class RenameWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._new_workitem_name = params[1]
@@ -272,7 +272,7 @@ class CompleteWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._target_state = params[1]
@@ -333,7 +333,7 @@ class RestoreWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
 
@@ -374,7 +374,7 @@ class ReorderWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._new_index = int(params[1])
@@ -422,7 +422,7 @@ class MoveWorkitemStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._backlog_uid = params[1]
@@ -479,7 +479,7 @@ class UpdateWorkitemCategoriesStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._to_remove = params[1]

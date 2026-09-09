@@ -44,7 +44,7 @@ class CreateUserStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._target_user_identity = params[0]
         self._user_name = params[1]
@@ -93,7 +93,7 @@ class DeleteUserStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._target_user_identity = params[0]
 
@@ -146,7 +146,7 @@ class RenameUserStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._target_user_identity = params[0]
         self._new_user_name = params[1]
@@ -189,7 +189,7 @@ class AutoSealInternalStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
 
     def requires_sealing(self) -> bool:

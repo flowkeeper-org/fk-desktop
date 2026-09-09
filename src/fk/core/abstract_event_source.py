@@ -264,7 +264,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 persist: bool = True,
                 when: datetime.datetime = None,
                 auto: bool = False,
-                carry: any = None) -> None:
+                carry: str = None) -> None:
         # This method is called when the user does something in the UI on THIS instance
         # TODO: Get username from the login provider instead
         if when is None:

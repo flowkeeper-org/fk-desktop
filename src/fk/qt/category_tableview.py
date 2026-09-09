@@ -176,7 +176,7 @@ class CategoryTableView(AbstractTableView[User, Category]):
 
         # TODO: Double-clicking the category name doesn't use those
 
-    def _on_new_category(self, category: Category, carry: any = None, **kwargs):
+    def _on_new_category(self, category: Category, carry: str = None, **kwargs):
         if carry == 'edit':
             index: QModelIndex = self.select(category)
             self.edit(index)

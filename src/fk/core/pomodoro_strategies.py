@@ -43,7 +43,7 @@ class AddPomodoroStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
@@ -106,7 +106,7 @@ class RemovePomodoroStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._num_pomodoros = int(params[1])
@@ -171,7 +171,7 @@ class AddInterruptionStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._workitem_uid = params[0]
         self._reason = params[1]

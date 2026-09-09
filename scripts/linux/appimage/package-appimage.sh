@@ -63,7 +63,7 @@ echo "5. Create .DirIcon symlink"
 
 # 6. Build AppImage file
 ls -al AppDir/
-appimagetool AppDir
+appimagetool AppDir --runtime-file=/home/www/Downloads/runtime-x86_64
 echo "6. Built AppImage file: $(ls ./*.AppImage)"
 
 mv ./*.AppImage ../dist

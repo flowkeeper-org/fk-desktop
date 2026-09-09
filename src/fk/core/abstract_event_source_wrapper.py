@@ -84,7 +84,7 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
                 persist: bool = True,
                 when: datetime.datetime = None,
                 auto: bool = False,
-                carry: any = None) -> None:
+                carry: str = None) -> None:
         self._wrapped.execute(strategy_class, params, persist, when, auto, carry)
 
     def execute_prepared_strategy(self,

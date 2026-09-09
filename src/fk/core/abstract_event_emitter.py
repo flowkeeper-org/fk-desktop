@@ -91,7 +91,7 @@ class AbstractEventEmitter:
                 if callback in self._connections_2[event]:
                     self._connections_2[event].remove(callback)
 
-    def _emit(self, event: str, params: dict[str, any], carry: any = None, force: bool = False) -> None:
+    def _emit(self, event: str, params: dict[str, any], carry: str = None, force: bool = False) -> None:
         if not self._is_muted() or force:
             params['event'] = event
             if carry is not None:

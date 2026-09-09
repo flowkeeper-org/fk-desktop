@@ -44,7 +44,7 @@ def predefined_uid(n: int) -> str:
     return PREDEFINED_UID[n]
 
 
-def noop_emit(event: str, params: dict[str, any], carry: any) -> None:
+def noop_emit(event: str, params: dict[str, str], carry: str) -> None:
     pass
 
 

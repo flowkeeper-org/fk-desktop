@@ -41,7 +41,7 @@ class CreateBacklogStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._backlog_uid = params[0]
         self._backlog_name = params[1]
@@ -81,7 +81,7 @@ class DeleteBacklogStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._backlog_uid = params[0]
 
@@ -134,7 +134,7 @@ class RenameBacklogStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._backlog_uid = params[0]
         self._backlog_new_name = params[1]
@@ -178,7 +178,7 @@ class ReorderBacklogStrategy(AbstractStrategy[Tenant]):
                  user_identity: str,
                  params: list[str],
                  settings: AbstractSettings,
-                 carry: any = None):
+                 carry: str = None):
         super().__init__(seq, when, user_identity, params, settings, carry)
         self._backlog_uid = params[0]
         self._new_index = int(params[1])
