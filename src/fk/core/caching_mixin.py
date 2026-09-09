@@ -143,7 +143,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
         self._last_seq_in_cache = 0
         # TODO: Use XDG way to get filenames (extract from Settings > File event source filename?)
         self._cache_filename = str(Path.home() / f'flowkeeper-cache-{super(CachingMixin, self).get_id()}.bin')
-        self._redo_aalog_filename = str(Path.home() / f'flowkeeper-redo-{super(CachingMixin, self).get_id()}.txt')
+        self._redo_log_filename = str(Path.home() / f'flowkeeper-redo-{super(CachingMixin, self).get_id()}.txt')
         super(CachingMixin, self).on(SourceMessagesProcessed, self._save_cache)
         super(CachingMixin, self).on(WentOnline, self._send_redo_log)
 
