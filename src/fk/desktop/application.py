@@ -51,6 +51,7 @@ from fk.core.no_cryptograph import NoCryptograph
 from fk.core.sandbox import get_sandbox_type
 from fk.core.tenant import Tenant
 from fk.desktop.categories_window import CategoriesWindow
+from fk.desktop.connections_window import ConnectionsWindow
 from fk.desktop.desktop_strategies import DeleteAccountStrategy
 from fk.desktop.export_wizard import ExportWizard
 from fk.desktop.import_wizard import ImportWizard
@@ -695,6 +696,7 @@ class Application(QApplication, AbstractEventEmitter):
         actions.add('application.about', "About", '', None, Application.show_about)
         actions.add('application.toolbar', "Show toolbar", '', None, Application.toggle_toolbar, True, True)
         actions.add('application.stats', "Pomodoro health", 'F9', None, Application.show_stats)
+        actions.add('application.connections', "Connect...", 'F2', None, Application.show_connections)
         actions.add('application.workSummary', "Work summary", 'F3', None, Application.show_work_summary)
         actions.add('application.manageCategories',
                     "Manage Groups...",
@@ -752,6 +754,9 @@ class Application(QApplication, AbstractEventEmitter):
                     self.get_header_font(),
                     self.get_theme_variables(),
                     self._source_holder.get_source()).show()
+
+    def show_connections(self, event: str = None) -> None:
+        ConnectionsWindow(self.activeWindow(), self._settings).show()
 
     def show_work_summary(self, event: str = None) -> None:
         WorkSummaryWindow(self.activeWindow(), self._source_holder.get_source()).show()

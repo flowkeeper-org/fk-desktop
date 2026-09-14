@@ -85,6 +85,8 @@ class TrayIcon(QSystemTrayIcon, AbstractTimerDisplay):
             menu.addAction(self._actions['window.showMainWindow'])
         if 'application.settings' in self._actions:
             menu.addAction(self._actions['application.settings'])
+        if 'application.connections' in self._actions:
+            menu.addAction(self._actions['application.connections'])
         # if 'window.quickConfig' in self._actions:
         #     menu.addAction(self._actions['window.quickConfig'])
         if 'application.quit' in self._actions:
