@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 from abc import abstractmethod
 from typing import TypeVar, Generic
@@ -21,10 +22,12 @@ from PySide6.QtCore import Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPainter, QStandardItemModel, QDragMoveEvent, QDragEnterEvent, QDragLeaveEvent
 from PySide6.QtWidgets import QTableView, QWidget, QAbstractItemView
 
+from fk.core import events
 from fk.core.abstract_data_item import AbstractDataItem
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import S
+from fk.core.caching_mixin import CachingMixin
 from fk.core.event_source_holder import EventSourceHolder, BeforeSourceChanged
 from fk.core.events import SourceMessagesProcessed, AfterSettingsChanged
 from fk.qt.abstract_drop_model import AbstractDropModel
@@ -114,6 +117,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
         self._is_upstream_item_selected = False
         source.on(SourceMessagesProcessed, self._on_data_loaded)
 
+        # Update actions when we go online / offline
+        if (source is not None
+                and source.can_connect()
+                and not isinstance(source, CachingMixin)):
+            source.on(events.WentOffline, lambda event, after, last_received: self.update_actions(self.get_current()))
+            source.on(events.WentOnline, lambda event, ping: self.update_actions(self.get_current()))
+
     def _on_data_loaded(self, event: str, source: AbstractEventSource, carry: str = None) -> None:
         logger.debug(f'Data loaded - {self.objectName()}')
         self._is_data_loaded = True
@@ -122,6 +132,13 @@ class AbstractTableView(QTableView, AbstractEventEmitter, Generic[TUpstream, TDo
     @staticmethod
     def define_actions(actions: Actions):
         pass
+
+    def is_online(self) -> bool:
+        source = self._application.get_source_holder().get_source()
+        return (source is None
+                or not source.can_connect()
+                or source.is_online()
+                or isinstance(source, CachingMixin))
 
     def upstream_selected(self, upstream: TUpstream | None) -> None:
         logger.debug(f'{self.__class__.__name__}.upstream_selected({upstream})')

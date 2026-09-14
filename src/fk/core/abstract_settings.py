@@ -283,7 +283,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_HIDE_ON_AUTOSTART, 'bool', 'Hide on autostart', 'True', [], _always_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
                 (S.APPLICATION_SHORTCUTS, 'shortcuts', 'Shortcuts', '{}', [], _always_show),
-                (S.APPLICATION_ENABLE_TEAMS, 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 (S.APPLICATION_SHOW_TUTORIAL, 'bool', 'Show tutorial on start', 'True', [], _never_show),
                 (S.APPLICATION_COMPLETED_TUTORIAL_STEPS, 'str', 'Completed tutrial steps', '', [], _never_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
@@ -294,9 +293,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 (S.LOGGER_FILENAME, 'file', 'Log filename', str(Path(default_logs_dir) / 'flowkeeper.log'), [], _always_show),
                 ('', S.SEPARATOR, '', '', [], _always_show),
-                (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _always_show),
-                (S.APPLICATION_FEATURE_CONNECT, 'bool', 'Enable Connect feature', 'False', [], _always_show),
-                (S.APPLICATION_FEATURE_KEYRING, 'bool', 'Enable Keyring feature', 'False', [], _always_show),
+                (S.APPLICATION_FEATURE_CONNECT, 'bool', 'Enable Connect feature', 'True', [], _never_show),
+                (S.APPLICATION_FEATURE_KEYRING, 'bool', 'Enable Keyring feature', 'True', [], _never_show),
                 (S.APPLICATION_WORK_SUMMARY_SETTINGS, 'str', 'Work Summary UI settings', '{}', [], _never_show),
                 (S.APPLICATION_LAST_VERSION, 'str', 'Last Flowkeeper version', '0.0.1', [], _never_show),
                 (S.APPLICATION_SELECTED_CATEGORY, 'str', 'Selected workitem group category', '', [], _never_show),
@@ -334,7 +332,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.SOURCE_IGNORE_ERRORS, 'bool', 'Ignore errors', 'True', [], _always_show),
                 (S.SOURCE_IGNORE_INVALID_SEQUENCE, 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
                 ('', 'separator', '', '', [], _show_for_websocket_source),
-                ('Application.enable_teams', 'bool', 'Enable teams functionality', 'False', [], _show_for_websocket_source),
+                (S.APPLICATION_ENABLE_TEAMS, 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
                 (S.FILEEVENTSOURCE_FILENAME, 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
                 (S.FILEEVENTSOURCE_WATCH_CHANGES, 'bool', 'Watch changes', 'False', [], _show_for_file_source),
@@ -343,12 +341,12 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 (S.WEBSOCKETEVENTSOURCE_URL, 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
-                (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'oauth', [
+                (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'basic', [
                     "basic:Simple username and password",
                     "oauth:OAuth (more secure)",
                 ], _show_for_websocket_source),
                 # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
-                (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', 'user@local.host', [], _show_for_basic_auth),
+                (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', 'beta-v2.0.0@flowkeeper.org', [], _show_for_basic_auth),
                 ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
                 (S.WEBSOCKETEVENTSOURCE_CONSENT, 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
@@ -374,10 +372,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                               "data. This key is only stored on this computer. \n"
                                                               "If you forget or lose it, YOU WILL LOSE YOUR \n"
                                                               "DATA WITH NO POSSIBILITY TO RECOVER.", [], _show_when_encryption_is_enabled),
+                (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _always_show),
             ],
-            'Teamwork': [
-                ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
-            ],
+            # 'Teamwork': [
+            #     ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
+            # ],
             'Appearance': [
                 (S.APPLICATION_TIMER_UI_MODE, 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
                     "keep:Keep application window as-is",

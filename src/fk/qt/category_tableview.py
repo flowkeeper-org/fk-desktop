@@ -13,11 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import datetime
 import logging
 
 from PySide6.QtCore import Qt, QModelIndex
-from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
 from fk.core import events
@@ -27,7 +25,7 @@ from fk.core.category import Category
 from fk.core.category_strategies import CreateCategoryStrategy, DeleteCategoryStrategy
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.user import User
-from fk.qt.abstract_tableview import AbstractTableView, BeforeSelectionChanged, AfterSelectionChanged
+from fk.qt.abstract_tableview import AbstractTableView
 from fk.qt.actions import Actions
 from fk.qt.category_model import CategoryModel
 
@@ -66,7 +64,7 @@ class CategoryTableView(AbstractTableView[User, Category]):
             self._on_source_changed(None, source_holder.get_source())
             self._on_messages(None, source_holder.get_source())
             self._on_data_loaded(None, source_holder.get_source())
-            self._unlock_ui(None, 0)
+            self.update_actions(None)
         self.clicked.connect(self._on_info_clicked)
 
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -84,12 +82,6 @@ class CategoryTableView(AbstractTableView[User, Category]):
             m.setIcon(QMessageBox.Icon.Information)
             m.show()
 
-    def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
-        self.update_actions(self.get_current())
-
-    def _unlock_ui(self, event, ping: int) -> None:
-        self.update_actions(self.get_current())
-
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         self.selectionModel().clear()
@@ -100,10 +92,6 @@ class CategoryTableView(AbstractTableView[User, Category]):
 
         source.on("AfterCategory*",
                   lambda category, **kwargs: self._update_actions_if_needed(category))
-
-        heartbeat = self._application.get_heartbeat()
-        heartbeat.on(events.WentOffline, self._lock_ui)
-        heartbeat.on(events.WentOnline, self._unlock_ui)
 
     def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
@@ -141,17 +129,15 @@ class CategoryTableView(AbstractTableView[User, Category]):
 
     def update_actions(self, selected: Category) -> None:
         logger.debug(f'Category table - update_actions({selected})')
+
         # It can be None for example if we don't have any categories left, or if
         # we haven't loaded any yet. CategoryModel supports None.
         is_category_selected = selected is not None
-
-        heartbeat = self._application.get_heartbeat()
-        source = self._application.get_source_holder().get_source()
-        is_online = heartbeat.is_offline() or source is None or not source.can_connect()
+        is_online = self.is_online()
         parent_category: Category = self.model().get_parent_category()
+
         logger.debug(f' - Online: {is_online}')
         logger.debug(f' - Category selected: {is_category_selected}')
-        logger.debug(f' - Heartbeat: {heartbeat}')
 
         def get_depth():
             d = 0

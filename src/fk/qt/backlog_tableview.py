@@ -19,11 +19,13 @@ import logging
 from PySide6.QtCore import Qt, QModelIndex
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox, QInputDialog
 
+from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import S
 from fk.core.backlog import Backlog
 from fk.core.backlog_strategies import CreateBacklogStrategy, DeleteBacklogStrategy
+from fk.core.caching_mixin import CachingMixin
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterBacklogCreate, SourceMessagesProcessed
 from fk.core.pomodoro import POMODORO_TYPE_NORMAL
@@ -67,12 +69,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
         self.update_actions(None)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
-    def _lock_ui(self, event, after: int, last_received: datetime.datetime) -> None:
-        self.update_actions(self.get_current())
-
-    def _unlock_ui(self, event, ping: int) -> None:
-        self.update_actions(self.get_current())
-
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
         self.selectionModel().clear()
@@ -88,10 +84,6 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
                   lambda **kwargs: self._update_actions_if_needed(
                       kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
                   ))
-
-        # TODO: Check if it's a caching source. There's no need to lock UI for caching sources.
-        # source.on(events.WentOffline, self._lock_ui)
-        # source.on(events.WentOnline, self._unlock_ui)
 
     def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
@@ -120,17 +112,13 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     def update_actions(self, selected: Backlog) -> None:
         logger.debug(f'Backlog table - update_actions({selected})')
+
         # It can be None for example if we don't have any backlogs left, or if
         # we haven't loaded any yet. BacklogModel supports None.
         is_backlog_selected = selected is not None
-
         is_incomplete = is_backlog_selected and next(selected.get_incomplete_workitems(), None) is not None
+        is_online = self.is_online()
 
-        source = self._application.get_source_holder().get_source()
-        is_online = (source is None
-                     or not source.can_connect()
-                     or source.is_online()
-                     or type(source) is CachedWebsocketEventSource)
         logger.debug(f' - Online: {is_online}')
         logger.debug(f' - Backlog selected: {is_backlog_selected}')
         logger.debug(f' - Has incomplete workitems: {is_incomplete}')

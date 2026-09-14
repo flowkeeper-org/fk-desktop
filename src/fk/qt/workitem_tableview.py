@@ -13,16 +13,19 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
 import logging
 
 from PySide6.QtCore import Qt, QModelIndex, QPoint, QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget, QHeaderView, QMenu, QMessageBox
 
+from fk.core import events
 from fk.core.abstract_data_item import generate_unique_name, generate_uid
 from fk.core.abstract_event_source import AbstractEventSource, start_workitem
 from fk.core.abstract_settings import S
 from fk.core.backlog import Backlog
+from fk.core.caching_mixin import CachingMixin
 from fk.core.category import Category
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
 from fk.core.events import AfterWorkitemCreate, AfterSettingsChanged, AfterWorkitemCategoryChange
@@ -148,6 +151,9 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
 
     def _on_source_changed(self, event: str, source: AbstractEventSource) -> None:
         super()._on_source_changed(event, source)
+        self.selectionModel().clear()
+        self.upstream_selected(None)
+
         source.on(AfterWorkitemCreate, self._on_new_workitem)
         source.on(AfterWorkitemCategoryChange, self._on_new_workitem)   # This will edit it, too
         source.on("AfterWorkitem*",
@@ -157,8 +163,6 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                       kwargs['workitem'] if 'workitem' in kwargs else kwargs['pomodoro'].get_parent()
                   ))
         source.on('Timer(Work|Rest)(Start|Complete)', lambda **_: self.update_actions(self.get_current()))
-        self.selectionModel().clear()
-        self.upstream_selected(None)
 
     def _init_menu(self, actions: Actions) -> QMenu:
         menu: QMenu = QMenu()
@@ -206,22 +210,34 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
         self._actions[name].setVisible(is_enabled)
 
     def update_actions(self, selected: Workitem | None) -> None:
+        logger.debug(f'Workitem table - update_actions({selected})')
+
         # It can be None for example if we don't have any backlogs left, or if we haven't loaded any yet.
         is_workitem_selected = selected is not None
         is_workitem_editable = is_workitem_selected and not selected.is_sealed()
         is_workitem_sealed = is_workitem_selected and selected.is_sealed()
         is_tracker = is_workitem_selected and selected.is_tracker()
-        self._enable_action('workitems_table.deleteItem', is_workitem_selected)
-        self._enable_action('workitems_table.renameItem', is_workitem_editable)
-        self._enable_action('workitems_table.completeItem', is_workitem_editable)
-        self._enable_action('workitems_table.restoreItem', is_workitem_sealed)
-        self._enable_action('workitems_table.addPomodoro', is_workitem_editable and not is_tracker)
+        is_online = self.is_online()
+
+        logger.debug(f' - Online: {is_online}')
+        logger.debug(f' - Workitem selected: {is_workitem_selected}')
+        logger.debug(f' - Workitem editable: {is_workitem_editable}')
+        logger.debug(f' - Workitem sealed: {is_workitem_sealed}')
+        logger.debug(f' - Tracker: {is_tracker}')
+
+        self._enable_action('workitems_table.deleteItem', is_workitem_selected and is_online)
+        self._enable_action('workitems_table.renameItem', is_workitem_editable and is_online)
+        self._enable_action('workitems_table.completeItem', is_workitem_editable and is_online)
+        self._enable_action('workitems_table.restoreItem', is_workitem_sealed and is_online)
+        self._enable_action('workitems_table.addPomodoro', is_workitem_editable and not is_tracker and is_online)
         self._enable_action('workitems_table.removePomodoro', is_workitem_editable
-                                                                   and selected.is_startable()
-                                                                   and not is_tracker)
+                            and selected.is_startable()
+                            and not is_tracker
+                            and is_online)
         self._enable_action('workitems_table.startItem', is_workitem_editable
-                                                              and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
-                                                              and self._source.get_data().get_current_user().get_timer().is_idling())
+                            and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
+                            and self._source.get_data().get_current_user().get_timer().is_idling()
+                            and is_online)
 
     # Actions
 

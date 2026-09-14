@@ -236,6 +236,8 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
             self._replay_after_auth(auth)
         elif auth_type == 'oauth':
             self._authenticate_with_oauth_and_replay()
+        elif auth_type == 'flowkeeper.org':
+            self._authenticate_with_oauth_and_replay()
         else:
             raise Exception(f'Unsupported authentication type: {auth_type}')
 
