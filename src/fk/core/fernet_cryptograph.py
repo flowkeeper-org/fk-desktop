@@ -37,21 +37,20 @@ class FernetCryptograph(AbstractCryptograph):
 
     def _create_fernet(self, cached_key) -> Fernet:
         if cached_key is None or cached_key == '':
-            logger.debug(f'There is no cached key, will generate it')
+            logger.debug(f'Creating Fernet cryptograph using salt {self.salt}')
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
-                salt=b'e1a7a49b5bad75ec81fcb8cded4bbc0c',   # TODO: GitHub Security complains about hardcoded salt --
-                                                            #  see if we can fix it somehow
-                iterations=480000,
+                salt=bytes.fromhex(self.salt),
+                iterations=600000, # See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
             )
             key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
             self._settings.set({S.SOURCE_ENCRYPTION_KEY_CACHE: key.decode('utf-8')})
         else:
+            logger.debug(f'Creating Fernet cryptograph from a cached key')
             key = cached_key.encode('utf-8')
-        # TODO: This doesn't look safe -- check other occurrences to ensure we don't log credentials,
-        #  since we store them in the keychain
-        logger.debug(f'Fernet encryption key: {key}')
+
+        logger.debug(f'Fernet encryption key: {"*" * len(key)}')
         return Fernet(key)
 
     def _on_key_changed(self) -> None:

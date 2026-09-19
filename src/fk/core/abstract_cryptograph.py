@@ -24,11 +24,13 @@ from fk.core.events import AfterSettingsChanged
 class AbstractCryptograph(ABC):
     _settings: AbstractSettings
     key: str
+    salt: str
     enabled: bool
 
     def __init__(self, settings: AbstractSettings):
         self._settings = settings
         self.key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
+        self.salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
         self.enabled = self._settings.is_e2e_encryption_enabled()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
         if settings.get(S.SOURCE_ENCRYPTION_KEY) == '':
@@ -43,8 +45,17 @@ class AbstractCryptograph(ABC):
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         self.enabled = self._settings.is_e2e_encryption_enabled()
+        recompute = False
+
         if S.SOURCE_ENCRYPTION_KEY in new_values:
             self.key = new_values[S.SOURCE_ENCRYPTION_KEY]
+            recompute = True
+
+        if S.SOURCE_ENCRYPTION_SALT in new_values:
+            self.salt = new_values[S.SOURCE_ENCRYPTION_SALT]
+            recompute = True
+
+        if recompute:
             self._on_key_changed()
 
     @abstractmethod
@@ -58,3 +69,7 @@ class AbstractCryptograph(ABC):
     @abstractmethod
     def decrypt(self, s: str) -> str:
         pass
+
+    @staticmethod
+    def generate_salt() -> str:
+        return secrets.token_bytes(16).hex()

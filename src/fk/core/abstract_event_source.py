@@ -363,7 +363,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             ConfigureStrategy(1,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                                ADMIN_USER,
-                               ["2", generate_uid()],
+                               ["2", AbstractCryptograph.generate_salt()],
                                self._settings),
             CreateUserStrategy(2,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),

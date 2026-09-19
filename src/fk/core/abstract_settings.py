@@ -62,6 +62,7 @@ class S:
     POMODORO_SERIES_EXPLANATION: Final[str] = 'Pomodoro.series_explanation'
     SOURCE_FULLNAME: Final[str] = 'Source.fullname'
     SOURCE_TYPE: Final[str] = 'Source.type'
+    SOURCE_VERSION: Final[str] = 'Source.version'
     SOURCE_IGNORE_ERRORS: Final[str] = 'Source.ignore_errors'
     SOURCE_IGNORE_INVALID_SEQUENCE: Final[str] = 'Source.ignore_invalid_sequence'
     FILEEVENTSOURCE_FILENAME: Final[str] = 'FileEventSource.filename'
@@ -80,6 +81,7 @@ class S:
     SOURCE_ENCRYPTION_SEPARATOR: Final[str] = 'Source.encryption_separator'
     SOURCE_ENCRYPTION_ENABLED: Final[str] = 'Source.encryption_enabled'
     SOURCE_ENCRYPTION_KEY: Final[str] = 'Source.encryption_key!'
+    SOURCE_ENCRYPTION_SALT: Final[str] = 'Source.encryption_salt!'
     SOURCE_ENCRYPTION_KEY_CACHE: Final[str] = 'Source.encryption_key_cache!'
     APPLICATION_TIMER_UI_MODE: Final[str] = 'Application.timer_ui_mode'
     APPLICATION_ALWAYS_ON_TOP: Final[str] = 'Application.always_on_top'
@@ -369,6 +371,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.SOURCE_ENCRYPTION_ENABLED, 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
                 (S.SOURCE_ENCRYPTION_KEY, 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
+                (S.SOURCE_ENCRYPTION_SALT, 'secret', 'Key encryption salt', 'e1a7a49b5bad75ec81fcb8cded4bbc0c', [], _never_show),
+                (S.SOURCE_VERSION, 'str', 'Source format version', '2', [], _never_show),
                 (S.SOURCE_ENCRYPTION_KEY_CACHE, 'secret', 'Encryption key cache', '', [], _never_show),
                 ('Source.encryption_key_label', 'label', ' ', "WARNING: Learn this key, or store it safely! \n"
                                                               "Without it you won't be able to decrypt your \n"
