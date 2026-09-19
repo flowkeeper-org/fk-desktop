@@ -197,6 +197,10 @@ def _show_for_oauth(values: dict[str, str]) -> bool:
     return _show_for_websocket_source(values) and values[S.WEBSOCKETEVENTSOURCE_AUTH_TYPE] == 'oauth'
 
 
+def _show_for_custom_oauth(values: dict[str, str]) -> bool:
+    return _show_for_oauth(values) and _show_for_custom_websocket_source(values)
+
+
 def _show_if_play_alarm_enabled(values: dict[str, str]) -> bool:
     return values[S.APPLICATION_PLAY_ALARM_SOUND] == 'True'
 
@@ -331,7 +335,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ], _always_show),
                 (S.SOURCE_IGNORE_ERRORS, 'bool', 'Ignore errors', 'True', [], _always_show),
                 (S.SOURCE_IGNORE_INVALID_SEQUENCE, 'bool', 'Ignore invalid sequences', 'True', [], _always_show),
-                ('', 'separator', '', '', [], _show_for_websocket_source),
                 (S.APPLICATION_ENABLE_TEAMS, 'bool', 'Enable teams functionality', 'False', [], _never_show),
                 ('', 'separator', '', '', [], _hide_for_ephemeral_source),
                 (S.FILEEVENTSOURCE_FILENAME, 'file', 'Data file', str(Path(default_data_dir) / 'flowkeeper-data.txt'), ['*.txt'], _show_for_file_source),
@@ -344,7 +347,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'basic', [
                     "basic:Simple username and password",
                     "oauth:OAuth (more secure)",
-                ], _show_for_websocket_source),
+                ], _show_for_custom_websocket_source),
                 # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
                 (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', 'beta-v2.0.0@flowkeeper.org', [], _show_for_basic_auth),
                 ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
@@ -352,10 +355,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
                 (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'secret', 'Password', '', [], _show_for_basic_auth),
                 (S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, 'secret', 'OAuth Refresh Token', '', [], _never_show),
-                ('WebsocketEventSource.client_id', 'str', 'Client ID', '', [], _show_for_oauth),
-                ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', '', [], _show_for_oauth),
-                ('WebsocketEventSource.token_url', 'str', 'Token endpoint', '', [], _show_for_oauth),
-                ('WebsocketEventSource.scopes', 'str', 'Scopes', 'email profile openid', [], _show_for_oauth),
+                ('WebsocketEventSource.client_id', 'str', 'Client ID', '', [], _show_for_custom_oauth),
+                ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', '', [], _show_for_custom_oauth),
+                ('WebsocketEventSource.token_url', 'str', 'Token endpoint', '', [], _show_for_custom_oauth),
+                ('WebsocketEventSource.scopes', 'str', 'Scopes', 'email profile openid', [], _show_for_custom_oauth),
                 # UC-2: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
                 (S.WEBSOCKETEVENTSOURCE_AUTHENTICATE, 'button', 'Sign in', '', [], _show_if_signed_out),
                 (S.WEBSOCKETEVENTSOURCE_LOGOUT, 'button', 'Sign out', '', [], _show_if_signed_in),

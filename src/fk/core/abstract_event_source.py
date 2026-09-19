@@ -23,12 +23,14 @@ from typing import Iterable, Callable, TypeVar, Generic
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
+from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.category import Category
+from fk.core.other_strategies import ConfigureStrategy
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
 from fk.core.tag import Tag
@@ -356,12 +358,19 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def connect(self):
         raise Exception('Connect is not supported on this type of event source')
 
-    def get_init_strategy(self, emit: Callable[[str, dict[str, any], any], None]) -> AbstractStrategy[TRoot]:
-        return CreateUserStrategy(1,
-                                  datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
-                                  ADMIN_USER,
-                                  [self._settings.get_username(), self._settings.get_fullname()],
-                                  self._settings)
+    def get_init_strategies(self, emit: Callable[[str, dict[str, any], any], None]) -> Iterable[AbstractStrategy[TRoot]]:
+        return [
+            ConfigureStrategy(1,
+                               datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
+                               ADMIN_USER,
+                               ["2", generate_uid()],
+                               self._settings),
+            CreateUserStrategy(2,
+                               datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
+                               ADMIN_USER,
+                               [self._settings.get_username(), self._settings.get_fullname()],
+                               self._settings),
+        ]
 
     def get_last_sequence(self):
         return self._last_seq

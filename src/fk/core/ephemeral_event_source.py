@@ -52,9 +52,9 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
             self.mute()
 
         # UC-3: Ephemeral source always starts with a CreateUser strategy, based on the username from the settings
-        strategy = self.get_init_strategy(self._emit)
-        self._content.append(f'{strategy}')
-        self.execute_prepared_strategy(strategy)
+        for strategy in self.get_init_strategies(self._emit):
+            self._content.append(f'{strategy}')
+            self.execute_prepared_strategy(strategy)
 
         if mute_events:
             self.unmute()

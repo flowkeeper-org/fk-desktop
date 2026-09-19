@@ -105,6 +105,7 @@ TimerWorkStart = "TimerWorkStart"
 TimerWorkComplete = "TimerWorkComplete"
 TimerRestComplete = "TimerRestComplete"
 
+ConfigurationChange = "ConfigurationChange"
 
 class EmittedEvent:
     event: str
