@@ -42,6 +42,7 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:
+        # TODO: Storing it as settings is an undesirable side effect.
         self._settings.set({
             S.SOURCE_ENCRYPTION_SALT: self._salt,
             S.SOURCE_VERSION: self._version,
