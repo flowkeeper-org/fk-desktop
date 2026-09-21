@@ -47,3 +47,7 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
             S.SOURCE_ENCRYPTION_SALT: self._salt,
             S.SOURCE_VERSION: self._version,
         })
+
+
+    def encryptable(self) -> bool:
+        return False

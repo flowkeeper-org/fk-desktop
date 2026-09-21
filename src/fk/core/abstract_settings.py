@@ -147,7 +147,7 @@ def _always_show(_) -> bool:
 
 
 def _never_show(_) -> bool:
-    return False
+    return True
 
 
 def _show_for_simple_long_breaks(values: dict[str, str]) -> bool:
@@ -355,8 +355,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
                 (S.WEBSOCKETEVENTSOURCE_CONSENT, 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
-                (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'secret', 'Password', '', [], _show_for_basic_auth),
-                (S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, 'secret', 'OAuth Refresh Token', '', [], _never_show),
+                (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'key', 'Password', '', [], _show_for_basic_auth),
+                (S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, 'key', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.client_id', 'str', 'Client ID', '', [], _show_for_custom_oauth),
                 ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', '', [], _show_for_custom_oauth),
                 ('WebsocketEventSource.token_url', 'str', 'Token endpoint', '', [], _show_for_custom_oauth),
@@ -371,9 +371,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.SOURCE_ENCRYPTION_ENABLED, 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
                 # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
                 (S.SOURCE_ENCRYPTION_KEY, 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
-                (S.SOURCE_ENCRYPTION_SALT, 'secret', 'Key encryption salt', 'e1a7a49b5bad75ec81fcb8cded4bbc0c', [], _never_show),
+                (S.SOURCE_ENCRYPTION_SALT, 'key', 'Key encryption salt', 'e1a7a49b5bad75ec81fcb8cded4bbc0c', [], _never_show),
                 (S.SOURCE_VERSION, 'str', 'Source format version', '2', [], _never_show),
-                (S.SOURCE_ENCRYPTION_KEY_CACHE, 'secret', 'Encryption key cache', '', [], _never_show),
+                (S.SOURCE_ENCRYPTION_KEY_CACHE, 'key', 'Encryption key cache', '', [], _never_show),
                 ('Source.encryption_key_label', 'label', ' ', "WARNING: Learn this key, or store it safely! \n"
                                                               "Without it you won't be able to decrypt your \n"
                                                               "data. This key is only stored on this computer. \n"
@@ -381,9 +381,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                               "DATA WITH NO POSSIBILITY TO RECOVER.", [], _show_when_encryption_is_enabled),
                 (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _always_show),
             ],
-            # 'Teamwork': [
-            #     ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
-            # ],
+            'Teamwork': [
+                ('Team.share_state', 'bool', 'Share Pomodoro state', 'False', [], _show_for_websocket_source),
+            ],
             'Appearance': [
                 (S.APPLICATION_TIMER_UI_MODE, 'choice', 'When timer starts', 'keep' if _is_tiling_wm() else 'focus', [
                     "keep:Keep application window as-is",
@@ -587,17 +587,14 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
-        # TODO Fix it
-        # It seems to be sufficient just to clear all settings -- then defaults will be
-        # used when we do .get(name)
-        # The problem with this is it doesn't emit *SettingsChanged events, so the
-        # app doesn't know stuff changed
+        # It seems to be sufficient just to clear all settings -- then defaults will be used when we call get(). The
+        # problem is that it doesn't emit *SettingsChanged events, so the app doesn't know stuff changed. Resetting
+        # option by option is a safer bet.
         to_set = dict[str, str]()
         for lst in self._definitions.values():
             for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
                 to_set[option_id] = option_default
-        # self.clear()
-
+        self.clear()
         self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
@@ -653,3 +650,10 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     @abstractmethod
     def init_network_access(self):
         pass
+
+    def __contains__(self, option_id: str) -> bool:
+        for cat in self._definitions.values():
+            for opt in cat:
+                if opt[0] == option_id:
+                    return True
+        return False

@@ -116,12 +116,18 @@ class SettingsDialog(QDialog):
             if QMessageBox().warning(self,
                                      "Confirmation",
                                      f"Are you sure you want to reset settings to their default values, "
-                                     f"including data source connection?",
+                                     f"including data source connection(s)?",
                                      QMessageBox.StandardButton.Ok,
                                      QMessageBox.StandardButton.Cancel
                                      ) == QMessageBox.StandardButton.Ok:
+                self._data.mute()   # We are going to exit instead
                 self._data.reset_to_defaults()
-                self.close()
+                if QMessageBox().warning(self,
+                                         "Restart is required",
+                                         f"Settings are reset to default. Flowkeeper will now exit.",
+                                         QMessageBox.StandardButton.Ok,
+                                         ) == QMessageBox.StandardButton.Ok:
+                    QApplication.exit(0)
         elif role == QDialogButtonBox.ButtonRole.AcceptRole:
             if self._save_settings():
                 self.close()
@@ -221,14 +227,6 @@ class SettingsDialog(QDialog):
             self._widgets_get_value[option_id] = ed1.text
             self._widgets_set_value[option_id] = ed1.setText
             return [ed1]
-        elif option_type == 'secret':
-            ed2 = QLineEdit(parent)
-            ed2.setEchoMode(QLineEdit.EchoMode.Password)
-            ed2.setText(option_value)
-            ed2.textChanged.connect(lambda v: self._on_value_changed(option_id, v))
-            self._widgets_get_value[option_id] = ed2.text
-            self._widgets_set_value[option_id] = ed2.setText
-            return [ed2]
         elif option_type == 'file':
             widget = QWidget(parent)
             layout = QHBoxLayout(widget)
@@ -422,9 +420,12 @@ class SettingsDialog(QDialog):
             self._widgets_get_value[option_id] = ed10.text
             self._widgets_set_value[option_id] = ed10.setText
 
+            # Empty the cache (if any) at the same time
             option_id_cache = f'{option_id.replace("!", "")}_cache!' if option_id.endswith('!') else f'{option_id}_cache'
-            ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
-            self._widgets_get_value[option_id_cache] = lambda: ''   # Always empty the cache
+            if option_id_cache in self._data:
+                ed10.textChanged.connect(lambda v: self._on_value_changed(option_id_cache, v))
+                self._widgets_get_value[option_id_cache] = lambda: ''   # Always empty the cache
+
             layout.addWidget(ed10)
 
             key_view = QPushButton(parent)

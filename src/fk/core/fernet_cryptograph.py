@@ -27,13 +27,16 @@ logger = logging.getLogger(__name__)
 
 
 class FernetCryptograph(AbstractCryptograph):
-    _fernet: Fernet
+    _fernet: Fernet | None
 
     def __init__(self, settings: AbstractSettings):
+        self._fernet = None
         super().__init__(settings)
         # UC-2: The "final" e2e encryption key is cached in the keychain
         cached_key = self._settings.get(S.SOURCE_ENCRYPTION_KEY_CACHE)
-        self._fernet = self._create_fernet(cached_key)
+        if self._fernet is None:
+            # It might've been created as part of the super() constructor, which triggered our _on_key_changed()
+            self._fernet = self._create_fernet(cached_key)
 
     def _create_fernet(self, cached_key) -> Fernet:
         if cached_key is None or cached_key == '':
