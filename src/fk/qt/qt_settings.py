@@ -116,14 +116,17 @@ class QtSettings(AbstractSettings):
 
     def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()
+        changed_values: dict[str, str] = dict()
         for name in values.keys():
             old_value = self.get(name)
-            if old_value != values[name] or force_fire:
+            new_value = values[name]
+            if old_value != new_value or force_fire:
                 old_values[name] = old_value
-        if len(old_values) > 0:
+                changed_values[name] = new_value
+        if len(changed_values) > 0:
             params = {
                 'old_values': old_values,
-                'new_values': values,
+                'new_values': changed_values,
             }
             self._emit(events.BeforeSettingsChanged, params)
             # We have to set settings via invoke_in_main_thread(), otherwise it won't be queued
@@ -132,8 +135,7 @@ class QtSettings(AbstractSettings):
             # and only then a pair of BeforeSettingsChanged / AfterSettingsChanged emitted.
             def set_settings():
                 encrypted = dict()
-                for name in old_values.keys():  # This is not a typo, we've just filtered this list
-                    # to only contain settings which actually changed.
+                for name in changed_values.keys():
                     if name.endswith('!'):
                         # We want to set all secrets at once (see explanation below in get())
                         encrypted[name] = values[name]

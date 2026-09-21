@@ -332,7 +332,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
                     #"flowkeeper.pro:Flowkeeper.pro",
-                    "websocket:Self-hosted server (EXPERIMENTAL)",
+                    #"websocket:Self-hosted server (EXPERIMENTAL)",
                     "ephemeral:Ephemeral (in-memory, for testing purposes)",
                 ], _always_show),
                 (S.SOURCE_IGNORE_ERRORS, 'bool', 'Ignore errors', 'True', [], _always_show),
@@ -346,7 +346,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
                 (S.WEBSOCKETEVENTSOURCE_URL, 'str', 'Server URL', 'ws://localhost:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
-                (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'basic', [
+                (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'oauth', [
                     "basic:Simple username and password",
                     "oauth:OAuth (more secure)",
                 ], _show_for_custom_websocket_source),
@@ -587,14 +587,18 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         return self._get_property(option_id, 4)
 
     def reset_to_defaults(self) -> None:
+        # TODO Fix it
         # It seems to be sufficient just to clear all settings -- then defaults will be
         # used when we do .get(name)
-        # to_set = dict[str, str]()
-        # for lst in self._definitions.values():
-        #     for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
-        #         to_set[option_id] = option_default
-        self.clear()
-        # self.set(to_set)
+        # The problem with this is it doesn't emit *SettingsChanged events, so the
+        # app doesn't know stuff changed
+        to_set = dict[str, str]()
+        for lst in self._definitions.values():
+            for option_id, option_type, option_display, option_default, option_options, option_visible in lst:
+                to_set[option_id] = option_default
+        # self.clear()
+
+        self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
         return _show_when_encryption_is_enabled({
