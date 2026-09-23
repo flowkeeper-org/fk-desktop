@@ -686,6 +686,7 @@ class Application(QApplication, AbstractEventEmitter):
             S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',
             S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: '',
         })
+
         callback('Source.fullname', '')
         callback(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'oauth')
         callback(S.WEBSOCKETEVENTSOURCE_USERNAME, 'user@local.host')
@@ -693,6 +694,12 @@ class Application(QApplication, AbstractEventEmitter):
         callback(S.WEBSOCKETEVENTSOURCE_CONSENT, 'False')
         callback(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, '')
         callback(S.WEBSOCKETEVENTSOURCE_LOGOUT, f'Sign out')
+
+        # Delete local cache, too
+        source = self._source_holder.get_source()
+        if source is not None and isinstance(source, CachingMixin):
+            source.delete_cache()
+
         return False
 
     @staticmethod
