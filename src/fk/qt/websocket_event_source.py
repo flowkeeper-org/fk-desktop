@@ -207,8 +207,14 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         logger.debug(f'Sending auth strategy: {st}')
         self._ws.sendTextMessage(st)
 
+        # We don't know if it's the first time we connect, so we'll always send Configure strategy
+        #  to the server, and rely on the latter to prevent duplicates
+        config = self._serializer.serialize(self.get_init_strategies()[0].with_sequence(2))
+        logger.debug(f'Sending config strategy: {config}')
+        self._ws.sendTextMessage(config)
+
         logger.debug(f'Requesting replay starting from #{self._last_seq}')
-        replay = ReplayStrategy(2,
+        replay = ReplayStrategy(3,
                                 now,
                                 ADMIN_USER,
                                 [str(self._last_seq)],

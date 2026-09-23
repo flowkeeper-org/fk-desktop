@@ -132,10 +132,8 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
     def get_last_sequence(self):
         return self._wrapped.get_last_sequence()
 
-    def get_init_strategies(self,
-                          emit: Callable[[str, dict[str, any], any], None],
-                          ) -> Iterable[AbstractStrategy[AbstractEventSource[TRoot]]]:
-        return self._wrapped.get_init_strategies(emit)
+    def get_init_strategies(self) -> list[AbstractStrategy[AbstractEventSource[TRoot]]]:
+        return self._wrapped.get_init_strategies()
 
     def get_id(self) -> str:
         return self._wrapped.get_id()

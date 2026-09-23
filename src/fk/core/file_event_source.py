@@ -193,7 +193,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
         elif not path.isfile(filename):
             prepare_file_for_writing(filename)
             with open(filename, 'w', encoding='UTF-8') as f:
-                for s in self.get_init_strategies(self._emit):
+                for s in self.get_init_strategies():
                     f.write(f'{self._serializer.serialize(s)}\n')
                 logger.info(f'Created empty data file {filename}')
                 # UC-1: The file event source always creates a new file with CreateUser strategy, if it doesn't exist

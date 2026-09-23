@@ -358,7 +358,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def connect(self):
         raise Exception('Connect is not supported on this type of event source')
 
-    def get_init_strategies(self, emit: Callable[[str, dict[str, any], any], None]) -> Iterable[AbstractStrategy[TRoot]]:
+    def get_init_strategies(self) -> list[AbstractStrategy[TRoot]]:
         return [
             ConfigureStrategy(1,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),

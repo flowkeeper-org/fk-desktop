@@ -1,4 +1,7 @@
-### v2.0.0 (TBD)
+### v1.99.0 (TBD)
+
+This is a BETA version of v2.0.0.
+
 - Enabled websocket data sources, including flowkeeper.org.
 - Offline mode for websocket data sources.
 - Local caching to support offline mode and improve performance.

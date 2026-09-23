@@ -39,6 +39,12 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
         self._version = params[0]
         self._salt = params[1]
 
+    def get_version(self):
+        return self._version
+
+    def get_salt(self):
+        return self._salt
+
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:

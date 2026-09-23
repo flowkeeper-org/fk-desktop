@@ -79,7 +79,7 @@ class SimpleSerializer(AbstractSerializer[str, TRoot]):
         if m is not None:
             name = m.group(4)
             if name not in STRATEGIES:
-                raise Exception(f"Unknown strategy: {name}")
+                raise Exception(f"Unknown strategy: {name}, not found in {STRATEGIES.keys()}")
 
             seq = int(m.group(1))
             when = datetime.fromisoformat(m.group(2))
