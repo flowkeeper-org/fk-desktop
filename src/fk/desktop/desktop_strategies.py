@@ -154,7 +154,7 @@ class ErrorStrategy(AbstractStrategy):
         elif self._error_message == 'Deleted':
             self._settings.set({
                 'Source.fullname': '',
-                S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'google',
+                S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'oauth',
                 S.WEBSOCKETEVENTSOURCE_USERNAME: 'user@local.host',
                 'WebsocketEventSource.userpic': '',
                 S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',

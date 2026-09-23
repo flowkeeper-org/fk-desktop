@@ -40,6 +40,7 @@ from fk.core.abstract_cryptograph import AbstractCryptograph
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings, prepare_file_for_writing, S
+from fk.core.caching_mixin import CachingMixin
 from fk.core.ephemeral_event_source import EphemeralEventSource
 from fk.core.event_source_factory import EventSourceFactory
 from fk.core.event_source_holder import EventSourceHolder, AfterSourceChanged
@@ -616,16 +617,23 @@ class Application(QApplication, AbstractEventEmitter):
         (test, ok) = QInputDialog.getText(self.activeWindow(),
                                           'Confirmation',
                                           'Are you sure you want to delete your account? This will erase all\n'
-                                          'traces of your user on this server. This operation cannot be undone.\n'
-                                          'Export your data before doing it.\n\n'
+                                          'traces of your user on this server, and will empty the local data cache\n'
+                                          'on this computer, too. This operation cannot be undone.\n\n'
+                                          'YOU WILL LOSE YOUR DATA. Export it before deleting your account.\n\n'
                                           'Type "delete" below to confirm.',
                                           text='')
         if ok:
             if test.lower() == 'delete':
                 source.execute(DeleteAccountStrategy, [''])
+
                 # Avoid re-creating this account immediately
                 source.set_config_parameters({S.WEBSOCKETEVENTSOURCE_CONSENT: 'False'})
                 callback(S.WEBSOCKETEVENTSOURCE_CONSENT, 'False')
+
+                # Delete local cache, too
+                if isinstance(source, CachingMixin):
+                    source.delete_cache()
+
                 return True  # Close Settings dialog
             else:
                 QMessageBox().information(self.activeWindow(),

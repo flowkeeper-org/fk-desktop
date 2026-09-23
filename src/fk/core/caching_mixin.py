@@ -193,6 +193,19 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                 logger.debug(f'Saved.')
             self._last_seq_in_cache = self.get_last_sequence()
 
+    def delete_cache(self) -> None:
+        logger.debug(f'Deleting cache {self._cache_filename}')
+        try:
+            os.unlink(self._cache_filename)
+        except Exception as e:
+            logger.warning(f'Cannot delete the cache: {e}')
+
+        logger.debug(f'Deleting redo log {self._cache_filename}')
+        try:
+            os.unlink(self._redo_log_filename)
+        except Exception as e:
+            logger.warning(f'Cannot delete the redo log: {e}')
+
     def start(self, mute_events: bool = True, last_seq: int = 0) -> None:
         restored_seq = self.restore_cache()
         # We don't update the sequence here, because remote data source won't know anything about it

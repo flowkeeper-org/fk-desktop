@@ -107,14 +107,15 @@ class Authenticator:
             self._settings.get('WebsocketEventSource.token_url'),
             MGR,
             parent)
+        flow.setPkceMethod(QOAuth2AuthorizationCodeFlow.PkceMethod.S256)
         flow.setScope(self._settings.get('WebsocketEventSource.scopes'))
-        if refresh_token is not None:
+        if refresh_token is not None and refresh_token:
             flow.setRefreshToken(refresh_token)
         # We are adding the client secret on the server side
         # flow.setClientIdentifierSharedKey(client_secret)
         flow.authorizeWithBrowser.connect(open_url)
         flow.setReplyHandler(HANDLER)
-        flow.setModifyParametersFunction(self._fix_parameters)
+        # flow.setModifyParametersFunction(self._fix_parameters)
         flow.granted.connect(lambda: self._granted(flow, callback))
         flow.error.connect(lambda err: self._error(err, flow, callback))
         if refresh_token is not None:
@@ -158,7 +159,7 @@ class Authenticator:
                  flow: QOAuth2AuthorizationCodeFlow,
                  callback: Callable[[AuthenticationRecord], None]):
         logger.debug(f'Access granted. Extra tokens: {flow.extraTokens().keys()}')
-        id_token = flow.extraTokens().get('id_token', None)
+        id_token = flow.idToken()
         auth = AuthenticationRecord()
         auth.email, auth.picture, auth.fullname = self._extract_user_info(id_token)
         auth.type = 'oauth'
