@@ -19,11 +19,10 @@ import datetime
 import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from typing import Iterable, Callable, TypeVar, Generic
+from typing import Iterable, TypeVar, Generic
 
 from fk.core import events
 from fk.core.abstract_cryptograph import AbstractCryptograph
-from fk.core.abstract_data_item import generate_uid
 from fk.core.abstract_event_emitter import AbstractEventEmitter
 from fk.core.abstract_serializer import AbstractSerializer
 from fk.core.abstract_settings import AbstractSettings, S
@@ -363,7 +362,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             ConfigureStrategy(1,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                                ADMIN_USER,
-                               ["2", AbstractCryptograph.generate_salt()],
+                               ["2", AbstractCryptograph.generate_salt(), self._cryptograph.encrypt('check')],
                                self._settings),
             CreateUserStrategy(2,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
