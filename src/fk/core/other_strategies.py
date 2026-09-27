@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
 
@@ -52,30 +53,26 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
     def get_salt(self):
         return self._salt
 
+    def get_check(self):
+        return self._check
+
     def is_valid(self):
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=bytes.fromhex(self._salt),
-            iterations=600000,  # See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
-        )
-        secret = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
-        key = base64.urlsafe_b64encode(kdf.derive(secret.encode('utf-8')))
-        fernet = Fernet(key)
-        return fernet.encrypt(b'check') == self._check
+        key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
+        check = FernetCryptograph.encrypt_check(key, self._salt)
+        return check == self._check
 
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:
-        # TODO: Storing it as settings is an undesirable side effect.
-        self._settings.set({
-            S.SOURCE_ENCRYPTION_SALT: self._salt,
-            S.SOURCE_VERSION: self._version,
-        })
+        if self._carry != 'init':
+            # TODO: Storing it as settings is an undesirable side effect.
+            self._settings.set({
+                S.SOURCE_ENCRYPTION_SALT: self._salt,
+                S.SOURCE_VERSION: self._version,
+            })
 
-        if not self.is_valid():
-            raise Exception(f'Cannot decrypt data, invalid end-to-end encryption key')
-
+            if not self.is_valid():
+                raise Exception(f'Cannot decrypt data, invalid end-to-end encryption key')
 
     def encryptable(self) -> bool:
         return False

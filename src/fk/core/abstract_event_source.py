@@ -29,6 +29,8 @@ from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.category import Category
+from fk.core.events import AfterSettingsChanged
+from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.other_strategies import ConfigureStrategy
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
 from fk.core.pomodoro_strategies import AddPomodoroStrategy
@@ -54,6 +56,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     _ignore_invalid_sequences: bool
     _ignore_errors: bool
     _online: bool
+    _last_config: ConfigureStrategy
 
     def __init__(self,
                  serializer: AbstractSerializer,
@@ -137,6 +140,25 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._ignore_invalid_sequences = settings.get(S.SOURCE_IGNORE_INVALID_SEQUENCE) == 'True'
         self._ignore_errors = settings.get(S.SOURCE_IGNORE_ERRORS) == 'True'
         self._online = False
+        self._last_config = None
+        settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
+        new_check = None
+
+        if S.SOURCE_ENCRYPTION_KEY in new_values or S.SOURCE_ENCRYPTION_SALT in new_values:
+            key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
+            salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
+            if key and salt and isinstance(self._cryptograph, FernetCryptograph):
+                if self._last_config is None or salt != self._last_config.get_salt():
+                    new_check = FernetCryptograph.encrypt_check(key, salt)
+                else:
+                    check = FernetCryptograph.encrypt_check(key, salt)
+                    if check != self._last_config.get_check():
+                        new_check = check
+
+        if new_check is not None:
+            self.execute(ConfigureStrategy, ["2", salt, new_check], carry='init')
 
     # TODO: Create ConnectedEventSource and move it there
     def went_online(self, ping: int = 0) -> None:
@@ -255,6 +277,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 self._append([strategy])
                 # UC-2: Strategy sequence is incremented only after it is persisted
                 self._last_seq = strategy.get_sequence()   # Only save it if all went well
+
+            if isinstance(strategy, ConfigureStrategy):
+                self._last_config = strategy
         finally:
             # UC-2: AfterMessageProcessed is triggered after the strategy is persisted, no matter what
             self._emit(events.AfterMessageProcessed, params)
@@ -360,10 +385,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     def get_init_strategies(self) -> list[AbstractStrategy[TRoot]]:
         return [
             ConfigureStrategy(1,
-                               datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
-                               ADMIN_USER,
-                               ["2", AbstractCryptograph.generate_salt(), self._cryptograph.encrypt('check')],
-                               self._settings),
+                              datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
+                              ADMIN_USER,
+                              ["2", AbstractCryptograph.generate_salt(), self._cryptograph.encrypt('check')],
+                              self._settings,
+                              'init'),
             CreateUserStrategy(2,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                                ADMIN_USER,

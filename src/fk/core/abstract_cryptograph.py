@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import secrets
-import string
 from abc import ABC, abstractmethod
 
 from fk.core.abstract_settings import AbstractSettings, S
@@ -33,15 +32,6 @@ class AbstractCryptograph(ABC):
         self.salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
         self.enabled = self._settings.is_e2e_encryption_enabled()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
-        if settings.get(S.SOURCE_ENCRYPTION_KEY) == '':
-            self._generate_key()
-
-    def _generate_key(self) -> None:
-        # UC-2: Launching FK for the first time, a random e2e encryption key is generated
-        key = ''.join(
-            secrets.choice(string.ascii_letters + string.digits) for _ in range(20)
-        )
-        self._settings.set({S.SOURCE_ENCRYPTION_KEY: key})
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         self.enabled = self._settings.is_e2e_encryption_enabled()

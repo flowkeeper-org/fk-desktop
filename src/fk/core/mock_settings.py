@@ -41,7 +41,7 @@ class MockSettings(AbstractSettings):
             S.WEBSOCKETEVENTSOURCE_USERNAME: username,
             S.SOURCE_ENCRYPTION_ENABLED: 'False',
             S.SOURCE_ENCRYPTION_KEY: 'oBokryM75NwBXkKVa3bY',
-            S.SOURCE_ENCRYPTION_KEY_CACHE: '_pQAnZe3fKCdq-kLNuoYAq5uUxe-Rb1-8C_vYqN0oyw=',
+            S.SOURCE_ENCRYPTION_KEYS_CACHE: '{}',
         }
 
     def get(self, name: str) -> str:

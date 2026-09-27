@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import base64
+import json
 import logging
 
 from cryptography.fernet import Fernet
@@ -27,44 +28,78 @@ logger = logging.getLogger(__name__)
 
 
 class FernetCryptograph(AbstractCryptograph):
-    _fernet: Fernet | None
+    _fernets: dict[str, Fernet]
+    _current_fernet_id: str
 
     def __init__(self, settings: AbstractSettings):
-        self._fernet = None
         super().__init__(settings)
-        # UC-2: The "final" e2e encryption key is cached in the keychain
-        cached_key = self._settings.get(S.SOURCE_ENCRYPTION_KEY_CACHE)
-        if self._fernet is None:
-            # It might've been created as part of the super() constructor, which triggered our _on_key_changed()
-            self._fernet = self._create_fernet(cached_key)
+        self._current_fernet_id = ''
+        self._fernets = dict()
+        self._on_key_changed()
 
-    def _create_fernet(self, cached_key) -> Fernet:
-        if cached_key is None or cached_key == '':
-            logger.debug(f'Creating Fernet cryptograph using salt {self.salt}')
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=32,
-                salt=bytes.fromhex(self.salt),
-                iterations=600000, # See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
-            )
-            key = base64.urlsafe_b64encode(kdf.derive(self.key.encode('utf-8')))
-            self._settings.set({S.SOURCE_ENCRYPTION_KEY_CACHE: key.decode('utf-8')})
-        else:
+    @staticmethod
+    def _get_key(key: str, salt: str) -> bytes:
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=bytes.fromhex(salt),
+            iterations=600000,  # See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        )
+        return base64.urlsafe_b64encode(kdf.derive(key.encode('utf-8')))
+
+    def _get_fernet(self, fernet_id) -> Fernet:
+        # First, try to find it in the settings cache
+        keys_cache_str = self._settings.get(S.SOURCE_ENCRYPTION_KEYS_CACHE)
+        keys_cache = json.loads(keys_cache_str)
+
+        if fernet_id in keys_cache:
             logger.debug(f'Creating Fernet cryptograph from a cached key')
-            key = cached_key.encode('utf-8')
+            cached_key = keys_cache[fernet_id]
+            return Fernet(cached_key.encode('utf-8'))
+        else:
+            logger.debug(f'Creating Fernet cryptograph using salt {self.salt} and key {"*" * len(self.key)}')
+            key = FernetCryptograph._get_key(self.key, self.salt)
 
-        logger.debug(f'Fernet encryption key: {"*" * len(key)}')
-        return Fernet(key)
+            # Save it in the keyring
+            keys_cache[fernet_id] = key.decode('utf-8')
+            self._settings.set({S.SOURCE_ENCRYPTION_KEYS_CACHE: json.dumps(keys_cache)})
+
+            return Fernet(key)
 
     def _on_key_changed(self) -> None:
-        self._fernet = self._create_fernet('')
+        # We lazy-create Fernet objects when we need to encrypt or decrypt data. Here we only
+        # precalculate fernet_id, so that we don't need to compute key and salt hashes for
+        # each (en|de)crypt operation.
+        if self.key and self.salt:
+            self._current_fernet_id = hash(self.key) + hash(self.salt)
+            logger.debug(f'Updated current Fernet ID: {self._current_fernet_id}')
+
+    def _encrypt_or_decrypt(self, s: str, is_encrypt: bool) -> str:
+        if self.enabled:
+            if not self.key:
+                raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a key.')
+            if not self.salt:
+                raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a salt.')
+            if not self._current_fernet_id:
+                raise Exception(f'Trying to {"encrypt" if is_encrypt else "decrypt"} data before Fernet ID is calculated.')
+
+            fernet: Fernet = self._fernets.get(self._current_fernet_id)
+            if not fernet:
+                fernet = self._get_fernet(self._current_fernet_id)
+                self._fernets[self._current_fernet_id] = fernet
+            return (fernet.encrypt if is_encrypt else fernet.decrypt)(
+                s.encode('utf-8')
+            ).decode('utf-8')
+        else:
+            return s
 
     def encrypt(self, s: str) -> str:
-        return self._fernet.encrypt(
-            s.encode('utf-8')
-        ).decode('utf-8')
+        return self._encrypt_or_decrypt(s, True)
 
     def decrypt(self, s: str) -> str:
-        return self._fernet.decrypt(
-            s.encode('utf-8')
-        ).decode('utf-8')
+        return self._encrypt_or_decrypt(s, False)
+
+    @staticmethod
+    def encrypt_check(key: str, salt: str) -> str:
+        fernet = Fernet(FernetCryptograph._get_key(key, salt))
+        return fernet.encrypt(b'check').decode('utf-8')

@@ -82,7 +82,7 @@ class S:
     SOURCE_ENCRYPTION_ENABLED: Final[str] = 'Source.encryption_enabled'
     SOURCE_ENCRYPTION_KEY: Final[str] = 'Source.encryption_key!'
     SOURCE_ENCRYPTION_SALT: Final[str] = 'Source.encryption_salt!'
-    SOURCE_ENCRYPTION_KEY_CACHE: Final[str] = 'Source.encryption_key_cache!'
+    SOURCE_ENCRYPTION_KEYS_CACHE: Final[str] = 'Source.encryption_keys_cache!'
     APPLICATION_TIMER_UI_MODE: Final[str] = 'Application.timer_ui_mode'
     APPLICATION_ALWAYS_ON_TOP: Final[str] = 'Application.always_on_top'
     APPLICATION_FOCUS_FLAVOR: Final[str] = 'Application.focus_flavor'
@@ -373,7 +373,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.SOURCE_ENCRYPTION_KEY, 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
                 (S.SOURCE_ENCRYPTION_SALT, 'key', 'Key encryption salt', 'e1a7a49b5bad75ec81fcb8cded4bbc0c', [], _never_show),
                 (S.SOURCE_VERSION, 'str', 'Source format version', '2', [], _never_show),
-                (S.SOURCE_ENCRYPTION_KEY_CACHE, 'key', 'Encryption key cache', '', [], _never_show),
+                (S.SOURCE_ENCRYPTION_KEYS_CACHE, 'key', 'Encryption keys cache', '{}', [], _never_show),
                 ('Source.encryption_key_label', 'label', ' ', "WARNING: Learn this key, or store it safely! \n"
                                                               "Without it you won't be able to decrypt your \n"
                                                               "data. This key is only stored on this computer. \n"
