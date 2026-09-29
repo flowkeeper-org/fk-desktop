@@ -99,11 +99,28 @@ def to_focus_mode(**_) -> None:
     show_title = settings.get(S.APPLICATION_SHOW_WINDOW_TITLE) == 'True'
     focus_window.setWindowFlags(focus_window.windowFlags() & ~Qt.WindowType.FramelessWindowHint if show_title else
                                 focus_window.windowFlags() | Qt.WindowType.FramelessWindowHint)
-    focus_window.show()
 
+    focus_x = int(settings.get(S.APPLICATION_FOCUS_WINDOW_X))
+    focus_y = int(settings.get(S.APPLICATION_FOCUS_WINDOW_Y))
+
+    focus_geometry = QtCore.QRect(
+        QtCore.QPoint(focus_x, focus_y),
+        focus_window.size()
+    )
+
+    if any(screen.availableGeometry().contains(focus_geometry) for screen in QGuiApplication.screens()):
+        focus_window.move(focus_x, focus_y)
+
+    focus_window.show()
 
 def from_focus_mode(**_) -> None:
     logger.debug('Switching from focus mode')
+
+    settings.set({
+        S.APPLICATION_FOCUS_WINDOW_X: str(focus_window.x()),
+        S.APPLICATION_FOCUS_WINDOW_Y: str(focus_window.y()),
+    })
+
     focus_window.hide()
     focus_widget.setParent(root_layout_widget)
     root_layout.insertWidget(0, focus_widget)

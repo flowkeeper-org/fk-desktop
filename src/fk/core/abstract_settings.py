@@ -99,6 +99,8 @@ class S:
     APPLICATION_WINDOW_WIDTH: Final[str] = 'Application.window_width'
     APPLICATION_WINDOW_HEIGHT: Final[str] = 'Application.window_height'
     APPLICATION_WINDOW_SPLITTER_WIDTH: Final[str] = 'Application.window_splitter_width'
+    APPLICATION_FOCUS_WINDOW_X: Final[str] = 'Application.focus_window_x'
+    APPLICATION_FOCUS_WINDOW_Y: Final[str] = 'Application.focus_window_y'
     APPLICATION_BACKLOGS_VISIBLE: Final[str] = 'Application.backlogs_visible'
     APPLICATION_USERS_VISIBLE: Final[str] = 'Application.users_visible'
     APPLICATION_LAST_SELECTED_BACKLOG: Final[str] = 'Application.last_selected_backlog'
@@ -413,6 +415,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.APPLICATION_WINDOW_WIDTH, 'int', 'Main window width', '700', [5, 5000], _never_show),
                 (S.APPLICATION_WINDOW_HEIGHT, 'int', 'Main window height', '500', [5, 5000], _never_show),
                 (S.APPLICATION_WINDOW_SPLITTER_WIDTH, 'int', 'Splitter width', '200', [0, 5000], _never_show),
+                (S.APPLICATION_FOCUS_WINDOW_X, 'int', 'Focus window X position', '0', [-10000, 10000], _never_show),
+                (S.APPLICATION_FOCUS_WINDOW_Y, 'int', 'Focus window Y position', '0', [-10000, 10000], _never_show),
                 (S.APPLICATION_BACKLOGS_VISIBLE, 'bool', 'Show backlogs', 'True', [], _never_show),
                 (S.APPLICATION_USERS_VISIBLE, 'bool', 'Show users', 'False', [], _never_show),
                 (S.APPLICATION_LAST_SELECTED_BACKLOG, 'str', 'Last selected backlog', '', [], _never_show),
