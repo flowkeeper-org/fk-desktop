@@ -344,7 +344,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.FILEEVENTSOURCE_REPAIR, 'button', 'Repair', '', [], _show_for_file_source),
                 (S.FILEEVENTSOURCE_COMPRESS, 'button', 'Compress', '', [], _show_for_file_source),
                 # UC-2: Setting "Server URL" is only shown for the "Self-hosted server" data source
-                (S.WEBSOCKETEVENTSOURCE_URL, 'str', 'Server URL', 'wss://beta.flowkeeper.org/ws', [], _show_for_custom_websocket_source),
+                (S.WEBSOCKETEVENTSOURCE_URL, 'str', 'Server URL', 'ws://prototype.flowkeeper.org:8888/ws', [], _show_for_custom_websocket_source),
                 # UC-2: Setting "Authentication" is only shown for the "Self-hosted server" or "Flowkeeper.org" data sources
                 (S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'choice', 'Authentication', 'oauth', [
                     "basic:Simple username and password",
@@ -358,8 +358,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'key', 'Password', '', [], _show_for_basic_auth),
                 (S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, 'key', 'OAuth Refresh Token', '', [], _never_show),
                 ('WebsocketEventSource.client_id', 'str', 'Client ID', 'fk-desktop', [], _show_for_custom_oauth),
-                ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', 'https://beta.flowkeeper.org/realms/flowkeeper-org/protocol/openid-connect/auth', [], _show_for_custom_oauth),
-                ('WebsocketEventSource.token_url', 'str', 'Token endpoint', 'https://beta.flowkeeper.org/realms/flowkeeper-org/protocol/openid-connect/token', [], _show_for_custom_oauth),
+                ('WebsocketEventSource.auth_url', 'str', 'Auth endpoint', 'http://prototype.flowkeeper.org:8080/realms/flowkeeper-org/protocol/openid-connect/auth', [], _show_for_custom_oauth),
+                ('WebsocketEventSource.token_url', 'str', 'Token endpoint', 'http://prototype.flowkeeper.org:8080/realms/flowkeeper-org/protocol/openid-connect/token', [], _show_for_custom_oauth),
                 ('WebsocketEventSource.scopes', 'str', 'Scopes', 'email profile openid', [], _show_for_custom_oauth),
                 # UC-2: Button "Sign in" is only shown if the user is signed out, otherwise "Sign out" is shown
                 (S.WEBSOCKETEVENTSOURCE_AUTHENTICATE, 'button', 'Sign in', '', [], _show_if_signed_out),

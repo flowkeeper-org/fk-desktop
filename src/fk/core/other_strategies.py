@@ -21,6 +21,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+from fk.core import events
 from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.fernet_cryptograph import FernetCryptograph
@@ -70,6 +71,10 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
                 S.SOURCE_ENCRYPTION_SALT: self._salt,
                 S.SOURCE_VERSION: self._version,
             })
+
+            emit(events.ConfigurationChanged, {
+                'salt': self._salt
+            }, self._carry)
 
             if not self.is_valid():
                 raise Exception(f'Cannot decrypt data, invalid end-to-end encryption key')

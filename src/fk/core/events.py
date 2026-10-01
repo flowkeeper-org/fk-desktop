@@ -105,6 +105,8 @@ TimerWorkStart = "TimerWorkStart"
 TimerWorkComplete = "TimerWorkComplete"
 TimerRestComplete = "TimerRestComplete"
 
+ConfigurationChanged = "ConfigurationChanged"
+
 class EmittedEvent:
     event: str
     emitter: object     # TODO: See if we can store a weak reference instead

@@ -13,11 +13,15 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import secrets
 from abc import ABC, abstractmethod
 
 from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.events import AfterSettingsChanged
+
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractCryptograph(ABC):
@@ -32,6 +36,11 @@ class AbstractCryptograph(ABC):
         self.salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
         self.enabled = self._settings.is_e2e_encryption_enabled()
         settings.on(AfterSettingsChanged, self._on_setting_changed)
+
+        logger.debug('Initialized cryptograph:')
+        logger.debug(f' - enabled: {self.enabled}')
+        logger.debug(f' - key: {"*" * len(self.key)}')
+        logger.debug(f' - salt: {self.salt}')
 
     def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
         self.enabled = self._settings.is_e2e_encryption_enabled()
