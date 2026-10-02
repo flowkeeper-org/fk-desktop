@@ -103,7 +103,6 @@ class TestSettings(TestCase):
         self.assertFalse(self.settings.is_team_supported(), False)
         self.settings.set({
             S.SOURCE_TYPE: 'flowkeeper.org',
-            S.WEBSOCKETEVENTSOURCE_USERNAME: 'alice@example.org',
             S.APPLICATION_ENABLE_TEAMS: 'True',
         })
         self.assertTrue(self.settings.is_team_supported())
@@ -132,7 +131,6 @@ class TestSettings(TestCase):
         visible = self.settings.get_displayed_settings()
         self.assertNotIn(S.FILEEVENTSOURCE_FILENAME, visible)
         self.assertIn(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, visible)
-        self.assertNotIn(S.WEBSOCKETEVENTSOURCE_USERNAME, visible)
         self.assertNotIn(S.WEBSOCKETEVENTSOURCE_URL, visible)
         # For custom WS event source
         self.settings.set({
@@ -140,5 +138,4 @@ class TestSettings(TestCase):
             S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'basic',
         })
         visible = self.settings.get_displayed_settings()
-        self.assertIn(S.WEBSOCKETEVENTSOURCE_USERNAME, visible)
         self.assertIn(S.WEBSOCKETEVENTSOURCE_URL, visible)

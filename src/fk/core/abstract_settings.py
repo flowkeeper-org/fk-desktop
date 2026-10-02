@@ -70,6 +70,7 @@ class S:
     FILEEVENTSOURCE_COMPRESS: Final[str] = 'FileEventSource.compress'
     WEBSOCKETEVENTSOURCE_URL: Final[str] = 'WebsocketEventSource.url'
     WEBSOCKETEVENTSOURCE_AUTH_TYPE: Final[str] = 'WebsocketEventSource.auth_type'
+    WEBSOCKETEVENTSOURCE_USERNAME: Final[str] = 'WebsocketEventSource.username'
     WEBSOCKETEVENTSOURCE_CONSENT: Final[str] = 'WebsocketEventSource.consent'
     WEBSOCKETEVENTSOURCE_PASSWORD: Final[str] = 'WebsocketEventSource.password!'
     WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: Final[str] = 'WebsocketEventSource.refresh_token!'
@@ -336,7 +337,9 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "basic:Simple username and password",
                     "oauth:OAuth (more secure)",
                 ], _show_for_custom_websocket_source),
-                ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
+                # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
+                # TODO: Only enable it for self-hosted websocket sources
+                (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', '', [], _show_for_basic_auth),
                 (S.WEBSOCKETEVENTSOURCE_CONSENT, 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
                 (S.WEBSOCKETEVENTSOURCE_PASSWORD, 'key', 'Password', '', [], _show_for_basic_auth),
