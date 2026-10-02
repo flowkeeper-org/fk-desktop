@@ -103,7 +103,7 @@ class SettingsDialog(QDialog):
         for i, d in enumerate(lst):
             if d[0] == S.WEBSOCKETEVENTSOURCE_LOGOUT:
                 t = list(d)
-                t[2] = f'Sign out <{self._data.get_username()}>'
+                t[2] = f'Sign out'
                 lst[i] = tuple(t)
                 return
 

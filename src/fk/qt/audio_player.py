@@ -113,7 +113,7 @@ class AudioPlayer(QObject):
 
     def _play_notification_audio(self, event: str, timer: PomodoroTimer) -> None:
         # We'll be here if the rest has almost started while Flowkeeper was open
-        pomodoro = self._source.get_data().get_current_user().get_timer().get_running_pomodoro()
+        pomodoro = self._source.get_current_user().get_timer().get_running_pomodoro()
         if (self._audio_player is not None
                 and pomodoro is not None
                 and pomodoro.get_type() == POMODORO_TYPE_NORMAL
@@ -135,7 +135,7 @@ class AudioPlayer(QObject):
                         status == QMediaPlayer.MediaStatus.EndOfMedia):
                     self._audio_player.mediaStatusChanged.disconnect(connection)
                     # Double-check if we are still working. Might have voided the pomodoro during the notification...
-                    if self._source.get_data().get_current_user().get_timer().is_working():
+                    if self._source.get_current_user().get_timer().is_working():
                         self._start_ticking()
             connection = self._audio_player.mediaStatusChanged.connect(continue_ticking)
 
@@ -226,7 +226,7 @@ class AudioPlayer(QObject):
 
     def _start_what_is_needed(self) -> None:
         if self._source is not None:
-            timer = self._source.get_data().get_current_user().get_timer()
+            timer = self._source.get_current_user().get_timer()
             pomodoro = timer.get_running_pomodoro()
             if timer.is_working():
                 self._start_ticking()

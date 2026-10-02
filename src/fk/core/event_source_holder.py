@@ -67,7 +67,7 @@ class EventSourceHolder(AbstractEventEmitter, Generic[TRoot]):
         self._source = producer(
             self._settings,
             self._cryptograph,
-            Tenant(self._settings))
+            Tenant())
         logger.debug(f'EventSourceHolder: Source object created. You need to start it yourself!')
 
         self._emit(AfterSourceChanged, {

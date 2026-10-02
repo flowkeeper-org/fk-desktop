@@ -82,6 +82,10 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
     _received_error: bool
     _application: QApplication
 
+    _email: str | None
+    _full_name: str | None
+    _userpic: str | None
+
     def __init__(self,
                  settings: AbstractSettings,
                  cryptograph: AbstractCryptograph,
@@ -95,6 +99,10 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         self._mute_requested = True
         self._connection_attempt = 0
         self._received_error = False
+        self._email = None
+        self._full_name = None
+        self._userpic = None
+
         self._reconnect_timer = QtTimer("WS Reconnect")
         self._ws = QtWebSockets.QWebSocket()
 
@@ -195,6 +203,13 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
         Authenticator(self.get_settings()).get_id_token(self._application, self._replay_after_auth, refresh_token)
 
     def _replay_after_auth(self, auth: AuthenticationRecord) -> None:
+        if auth.picture:
+            self._userpic = auth.picture
+        if auth.fullname:
+            self._full_name = auth.fullname
+        if auth.email:
+            self._email = auth.email
+
         logger.debug(f'Authenticated against identity provider. Authenticating against Flowkeeper server now.')
         now = datetime.datetime.now(datetime.timezone.utc)
         consent_given = 'true' if self.get_config_parameter(S.WEBSOCKETEVENTSOURCE_CONSENT) == 'True' else 'false'
@@ -295,9 +310,18 @@ class WebsocketEventSource(AbstractEventSource[TRoot]):
 
     def get_id(self) -> str:
         url = self.get_settings().get_url()
-        username = self.get_settings().get_username()
+        username = self.get_username()
         h = md5((url + username).encode('utf-8')).hexdigest()
         return f'websocket-{h}'
 
     def repair(self) -> tuple[list[str], str | None]:
         return list(), None
+
+    def get_fullname(self) -> str:
+        return self._full_name
+
+    def get_username(self) -> str:
+        return self._email
+
+    def get_picture(self) -> str:
+        return self._userpic

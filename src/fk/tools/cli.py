@@ -44,7 +44,7 @@ def dump(obj: object) -> None:
     print(json.dumps(obj, indent=2, sort_keys=True, default=str))
 
 def list_backlogs(source: AbstractEventSource[Tenant], uid: str | None, name_pattern: str | None) -> None:
-    user: User = source.get_data().get_current_user()
+    user: User = source.get_current_user()
     if uid is not None:
         dump(user[uid].to_dict())
     else:
@@ -62,7 +62,7 @@ def execute(callback: Callable[[AbstractEventSource[Tenant]], None]) -> None:
     settings = MockSettings(filename=filename)
     source = FileEventSource[Tenant](settings,
                                      NoCryptograph(settings),
-                                     Tenant(settings))
+                                     Tenant())
     source.start()  # FileEventSource uses synchronous IO
     callback(source)
 

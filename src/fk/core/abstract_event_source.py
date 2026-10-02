@@ -29,7 +29,7 @@ from fk.core.abstract_settings import AbstractSettings, S
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.backlog import Backlog
 from fk.core.category import Category
-from fk.core.events import AfterSettingsChanged
+from fk.core.events import AfterSettingsChanged, ConfigurationChanged
 from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.other_strategies import ConfigureStrategy
 from fk.core.pomodoro import Pomodoro, POMODORO_TYPE_TRACKER
@@ -56,7 +56,9 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     _ignore_invalid_sequences: bool
     _ignore_errors: bool
     _online: bool
-    _last_config: ConfigureStrategy
+
+    _encryption_salt: str | None
+    _encryption_version: str | None
 
     def __init__(self,
                  serializer: AbstractSerializer,
@@ -130,6 +132,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             events.AfterCategoryReorder,
             events.WentOnline,
             events.WentOffline,
+            events.ConfigurationChanged,
         ], settings.invoke_callback)
         # TODO - Generate client uid for each connection. This will help us do master/slave for strategies.
         self._serializer = serializer
@@ -140,25 +143,22 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         self._ignore_invalid_sequences = settings.get(S.SOURCE_IGNORE_INVALID_SEQUENCE) == 'True'
         self._ignore_errors = settings.get(S.SOURCE_IGNORE_ERRORS) == 'True'
         self._online = False
-        self._last_config = None
-        settings.on(AfterSettingsChanged, self._on_setting_changed)
+        self._encryption_salt = None
+        self._encryption_version = None
+        self.on(ConfigurationChanged, self._on_configuration_changed)
 
-    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        new_check = None
+    def _on_configuration_changed(self, event: str, version: str, salt: str, check: str):
+        logger.debug(f'Configuration changed: {version} / {salt} / {check}')
+        self._encryption_salt = salt
+        self._encryption_version = version
 
-        if S.SOURCE_ENCRYPTION_KEY in new_values or S.SOURCE_ENCRYPTION_SALT in new_values:
-            key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
-            salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
-            if key and salt and isinstance(self._cryptograph, FernetCryptograph):
-                if self._last_config is None or salt != self._last_config.get_salt():
-                    new_check = FernetCryptograph.encrypt_check(key, salt)
-                else:
-                    check = FernetCryptograph.encrypt_check(key, salt)
-                    if check != self._last_config.get_check():
-                        new_check = check
-
-        if new_check is not None:
-            self.execute(ConfigureStrategy, ["2", salt, new_check], carry='init')
+        # TODO
+        #     def is_valid(self):
+        #         key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
+        #         check = FernetCryptograph.encrypt_check(key, self._salt)
+        #         return check == self._check
+        # if not self.is_valid():
+        #     raise Exception(f'Cannot decrypt data, invalid end-to-end encryption key')
 
     # TODO: Create ConnectedEventSource and move it there
     def went_online(self, ping: int = 0) -> None:
@@ -277,9 +277,6 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                 self._append([strategy])
                 # UC-2: Strategy sequence is incremented only after it is persisted
                 self._last_seq = strategy.get_sequence()   # Only save it if all went well
-
-            if isinstance(strategy, ConfigureStrategy):
-                self._last_config = strategy
         finally:
             # UC-2: AfterMessageProcessed is triggered after the strategy is persisted, no matter what
             self._emit(events.AfterMessageProcessed, params)
@@ -298,7 +295,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
         s = strategy_class(
             self._last_seq + 1,
             when,
-            self._settings.get_username(),  # UC-2: Strategy owner is taken from the source settings
+            self.get_username(),  # UC-2: Strategy owner is taken from the source settings
             params,
             self._settings,
             carry)
@@ -309,7 +306,7 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
             yield user
 
     def find_category(self, uid: str) -> Category | None:
-        return self.get_data().get_current_user().find_category_by_id(uid)
+        return self.get_current_user().find_category_by_id(uid)
 
     def backlogs(self) -> Iterable[Backlog]:
         for user in self.get_data().values():
@@ -388,12 +385,11 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
                               datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                               ADMIN_USER,
                               ["2", AbstractCryptograph.generate_salt(), self._cryptograph.encrypt('check')],
-                              self._settings,
-                              'init'),
+                              self._settings),
             CreateUserStrategy(2,
                                datetime.datetime.fromisocalendar(2000, 1, 1).astimezone(datetime.timezone.utc),
                                ADMIN_USER,
-                               [self._settings.get_username(), self._settings.get_fullname()],
+                               [self.get_username(), self.get_fullname()],
                                self._settings),
         ]
 
@@ -403,6 +399,22 @@ class AbstractEventSource(AbstractEventEmitter, ABC, Generic[TRoot]):
     @abstractmethod
     def get_id(self) -> str:
         pass
+
+    @abstractmethod
+    def get_fullname(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_username(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_picture(self) -> str:
+        pass
+
+    def get_current_user(self) -> User | None:
+        username = self.get_username()
+        self.get_data().get_user(username) if username is not None else None
 
 
 # ********************* Misc. Utils *********************
@@ -426,7 +438,7 @@ def start_workitem(workitem: Workitem, source: AbstractEventSource) -> None:
         rest_duration = None
 
         if settings.get(S.POMODORO_LONG_BREAK_ALGORITHM) == 'simple':
-            timer: TimerData = source.get_data().get_current_user().get_timer()
+            timer: TimerData = source.get_current_user().get_timer()
             pomodoro_in_series = timer.get_pomodoro_in_series()
             if pomodoro_in_series >= int(settings.get(S.POMODORO_LONG_BREAK_EACH)) - 1:
                 logger.debug('The user starts a workitem. A long break is suggested after it is completed.')

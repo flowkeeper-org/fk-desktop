@@ -327,8 +327,8 @@ if __name__ == "__main__":
         def _on_source_changed(event: str, source: AbstractEventSource):
             actions['window.focusMode'].setChecked(False)
             source.on(SourceMessagesProcessed, lambda **_: workitems_widget.update_category_name_in_selector())
-            source.on(SourceMessagesProcessed, lambda **_: update_mode(source.get_data().get_current_user().get_timer().is_ticking()), last=True)
-            source.on(AfterWorkitemComplete, lambda workitem, **_: _on_workitem_complete(workitem, source.get_data().get_current_user().get_timer()), last=True)
+            source.on(SourceMessagesProcessed, lambda **_: update_mode(source.get_current_user().get_timer().is_ticking()), last=True)
+            source.on(AfterWorkitemComplete, lambda workitem, **_: _on_workitem_complete(workitem, source.get_current_user().get_timer()), last=True)
             source.on(TimerRestComplete,
                       lambda **_: update_mode(False),
                       last=True)  # Without this Main window will show before the full-screen rest one is closed, and this will cause it to go full-screen on macOS

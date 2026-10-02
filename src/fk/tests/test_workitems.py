@@ -44,7 +44,7 @@ class TestWorkitems(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
-        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 
@@ -382,7 +382,7 @@ class TestWorkitems(TestCase):
         self.source.execute(CreateBacklogStrategy, ['b2', 'Backlog 2'])
         self.source.execute(CreateWorkitemStrategy, ['w11', 'b1', 'First workitem'])
         self.source.execute(MoveWorkitemStrategy, ['w11', 'b2'])
-        user: User = self.data.get_current_user()
+        user: User = self.source.get_current_user()
         self.assertEqual(len(user['b1']), 0)
         self.assertEqual(len(user['b2']), 1)
         self.assertIn('w11', user['b2'])

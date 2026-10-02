@@ -174,7 +174,7 @@ class CategoryTableView(AbstractTableView[User, Category]):
             self.open_parent_category(False)
 
     def _on_messages(self, event: str, source: AbstractEventSource) -> None:
-        user = source.get_data().get_current_user()
+        user = source.get_current_user()
         self.upstream_selected(user.find_category_by_id(self._root_category_id))
 
     @staticmethod

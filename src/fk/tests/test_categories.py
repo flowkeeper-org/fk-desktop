@@ -36,7 +36,7 @@ class TestCategories(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = NoCryptograph(self.settings)
-        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 
@@ -44,7 +44,7 @@ class TestCategories(TestCase):
         self.source.dump()
 
     def test_create_category(self):
-        user: User = self.data.get_current_user()
+        user: User = self.source.get_current_user()
         self.assertIsNotNone(user.get_root_category())
         self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertIsNotNone(user.find_category_by_id('c1'))
@@ -53,7 +53,7 @@ class TestCategories(TestCase):
         self.assertIsNotNone(user.find_category_by_id('c11', user.find_category_by_id('c1')))
 
     def test_delete_category(self):
-        user: User = self.data.get_current_user()
+        user: User = self.source.get_current_user()
         self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertIsNotNone(user.find_category_by_id('c1'))
         self.source.execute(DeleteCategoryStrategy, ['c1'])
@@ -66,7 +66,7 @@ class TestCategories(TestCase):
         self.assertIsNone(user.find_category_by_id('c11'))
 
     def test_rename_category(self):
-        user: User = self.data.get_current_user()
+        user: User = self.source.get_current_user()
         self.source.execute(CreateCategoryStrategy, ['c1', '#root', 'Category 1'])
         self.assertEqual(user.find_category_by_id('c1').get_name(), 'Category 1')
         self.source.execute(RenameCategoryStrategy, ['c1', 'Category 2'])

@@ -27,35 +27,16 @@ logger = logging.getLogger(__name__)
 class AbstractCryptograph(ABC):
     _settings: AbstractSettings
     key: str
-    salt: str
-    enabled: bool
+    salt: str | None
 
     def __init__(self, settings: AbstractSettings):
         self._settings = settings
         self.key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
-        self.salt = self._settings.get(S.SOURCE_ENCRYPTION_SALT)
-        self.enabled = self._settings.is_e2e_encryption_enabled()
-        settings.on(AfterSettingsChanged, self._on_setting_changed)
+        self.salt = None
 
         logger.debug('Initialized cryptograph:')
-        logger.debug(f' - enabled: {self.enabled}')
         logger.debug(f' - key: {"*" * len(self.key)}')
         logger.debug(f' - salt: {self.salt}')
-
-    def _on_setting_changed(self, event: str, old_values: dict[str, str], new_values: dict[str, str]):
-        self.enabled = self._settings.is_e2e_encryption_enabled()
-        recompute = False
-
-        if S.SOURCE_ENCRYPTION_KEY in new_values:
-            self.key = new_values[S.SOURCE_ENCRYPTION_KEY]
-            recompute = True
-
-        if S.SOURCE_ENCRYPTION_SALT in new_values:
-            self.salt = new_values[S.SOURCE_ENCRYPTION_SALT]
-            recompute = True
-
-        if recompute:
-            self._on_key_changed()
 
     @abstractmethod
     def _on_key_changed(self) -> None:

@@ -149,3 +149,12 @@ class AbstractEventSourceWrapper(AbstractEventSource[TRoot], ABC):
 
     def is_online(self) -> bool:
         return self._wrapped.is_online()
+
+    def get_fullname(self) -> str:
+        return self._wrapped.get_fullname()
+
+    def get_username(self) -> str:
+        return self._wrapped.get_username()
+
+    def get_picture(self) -> str:
+        return self._wrapped.get_picture()

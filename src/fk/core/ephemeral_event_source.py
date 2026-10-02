@@ -25,6 +25,7 @@ from fk.core.abstract_event_source import AbstractEventSource
 from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
 from fk.core.simple_serializer import SimpleSerializer
+from fk.core.userpic import DEFAULT_USERPIC
 
 logger = logging.getLogger(__name__)
 TRoot = TypeVar('TRoot')
@@ -96,3 +97,12 @@ class EphemeralEventSource(AbstractEventSource[TRoot]):
 
     def repair(self) -> tuple[list[str], str | None]:
         return list(), None
+
+    def get_fullname(self) -> str:
+        return 'Ephemeral User'
+
+    def get_username(self) -> str:
+        return 'ephemeral@local.host'
+
+    def get_picture(self) -> str:
+        return DEFAULT_USERPIC

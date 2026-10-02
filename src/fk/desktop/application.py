@@ -82,9 +82,7 @@ def setting_requires_new_source(name: str) -> bool:
         name.startswith('WebsocketEventSource.') or \
         name.startswith('FileEventSource.') or \
         name == S.SOURCE_IGNORE_ERRORS or \
-        name == S.SOURCE_IGNORE_INVALID_SEQUENCE or \
-        name == S.SOURCE_ENCRYPTION_ENABLED or \
-        name == S.SOURCE_ENCRYPTION_KEY
+        name == S.SOURCE_IGNORE_INVALID_SEQUENCE
 
 class Application(QApplication, AbstractEventEmitter):
     _settings: AbstractSettings
@@ -656,21 +654,11 @@ class Application(QApplication, AbstractEventEmitter):
             logger.debug(f'Received auth record: {auth}')
             to_set = {
                 S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'oauth',
-                S.WEBSOCKETEVENTSOURCE_USERNAME: auth.email,
                 S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',
                 S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: auth.refresh_token,
             }
-            if auth.picture:
-                to_set['WebsocketEventSource.userpic'] = auth.picture
-            if auth.fullname:
-                to_set['Source.fullname'] = auth.fullname
             self._settings.set(to_set)
             callback(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'oauth')
-            callback(S.WEBSOCKETEVENTSOURCE_USERNAME, auth.email)
-            if auth.picture:
-                callback('WebsocketEventSource.userpic', auth.picture)
-            if auth.fullname:
-                callback('Source.fullname', auth.fullname)
             callback(S.WEBSOCKETEVENTSOURCE_CONSENT, 'False')
             callback(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, auth.refresh_token)
             callback(S.WEBSOCKETEVENTSOURCE_LOGOUT, f'Sign out <{auth.email}>')
@@ -679,18 +667,12 @@ class Application(QApplication, AbstractEventEmitter):
 
     def sign_out(self, _, callback: Callable) -> bool:
         self._settings.set({
-            'Source.fullname': '',
             S.WEBSOCKETEVENTSOURCE_AUTH_TYPE: 'oauth',
-            S.WEBSOCKETEVENTSOURCE_USERNAME: 'user@local.host',
-            'WebsocketEventSource.userpic': '',
             S.WEBSOCKETEVENTSOURCE_CONSENT: 'False',
             S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: '',
         })
 
-        callback('Source.fullname', '')
         callback(S.WEBSOCKETEVENTSOURCE_AUTH_TYPE, 'oauth')
-        callback(S.WEBSOCKETEVENTSOURCE_USERNAME, 'user@local.host')
-        callback('WebsocketEventSource.userpic', '')
         callback(S.WEBSOCKETEVENTSOURCE_CONSENT, 'False')
         callback(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, '')
         callback(S.WEBSOCKETEVENTSOURCE_LOGOUT, f'Sign out')

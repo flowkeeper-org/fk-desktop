@@ -49,8 +49,8 @@ class ConnectionWidget(QToolButton):
         self._is_connected = is_connected
         self._userpic = QPixmap()
         self._userpic.loadFromData(base64.b64decode(self._application.get_settings().get_userpic()))
-        username = self._application.get_settings().get_username()
-        fullname = self._application.get_settings().get_fullname()
+        username = self._source.get_username() if self._source is not None else 'N/A'
+        fullname = self._source.get_fullname() if self._source is not None else 'N/A'
         if is_connected:
             state = 'Connected'
             self.topLevelWidget().setWindowTitle(f'Flowkeeper - {username} - Online')

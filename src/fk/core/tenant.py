@@ -16,7 +16,6 @@
 import datetime
 
 from fk.core.abstract_data_container import AbstractDataContainer
-from fk.core.abstract_settings import AbstractSettings
 from fk.core.user import User
 
 ADMIN_USER = 'admin@local.host'
@@ -26,14 +25,11 @@ class Tenant(AbstractDataContainer[User, None]):
     """Tenant is the root of the data hierarchy in Flowkeeper Client.
     It contains users and has no parent."""
 
-    _settings: AbstractSettings
-
-    def __init__(self, settings: AbstractSettings):
+    def __init__(self):
         super().__init__('Flowkeeper Desktop Client',
                          None,
                          '0',
                          datetime.datetime.now(datetime.timezone.utc))
-        self._settings = settings
         self[ADMIN_USER] = User(
             self,
             ADMIN_USER,
@@ -43,21 +39,5 @@ class Tenant(AbstractDataContainer[User, None]):
             True
         )
 
-    def get_settings(self) -> AbstractSettings:
-        return self._settings
-
     def get_user(self, identity: str) -> User:
         return self[identity]
-
-    def get_current_user(self) -> User:
-        return self[self._settings.get_username()]
-
-    def __getstate__(self):
-        # Don't pickle the settings
-        d = self.__dict__.copy()
-        del d['_settings']
-        return d
-
-    def __setstate__(self, d):
-        d['_settings'] = None
-        self.__dict__ = d

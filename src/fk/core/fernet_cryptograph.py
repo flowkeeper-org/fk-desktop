@@ -75,23 +75,20 @@ class FernetCryptograph(AbstractCryptograph):
             logger.debug(f'Updated current Fernet ID: {self._current_fernet_id}')
 
     def _encrypt_or_decrypt(self, s: str, is_encrypt: bool) -> str:
-        if self.enabled:
-            if not self.key:
-                raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a key.')
-            if not self.salt:
-                raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a salt.')
-            if not self._current_fernet_id:
-                raise Exception(f'Trying to {"encrypt" if is_encrypt else "decrypt"} data before Fernet ID is calculated.')
+        if not self.key:
+            raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a key.')
+        if not self.salt:
+            raise Exception(f'Cannot {"encrypt" if is_encrypt else "decrypt"} data without a salt.')
+        if not self._current_fernet_id:
+            raise Exception(f'Trying to {"encrypt" if is_encrypt else "decrypt"} data before Fernet ID is calculated.')
 
-            fernet: Fernet = self._fernets.get(self._current_fernet_id)
-            if not fernet:
-                fernet = self._get_fernet(self._current_fernet_id)
-                self._fernets[self._current_fernet_id] = fernet
-            return (fernet.encrypt if is_encrypt else fernet.decrypt)(
-                s.encode('utf-8')
-            ).decode('utf-8')
-        else:
-            return s
+        fernet: Fernet = self._fernets.get(self._current_fernet_id)
+        if not fernet:
+            fernet = self._get_fernet(self._current_fernet_id)
+            self._fernets[self._current_fernet_id] = fernet
+        return (fernet.encrypt if is_encrypt else fernet.decrypt)(
+            s.encode('utf-8')
+        ).decode('utf-8')
 
     def encrypt(self, s: str) -> str:
         return self._encrypt_or_decrypt(s, True)

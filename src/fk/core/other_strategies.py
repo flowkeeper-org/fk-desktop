@@ -13,18 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import base64
 import datetime
 from typing import Callable
 
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 from fk.core import events
-from fk.core.abstract_settings import AbstractSettings, S
+from fk.core.abstract_settings import AbstractSettings
 from fk.core.abstract_strategy import AbstractStrategy
-from fk.core.fernet_cryptograph import FernetCryptograph
 from fk.core.strategy_factory import strategy
 from fk.core.tenant import Tenant
 
@@ -48,36 +42,14 @@ class ConfigureStrategy(AbstractStrategy[Tenant]):
         self._salt = params[1]
         self._check = params[2]
 
-    def get_version(self):
-        return self._version
-
-    def get_salt(self):
-        return self._salt
-
-    def get_check(self):
-        return self._check
-
-    def is_valid(self):
-        key = self._settings.get(S.SOURCE_ENCRYPTION_KEY)
-        check = FernetCryptograph.encrypt_check(key, self._salt)
-        return check == self._check
-
     def execute(self,
                 emit: Callable[[str, dict[str, any], any], None],
                 data: Tenant) -> None:
-        if self._carry != 'init':
-            # TODO: Storing it as settings is an undesirable side effect.
-            self._settings.set({
-                S.SOURCE_ENCRYPTION_SALT: self._salt,
-                S.SOURCE_VERSION: self._version,
-            })
-
-            emit(events.ConfigurationChanged, {
-                'salt': self._salt
-            }, self._carry)
-
-            if not self.is_valid():
-                raise Exception(f'Cannot decrypt data, invalid end-to-end encryption key')
+        emit(events.ConfigurationChanged, {
+            'version': self._version,
+            'salt': self._salt,
+            'check': self._check,
+        }, self._carry, force=True)
 
     def encryptable(self) -> bool:
         return False

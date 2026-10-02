@@ -44,7 +44,7 @@ class TestTags(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
-        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 
@@ -314,7 +314,7 @@ class TestTags(TestCase):
         settings = MockSettings(filename='src/fk/tests/fixtures/test-tags.txt')
         source = FileEventSource[Tenant](settings,
                                          FernetCryptograph(settings),
-                                         Tenant(settings))
+                                         Tenant())
         source.start()
         data = source.get_data()
         self.assertIn('alice@flowkeeper.org', data)

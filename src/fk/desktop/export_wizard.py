@@ -151,7 +151,7 @@ class PageExportProgress(QWizardPage):
         self._filename = self.wizard().option_filename
         export(self._source,
                self._filename,
-               Tenant(self._source.get_settings()),
+               Tenant(),
                self.wizard().option_encrypted,
                self.wizard().option_compressed,
                lambda total: self.progress.setMaximum(total),
@@ -200,7 +200,7 @@ class ExportWizard(QWizard):
 if __name__ == '__main__':
     app = QApplication([])
     settings = QtSettings()
-    src = EphemeralEventSource[Tenant](settings, NoCryptograph(settings), Tenant(settings))
+    src = EphemeralEventSource[Tenant](settings, NoCryptograph(settings), Tenant())
     src.start()
     wizard = ExportWizard(src, None)
     wizard.show()

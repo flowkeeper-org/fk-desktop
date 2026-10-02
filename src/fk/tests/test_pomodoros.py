@@ -46,7 +46,7 @@ class TestPomodoros(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
-        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 

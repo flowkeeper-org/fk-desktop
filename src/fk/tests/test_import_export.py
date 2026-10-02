@@ -69,7 +69,7 @@ class TestImportExport(TestCase):
     data_rand: dict[str, User]
 
     def _init_source_temp(self):
-        self.source_temp = FileEventSource[Tenant](self.settings_temp, self.cryptograph_temp, Tenant(self.settings_temp))
+        self.source_temp = FileEventSource[Tenant](self.settings_temp, self.cryptograph_temp, Tenant())
         self.source_temp.start()
         self.data_temp = self.source_temp.get_data()
 
@@ -81,7 +81,7 @@ class TestImportExport(TestCase):
 
         self.settings_rand = MockSettings(filename=RAND_FILENAME)
         self.cryptograph_rand = FernetCryptograph(self.settings_rand)
-        self.source_rand = FileEventSource[Tenant](self.settings_rand, self.cryptograph_rand, Tenant(self.settings_rand))
+        self.source_rand = FileEventSource[Tenant](self.settings_rand, self.cryptograph_rand, Tenant())
         self.source_rand.start()
         self.data_rand = self.source_rand.get_data()
 
@@ -166,7 +166,7 @@ class TestImportExport(TestCase):
 
         export(self.source_rand,
                filename,
-               Tenant(self.settings_rand),
+               Tenant(),
                False,
                compress,
                set_total_start,

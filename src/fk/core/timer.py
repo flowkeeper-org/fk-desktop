@@ -38,7 +38,7 @@ class PomodoroTimer(AbstractEventEmitter):
 
     @property
     def timer(self) -> TimerData:
-        return self._source_holder.get_source().get_data().get_current_user().get_timer()
+        return self._source_holder.get_source().get_current_user().get_timer()
 
     # Emitted events
     TimerTick = "TimerTick"

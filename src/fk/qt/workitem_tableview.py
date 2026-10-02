@@ -236,7 +236,7 @@ class WorkitemTableView(AbstractTableView[Backlog | Tag, Workitem]):
                             and is_online)
         self._enable_action('workitems_table.startItem', is_workitem_editable
                             and (selected.is_startable() or len(selected) == 0 or selected.is_tracker())
-                            and self._source.get_data().get_current_user().get_timer().is_idling()
+                            and self._source.get_current_user().get_timer().is_idling()
                             and is_online)
 
     # Actions

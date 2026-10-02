@@ -131,7 +131,7 @@ class TagsWidget(QFrame, AbstractEventEmitter):
         for widget in self.layout().widgets():
             self.layout().removeWidget(widget)
             widget.deleteLater()
-        for tag in source.get_data().get_current_user().get_tags().values():
+        for tag in source.get_current_user().get_tags().values():
             self._add_tag(tag)
         self.update_visibility()
 

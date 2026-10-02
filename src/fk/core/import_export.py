@@ -499,7 +499,7 @@ def import_(source: AbstractEventSource[TRoot],
             completion_callback: Callable[[int], None]) -> None:
     if merge:
         # 1. Read import file by doing a classic import on an ephemeral source
-        settings = MockSettings(username=source.get_settings().get_username(),
+        settings = MockSettings(username=source.get_username(),
                                 source_type='ephemeral')
         new_source_holder = EventSourceHolder(settings, NoCryptograph(settings))
         import_classic(new_source_holder.request_new_source(),
@@ -531,7 +531,7 @@ def import_github_issues(source: AbstractEventSource[TRoot],
     log = ''
     found: Backlog = None
 
-    user: User = source.get_data().get_current_user()
+    user: User = source.get_current_user()
     for b in user.values():
         if b.get_name() == name:
             found = b
@@ -606,7 +606,7 @@ def import_github_issues(source: AbstractEventSource[TRoot],
 def import_simple(source: AbstractEventSource[TRoot],
                   tasks: dict[str, list[object]]) -> str:
     log = ''
-    user: User = source.get_data().get_current_user()
+    user: User = source.get_current_user()
 
     for name in tasks.keys():
         found: Backlog = None
@@ -707,7 +707,7 @@ def import_classic(source: AbstractEventSource[TRoot],
     start_callback(total)
     source.mute()
 
-    user_identity = source.get_settings().get_username()
+    user_identity = source.get_username()
     i = 0
 
     if source.find_user(user_identity) is None:
@@ -716,7 +716,7 @@ def import_classic(source: AbstractEventSource[TRoot],
         strategy = CreateUserStrategy(i,
                                       datetime.datetime.now(datetime.timezone.utc),
                                       ADMIN_USER,
-                                      [user_identity, source.get_settings().get_fullname()],
+                                      [user_identity, source.get_fullname()],
                                       source.get_settings())
         try:
             source.execute_prepared_strategy(strategy, False, True)

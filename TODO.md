@@ -1,35 +1,20 @@
-# To do before release
+# Online data sync BETA
 
-4. Fonts -- backlogs use default font 
-5. Fonts -- status uses default font 
-6. Fonts -- focus mode uses default font. Default focus becomes the same after double-clicking. 
-8. Backlogs toggle icon doesn't change its color on theme change 
-9. Rows height doesn't recalculate on fonts change
+1. Simplify -- file sources never have encryption, websocket -- always have it
+2. Remove settings for
+   1. DONE: Salt (SOURCE_ENCRYPTION_SALT)
+   2. DONE: Encryption enabled / disabled (SOURCE_ENCRYPTION_ENABLED)
+   3. E2e key (we'll ask for it if we can't decode) (SOURCE_ENCRYPTION_KEY)
+   4. Username and email (1st CreateUser is us) (WEBSOCKETEVENTSOURCE_USERNAME, SOURCE_FULLNAME, WebsocketEventSource.userpic)
+3. Logout should call KC logout endpoint
+4. ConfigureStrategy version defines PBKDF2HMAC settings
+5. WebSocket -- when we read the 2nd strategy, it must be CreateUser. If not --
+we ask the user for e2e key. We compute the Fernet key on the fly, try to decode,
+and on success save it in settings, then retry.
+6. File event source -- can omit ConfigureStrategy altogether
+7. Four de-facto data sources, with their unique setting names, which ensures that
+they don't overwrite each other
 
-# Tests
+------------
 
-## Windows binaries
-
-1. No sound on Windows with Nuitka
-2. "standalone" directory in ZIPs 
-3. Sign binaries in standalone ZIPs and repack
-
-## Linux binaries
-
-1. KUbuntu 24.04 doesn't support deb-min installer (Qt 6.4.2 max, same for Debian)
-2. Ubuntu 22.04 ships with Qt 6.2.4 (Universe repo) -- check all for Pyside6
-3. The "fat" versions has GTK / default theme
-4. No sound for Nuitka, same as Windows
-5. Keyboard doesn't work with PyInstaller binaries on openSUSE -- both 22 and 24
-
-### AppImage
-
-### Flatpak
-
-### openSUSE installer
-
-## macOS binaries
-
-1. On Ventura 13 / x86 and ARM, both Nuitka and PyInstaller -- no signature
-2. "Too many values to unpack" when launching Settings, even after settings reset
-3. No sound for Nuitka, same as Windows
+A single cryptograph instance in the app, created at startup

@@ -60,7 +60,6 @@ class S:
     POMODORO_LONG_BREAK_WITHIN: Final[str] = 'Pomodoro.long_break_within'
     POMODORO_START_NEXT_AUTOMATICALLY: Final[str] = 'Pomodoro.start_next_automatically'
     POMODORO_SERIES_EXPLANATION: Final[str] = 'Pomodoro.series_explanation'
-    SOURCE_FULLNAME: Final[str] = 'Source.fullname'
     SOURCE_TYPE: Final[str] = 'Source.type'
     SOURCE_VERSION: Final[str] = 'Source.version'
     SOURCE_IGNORE_ERRORS: Final[str] = 'Source.ignore_errors'
@@ -71,17 +70,12 @@ class S:
     FILEEVENTSOURCE_COMPRESS: Final[str] = 'FileEventSource.compress'
     WEBSOCKETEVENTSOURCE_URL: Final[str] = 'WebsocketEventSource.url'
     WEBSOCKETEVENTSOURCE_AUTH_TYPE: Final[str] = 'WebsocketEventSource.auth_type'
-    WEBSOCKETEVENTSOURCE_USERNAME: Final[str] = 'WebsocketEventSource.username'
     WEBSOCKETEVENTSOURCE_CONSENT: Final[str] = 'WebsocketEventSource.consent'
     WEBSOCKETEVENTSOURCE_PASSWORD: Final[str] = 'WebsocketEventSource.password!'
     WEBSOCKETEVENTSOURCE_REFRESH_TOKEN: Final[str] = 'WebsocketEventSource.refresh_token!'
     WEBSOCKETEVENTSOURCE_AUTHENTICATE: Final[str] = 'WebsocketEventSource.authenticate'
     WEBSOCKETEVENTSOURCE_LOGOUT: Final[str] = 'WebsocketEventSource.logout'
     WEBSOCKETEVENTSOURCE_DELETE_ACCOUNT: Final[str] = 'WebsocketEventSource.delete_account'
-    SOURCE_ENCRYPTION_SEPARATOR: Final[str] = 'Source.encryption_separator'
-    SOURCE_ENCRYPTION_ENABLED: Final[str] = 'Source.encryption_enabled'
-    SOURCE_ENCRYPTION_KEY: Final[str] = 'Source.encryption_key!'
-    SOURCE_ENCRYPTION_SALT: Final[str] = 'Source.encryption_salt!'
     SOURCE_ENCRYPTION_KEYS_CACHE: Final[str] = 'Source.encryption_keys_cache!'
     APPLICATION_TIMER_UI_MODE: Final[str] = 'Application.timer_ui_mode'
     APPLICATION_ALWAYS_ON_TOP: Final[str] = 'Application.always_on_top'
@@ -178,15 +172,6 @@ def _show_for_websocket_source(values: dict[str, str]) -> bool:
     return values[S.SOURCE_TYPE] in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
 
 
-def _show_when_encryption_is_enabled(values: dict[str, str]) -> bool:
-    return values[S.SOURCE_TYPE] in ('flowkeeper.org', 'flowkeeper.pro') \
-        or values[S.SOURCE_ENCRYPTION_ENABLED] == 'True'
-
-
-def _show_when_encryption_is_optional(values: dict[str, str]) -> bool:
-    return values[S.SOURCE_TYPE] in ('websocket', 'local', 'ephemeral')
-
-
 def _show_for_custom_websocket_source(values: dict[str, str]) -> bool:
     return values[S.SOURCE_TYPE] == 'websocket'
 
@@ -212,11 +197,13 @@ def _show_if_end_of_work_notifications_are_enabled(values: dict[str, str]) -> bo
 
 
 def _show_if_signed_in(values: dict[str, str]) -> bool:
-    return _show_for_oauth(values) and values[S.WEBSOCKETEVENTSOURCE_USERNAME] != 'user@local.host'
+    # TODO: How do we know if we are signed in or out?
+    return _show_for_oauth(values)
 
 
 def _show_if_signed_out(values: dict[str, str]) -> bool:
-    return _show_for_oauth(values) and values[S.WEBSOCKETEVENTSOURCE_USERNAME] == 'user@local.host'
+    # TODO: How do we know if we are signed in or out?
+    return _show_for_oauth(values)
 
 
 def _show_if_play_rest_enabled(values: dict[str, str]) -> bool:
@@ -327,7 +314,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                                                                                 'handy when fullscreen breaks are enabled.', [], _always_show),
             ],
             'Connection': [
-                (S.SOURCE_FULLNAME, 'str', 'User full name', '', [], _never_show),
                 (S.SOURCE_TYPE, 'choice', 'Data source', 'local', [
                     "local:Local file (offline)",
                     "flowkeeper.org:Flowkeeper.org (EXPERIMENTAL)",
@@ -350,8 +336,6 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                     "basic:Simple username and password",
                     "oauth:OAuth (more secure)",
                 ], _show_for_custom_websocket_source),
-                # UC-2: Setting "User email" is only shown for the "Simple username and password" authentication type
-                (S.WEBSOCKETEVENTSOURCE_USERNAME, 'email', 'User email', '', [], _show_for_basic_auth),
                 ('WebsocketEventSource.userpic', 'str', 'User picture', '', [], _never_show),
                 (S.WEBSOCKETEVENTSOURCE_CONSENT, 'bool', 'Consent for this username', 'False', [], _never_show),
                 # UC-2: Setting "Password" is only shown for the "Simple username and password" authentication type
@@ -366,19 +350,8 @@ class AbstractSettings(AbstractEventEmitter, ABC):
                 (S.WEBSOCKETEVENTSOURCE_LOGOUT, 'button', 'Sign out', '', [], _show_if_signed_in),
                 # UC-2: Button "Delete my account" is only shown if the user is signed in
                 (S.WEBSOCKETEVENTSOURCE_DELETE_ACCOUNT, 'button', 'Delete my account', '', ['warning'], _show_if_signed_in),
-                (S.SOURCE_ENCRYPTION_SEPARATOR, S.SEPARATOR, '', '', [], _always_show),
-                # UC-2: Setting "End-to-end encryption" is only shown if the data source is "Local file", "Self-hosted server" or "Ephemeral"
-                (S.SOURCE_ENCRYPTION_ENABLED, 'bool', 'End-to-end encryption', 'False', [], _show_when_encryption_is_optional),
-                # UC-2: Setting "End-to-end encryption key" is only shown if "End-to-end encryption" is checked, or if the data source is "Flowkeeper.org"
-                (S.SOURCE_ENCRYPTION_KEY, 'key', 'End-to-end encryption key', '', [], _show_when_encryption_is_enabled),
-                (S.SOURCE_ENCRYPTION_SALT, 'key', 'Key encryption salt', 'e1a7a49b5bad75ec81fcb8cded4bbc0c', [], _never_show),
                 (S.SOURCE_VERSION, 'str', 'Source format version', '2', [], _never_show),
                 (S.SOURCE_ENCRYPTION_KEYS_CACHE, 'key', 'Encryption keys cache', '{}', [], _never_show),
-                ('Source.encryption_key_label', 'label', ' ', "WARNING: Learn this key, or store it safely! \n"
-                                                              "Without it you won't be able to decrypt your \n"
-                                                              "data. This key is only stored on this computer. \n"
-                                                              "If you forget or lose it, YOU WILL LOSE YOUR \n"
-                                                              "DATA WITH NO POSSIBILITY TO RECOVER.", [], _show_when_encryption_is_enabled),
                 (S.APPLICATION_IGNORE_KEYRING_ERRORS, 'bool', 'Ignore keyring errors', 'False', [], _always_show),
             ],
             'Teamwork': [
@@ -513,28 +486,11 @@ class AbstractSettings(AbstractEventEmitter, ABC):
     def location(self) -> str:
         pass
 
-    def get_username(self) -> str:
-        # UC-3: Username for local and ephemeral sources is "user@local.host". All strategies are executed on behalf of this user. It means that we can't have more than one user locally.
-        if self.get(S.SOURCE_TYPE) == 'local' or self.get(S.SOURCE_TYPE) == 'ephemeral':
-            return 'user@local.host'
-        else:
-            return self.get(S.WEBSOCKETEVENTSOURCE_USERNAME)
-
-    def get_userpic(self) -> str:
-        pic = self.get('WebsocketEventSource.userpic')
-        return pic if pic != '' else DEFAULT_USERPIC
-
     def is_team_supported(self) -> bool:
         return self.get(S.SOURCE_TYPE) != 'local' and self.get(S.APPLICATION_ENABLE_TEAMS) == 'True'
 
     def is_remote_source(self) -> bool:
         return self.get(S.SOURCE_TYPE) in ('websocket', 'flowkeeper.org', 'flowkeeper.pro')
-
-    def get_fullname(self) -> str:
-        if self.get('Source.type') == 'local' or self.get('Source.type') == 'ephemeral':
-            return 'Local User'
-        else:
-            return self.get(S.SOURCE_FULLNAME)
 
     def get_work_duration(self) -> float:
         return float(self.get(S.POMODORO_DEFAULT_WORK_DURATION))
@@ -598,10 +554,7 @@ class AbstractSettings(AbstractEventEmitter, ABC):
         self.set(to_set)
 
     def is_e2e_encryption_enabled(self) -> bool:
-        return _show_when_encryption_is_enabled({
-            S.SOURCE_ENCRYPTION_ENABLED: self.get(S.SOURCE_ENCRYPTION_ENABLED),
-            S.SOURCE_TYPE: self.get(S.SOURCE_TYPE)
-        })
+        return self.get(S.SOURCE_TYPE) in ('flowkeeper.org', 'flowkeeper.pro', 'websocket')
 
     @abstractmethod
     def is_keyring_enabled(self) -> bool:

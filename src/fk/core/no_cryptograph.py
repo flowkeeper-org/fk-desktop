@@ -19,12 +19,10 @@ from fk.core.abstract_settings import AbstractSettings
 
 class NoCryptograph(AbstractCryptograph):
     def __init__(self, settings: AbstractSettings):
-        # We don't call super() on purpose here, so that it doesn't try to generate keys
-        self._settings = settings
-        self.enabled = False
+        super().__init__(settings)
 
     def _on_key_changed(self) -> None:
-        self.enabled = False
+        pass
 
     def encrypt(self, s: str) -> str:
         return s

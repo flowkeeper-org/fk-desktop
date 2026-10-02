@@ -41,7 +41,7 @@ class TestEvents(AbstractTestCase):
 
     def setUp(self):
         logging.getLogger().setLevel(logging.DEBUG)
-        self.tenant: Tenant = Tenant(None)
+        self.tenant: Tenant = Tenant()
         user: User = self.tenant[ADMIN_USER]
         self.backlog = Backlog('Backlog', user, 'b-1', datetime.datetime.now(tz=datetime.timezone.utc))
         user['b-1'] = self.backlog

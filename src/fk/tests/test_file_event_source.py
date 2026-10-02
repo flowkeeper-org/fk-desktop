@@ -59,7 +59,7 @@ def _create_filtered_source(strategy_filter: Callable[[AbstractStrategy], bool] 
         S.SOURCE_IGNORE_INVALID_SEQUENCE: 'True',
     })  # Otherwise we won't be able to start it
     _cryptograph = FernetCryptograph(_settings)
-    _source = FileEventSource[Tenant](_settings, _cryptograph, Tenant(_settings))
+    _source = FileEventSource[Tenant](_settings, _cryptograph, Tenant())
     # This is a hack to replace SimpleSerializer with a filtering wrapper, but it's ok for a unit test
     _source._serializer = FilteringSerializer(_source._serializer, strategy_filter)
     _source.start()
@@ -94,7 +94,7 @@ class TestFileEventSource(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings(filename=TEMP_FILENAME)
         self.cryptograph = FernetCryptograph(self.settings)
-        self.source = FileEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = FileEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 
@@ -111,7 +111,7 @@ class TestFileEventSource(TestCase):
 
         def check_after_repair(src: FileEventSource):
             self.assertEqual(len(list(original.backlogs())), len(list(src.backlogs())))
-            user: User = src.get_data().get_current_user()
+            user: User = src.get_current_user()
             for b in original.backlogs():
                 self.assertIsNotNone(user.get(b.get_uid()))
                 self.assertEqual(len(user.get(b.get_uid()).values()), len(b.values()))
@@ -145,8 +145,8 @@ class TestFileEventSource(TestCase):
     def test_repair_no_op(self):
         original = _create_filtered_source()
         _test_repair(lambda s: True,
-                     lambda src: self.assertEqual(original.get_data().get_current_user().dump(), src.get_data().get_current_user().dump()),
-                     lambda src: self.assertEqual(original.get_data().get_current_user().dump(), src.get_data().get_current_user().dump()))
+                     lambda src: self.assertEqual(original.get_current_user().dump(), src.get_current_user().dump()),
+                     lambda src: self.assertEqual(original.get_current_user().dump(), src.get_current_user().dump()))
 
     # Tests:
     # - Filesystem watcher

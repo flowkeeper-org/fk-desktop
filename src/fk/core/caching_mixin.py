@@ -158,7 +158,7 @@ class CachingMixin(AbstractEventSource[TRoot], ABC):
                 pass
 
     def initialize_redo_log(self):
-        user = self._cache_application.get_settings().get_username()
+        user = self.get_username()
         logger.debug(f'Initializing redo log with file {self._redo_log_filename} and user {user}')
         self._initialize_redo_log_file()
         settings = MockSettings(self._redo_log_filename, user)

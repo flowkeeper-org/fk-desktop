@@ -37,6 +37,7 @@ from fk.core.simple_serializer import SimpleSerializer
 from fk.core.tenant import Tenant, ADMIN_USER
 from fk.core.timer_strategies import StartWorkStrategy, StartTimerStrategy
 from fk.core.user_strategies import DeleteUserStrategy, CreateUserStrategy, RenameUserStrategy
+from fk.core.userpic import DEFAULT_USERPIC
 from fk.core.workitem_strategies import CreateWorkitemStrategy, DeleteWorkitemStrategy, RenameWorkitemStrategy, \
     CompleteWorkitemStrategy, ReorderWorkitemStrategy, MoveWorkitemStrategy, RestoreWorkitemStrategy, \
     UpdateWorkitemCategoriesStrategy
@@ -428,7 +429,7 @@ class FileEventSource(AbstractEventSource[TRoot]):
             log.append(f'Renumbered strategies up to {seq}')
 
             # Restart and remove failing strategies
-            new_source = self.clone(Tenant(self._settings), strategies)
+            new_source = self.clone(Tenant(), strategies)
             try:
                 new_source.start(fail_early=True)
                 log.append(f'Tested successfully')
@@ -547,3 +548,12 @@ class FileEventSource(AbstractEventSource[TRoot]):
         filename = self._get_filename()
         h = md5(filename.encode('utf-8')).hexdigest()
         return f'file-{h}'
+
+    def get_fullname(self) -> str:
+        return 'Local User'
+
+    def get_username(self) -> str:
+        return 'user@local.host'
+
+    def get_picture(self) -> str:
+        return DEFAULT_USERPIC

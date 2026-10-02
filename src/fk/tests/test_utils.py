@@ -71,7 +71,7 @@ def test_settings(n: int) -> AbstractSettings:
 
 
 def test_data() -> Tenant:
-    tenant = Tenant(test_settings(0))
+    tenant = Tenant()
     users = test_users()
     for u in users:
         tenant[u] = users[u]

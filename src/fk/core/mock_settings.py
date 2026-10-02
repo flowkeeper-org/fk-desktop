@@ -38,9 +38,6 @@ class MockSettings(AbstractSettings):
         self._settings = {
             S.SOURCE_TYPE: source_type,
             S.FILEEVENTSOURCE_FILENAME: filename,
-            S.WEBSOCKETEVENTSOURCE_USERNAME: username,
-            S.SOURCE_ENCRYPTION_ENABLED: 'False',
-            S.SOURCE_ENCRYPTION_KEY: 'oBokryM75NwBXkKVa3bY',
             S.SOURCE_ENCRYPTION_KEYS_CACHE: '{}',
         }
 

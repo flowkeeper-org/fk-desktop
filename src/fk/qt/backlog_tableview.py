@@ -140,7 +140,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
             self.select(backlog)
 
     def _on_messages(self, event: str, source: AbstractEventSource, carry: str = None) -> None:
-        user = source.get_data().get_current_user()
+        user = source.get_current_user()
         self.upstream_selected(user)
         last_selected_oid = self._application.get_settings().get(S.APPLICATION_LAST_SELECTED_BACKLOG)
         if user is not None and last_selected_oid != '' and last_selected_oid in user:
@@ -178,7 +178,7 @@ class BacklogTableView(AbstractTableView[User, Backlog]):
 
     def create_backlog(self) -> str:
         prefix: str = datetime.datetime.today().strftime('%Y-%m-%d, %A')   # Locale-formatted
-        new_name = generate_unique_name(prefix, self._source.get_data().get_current_user().names())
+        new_name = generate_unique_name(prefix, self._source.get_current_user().names())
         new_uid = generate_uid()
         self._source.execute(CreateBacklogStrategy, [new_uid, new_name], carry='edit')
         return new_uid

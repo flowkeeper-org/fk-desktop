@@ -62,7 +62,6 @@ class QtSettings(AbstractSettings):
 
         if not self._keyring_enabled:
             self._disable_connected_sources()  # Disable and hide forbidden source types
-            self._disable_secrets()  # Disable and hide forbidden encryption settings
 
         connect_feature_enabled = self.get(S.APPLICATION_FEATURE_CONNECT) == 'True'
         if not connect_feature_enabled:
@@ -103,16 +102,6 @@ class QtSettings(AbstractSettings):
             key = option.split(':')[0]
             if key in ['flowkeeper.org', 'flowkeeper.pro', 'websocket']:
                 original.remove(option)
-
-    def _disable_secrets(self) -> None:
-        if self.get(S.SOURCE_ENCRYPTION_ENABLED) == 'True':
-            self.set({S.SOURCE_ENCRYPTION_ENABLED: 'False'})
-
-        # TODO: Reimplement this via some bool variable on the AbstractSettings class, e.g. "is_encryption_disabled"
-        #  and updating the corresponding visibility checks. This would be a more elegant solution.
-        self.hide(S.SOURCE_ENCRYPTION_ENABLED)
-        self.hide(S.SOURCE_ENCRYPTION_KEY)
-        self.hide(S.SOURCE_ENCRYPTION_SEPARATOR)
 
     def set(self, values: dict[str, str], force_fire=False) -> None:
         old_values: dict[str, str] = dict()

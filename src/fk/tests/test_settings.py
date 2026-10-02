@@ -35,7 +35,7 @@ class TestSettings(TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         self.settings = MockSettings()
         self.cryptograph = FernetCryptograph(self.settings)
-        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant(self.settings))
+        self.source = EphemeralEventSource[Tenant](self.settings, self.cryptograph, Tenant())
         self.source.start()
         self.data = self.source.get_data()
 
@@ -97,19 +97,15 @@ class TestSettings(TestCase):
             S.SOURCE_TYPE: 'local',
             S.POMODORO_DEFAULT_WORK_DURATION: '14',
             S.POMODORO_DEFAULT_REST_DURATION: '15',
-            S.SOURCE_FULLNAME: 'John Doe',
         })
-        self.assertEqual(self.settings.get_username(), 'user@local.host')
         self.assertEqual(self.settings.get_work_duration(), 14)
         self.assertEqual(self.settings.get_rest_duration(), 15)
-        self.assertEqual(self.settings.get_fullname(), 'Local User')    # Ignores Source.fullname for local sources
         self.assertFalse(self.settings.is_team_supported(), False)
         self.settings.set({
             S.SOURCE_TYPE: 'flowkeeper.org',
             S.WEBSOCKETEVENTSOURCE_USERNAME: 'alice@example.org',
             S.APPLICATION_ENABLE_TEAMS: 'True',
         })
-        self.assertEqual(self.settings.get_username(), 'alice@example.org')
         self.assertTrue(self.settings.is_team_supported())
 
     def test_visibility(self):
@@ -124,7 +120,6 @@ class TestSettings(TestCase):
         self.assertNotIn(S.APPLICATION_WINDOW_WIDTH, visible)
         self.assertNotIn(S.APPLICATION_SHOW_STATUS_BAR, visible)
         self.assertNotIn(S.WEBSOCKETEVENTSOURCE_REFRESH_TOKEN, visible)
-        self.assertNotIn(S.SOURCE_FULLNAME, visible)
         self.assertNotIn(S.APPLICATION_HIDE_COMPLETED, visible)
         # For file event source
         self.assertIn(S.FILEEVENTSOURCE_FILENAME, visible)
